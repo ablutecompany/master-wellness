@@ -7,6 +7,7 @@ import { ThemeCard } from '../components/ThemeCard';
 import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, ChevronRight, Menu } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
+import { Video, ResizeMode } from 'expo-av';
 
 const RAW_BIOMARKERS = [
   { id: 'b1',  name: 'NT-proBNP',      value: '120',      unit: 'pg/mL',  source: 'ablute' },
@@ -86,11 +87,15 @@ export const HomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   return (
     <Container safe style={styles.container}>
       <View {...mainPanResponder.panHandlers} style={styles.mainView}>
-        {/* ── BACKGROUND ATMOSPHERE ────────────────────────────────────────── */}
-        <View style={styles.atmosphere}>
-          <LinearGradient 
-            colors={['rgba(115, 188, 255, 0.05)', 'transparent']}
-            style={[styles.glowBall, { top: -200, left: -200 }]}
+        {/* ── BACKGROUND VIDEO ─────────────────────────────────────────────── */}
+        <View style={StyleSheet.absoluteFillObject}>
+          <Video
+            source={require('../../assets/background.mp4')}
+            style={StyleSheet.absoluteFillObject}
+            resizeMode={ResizeMode.COVER}
+            shouldPlay
+            isLooping
+            isMuted
           />
         </View>
 
