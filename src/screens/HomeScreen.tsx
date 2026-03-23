@@ -1,10 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, Animated, PanResponder, useWindowDimensions, ScrollView, Platform, SafeAreaView, Modal, TextInput, Image } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Animated, PanResponder, useWindowDimensions, ScrollView, Platform, SafeAreaView, Modal, TextInput, Image, ActivityIndicator, FlatList } from 'react-native';
 import { Container, Typography } from '../components/Base';
 import { theme } from '../theme';
 import { BrandLogo } from '../components/BrandLogo';
 import { ThemeCard } from '../components/ThemeCard';
-import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, ChevronRight, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, ChevronsDown } from 'lucide-react-native';
+import { HistoricoModal } from '../components/HistoricoModal';
+import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, ChevronRight, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, ChevronsDown, Sparkles } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Video, ResizeMode } from 'expo-av';
@@ -120,10 +121,13 @@ const MOCK_THEMES = [
 
 export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const { width, height } = useWindowDimensions();
+  const themesFlatListRef = useRef<FlatList>(null);
+  const themesPanelHeight = height;
   const [showProfile, setShowProfile] = useState(false);
   const [showControl, setShowControl] = useState(false);
   const [showNfcModal, setShowNfcModal] = useState(false);
-
+  const [isNfcScanning, setIsNfcScanning] = useState(false);
+  const [showHistorico, setShowHistorico] = useState(false);
   // Profile Form State
   const [profileName, setProfileName] = useState('Atleta Base');
   const [profileAge, setProfileAge] = useState('34');
@@ -195,7 +199,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     })
   ).current;
 
-  const DRAWER_DOWN = 590;
+  const DRAWER_DOWN = 583;
   const DRAWER_UP = 0;
   const lastDrawerY = useRef(DRAWER_DOWN);
   const drawerAnim = useRef(new Animated.Value(DRAWER_DOWN)).current;
@@ -214,7 +218,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   const drawerInnerOpacity = drawerAnim.interpolate({
     inputRange: [DRAWER_UP, DRAWER_DOWN],
-    outputRange: [1, 0.25],
+    outputRange: [1, 0.35],
     extrapolate: 'clamp',
   });
 
@@ -315,7 +319,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           isMuted
         />
         {/* Base darkening layer */}
-        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.65)' }]} pointerEvents="none" />
+        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.95)' }]} pointerEvents="none" />
 
         {/* Floating nuances */}
         <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: floatAnim1 }]} pointerEvents="none">
@@ -365,64 +369,64 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
                   {/* The Track Base */}
                   <View style={{ width: 240, height: 400, borderRadius: 120, overflow: 'hidden', backgroundColor: 'rgba(5, 10, 20, 0.4)', zIndex: 10 }}>
-                    
+
                     {/* Background Text / Slide CTA */}
                     <View style={{ position: 'absolute', bottom: 70, left: 0, right: 0, alignItems: 'center', pointerEvents: 'none' }}>
-                       <Animated.View style={{ opacity: arrowOpacity, transform: [{ translateY: arrowTranslate }], marginBottom: 16 }}>
-                         <ChevronsDown size={28} color="#00F2FF" />
-                       </Animated.View>
-                       <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600', letterSpacing: 1, marginBottom: 4, textTransform: 'uppercase' }}>8 dias desde</Typography>
-                       <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600', letterSpacing: 1, textTransform: 'uppercase' }}>a última avaliação</Typography>
+                      <Animated.View style={{ opacity: arrowOpacity, transform: [{ translateY: arrowTranslate }], marginBottom: 16 }}>
+                        <ChevronsDown size={28} color="#00F2FF" />
+                      </Animated.View>
+                      <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600', letterSpacing: 1, marginBottom: 4, textTransform: 'uppercase' }}>8 dias desde</Typography>
+                      <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600', letterSpacing: 1, textTransform: 'uppercase' }}>a última avaliação</Typography>
                     </View>
 
                     <Animated.View style={{ width: 240, height: 240, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
                       <View style={[styles.pulseContainer, { marginBottom: 0 }]} pointerEvents="box-none">
-                    {/* Outer dynamically playing border */}
-                    <View style={{ position: 'absolute', width: 240, height: 240, borderRadius: 120, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
-                      <Video
-                        source={require('../../assets/video (2).mp4')}
-                        style={{ position: 'absolute', width: 240, height: 240, opacity: 1 }}
-                        resizeMode={ResizeMode.COVER}
-                        shouldPlay
-                        isLooping
-                        isMuted
-                        pointerEvents="none"
-                      />
-                    </View>
+                        {/* Outer dynamically playing border */}
+                        <View style={{ position: 'absolute', width: 240, height: 240, borderRadius: 120, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
+                          <Video
+                            source={require('../../assets/video (2).mp4')}
+                            style={{ position: 'absolute', width: 240, height: 240, opacity: 1 }}
+                            resizeMode={ResizeMode.COVER}
+                            shouldPlay
+                            isLooping
+                            isMuted
+                            pointerEvents="none"
+                          />
+                        </View>
 
-                    {/* Inner primary holographic content */}
-                    <View style={{ position: 'absolute', width: 223, height: 223, borderRadius: 111.5, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
-                      <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
-                      <Video
-                        source={require('../../assets/video (3).mp4')}
-                        style={{ position: 'absolute', width: 223, height: 223, opacity: 0.9 }}
-                        resizeMode={ResizeMode.COVER}
-                        shouldPlay
-                        isLooping
-                        isMuted
-                        pointerEvents="none"
-                      />
-                      <Image
-                        source={require('../../assets/hologram_body.png')}
-                        style={{ position: 'absolute', width: 223, height: 223, opacity: 0.3 }}
-                        resizeMode="contain"
-                      />
-                      
-                      {/* Floating CTA over Hologram */}
-                      <View style={{ position: 'absolute', zIndex: 10 }}>
-                        <Typography style={{ color: '#00F2FF', fontSize: 10, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center' }}>Deslize para atualizar</Typography>
-                      </View>
-                      <LinearGradient
-                        colors={['rgba(0, 242, 255, 0.2)', 'rgba(0, 212, 170, 0.1)']}
-                        style={StyleSheet.absoluteFillObject}
-                        pointerEvents="none"
-                      />
+                        {/* Inner primary holographic content */}
+                        <View style={{ position: 'absolute', width: 223, height: 223, borderRadius: 111.5, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
+                          <BlurView intensity={30} tint="dark" style={[StyleSheet.absoluteFill, { borderRadius: 111.5, overflow: 'hidden' }]} />
+                          <Video
+                            source={require('../../assets/video (3).mp4')}
+                            style={{ position: 'absolute', width: 223, height: 223, opacity: 0.9 }}
+                            resizeMode={ResizeMode.COVER}
+                            shouldPlay
+                            isLooping
+                            isMuted
+                            pointerEvents="none"
+                          />
+                          <Image
+                            source={require('../../assets/hologram_body.png')}
+                            style={{ position: 'absolute', width: 223, height: 223, opacity: 0.3 }}
+                            resizeMode="contain"
+                          />
 
-                      {/* Inner diffuse mask (vignette effect) */}
-                      <View style={[StyleSheet.absoluteFill, { borderRadius: 111.5, borderWidth: 15, borderColor: 'rgba(5,10,20,0.4)' }]} pointerEvents="none" />
-                      <View style={[StyleSheet.absoluteFill, { borderRadius: 111.5, borderWidth: 10, borderColor: 'rgba(5,10,20,0.6)' }]} pointerEvents="none" />
-                      <View style={[StyleSheet.absoluteFill, { borderRadius: 111.5, borderWidth: 5, borderColor: 'rgba(5,10,20,0.9)' }]} pointerEvents="none" />
-                    </View>
+                          {/* Floating CTA over Hologram */}
+                          <View style={{ position: 'absolute', zIndex: 10 }}>
+                            <Typography style={{ color: '#00F2FF', fontSize: 10, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center' }}>Deslize para atualizar</Typography>
+                          </View>
+                          <LinearGradient
+                            colors={['rgba(0, 242, 255, 0.2)', 'rgba(0, 212, 170, 0.1)']}
+                            style={[StyleSheet.absoluteFillObject, { borderRadius: 111.5, overflow: 'hidden' }]}
+                            pointerEvents="none"
+                          />
+
+                          {/* Inner diffuse mask (vignette effect) */}
+                          <View style={[StyleSheet.absoluteFill, { borderRadius: 111.5, borderWidth: 15, borderColor: 'rgba(5,10,20,0.4)' }]} pointerEvents="none" />
+                          <View style={[StyleSheet.absoluteFill, { borderRadius: 111.5, borderWidth: 10, borderColor: 'rgba(5,10,20,0.6)' }]} pointerEvents="none" />
+                          <View style={[StyleSheet.absoluteFill, { borderRadius: 111.5, borderWidth: 5, borderColor: 'rgba(5,10,20,0.9)' }]} pointerEvents="none" />
+                        </View>
                       </View>
                     </Animated.View>
                   </View>
@@ -437,7 +441,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           style={styles.leftEdgeHandle}
           onPress={() => Animated.spring(themesAnim, { toValue: 0, useNativeDriver: true }).start()}
         >
-          <View style={styles.edgePill} />
           <Typography variant="caption" style={styles.edgeLabel}>TEMAS</Typography>
         </TouchableOpacity>
 
@@ -446,7 +449,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           style={styles.rightEdgeHandle}
           onPress={() => Animated.spring(dataAnim, { toValue: 0, useNativeDriver: true }).start()}
         >
-          <View style={styles.edgePill} />
           <Typography variant="caption" style={styles.edgeLabel}>DADOS</Typography>
         </TouchableOpacity>
 
@@ -457,17 +459,137 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       {/* ── SIDE PANEL: THEMES (LEFT) ─────────────────────────────────────── */}
       <Animated.View style={[styles.sidePanel, styles.leftPanel, { transform: [{ translateX: themesAnim }] }]}>
         <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill}>
-          <View style={styles.panelHeader}>
-            <Typography variant="h2" style={styles.panelTitle}>Interpretação das análises por IA</Typography>
-            <TouchableOpacity onPress={() => Animated.spring(themesAnim, { toValue: -width, useNativeDriver: true }).start()}>
-              <X size={24} color="#fff" />
+
+          {/* ── Compact Header ── */}
+          <View style={styles.themePanelHeader}>
+            <View style={{ flex: 1 }}>
+              <Typography style={styles.themePanelTitle}>INTERPRETAÇÃO DAS ANÁLISES POR IA</Typography>
+              <Typography style={styles.themePanelTagline}>O que o teu corpo está a dizer hoje.</Typography>
+            </View>
+            <TouchableOpacity
+              onPress={() => Animated.spring(themesAnim, { toValue: -width, useNativeDriver: true }).start()}
+              style={styles.themePanelClose}
+            >
+              <X size={20} color="rgba(255,255,255,0.6)" />
             </TouchableOpacity>
           </View>
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.panelScroll}>
-            {MOCK_THEMES.map((theme, i) => (
-              <ThemeCard key={i} {...theme} iconName={theme.iconName as any} />
-            ))}
-          </ScrollView>
+
+          {/* ── Paginated FlatList ── */}
+          <FlatList
+            ref={themesFlatListRef}
+            data={[
+              { type: 'index' as const },
+              ...MOCK_THEMES.map((t, i) => ({ type: 'card' as const, theme: t, idx: i })),
+              { type: 'index_clone' as const },
+            ]}
+            keyExtractor={(_, i) => String(i)}
+            pagingEnabled
+            showsVerticalScrollIndicator={false}
+            scrollEventThrottle={16}
+            onMomentumScrollEnd={(e) => {
+              const pageIndex = Math.round(e.nativeEvent.contentOffset.y / themesPanelHeight);
+              // If user scrolled to the clone at the end, silently jump to page 0
+              if (pageIndex === MOCK_THEMES.length + 1) {
+                themesFlatListRef.current?.scrollToIndex({ index: 0, animated: false });
+              }
+            }}
+            getItemLayout={(_, index) => ({
+              length: themesPanelHeight,
+              offset: themesPanelHeight * index,
+              index,
+            })}
+            renderItem={({ item }) => {
+              const panelH = themesPanelHeight;
+
+              // ── INDEX PAGE (page 0 and clone) ──
+              if (item.type === 'index' || item.type === 'index_clone') {
+                return (
+                  <View style={[styles.themePage, { height: panelH }]}>
+                    <ScrollView
+                      contentContainerStyle={styles.themeIndexContent}
+                      showsVerticalScrollIndicator={false}
+                    >
+                      {/* Top section: accent line + label */}
+                      <View style={styles.themeIndexDivider} />
+                      <Typography style={styles.themeIndexLabel}>ÚLTIMAS ANÁLISES</Typography>
+
+                      {/* Theme buttons */}
+                      <View style={styles.themeIndexList}>
+                        {MOCK_THEMES.map((t, i) => {
+                          const scoreColor =
+                            t.score === undefined ? '#73BCFF'
+                            : t.score >= 75 ? '#00F2FF'
+                            : t.score >= 50 ? '#FFA500'
+                            : '#FF6060';
+                          const IconCmp = ({ Activity: Activity, Zap: Zap, Target: Target, Heart: Heart, Moon: Moon, Brain: Brain, User: User } as any)[t.iconName || 'Activity'] || Activity;
+                          return (
+                            <TouchableOpacity
+                              key={i}
+                              style={styles.themeIndexBtn}
+                              activeOpacity={0.7}
+                              onPress={() => {
+                                themesFlatListRef.current?.scrollToIndex({ index: i + 1, animated: true });
+                              }}
+                            >
+                              <View style={[styles.themeIndexBtnIcon, { borderColor: scoreColor + '40' }]}>
+                                <IconCmp size={16} color={scoreColor} />
+                              </View>
+                              <Typography style={styles.themeIndexBtnTitle}>{t.title}</Typography>
+                              <View style={[styles.themeIndexScore, { backgroundColor: scoreColor + '20', borderColor: scoreColor + '50' }]}>
+                                <Typography style={[styles.themeIndexScoreText, { color: scoreColor }]}>
+                                  {t.score !== undefined ? t.score : t.textValue}
+                                </Typography>
+                              </View>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+
+                      {/* Bottom section: divider + Histórico button (no label) */}
+                      <View style={styles.themeIndexDivider} />
+                      <TouchableOpacity style={styles.themeHistoricoBtn} activeOpacity={0.6} onPress={() => setShowHistorico(true)}>
+                        <Typography style={styles.themeIndexLabel}>HISTÓRICO</Typography>
+                      </TouchableOpacity>
+
+                      <Typography style={styles.themeIndexHint}>↓  deslize para explorar</Typography>
+                    </ScrollView>
+                  </View>
+                );
+              }
+
+              // ── THEME CARD PAGE ──
+              const { theme: t, idx } = item;
+              return (
+                <View style={[styles.themePage, { height: panelH }]}>
+                  <View style={styles.themeCardPageInner}>
+                    {/* Page indicator */}
+                    <View style={styles.themePageIndicatorRow}>
+                      <Typography style={styles.themePageIndicator}>{idx + 1} / {MOCK_THEMES.length}</Typography>
+                    </View>
+
+                    {/* The actual card — scrollable inside its page */}
+                    <ScrollView
+                      style={{ flex: 1 }}
+                      contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 16 }}
+                      showsVerticalScrollIndicator={false}
+                      nestedScrollEnabled
+                    >
+                      <ThemeCard {...t} iconName={t.iconName as any} />
+                    </ScrollView>
+
+                    {/* Back to index */}
+                    <TouchableOpacity
+                      style={styles.themeBackBtn}
+                      activeOpacity={0.7}
+                      onPress={() => themesFlatListRef.current?.scrollToIndex({ index: 0, animated: true })}
+                    >
+                      <Typography style={styles.themeBackBtnText}>↑  índice</Typography>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            }}
+          />
         </BlurView>
       </Animated.View>
 
@@ -499,7 +621,18 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         style={[styles.appDrawer, { transform: [{ translateY: drawerAnim }] }]}
       >
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: drawerBgOpacity }]}>
-          <BlurView intensity={65} tint="dark" style={styles.drawerContent} />
+          <View style={[StyleSheet.absoluteFillObject, { borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' }]}>
+            <Video
+              source={require('../../assets/video.mp4')}
+              style={StyleSheet.absoluteFillObject}
+              resizeMode={ResizeMode.COVER}
+              shouldPlay
+              isLooping
+              isMuted
+            />
+            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.85)' }]} pointerEvents="none" />
+          </View>
+          <View style={[StyleSheet.absoluteFillObject, styles.drawerContent, { backgroundColor: 'transparent' }]} pointerEvents="none" />
         </Animated.View>
 
         <Animated.View style={{ flex: 1, width: '100%', opacity: drawerInnerOpacity, borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' }}>
@@ -512,13 +645,40 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             <Animated.View style={{ paddingHorizontal: 24, paddingBottom: 20 }}>
               <View style={styles.appGrid}>
                 {[
-                  { id: '1', name: 'Nutri', icon: <Utensils size={24} color="#00F2FF" /> },
-                  { id: '2', name: 'Female', icon: <Zap size={24} color="#00D4AA" /> },
-                  { id: '3', name: 'MySup', icon: <Activity size={24} color="#FFD700" /> },
+                  { id: '1', name: 'Nutri\nMenu', icon: <Utensils size={24} color="#00F2FF" /> },
+                  { id: '2', name: 'Female\nHealth', icon: <View style={{ flexDirection: 'row', alignItems: 'center' }}><Typography style={{ color: '#00D4AA', fontSize: 22, fontWeight: '800' }}>♀</Typography><Typography style={{ color: '#00D4AA', fontSize: 16, fontWeight: '900', marginLeft: 2 }}>H</Typography></View> },
+                  { id: '3', name: 'Longevity\nSecrets', icon: <Sparkles size={24} color="#FFD700" /> },
                 ].map(app => (
-                  <TouchableOpacity key={app.id} style={styles.appItem}>
-                    <View style={styles.appIconContainer}>{app.icon}</View>
-                    <Typography variant="caption" style={styles.appName}>{app.name}</Typography>
+                  <TouchableOpacity key={app.id} style={styles.appItem} activeOpacity={0.7}>
+                    <View style={[styles.appIconContainer, {
+                      backgroundColor: 'rgba(5, 10, 20, 0.5)',
+                      shadowColor: '#fff', // brilho externo suave
+                      shadowOpacity: 0.15,
+                      shadowRadius: 12,
+                      shadowOffset: { width: 0, height: 0 }
+                    }]}>
+
+                      {/* Curvatura 3D nas bordas (reflexo em cima, sombra funda em baixo) */}
+                      <LinearGradient
+                        colors={['rgba(255,255,255,0.35)', 'transparent', 'rgba(0,0,0,0.85)']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={[StyleSheet.absoluteFillObject, { borderRadius: 20, overflow: 'hidden' }]}
+                        pointerEvents="none"
+                      />
+
+                      {/* Luz interna (brilho atravessando o cristal) */}
+                      <LinearGradient
+                        colors={['transparent', 'rgba(255,255,255,0.2)', 'transparent']}
+                        start={{ x: 0.2, y: 0 }}
+                        end={{ x: 0.8, y: 1 }}
+                        style={[StyleSheet.absoluteFillObject, { borderRadius: 20, overflow: 'hidden' }]}
+                        pointerEvents="none"
+                      />
+
+                      <View style={{ zIndex: 10 }}>{app.icon}</View>
+                    </View>
+                    <Typography variant="caption" style={[styles.appName, { textAlign: 'center', lineHeight: 12 }]}>{app.name}</Typography>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -777,23 +937,23 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         }}>
           <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
             <BlurView intensity={70} tint="dark" style={[styles.modalContent, { borderColor: 'rgba(0, 242, 255, 0.4)', borderWidth: 1, alignItems: 'center' }]}>
-              
+
               <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(0, 242, 255, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 20, marginTop: 10 }}>
                 <Activity size={32} color="#00F2FF" />
               </View>
-              
+
               <Typography variant="h2" style={{ textAlign: 'center', color: '#fff', marginBottom: 15 }}>Iniciar Novo Exame</Typography>
-              
+
               <Typography style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 22, marginBottom: 30 }}>
                 Vamos iniciar a ligação com o dispositivo onde fará exames. Certifique-se que está nas proximidades e aproxima o seu telemóvel da zona indicada no equipamento ablute_
               </Typography>
 
-              <TouchableOpacity style={[styles.saveBtn, { width: '100%' }]} onPress={() => {}}>
+              <TouchableOpacity style={[styles.saveBtn, { width: '100%' }]} onPress={() => { }}>
                 <Typography style={styles.saveBtnText}>ATIVAR NFC E EMPARELHAR</Typography>
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={{ marginTop: 20, padding: 10, alignItems: 'center' }} 
+              <TouchableOpacity
+                style={{ marginTop: 20, padding: 10, alignItems: 'center' }}
                 onPress={() => {
                   setShowNfcModal(false);
                   isOff.current = false;
@@ -806,6 +966,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
+
+      <HistoricoModal visible={showHistorico} onClose={() => setShowHistorico(false)} />
 
     </Container>
   );
@@ -948,12 +1110,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   edgeLabel: {
-    fontSize: 7,
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontSize: 14,
+    fontWeight: '200',
+    letterSpacing: 1.5,
     color: 'rgba(255,255,255,0.4)',
     writingDirection: 'ltr',
-    transform: [{ rotate: '90deg' }],
+    transform: [{ rotate: '-90deg' }],
     marginTop: 4,
   },
   // Bottom App Drawer trigger (always visible)
@@ -997,6 +1159,159 @@ const styles = StyleSheet.create({
   panelScroll: {
     paddingHorizontal: 20,
     paddingBottom: 100,
+  },
+  // ── Themes Panel ──
+  themePanelHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingTop: 56,
+    paddingHorizontal: 24,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
+  },
+  themePanelTitle: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  themePanelTagline: {
+    color: 'rgba(255,255,255,0.35)',
+    fontSize: 12,
+    fontStyle: 'italic',
+    letterSpacing: 0.2,
+  },
+  themePanelClose: {
+    marginTop: 2,
+    padding: 6,
+  },
+  // ── Paginated pages ──
+  themePage: {
+    width: '100%',
+  },
+  // ── Index page ──
+  themeIndexContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 32,
+    justifyContent: 'flex-start',
+  },
+  themeIndexDivider: {
+    width: 40,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: '#00F2FF',
+    opacity: 0.6,
+    marginBottom: 20,
+  },
+  themeIndexLabel: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 3,
+    textTransform: 'uppercase',
+    marginBottom: 24,
+  },
+  themeIndexList: {
+    gap: 10,
+    marginBottom: 32,
+  },
+  themeIndexBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.07)',
+    gap: 12,
+  },
+  themeIndexBtnIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  themeIndexBtnTitle: {
+    flex: 1,
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
+  themeIndexScore: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  themeIndexScoreText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  themeIndexHint: {
+    color: 'rgba(255,255,255,0.2)',
+    fontSize: 11,
+    textAlign: 'center',
+    letterSpacing: 1,
+  },
+  // ── Card page ──
+  themeCardPageInner: {
+    flex: 1,
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
+  themePageIndicatorRow: {
+    alignItems: 'flex-end',
+    paddingHorizontal: 24,
+    marginBottom: 12,
+  },
+  themePageIndicator: {
+    color: 'rgba(255,255,255,0.25)',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+  },
+  themeBackBtn: {
+    alignSelf: 'center',
+    marginTop: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  themeBackBtnText: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 11,
+    letterSpacing: 1.5,
+    fontWeight: '700',
+  },
+  // ── Histórico section ──
+  themeHistoricoBtn: {
+    paddingVertical: 6,
+    backgroundColor: 'transparent',
+  },
+  themeHistoricoBtnText: {
+    color: 'rgba(255,255,255,0.82)',
+    fontSize: 13,
+    fontWeight: '500',
+    letterSpacing: 0.2,
+  },
+  themeHistoricoArrow: {
+    color: 'rgba(115,188,255,0.7)',
+    fontSize: 20,
+    fontWeight: '300',
   },
   bioRow: {
     flexDirection: 'row',
