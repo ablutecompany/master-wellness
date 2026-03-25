@@ -382,15 +382,20 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     <Container safe style={styles.container}>
       {/* ── FULL SCREEN BACKGROUND VIDEO ───────────────────────────────── */}
       <View style={StyleSheet.absoluteFillObject}>
-        <Video
-          source={require('../../assets/video (4).mp4')}
-          style={StyleSheet.absoluteFillObject}
-          resizeMode={ResizeMode.COVER}
-          rate={0.05}
-          shouldPlay
-          isLooping
-          isMuted
-        />
+        {Platform.OS !== 'web' && (
+          <Video
+            source={require('../../assets/video (4).mp4')}
+            style={StyleSheet.absoluteFillObject}
+            resizeMode={ResizeMode.COVER}
+            rate={0.05}
+            shouldPlay
+            isLooping
+            isMuted
+          />
+        )}
+        {Platform.OS === 'web' && (
+          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#05070A' }]} />
+        )}
         {/* Base darkening layer */}
         <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.95)' }]} pointerEvents="none" />
 
