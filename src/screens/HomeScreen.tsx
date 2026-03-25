@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, Animated, PanResponder, useWindowDimensions, ScrollView, Platform, SafeAreaView, Modal, TextInput, Image, ActivityIndicator, FlatList } from 'react-native';
+import React, { useRef, useState, useEffect } from 'react';
+import { StyleSheet, View, TouchableOpacity, Animated, PanResponder, useWindowDimensions, ScrollView, Platform, SafeAreaView, Modal, TextInput, Image, ActivityIndicator, FlatList, Pressable, Vibration, Alert } from 'react-native';
 import { Container, Typography } from '../components/Base';
 import { theme } from '../theme';
 import { BrandLogo } from '../components/BrandLogo';
@@ -9,6 +9,7 @@ import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, Us
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Video, ResizeMode } from 'expo-av';
+import APPS_DATA from '../data/mini-apps.json';
 
 const BIO_CATEGORIES = [
   {
@@ -267,7 +268,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const drawerPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (evt, gestureState) => Math.abs(gestureState.dy) > 10,
+      onMoveShouldSetPanResponder: () => false,
       onPanResponderMove: (_, { dy }) => {
         let newY = lastDrawerY.current + dy;
         if (newY < DRAWER_UP) newY = DRAWER_UP;
@@ -322,8 +323,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   // ── Gesture Handlers ──────────────────────────────────────────────────────
   const mainPanResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, { dx, dy }) => Math.abs(dx) > 10 || Math.abs(dy) > 10,
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: () => false,
       onPanResponderRelease: (_, { x0, dx, dy }) => {
         // Left Edge Swipe -> Themes
         if (x0 < 60 && dx > 80) {
@@ -340,6 +341,40 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       },
     })
   ).current;
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const handleClick = (e: MouseEvent) => {
+        // Global click tracking logic could go here
+      };
+      window.addEventListener('click', handleClick);
+      return () => window.removeEventListener('click', handleClick);
+    }
+  }, []);
+
+  const handleOpenMiniApp = (appId: string) => {
+    console.log('[HomeScreen] Intentando abrir MiniApp:', appId);
+    // Vibration.vibrate([0, 10, 5, 10]); // Padrão de vibração se quiseres manter
+    
+    const app = APPS_DATA.find(a => a.id === appId);
+    if (app) {
+      try {
+        // Tentativa de navegação forçada para o topo
+        const nav = navigation.getParent() || navigation;
+        console.log('[HomeScreen] Navegando para MiniApp:', { appId, url: app.url });
+        
+        nav.navigate('MiniApp', {
+          appId: app.id,
+          name: app.name,
+          url: app.url
+        });
+      } catch (err: any) {
+        console.error('[HomeScreen] Erro na navegação:', err);
+      }
+    } else {
+      console.warn('[HomeScreen] MiniApp não encontrada:', appId);
+    }
+  };
 
   return (
     <Container safe style={styles.container}>
@@ -697,8 +732,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         </Animated.View>
 
         <Animated.View style={{ flex: 1, width: '100%', opacity: drawerInnerOpacity, borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' }}>
-          <View {...drawerPanResponder.panHandlers} style={{ zIndex: 10, width: '100%', backgroundColor: 'transparent' }}>
-            <View style={styles.drawerHandleArea}>
+          <View style={{ zIndex: 10, width: '100%', backgroundColor: 'transparent' }}>
+            <View {...drawerPanResponder.panHandlers} style={styles.drawerHandleArea}>
               <View style={styles.drawerHandle} />
               <Typography variant="caption" style={styles.drawerTitle}>APP PLACE</Typography>
             </View>
@@ -706,40 +741,47 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             <Animated.View style={{ paddingHorizontal: 24, paddingBottom: 20 }}>
               <View style={styles.appGrid}>
                 {[
-                  { id: '1', name: 'Nutri\nMenu', icon: <Utensils size={24} color="#00F2FF" /> },
-                  { id: '2', name: 'Female\nHealth', icon: <View style={{ flexDirection: 'row', alignItems: 'center' }}><Typography style={{ color: '#00D4AA', fontSize: 22, fontWeight: '800' }}>♀</Typography><Typography style={{ color: '#00D4AA', fontSize: 16, fontWeight: '900', marginLeft: 2 }}>H</Typography></View> },
-                  { id: '3', name: 'Longevity\nSecrets', icon: <Sparkles size={24} color="#FFD700" /> },
+                  { id: 'nutri-menu', name: 'Nutri\nMenu', icon: <Utensils size={24} color="#00F2FF" /> },
+                  { id: 'femm-health', name: 'Female\nHealth', icon: <View style={{ flexDirection: 'row', alignItems: 'center' }}><Typography style={{ color: '#00D4AA', fontSize: 22, fontWeight: '800' }}>♀</Typography><Typography style={{ color: '#00D4AA', fontSize: 16, fontWeight: '900', marginLeft: 2 }}>H</Typography></View> },
+                  { id: 'longevity-secrets', name: 'Longevity\nSecrets', icon: <Sparkles size={24} color="#FFD700" /> },
                 ].map(app => (
-                  <TouchableOpacity key={app.id} style={styles.appItem} activeOpacity={0.7}>
-                    <View style={[styles.appIconContainer, {
-                      backgroundColor: 'rgba(5, 10, 20, 0.5)',
-                      shadowColor: '#fff', // brilho externo suave
-                      shadowOpacity: 0.15,
-                      shadowRadius: 12,
-                      shadowOffset: { width: 0, height: 0 }
-                    }]}>
+                  <TouchableOpacity
+                    key={app.id}
+                    style={styles.appItem}
+                    onPress={() => handleOpenMiniApp(app.id)}
+                    activeOpacity={0.6}
+                  >
+                    <View style={{ alignItems: 'center' }}>
+                      <View style={[styles.appIconContainer, {
+                        backgroundColor: 'rgba(5, 10, 20, 0.5)',
+                        shadowColor: '#fff',
+                        shadowOpacity: 0.15,
+                        shadowRadius: 12,
+                        shadowOffset: { width: 0, height: 0 }
+                      }]}>
 
-                      {/* Curvatura 3D nas bordas (reflexo em cima, sombra funda em baixo) */}
-                      <LinearGradient
-                        colors={['rgba(255,255,255,0.35)', 'transparent', 'rgba(0,0,0,0.85)']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={[StyleSheet.absoluteFillObject, { borderRadius: 20, overflow: 'hidden' }]}
-                        pointerEvents="none"
-                      />
+                        {/* Curvatura 3D nas bordas (reflexo em cima, sombra funda em baixo) */}
+                        <LinearGradient
+                          colors={['rgba(255,255,255,0.35)', 'transparent', 'rgba(0,0,0,0.85)']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={[StyleSheet.absoluteFillObject, { borderRadius: 20, overflow: 'hidden' }]}
+                          pointerEvents="none"
+                        />
 
-                      {/* Luz interna (brilho atravessando o cristal) */}
-                      <LinearGradient
-                        colors={['transparent', 'rgba(255,255,255,0.2)', 'transparent']}
-                        start={{ x: 0.2, y: 0 }}
-                        end={{ x: 0.8, y: 1 }}
-                        style={[StyleSheet.absoluteFillObject, { borderRadius: 20, overflow: 'hidden' }]}
-                        pointerEvents="none"
-                      />
+                        {/* Luz interna (brilho atravessando o cristal) */}
+                        <LinearGradient
+                          colors={['transparent', 'rgba(255,255,255,0.2)', 'transparent']}
+                          start={{ x: 0.2, y: 0 }}
+                          end={{ x: 0.8, y: 1 }}
+                          style={[StyleSheet.absoluteFillObject, { borderRadius: 20, overflow: 'hidden' }]}
+                          pointerEvents="none"
+                        />
 
-                      <View style={{ zIndex: 10 }}>{app.icon}</View>
+                        <View style={{ zIndex: 10 }}>{app.icon}</View>
+                      </View>
+                      <Typography variant="caption" style={[styles.appName, { textAlign: 'center', lineHeight: 12 }]}>{app.name}</Typography>
                     </View>
-                    <Typography variant="caption" style={[styles.appName, { textAlign: 'center', lineHeight: 12 }]}>{app.name}</Typography>
                   </TouchableOpacity>
                 ))}
               </View>

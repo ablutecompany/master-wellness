@@ -1,0 +1,22 @@
+[
+  {
+    "id": "femm-health",
+    "name": "Femm Health",
+    "dev": "ablute_ Labs",
+    "desc": "Saúde feminina e acompanhamento de ciclo.",
+    "icon": "heart",
+    "url": "https://ablute-femmhealth.vercel.app",
+    "rating": 4.9,
+    "permissions": ["user_profile", "analytics"]
+  },
+  {
+    "id": "sleep-plus",
+    "name": "Sleep Deep+",
+    "dev": "ablute_ Labs",
+    "desc": "Integração profunda com o teu sono.",
+    "icon": "moon",
+    "url": "https://sleep.ablute.com",
+    "rating": 4.8,
+    "permissions": ["health_data"]
+  }
+]

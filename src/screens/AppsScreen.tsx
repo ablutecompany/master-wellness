@@ -1,15 +1,30 @@
-import { StyleSheet, View, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { StyleSheet, View, ScrollView, TouchableOpacity, Platform, Vibration } from 'react-native';
 import { Container, Typography } from '../components/Base';
 import { BlurView } from 'expo-blur';
-import { ShoppingBag, Star, Download } from 'lucide-react-native';
+import { Star, Download, Heart, Moon, ExternalLink } from 'lucide-react-native';
+import APPS_DATA from '../data/mini-apps.json';
+import { useNavigation } from '@react-navigation/native';
 
-const APPS = [
-  { name: 'Sleep Deep+', dev: 'ablute_ Labs', desc: 'Integração profunda com o teu sono.', rating: 4.8 },
-  { name: 'Metabolic Tracker', dev: 'BioSync', desc: 'Leitura contínua de biomarcadores.', rating: 4.9 },
-  { name: 'Yoga Flow', dev: 'ZenITH', desc: 'Sugestão de treinos baseados na tua frescura.', rating: 4.7 },
-];
+const ICON_MAP: Record<string, any> = {
+  heart: Heart,
+  moon: Moon,
+};
 
 export const AppsScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
+
+  const handleOpenApp = (app: any) => {
+    console.log('[AppsScreen] Abrindo MiniApp:', app.id);
+    Vibration.vibrate(10);
+    
+    const nav = navigation.getParent?.() || navigation;
+    nav.navigate('MiniApp', {
+      appId: app.id,
+      name: app.name,
+      url: app.url
+    });
+  };
+
   return (
     <Container safe style={styles.container}>
       <View style={styles.atmosphere}>
@@ -17,31 +32,37 @@ export const AppsScreen: React.FC = () => {
       </View>
 
       <View style={styles.header}>
-        <Typography variant="h2" style={styles.title}>App Store</Typography>
-        <Typography style={styles.subtitle}>Extensões para o teu ecossistema</Typography>
+        <Typography variant="h2" style={styles.title}>App Place</Typography>
+        <Typography style={styles.subtitle}>O teu ecossistema de wellness curado</Typography>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        {APPS.map((app, index) => (
-          <View key={index} style={styles.cardWrapper}>
-            <BlurView intensity={15} tint="dark" style={styles.appCard}>
-              <View style={styles.appIcon}>
-                <ShoppingBag size={22} color="#00F2FF" />
-              </View>
-              <View style={styles.appInfo}>
-                <Typography variant="body" style={styles.appName}>{app.name}</Typography>
-                <Typography variant="caption" style={styles.appDesc}>{app.desc}</Typography>
-                <View style={styles.ratingRow}>
-                  <Star size={10} color="#FFD700" fill="#FFD700" />
-                  <Typography variant="caption" style={styles.ratingText}>{app.rating}</Typography>
+        {APPS_DATA.map((app, index) => {
+          const Icon = ICON_MAP[app.icon] || ExternalLink;
+          return (
+            <View key={app.id} style={styles.cardWrapper}>
+              <BlurView intensity={15} tint="dark" style={styles.appCard}>
+                <View style={styles.appIcon}>
+                  <Icon size={24} color="#00F2FF" />
                 </View>
-              </View>
-              <TouchableOpacity style={styles.downloadBtn}>
-                <Download size={16} color="#ffffff" />
-              </TouchableOpacity>
-            </BlurView>
-          </View>
-        ))}
+                <View style={styles.appInfo}>
+                  <Typography variant="body" style={styles.appName}>{app.name}</Typography>
+                  <Typography variant="caption" style={styles.appDesc}>{app.desc}</Typography>
+                  <View style={styles.ratingRow}>
+                    <Star size={10} color="#FFD700" fill="#FFD700" />
+                    <Typography variant="caption" style={styles.ratingText}>{app.rating}</Typography>
+                  </View>
+                </View>
+                <TouchableOpacity 
+                  style={styles.openBtn} 
+                  onPress={() => handleOpenApp(app)}
+                >
+                  <Typography variant="button" style={styles.openText}>ABRIR</Typography>
+                </TouchableOpacity>
+              </BlurView>
+            </View>
+          );
+        })}
       </ScrollView>
     </Container>
   );
@@ -131,14 +152,19 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 11,
   },
-  downloadBtn: {
-    width: 40,
-    height: 40,
+  openBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(0, 242, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(0, 242, 255, 0.2)',
+  },
+  openText: {
+    color: '#00F2FF',
+    fontSize: 12,
+    fontWeight: '800',
   }
 });
