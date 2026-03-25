@@ -6,10 +6,23 @@ import { BrandLogo } from '../components/BrandLogo';
 import { ThemeCard } from '../components/ThemeCard';
 import { HistoricoModal } from '../components/HistoricoModal';
 import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, ChevronRight, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, ChevronsDown, Sparkles } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
-// expo-av: loaded via require() only on native to avoid web crash
-import { getAppById } from '../miniapps/catalog';
+// expo-linear-gradient and expo-blur: use require() guards to avoid web crash
+
+// Web-safe LinearGradient fallback
+const LinearGradient = Platform.OS === 'web'
+  ? ({ style, colors, ...props }: any) => (
+      <View style={[style, { backgroundColor: colors?.[0] ?? 'rgba(0,0,0,0.8)' }]} {...props} />
+    )
+  : (() => { const { LinearGradient: LG } = require('expo-linear-gradient'); return LG; })();
+
+// Web-safe BlurView fallback
+const BlurView = Platform.OS === 'web'
+  ? ({ style, ...props }: any) => (
+      <View style={[style, { backgroundColor: 'rgba(0,0,0,0.6)' }]} {...props} />
+    )
+  : (() => { const { BlurView: BV } = require('expo-blur'); return BV; })();
+
+import { MINI_APP_CATALOG } from '../miniapps/catalog';
 import { useStore } from '../store/useStore';
 
 const BIO_CATEGORIES = [
@@ -358,7 +371,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     console.log('[HomeScreen] Intentando abrir MiniApp:', appId);
     // Vibration.vibrate([0, 10, 5, 10]); // Padrão de vibração se quiseres manter
     
-    const app = APPS_DATA.find(a => a.id === appId);
+    const app = MINI_APP_CATALOG.find((a: any) => a.id === appId);
     if (app) {
       try {
         // Tentativa de navegação forçada para o topo
@@ -771,7 +784,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                    { id: 'femmhealth', name: 'Female\nHealth', icon: <View style={{ flexDirection: 'row', alignItems: 'center' }}><Typography style={{ color: '#FF6FBA', fontSize: 22, fontWeight: '800' }}>♀</Typography><Typography style={{ color: '#FF6FBA', fontSize: 16, fontWeight: '900', marginLeft: 2 }}>H</Typography></View>, color: '#FF6FBA' },
                    { id: 'longevity-secrets', name: 'Longevity\nSecrets', icon: <Sparkles size={24} color="#FFD700" />, color: '#FFD700' },
                  ].map((drawerApp) => {
-                   const manifest = getAppById(drawerApp.id);
+                    const manifest = MINI_APP_CATALOG.find((m: any) => m.id === drawerApp.id);
                    const installed = installedAppIds.includes(drawerApp.id);
                    return (
                    <TouchableOpacity
