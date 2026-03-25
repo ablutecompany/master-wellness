@@ -1,6 +1,5 @@
 import { MiniAppManifest } from './types';
 
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Official ablute_ Mini-App Catalog
 // Manually curated — no arbitrary code loading.
@@ -11,7 +10,6 @@ import { MiniAppManifest } from './types';
 //  3. Declare all permissions the app will use
 //  4. Set featured: true if it appears in the banner
 // ─────────────────────────────────────────────────────────────────────────────
-
 
 export const MINI_APP_CATALOG: MiniAppManifest[] = [
   {
@@ -36,3 +34,80 @@ export const MINI_APP_CATALOG: MiniAppManifest[] = [
   {
     id: 'sleep-deep',
     name: 'Sleep Deep+',
+    tagline: 'Sono de qualidade com binaural & HRV tracking',
+    developer: 'NeuroRest',
+    developerVerified: false,
+    category: 'sleep',
+    iconEmoji: '🌙',
+    iconColor: '#8B5CF6',
+    iconBg: 'rgba(139, 92, 246, 0.12)',
+    url: 'https://sleep-deep.vercel.app',
+    permissions: ['PROFILE_READ', 'SLEEP_DATA_READ', 'NOTIFICATIONS'],
+    version: '0.9.2',
+    featured: false,
+    rating: 4.7,
+    reviewCount: 64,
+    description:
+      'Melhora a qualidade do sono com sons binaurais, meditações guiadas e análise de HRV integrada com os teus wearables.',
+  },
+  {
+    id: 'gut-sync',
+    name: 'Gut Sync',
+    tagline: 'Microbioma e digestão: diário alimentar inteligente',
+    developer: 'Microbiome Labs',
+    developerVerified: true,
+    category: 'nutrition',
+    iconEmoji: '🌱',
+    iconColor: '#10B981',
+    iconBg: 'rgba(16, 185, 129, 0.12)',
+    url: 'https://gut-sync.vercel.app',
+    permissions: ['PROFILE_READ', 'NUTRITION_DATA_READ', 'NOTIFICATIONS'],
+    version: '1.2.0',
+    featured: false,
+    rating: 4.5,
+    reviewCount: 42,
+    description:
+      'Regista as tuas refeições, identifica padrões inflamatórios e recebe recomendações personalizadas para melhorar a tua saúde intestinal.',
+  },
+  {
+    id: 'mindful-breath',
+    name: 'Mindful Breath',
+    tagline: 'Respiração guiada e gestão de stress com HRV',
+    developer: 'Calm Systems',
+    developerVerified: false,
+    category: 'mental',
+    iconEmoji: '🧘',
+    iconColor: '#0EA5E9',
+    iconBg: 'rgba(14, 165, 233, 0.12)',
+    url: 'https://mindful-breath.vercel.app',
+    permissions: ['PROFILE_READ', 'NOTIFICATIONS'],
+    version: '2.0.1',
+    featured: false,
+    rating: 4.8,
+    reviewCount: 91,
+    description:
+      'Técnicas de respiração baseadas em evidência (4-7-8, Box, Wim Hof) com biofeedback em tempo real de HRV para reduzir stress e ansiedade.',
+  },
+  {
+    id: 'longevity-lab',
+    name: 'Longevity Lab',
+    tagline: 'Protocolos de longevidade: jejum, frio e exercício',
+    developer: 'Span Health',
+    developerVerified: true,
+    category: 'longevity',
+    iconEmoji: '⚡',
+    iconColor: '#F59E0B',
+    iconBg: 'rgba(245, 158, 11, 0.12)',
+    url: 'https://longevity-lab.vercel.app',
+    permissions: ['PROFILE_READ', 'ACTIVITY_DATA_READ', 'NOTIFICATIONS'],
+    version: '1.1.0',
+    featured: false,
+    rating: 4.6,
+    reviewCount: 37,
+    description:
+      'Guia baseado em ciência para protocolos de longevidade: jejum intermitente, exposição ao frio, zona 2 e suplementação baseada em biomarcadores.',
+  },
+];
+
+export const getFeaturedApp = (): MiniAppManifest | undefined =>
+  MINI_APP_CATALOG.find((app) => app.featured);
