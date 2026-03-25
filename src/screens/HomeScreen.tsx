@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, Animated, PanResponder, useWindowDimensions, ScrollView, Platform, SafeAreaView, Modal, TextInput, Image, ActivityIndicator, FlatList } from 'react-native';
+import React, { useRef, useState, useEffect } from 'react';
+import { StyleSheet, View, TouchableOpacity, Animated, PanResponder, useWindowDimensions, ScrollView, Platform, SafeAreaView, Modal, TextInput, Image, ActivityIndicator, FlatList, Pressable, Vibration, Alert } from 'react-native';
 import { Container, Typography } from '../components/Base';
 import { theme } from '../theme';
 import { BrandLogo } from '../components/BrandLogo';
@@ -270,7 +270,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const drawerPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (evt, gestureState) => Math.abs(gestureState.dy) > 10,
+      onMoveShouldSetPanResponder: () => false,
       onPanResponderMove: (_, { dy }) => {
         let newY = lastDrawerY.current + dy;
         if (newY < DRAWER_UP) newY = DRAWER_UP;
@@ -325,8 +325,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   // ── Gesture Handlers ──────────────────────────────────────────────────────
   const mainPanResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, { dx, dy }) => Math.abs(dx) > 10 || Math.abs(dy) > 10,
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: () => false,
       onPanResponderRelease: (_, { x0, dx, dy }) => {
         // Left Edge Swipe -> Themes
         if (x0 < 60 && dx > 80) {
@@ -343,6 +343,40 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       },
     })
   ).current;
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const handleClick = (e: MouseEvent) => {
+        // Global click tracking logic could go here
+      };
+      window.addEventListener('click', handleClick);
+      return () => window.removeEventListener('click', handleClick);
+    }
+  }, []);
+
+  const handleOpenMiniApp = (appId: string) => {
+    console.log('[HomeScreen] Intentando abrir MiniApp:', appId);
+    // Vibration.vibrate([0, 10, 5, 10]); // Padrão de vibração se quiseres manter
+    
+    const app = APPS_DATA.find(a => a.id === appId);
+    if (app) {
+      try {
+        // Tentativa de navegação forçada para o topo
+        const nav = navigation.getParent() || navigation;
+        console.log('[HomeScreen] Navegando para MiniApp:', { appId, url: app.url });
+        
+        nav.navigate('MiniApp', {
+          appId: app.id,
+          name: app.name,
+          url: app.url
+        });
+      } catch (err: any) {
+        console.error('[HomeScreen] Erro na navegação:', err);
+      }
+    } else {
+      console.warn('[HomeScreen] MiniApp não encontrada:', appId);
+    }
+  };
 
   return (
     <Container safe style={styles.container}>
@@ -700,8 +734,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         </Animated.View>
 
         <Animated.View style={{ flex: 1, width: '100%', opacity: drawerInnerOpacity, borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' }}>
-          <View {...drawerPanResponder.panHandlers} style={{ zIndex: 10, width: '100%', backgroundColor: 'transparent' }}>
-            <View style={styles.drawerHandleArea}>
+          <View style={{ zIndex: 10, width: '100%', backgroundColor: 'transparent' }}>
+            <View {...drawerPanResponder.panHandlers} style={styles.drawerHandleArea}>
               <View style={styles.drawerHandle} />
               <Typography variant="caption" style={styles.drawerTitle}>APP PLACE</Typography>
             </View>
@@ -737,23 +771,23 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       shadowOffset: { width: 0, height: 0 }
                     }]}>
 
-                      {/* Curvatura 3D nas bordas (reflexo em cima, sombra funda em baixo) */}
-                      <LinearGradient
-                        colors={['rgba(255,255,255,0.35)', 'transparent', 'rgba(0,0,0,0.85)']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={[StyleSheet.absoluteFillObject, { borderRadius: 20, overflow: 'hidden' }]}
-                        pointerEvents="none"
-                      />
+                        {/* Curvatura 3D nas bordas (reflexo em cima, sombra funda em baixo) */}
+                        <LinearGradient
+                          colors={['rgba(255,255,255,0.35)', 'transparent', 'rgba(0,0,0,0.85)']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={[StyleSheet.absoluteFillObject, { borderRadius: 20, overflow: 'hidden' }]}
+                          pointerEvents="none"
+                        />
 
-                      {/* Luz interna (brilho atravessando o cristal) */}
-                      <LinearGradient
-                        colors={['transparent', 'rgba(255,255,255,0.2)', 'transparent']}
-                        start={{ x: 0.2, y: 0 }}
-                        end={{ x: 0.8, y: 1 }}
-                        style={[StyleSheet.absoluteFillObject, { borderRadius: 20, overflow: 'hidden' }]}
-                        pointerEvents="none"
-                      />
+                        {/* Luz interna (brilho atravessando o cristal) */}
+                        <LinearGradient
+                          colors={['transparent', 'rgba(255,255,255,0.2)', 'transparent']}
+                          start={{ x: 0.2, y: 0 }}
+                          end={{ x: 0.8, y: 1 }}
+                          style={[StyleSheet.absoluteFillObject, { borderRadius: 20, overflow: 'hidden' }]}
+                          pointerEvents="none"
+                        />
 
                       <View style={{ zIndex: 10 }}>{drawerApp.icon}</View>
                     </View>
