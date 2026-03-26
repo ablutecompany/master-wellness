@@ -728,9 +728,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             </View>
             <TouchableOpacity
               onPress={closeThemes}
-              style={styles.themePanelClose}
+              style={[styles.themePanelClose, { padding: 24 }]}
+              hitSlop={{ top: 24, bottom: 24, left: 24, right: 24 }}
             >
-              <X size={20} color="rgba(255,255,255,0.6)" />
+              <X size={24} color="rgba(255,255,255,0.8)" />
             </TouchableOpacity>
           </View>
 
@@ -857,8 +858,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       <Animated.View style={[styles.sidePanel, styles.rightPanel, { transform: [{ translateX: dataAnim }] }]}>
         <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill}>
           <View style={styles.panelHeader}>
-            <TouchableOpacity onPress={() => Animated.spring(dataAnim, { toValue: width, useNativeDriver: true }).start()}>
-              <X size={24} color="#fff" />
+            <TouchableOpacity
+              onPress={closeData}
+              style={{ padding: 24 }}
+              hitSlop={{ top: 24, bottom: 24, left: 24, right: 24 }}
+            >
+              <X size={24} color="rgba(255,255,255,0.8)" />
             </TouchableOpacity>
             <Typography variant="h2" style={styles.panelTitle}>Bioanálise</Typography>
           </View>
