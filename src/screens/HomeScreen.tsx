@@ -1084,6 +1084,38 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             >
               <Typography variant="h3" style={styles.sectionTitle}>Disponíveis para Download</Typography>
               <View style={styles.downloadList}>
+                {/* Female Health — install/uninstall dinâmico */}
+                {(() => {
+                  const isInstalled = installedAppIds.includes('femmhealth');
+                  return (
+                    <View style={styles.downloadRow}>
+                      <View style={styles.rowIcon}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <Typography style={{ color: '#FF6FBA', fontSize: 22, fontWeight: '800' }}>♀</Typography>
+                          <Typography style={{ color: '#FF6FBA', fontSize: 16, fontWeight: '900', marginLeft: 2 }}>H</Typography>
+                        </View>
+                      </View>
+                      <View style={styles.rowInfo}>
+                        <Typography style={styles.rowTitle}>Female Health</Typography>
+                        <Typography variant="caption" style={styles.rowDesc}>Saúde Feminina</Typography>
+                      </View>
+                      <View style={styles.rowActions}>
+                        <TouchableOpacity style={styles.actionBtn}>
+                          <Typography style={styles.actionText}>INFO</Typography>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.actionBtn, isInstalled ? styles.uninstallBtn : styles.installBtn]}
+                          onPress={() => isInstalled ? uninstallApp('femmhealth') : useStore.getState().installApp('femmhealth')}
+                        >
+                          <Typography style={[styles.actionText, isInstalled ? styles.uninstallText : styles.installText]}>
+                            {isInstalled ? 'DESINSTALAR' : 'INSTALAR'}
+                          </Typography>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                })()}
+
                 <View style={styles.downloadRow}>
                   <View style={styles.rowIcon}>
                     <Moon size={24} color="#00F2FF" opacity={0.6} />
@@ -1859,6 +1891,14 @@ const styles = StyleSheet.create({
   },
   installText: {
     color: '#000000',
+  },
+  uninstallBtn: {
+    backgroundColor: 'rgba(255,60,60,0.2)',
+    borderColor: 'rgba(255,80,80,0.6)',
+    borderWidth: 1,
+  },
+  uninstallText: {
+    color: '#FF6060',
   },
   // Modal Styles
   modalOverlay: {
