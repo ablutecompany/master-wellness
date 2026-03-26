@@ -335,6 +335,18 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     },
   })).current;
 
+  // Bottom edge gesture zone (App Place drawer) - swipe up from bottom to open
+  const bottomEdgeGesture = useRef(PanResponder.create({
+    onStartShouldSetPanResponder: () => Platform.OS === 'web',
+    onMoveShouldSetPanResponder: () => Platform.OS === 'web',
+    onPanResponderRelease: (_, { dy, vy }) => {
+      if (dy < -40 || vy < -0.3) {
+        Animated.spring(drawerAnim, { toValue: 0, bounciness: 0, useNativeDriver: false })
+          .start(() => { lastDrawerY.current = 0; });
+      }
+    },
+  })).current;
+
   const DRAWER_DOWN = 583;
   const DRAWER_UP = 0;
   const lastDrawerY = useRef(DRAWER_DOWN);
@@ -366,8 +378,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   const drawerPanResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => Platform.OS !== 'web',
-      onMoveShouldSetPanResponder: () => Platform.OS !== 'web',
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
       onPanResponderMove: (_, { dy }) => {
         let newY = lastDrawerY.current + dy;
         if (newY < DRAWER_UP) newY = DRAWER_UP;
@@ -586,6 +598,13 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         <View
           {...rightEdgeGesture.panHandlers}
           style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 60, zIndex: 600 }}
+        />
+      )}
+      {/* Bottom swipe-up zone — opens APP PLACE drawer on mobile web */}
+      {Platform.OS === 'web' && !themesOpen && !dataOpen && (
+        <View
+          {...bottomEdgeGesture.panHandlers}
+          style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 120, zIndex: 450 }}
         />
       )}
 
