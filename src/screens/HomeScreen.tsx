@@ -634,13 +634,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 60, zIndex: 600 }}
         />
       )}
-      {/* Bottom swipe-up zone — opens APP PLACE drawer on mobile web */}
-      {Platform.OS === 'web' && !themesOpen && !dataOpen && (
-        <View
-          {...bottomEdgeGesture.panHandlers}
-          style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 120, zIndex: 450 }}
-        />
-      )}
+
 
       <Animated.View
         {...mainPanResponder.panHandlers}
