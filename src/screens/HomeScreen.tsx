@@ -1028,6 +1028,13 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                      style={styles.appItem}
                      activeOpacity={0.7}
                      onPress={() => {
+                       if (isDraggingDrawer.current) return;
+                       const isCollapsed = lastDrawerY.current >= DRAWER_DOWN / 2;
+                       if (isCollapsed) {
+                         Animated.spring(drawerAnim, { toValue: DRAWER_UP, bounciness: 0, useNativeDriver: false })
+                           .start(() => { lastDrawerY.current = DRAWER_UP; });
+                         return;
+                       }
                        if (manifest && installed) {
                          launchApp(manifest);
                          navigation?.navigate('MiniApp', { app: manifest });
