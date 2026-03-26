@@ -497,20 +497,21 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     };
     const onTMove = (e: TouchEvent) => {
       const dy = e.touches[0].clientY - startY;
-      if (Math.abs(dy) > 8) isDraggingDrawer.current = true;
-      const newY = Math.max(0, Math.min(DRAWER_DOWN, startDrawerY + dy));
-      drawerAnim.setValue(newY);
+      // Only track as drag if movement is significant (>20px prevents jitter)
+      if (Math.abs(dy) > 20) {
+        const newY = Math.max(0, Math.min(DRAWER_DOWN, startDrawerY + dy));
+        drawerAnim.setValue(newY);
+      }
     };
     const onTEnd = (e: TouchEvent) => {
       const dy = e.changedTouches[0].clientY - startY;
-      const finalY = startDrawerY + dy;
-      const toValue = finalY < DRAWER_DOWN / 2 ? DRAWER_UP : DRAWER_DOWN;
-      Animated.spring(drawerAnim, { toValue, bounciness: 0, useNativeDriver: false })
-        .start(() => {
-          lastDrawerY.current = toValue;
-          // Reset drag flag after animation so taps work again
-          setTimeout(() => { isDraggingDrawer.current = false; }, 50);
-        });
+      // Only snap if it was a real drag (>20px) — otherwise let onPress fire normally
+      if (Math.abs(dy) > 20) {
+        const finalY = startDrawerY + dy;
+        const toValue = finalY < DRAWER_DOWN / 2 ? DRAWER_UP : DRAWER_DOWN;
+        Animated.spring(drawerAnim, { toValue, bounciness: 0, useNativeDriver: false })
+          .start(() => { lastDrawerY.current = toValue; });
+      }
     };
     el.addEventListener('touchstart', onTStart, { passive: true });
     el.addEventListener('touchmove', onTMove, { passive: true });
@@ -522,12 +523,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     };
   }, []);
 
-  // Track whether drawer is being dragged (to block accidental app opens)
-  const isDraggingDrawer = useRef(false);
+  // (isDraggingDrawer removed — movement threshold in onTEnd handles drag vs tap)
 
   const handleOpenMiniApp = (appId: string) => {
-    // Ignore onPress if user was swiping the drawer
-    if (isDraggingDrawer.current) { isDraggingDrawer.current = false; return; }
     console.log('[HomeScreen] Intentando abrir MiniApp:', appId);
     // Vibration.vibrate([0, 10, 5, 10]); // Padrão de vibração se quiseres manter
     
@@ -1028,7 +1026,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                      style={styles.appItem}
                      activeOpacity={0.7}
                      onPress={() => {
-                       if (isDraggingDrawer.current) return;
                        if (manifest && installed) {
                          launchApp(manifest);
                          navigation?.navigate('MiniApp', { app: manifest });
