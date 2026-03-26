@@ -1018,15 +1018,14 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                    return (
                    <TouchableOpacity
                      key={drawerApp.id}
-                     style={styles.appItem}
-                     activeOpacity={0.7}
+                     style={[styles.appItem, !installed && { opacity: 0.4 }]}
+                     activeOpacity={installed ? 0.7 : 1}
                      onPress={() => {
                        if (manifest && installed) {
                          launchApp(manifest);
                          navigation?.navigate('MiniApp', { app: manifest });
-                       } else {
-                         navigation?.navigate('Apps');
                        }
+                       // not installed → do nothing; install from the list below
                      }}
                    >
                     <View style={{ position: 'relative' }}>
@@ -1084,28 +1083,38 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             >
               <Typography variant="h3" style={styles.sectionTitle}>Disponíveis para Download</Typography>
               <View style={styles.downloadList}>
-                {/* Female Health — install/uninstall dinâmico */}
-                {(() => {
-                  const isInstalled = installedAppIds.includes('femmhealth');
+                {/* Todas as apps — install/uninstall dinâmico */}
+                {[
+                  { id: 'femmhealth',         title: 'Female Health',     desc: 'Saúde Feminina',      icon: <View style={{ flexDirection: 'row', alignItems: 'center' }}><Typography style={{ color: '#FF6FBA', fontSize: 22, fontWeight: '800' }}>♀</Typography><Typography style={{ color: '#FF6FBA', fontSize: 16, fontWeight: '900', marginLeft: 2 }}>H</Typography></View> },
+                  { id: 'nutri-menu',         title: 'Nutri Menu',        desc: 'Nutrição Personalizada', icon: <Utensils size={22} color="#00D4AA" /> },
+                  { id: 'longevity-secrets',  title: 'Longevity Secrets', desc: 'Longevidade & Bem-estar', icon: <Sparkles size={22} color="#FFD700" /> },
+                  { id: '_sleep',             title: 'Sleep+',            desc: 'Otimização de Ciclos',  icon: <Moon size={22} color="#00F2FF" opacity={0.6} /> },
+                  { id: '_hydra',             title: 'HydraTrack',        desc: 'Gestão de Água',       icon: <Droplet size={22} color="#00F2FF" opacity={0.6} /> },
+                  { id: '_mind',              title: 'Mind',              desc: 'Foco e Meditação',     icon: <Brain size={22} color="#00F2FF" opacity={0.6} /> },
+                  { id: '_fasting',           title: 'Fasting',           desc: 'Jejum Intermitente',   icon: <Activity size={22} color="#00F2FF" opacity={0.6} /> },
+                  { id: '_cardio',            title: 'CardioSync',        desc: 'Saúde Cardiovascular',  icon: <Heart size={22} color="#00F2FF" opacity={0.6} /> },
+                  { id: '_macro',             title: 'MacroTrack',        desc: 'Nutrição Detalhada',   icon: <Target size={22} color="#00F2FF" opacity={0.6} /> },
+                ].map(({ id, title, desc, icon }) => {
+                  const isInstalled = installedAppIds.includes(id);
+                  const isReal = !id.startsWith('_'); // real apps have install/uninstall wired up
                   return (
-                    <View style={styles.downloadRow}>
-                      <View style={styles.rowIcon}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                          <Typography style={{ color: '#FF6FBA', fontSize: 22, fontWeight: '800' }}>♀</Typography>
-                          <Typography style={{ color: '#FF6FBA', fontSize: 16, fontWeight: '900', marginLeft: 2 }}>H</Typography>
-                        </View>
-                      </View>
+                    <View key={id} style={styles.downloadRow}>
+                      <View style={styles.rowIcon}>{icon}</View>
                       <View style={styles.rowInfo}>
-                        <Typography style={styles.rowTitle}>Female Health</Typography>
-                        <Typography variant="caption" style={styles.rowDesc}>Saúde Feminina</Typography>
+                        <Typography style={styles.rowTitle}>{title}</Typography>
+                        <Typography variant="caption" style={styles.rowDesc}>{desc}</Typography>
                       </View>
                       <View style={styles.rowActions}>
                         <TouchableOpacity style={styles.actionBtn}>
                           <Typography style={styles.actionText}>INFO</Typography>
                         </TouchableOpacity>
                         <TouchableOpacity
-                          style={[styles.actionBtn, isInstalled ? styles.uninstallBtn : styles.installBtn]}
-                          onPress={() => isInstalled ? uninstallApp('femmhealth') : useStore.getState().installApp('femmhealth')}
+                          style={[styles.actionBtn, isInstalled ? styles.uninstallBtn : styles.installBtn, !isReal && { opacity: 0.4 }]}
+                          onPress={() => {
+                            if (!isReal) return;
+                            if (isInstalled) uninstallApp(id);
+                            else useStore.getState().installApp(id);
+                          }}
                         >
                           <Typography style={[styles.actionText, isInstalled ? styles.uninstallText : styles.installText]}>
                             {isInstalled ? 'DESINSTALAR' : 'INSTALAR'}
@@ -1114,116 +1123,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       </View>
                     </View>
                   );
-                })()}
-
-                <View style={styles.downloadRow}>
-                  <View style={styles.rowIcon}>
-                    <Moon size={24} color="#00F2FF" opacity={0.6} />
-                  </View>
-                  <View style={styles.rowInfo}>
-                    <Typography style={styles.rowTitle}>Sleep+</Typography>
-                    <Typography variant="caption" style={styles.rowDesc}>Otimização de Ciclos</Typography>
-                  </View>
-                  <View style={styles.rowActions}>
-                    <TouchableOpacity style={styles.actionBtn}>
-                      <Typography style={styles.actionText}>INFO</Typography>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, styles.installBtn]}>
-                      <Typography style={[styles.actionText, styles.installText]}>INSTALAR</Typography>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.downloadRow}>
-                  <View style={styles.rowIcon}>
-                    <Droplet size={24} color="#00F2FF" opacity={0.6} />
-                  </View>
-                  <View style={styles.rowInfo}>
-                    <Typography style={styles.rowTitle}>HydraTrack</Typography>
-                    <Typography variant="caption" style={styles.rowDesc}>Gestão de Água</Typography>
-                  </View>
-                  <View style={styles.rowActions}>
-                    <TouchableOpacity style={styles.actionBtn}>
-                      <Typography style={styles.actionText}>INFO</Typography>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, styles.installBtn]}>
-                      <Typography style={[styles.actionText, styles.installText]}>INSTALAR</Typography>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.downloadRow}>
-                  <View style={styles.rowIcon}>
-                    <Brain size={24} color="#00F2FF" opacity={0.6} />
-                  </View>
-                  <View style={styles.rowInfo}>
-                    <Typography style={styles.rowTitle}>Mind</Typography>
-                    <Typography variant="caption" style={styles.rowDesc}>Foco e Meditação</Typography>
-                  </View>
-                  <View style={styles.rowActions}>
-                    <TouchableOpacity style={styles.actionBtn}>
-                      <Typography style={styles.actionText}>INFO</Typography>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, styles.installBtn]}>
-                      <Typography style={[styles.actionText, styles.installText]}>INSTALAR</Typography>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.downloadRow}>
-                  <View style={styles.rowIcon}>
-                    <Activity size={24} color="#00F2FF" opacity={0.6} />
-                  </View>
-                  <View style={styles.rowInfo}>
-                    <Typography style={styles.rowTitle}>Fasting</Typography>
-                    <Typography variant="caption" style={styles.rowDesc}>Jejum Intermitente</Typography>
-                  </View>
-                  <View style={styles.rowActions}>
-                    <TouchableOpacity style={styles.actionBtn}>
-                      <Typography style={styles.actionText}>INFO</Typography>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, styles.installBtn]}>
-                      <Typography style={[styles.actionText, styles.installText]}>INSTALAR</Typography>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.downloadRow}>
-                  <View style={styles.rowIcon}>
-                    <Heart size={24} color="#00F2FF" opacity={0.6} />
-                  </View>
-                  <View style={styles.rowInfo}>
-                    <Typography style={styles.rowTitle}>CardioSync</Typography>
-                    <Typography variant="caption" style={styles.rowDesc}>Saúde Cardiovascular</Typography>
-                  </View>
-                  <View style={styles.rowActions}>
-                    <TouchableOpacity style={styles.actionBtn}>
-                      <Typography style={styles.actionText}>INFO</Typography>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, styles.installBtn]}>
-                      <Typography style={[styles.actionText, styles.installText]}>INSTALAR</Typography>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.downloadRow}>
-                  <View style={styles.rowIcon}>
-                    <Target size={24} color="#00F2FF" opacity={0.6} />
-                  </View>
-                  <View style={styles.rowInfo}>
-                    <Typography style={styles.rowTitle}>MacroTrack</Typography>
-                    <Typography variant="caption" style={styles.rowDesc}>Nutrição Detalhada</Typography>
-                  </View>
-                  <View style={styles.rowActions}>
-                    <TouchableOpacity style={styles.actionBtn}>
-                      <Typography style={styles.actionText}>INFO</Typography>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, styles.installBtn]}>
-                      <Typography style={[styles.actionText, styles.installText]}>INSTALAR</Typography>
-                    </TouchableOpacity>
-                  </View>
-                </View>
+                })}
               </View>
+
             </ScrollView>
           </Animated.View>
         </Animated.View>
