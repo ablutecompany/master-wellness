@@ -219,6 +219,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     extrapolate: 'clamp',
   });
 
+  // Mutable refs for edge gesture callbacks (avoid stale closures in PanResponder)
+  const openThemesRef = useRef<() => void>(() => {});
+  const openDataRef = useRef<() => void>(() => {});
+
   // ── Panel open/close helpers (sync animation + state for web backdrop) ────
   const openThemes = () => {
     setThemesOpen(true);
@@ -234,6 +238,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const closeData = () => {
     Animated.spring(dataAnim, { toValue: width, useNativeDriver: true }).start(() => setDataOpen(false));
   };
+
+  // Keep edge gesture callbacks up to date every render
+  openThemesRef.current = openThemes;
+  openDataRef.current = openData;
 
   // ── Switch Setup ──────────────────────────────────────────────────────────
   const switchAnim = useRef(new Animated.Value(0)).current; // 0 = UP, 160 = DOWN
@@ -280,6 +288,24 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       }
     })
   ).current;
+
+  // Left edge gesture zone (Temas) - captures swipe right from left 60px
+  const leftEdgeGesture = useRef(PanResponder.create({
+    onStartShouldSetPanResponder: () => Platform.OS === 'web',
+    onMoveShouldSetPanResponder: () => Platform.OS === 'web',
+    onPanResponderRelease: (_, { dx, dy }) => {
+      if (dx > 50 && Math.abs(dy) < 120) openThemesRef.current();
+    },
+  })).current;
+
+  // Right edge gesture zone (Dados) - captures swipe left from right 60px
+  const rightEdgeGesture = useRef(PanResponder.create({
+    onStartShouldSetPanResponder: () => Platform.OS === 'web',
+    onMoveShouldSetPanResponder: () => Platform.OS === 'web',
+    onPanResponderRelease: (_, { dx, dy }) => {
+      if (dx < -50 && Math.abs(dy) < 120) openDataRef.current();
+    },
+  })).current;
 
   const DRAWER_DOWN = 583;
   const DRAWER_UP = 0;
@@ -511,6 +537,20 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeData} />
           )}
         </Animated.View>
+      )}
+
+      {/* ── WEB EDGE GESTURE ZONES ─────────────────────────────────────────── */}
+      {Platform.OS === 'web' && !themesOpen && (
+        <View
+          {...leftEdgeGesture.panHandlers}
+          style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 60, zIndex: 600 }}
+        />
+      )}
+      {Platform.OS === 'web' && !dataOpen && (
+        <View
+          {...rightEdgeGesture.panHandlers}
+          style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 60, zIndex: 600 }}
+        />
       )}
 
       <View {...mainPanResponder.panHandlers} style={styles.mainView}>
