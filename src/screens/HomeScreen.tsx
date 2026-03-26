@@ -312,8 +312,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   const drawerPanResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponder: () => Platform.OS !== 'web',
+      onMoveShouldSetPanResponder: () => Platform.OS !== 'web',
       onPanResponderMove: (_, { dy }) => {
         let newY = lastDrawerY.current + dy;
         if (newY < DRAWER_UP) newY = DRAWER_UP;
@@ -387,14 +387,42 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     })
   ).current;
 
+  // ── Web touch gesture detector (mobile browser) ─────────────────────────
   useEffect(() => {
-    if (Platform.OS === 'web') {
-      const handleClick = (e: MouseEvent) => {
-        // Global click tracking logic could go here
-      };
-      window.addEventListener('click', handleClick);
-      return () => window.removeEventListener('click', handleClick);
-    }
+    if (Platform.OS !== 'web') return;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const onTouchStart = (e: TouchEvent) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      const screenW = window.innerWidth;
+      const screenH = window.innerHeight;
+      // Left edge swipe right → open Temas
+      if (touchStartX < 60 && dx > 60 && Math.abs(dy) < 80) {
+        setThemesOpen(true);
+        Animated.spring(themesAnim, { toValue: 0, useNativeDriver: true }).start();
+      }
+      // Right edge swipe left → open Dados
+      if (touchStartX > screenW - 60 && dx < -60 && Math.abs(dy) < 80) {
+        setDataOpen(true);
+        Animated.spring(dataAnim, { toValue: 0, useNativeDriver: true }).start();
+      }
+      // Bottom area swipe up → open drawer
+      if (touchStartY > screenH - 160 && dy < -60 && Math.abs(dx) < 80) {
+        Animated.spring(drawerAnim, { toValue: DRAWER_UP, bounciness: 0, useNativeDriver: false })
+          .start(() => { lastDrawerY.current = DRAWER_UP; });
+      }
+    };
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
   }, []);
 
   const handleOpenMiniApp = (appId: string) => {
