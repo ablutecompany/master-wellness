@@ -497,6 +497,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     };
     const onTMove = (e: TouchEvent) => {
       const dy = e.touches[0].clientY - startY;
+      if (Math.abs(dy) > 8) isDraggingDrawer.current = true;
       const newY = Math.max(0, Math.min(DRAWER_DOWN, startDrawerY + dy));
       drawerAnim.setValue(newY);
     };
@@ -505,7 +506,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       const finalY = startDrawerY + dy;
       const toValue = finalY < DRAWER_DOWN / 2 ? DRAWER_UP : DRAWER_DOWN;
       Animated.spring(drawerAnim, { toValue, bounciness: 0, useNativeDriver: false })
-        .start(() => { lastDrawerY.current = toValue; });
+        .start(() => {
+          lastDrawerY.current = toValue;
+          // Reset drag flag after animation so taps work again
+          setTimeout(() => { isDraggingDrawer.current = false; }, 50);
+        });
     };
     el.addEventListener('touchstart', onTStart, { passive: true });
     el.addEventListener('touchmove', onTMove, { passive: true });
@@ -517,7 +522,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     };
   }, []);
 
+  // Track whether drawer is being dragged (to block accidental app opens)
+  const isDraggingDrawer = useRef(false);
+
   const handleOpenMiniApp = (appId: string) => {
+    // Ignore onPress if user was swiping the drawer
+    if (isDraggingDrawer.current) { isDraggingDrawer.current = false; return; }
     console.log('[HomeScreen] Intentando abrir MiniApp:', appId);
     // Vibration.vibrate([0, 10, 5, 10]); // Padrão de vibração se quiseres manter
     
@@ -963,6 +973,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
       {/* ── BOTTOM DRAWER: APPS ───────────────────────────────────────────── */}
       <Animated.View
+        ref={drawerHandleRef}
         style={[styles.appDrawer, { transform: [{ translateY: drawerAnim }] }]}
       >
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: drawerBgOpacity }]}>
@@ -988,7 +999,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         <Animated.View style={{ flex: 1, width: '100%', opacity: drawerInnerOpacity, borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' }}>
           <View style={{ zIndex: 10, width: '100%', backgroundColor: 'transparent' }}>
             <TouchableOpacity
-              ref={drawerHandleRef}
               {...drawerPanResponder.panHandlers}
               style={styles.drawerHandleArea}
               activeOpacity={Platform.OS === 'web' ? 0.7 : 1}
