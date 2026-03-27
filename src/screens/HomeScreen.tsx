@@ -698,7 +698,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       <Animated.View style={{ opacity: arrowOpacity, transform: [{ translateY: arrowTranslate }], marginBottom: 16 }}>
                         <ChevronsDown size={28} color="#00F2FF" />
                       </Animated.View>
-                      <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600', letterSpacing: 1, marginBottom: 4, textTransform: 'uppercase' }}>8 dias desde</Typography>
+                      <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600', letterSpacing: 1, marginBottom: 4, textTransform: 'uppercase' }}>TESTE - 99 dias desde</Typography>
                       <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '600', letterSpacing: 1, textTransform: 'uppercase' }}>a última avaliação</Typography>
                     </View>
 
