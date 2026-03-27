@@ -1041,7 +1041,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                           if (Platform.OS === 'web') {
                             setInlineApp(manifest);
                           } else {
-                            navigation?.navigate('MiniApp', { app: manifest });
+                            const nav = navigation?.getParent() || navigation;
+                            nav?.navigate('MiniApp', { app: manifest });
                           }
                        }
                        // not installed → do nothing; install from the list below
