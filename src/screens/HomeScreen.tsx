@@ -1559,7 +1559,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(0, 242, 255, 0.15)', justifyContent: 'center', alignItems: 'center', alignSelf: 'center', marginBottom: 20, marginTop: 10 }}>
                 <Target size={26} color="#00F2FF" />
               </View>
-              <Typography variant="h2" style={{ textAlign: 'center', color: '#fff', marginBottom: 15, fontSize: 18 }}>Identificação Biométrica</Typography>
+              <Typography variant="h2" style={{ textAlign: 'center', color: '#fff', marginBottom: 15, fontSize: 18 }}>Identificação</Typography>
               <Typography style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 22, marginBottom: 30 }}>
                 Esta função usa NFC, ou dados de ECG, para identificar o utilizador, sem necessidade de emparelhamento com o telemóvel.
               </Typography>
