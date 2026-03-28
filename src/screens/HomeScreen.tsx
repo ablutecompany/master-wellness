@@ -765,27 +765,27 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(2, 4, 8, 0.65)' }]} />
                     </View>
 
-                    {/* CASCATA DE SETAS DESLIZANTES PARA BAIXO (Affordance à Prova de Bala) */}
+                    {/* CASCATA DE SETAS DESLIZANTES PARA BAIXO (Refinamento Estético - Sequencer) */}
                     <View style={{ position: 'absolute', top: 250, bottom: 0, left: 0, right: 0, justifyContent: 'center', alignItems: 'center', zIndex: 99999, pointerEvents: 'none' }}>
                       <Animated.View style={{ 
-                        opacity: arrowAnim.interpolate({ inputRange: [0, 0.2, 0.4, 0.6, 0.8, 1], outputRange: [0, 1, 0, 0, 0, 0] }),
-                        transform: [{ translateY: arrowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 15] }) }]
+                        opacity: arrowAnim.interpolate({ inputRange: [0, 0.1, 0.3, 0.4, 1], outputRange: [0, 1, 0, 0, 0] }),
+                        transform: [{ translateY: arrowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 5] }) }]
                       }}>
-                        <ChevronDown size={38} strokeWidth={3} color="#FFFFFF" style={{ marginBottom: -10 }} />
+                        <ChevronDown size={32} strokeWidth={1.5} color="rgba(255, 255, 255, 0.8)" style={{ marginBottom: -8 }} />
                       </Animated.View>
                       
                       <Animated.View style={{ 
-                        opacity: arrowAnim.interpolate({ inputRange: [0, 0.2, 0.4, 0.6, 0.8, 1], outputRange: [0, 0, 1, 0, 0, 0] }),
-                        transform: [{ translateY: arrowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 15] }) }]
+                        opacity: arrowAnim.interpolate({ inputRange: [0, 0.3, 0.4, 0.6, 0.7, 1], outputRange: [0, 0, 1, 0, 0, 0] }),
+                        transform: [{ translateY: arrowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 5] }) }]
                       }}>
-                        <ChevronDown size={38} strokeWidth={3} color="#FFFFFF" style={{ marginBottom: -10 }} />
+                        <ChevronDown size={32} strokeWidth={1.5} color="rgba(255, 255, 255, 0.8)" style={{ marginBottom: -8 }} />
                       </Animated.View>
 
                       <Animated.View style={{ 
-                        opacity: arrowAnim.interpolate({ inputRange: [0, 0.2, 0.4, 0.6, 0.8, 1], outputRange: [0, 0, 0, 1, 0, 0] }),
-                        transform: [{ translateY: arrowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 15] }) }]
+                        opacity: arrowAnim.interpolate({ inputRange: [0, 0.6, 0.7, 0.9, 1], outputRange: [0, 0, 0, 1, 0] }),
+                        transform: [{ translateY: arrowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 5] }) }]
                       }}>
-                        <ChevronDown size={38} strokeWidth={3} color="#FFFFFF" />
+                        <ChevronDown size={32} strokeWidth={1.5} color="rgba(255, 255, 255, 0.8)" />
                       </Animated.View>
                     </View>
 
