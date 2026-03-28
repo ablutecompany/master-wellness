@@ -612,19 +612,43 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const mainPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: () => false,
-      onPanResponderRelease: (_, { x0, dx, dy }) => {
-        // Left Edge Swipe -> Themes (via ref so mutual exclusion guard applies)
+      onMoveShouldSetPanResponder: (_, { dx, dy, y0 }) => {
+        // Capture se for um arrastão longo (lateral para Menus ou para cima na zona inferior)
+        if (Math.abs(dx) > 30) return true;
+        if (Math.abs(dy) > 20 && y0 > 300) return true;
+        return false;
+      },
+      onPanResponderMove: (_, { dx, dy, y0 }) => {
+        // Se o gesto começar na metade inferior e for maioritariamente vertical, liga ao arrasto da App Place
+        if (y0 > 300 && Math.abs(dy) > Math.abs(dx)) {
+          let newY = lastDrawerY.current + dy;
+          if (newY < DRAWER_UP) newY = DRAWER_UP;
+          if (newY > DRAWER_DOWN) newY = DRAWER_DOWN;
+          drawerAnim.setValue(newY);
+        }
+      },
+      onPanResponderRelease: (_, { x0, dx, dy, vy, y0 }) => {
+        // Left Edge Swipe -> Themes
         if (x0 < 120 && dx > 50) {
           openThemesRef.current();
+          return;
         }
-        // Right Edge Swipe -> Data (via ref so mutual exclusion guard applies)
+        // Right Edge Swipe -> Data
         if (x0 > width - 120 && dx < -50) {
           openDataRef.current();
+          return;
         }
-        // Bottom Swipe Up -> App Drawer
-        if (dy < -60) {
-          Animated.spring(drawerAnim, { toValue: DRAWER_UP, useNativeDriver: false }).start(() => lastDrawerY.current = DRAWER_UP);
+        
+        // Vertical Swipe (Bottom Half) -> App Drawer
+        if (y0 > 300 && Math.abs(dy) > Math.abs(dx)) {
+          if (dy < -60 || vy < -0.5) {
+            Animated.spring(drawerAnim, { toValue: DRAWER_UP, useNativeDriver: false }).start(() => lastDrawerY.current = DRAWER_UP);
+          } else if (dy > 60 || vy > 0.5) {
+            Animated.spring(drawerAnim, { toValue: DRAWER_DOWN, useNativeDriver: false }).start(() => lastDrawerY.current = DRAWER_DOWN);
+          } else {
+            // Revert
+            Animated.spring(drawerAnim, { toValue: lastDrawerY.current, useNativeDriver: false }).start();
+          }
         }
       },
     })
@@ -818,12 +842,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       >
         {/* ── HEADER ──────────────────────────────────────────────────────── */}
         <View style={styles.header}>
-          <TouchableOpacity 
-            activeOpacity={0.8}
-            onPress={() => setDiasSemExame((prev) => (prev + 2 >= 30 ? 1 : prev + 2))}
-          >
+          <View style={{ position: 'relative' }}>
             <BrandLogo size="medium" />
-          </TouchableOpacity>
+            {/* Máscara invisível para absorver os toques e impedir seleção de texto do logotipo */}
+            <TouchableOpacity 
+              activeOpacity={0.7}
+              onPress={() => setDiasSemExame((prev) => (prev + 2 >= 30 ? 1 : prev + 2))}
+              style={[StyleSheet.absoluteFill, { zIndex: 10 }]}
+            />
+          </View>
           <View style={styles.headerRight}>
             <View style={styles.topIconRow}>
               <TouchableOpacity style={styles.iconCircle} onPress={() => setShowControl(true)}>
