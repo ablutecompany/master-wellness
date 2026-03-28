@@ -14,7 +14,7 @@ import { MiniAppManifest } from './types';
 export const MINI_APP_CATALOG: MiniAppManifest[] = [
   {
     id: 'femmhealth',
-    name: 'FemmHealth',
+    name: '_Fem sanctuary',
     tagline: 'Ciclo, sintomas e saúde hormonal num só lugar',
     developer: 'ablute_ Labs',
     developerVerified: true,
@@ -33,7 +33,7 @@ export const MINI_APP_CATALOG: MiniAppManifest[] = [
   },
   {
     id: 'nutri-menu',
-    name: 'Nutri Menu',
+    name: '_Meal planner',
     tagline: 'Planeamento de refeições em família, inteligente e partilhável',
     developer: 'ablute_ Labs',
     developerVerified: true,
@@ -108,8 +108,8 @@ export const MINI_APP_CATALOG: MiniAppManifest[] = [
       'Técnicas de respiração baseadas em evidência (4-7-8, Box, Wim Hof) com biofeedback em tempo real de HRV para reduzir stress e ansiedade.',
   },
   {
-    id: 'longevity-lab',
-    name: 'Longevity Lab',
+    id: 'longevity-secrets',
+    name: '_Healthspan',
     tagline: 'Protocolos de longevidade: jejum, frio e exercício',
     developer: 'Span Health',
     developerVerified: true,
@@ -117,7 +117,7 @@ export const MINI_APP_CATALOG: MiniAppManifest[] = [
     iconEmoji: '⚡',
     iconColor: '#F59E0B',
     iconBg: 'rgba(245, 158, 11, 0.12)',
-    url: 'https://longevity-lab.vercel.app',
+    url: 'https://longevity-secrets.vercel.app',
     permissions: ['PROFILE_READ', 'ACTIVITY_DATA_READ', 'NOTIFICATIONS'],
     version: '1.1.0',
     featured: false,
