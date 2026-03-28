@@ -810,7 +810,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                         left: 0, 
                         right: 0, 
                         alignItems: 'center',
-                        opacity: arrowAnim.interpolate({ inputRange: [0, 0.1, 0.7, 1], outputRange: [0, 1, 0.2, 0] }),
+                        opacity: arrowAnim.interpolate({ inputRange: [0, 0.6, 1], outputRange: [1, 0.3, 0] }),
                         transform: [{ translateY: arrowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 110] }) }]
                       }}>
                         <ChevronDown size={44} strokeWidth={2.5} color="rgba(255,255,255,0.9)" />
