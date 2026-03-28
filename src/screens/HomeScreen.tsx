@@ -1512,20 +1512,24 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   <View style={{ marginTop: 12, backgroundColor: 'rgba(0,0,0,0.3)', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)' }}>
                     <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 }}>Frequência de Monitorização</Typography>
                     
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', marginTop: 10, paddingVertical: 10 }}>
-                      <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>Gerar análise</Typography>
-                      
-                      <View style={{ marginHorizontal: 8 }}>
-                         <WheelPicker value={autoTimes} onChange={setAutoTimes} min={1} max={4} width={50} />
+                    <View style={{ marginTop: 10, paddingVertical: 10 }}>
+                      {/* LINHA 1: Vezes por Extração */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                        <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>Efetuar análise</Typography>
+                        <View style={{ marginHorizontal: 8 }}>
+                           <WheelPicker value={autoTimes} onChange={setAutoTimes} min={1} max={4} width={50} />
+                        </View>
+                        <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>vezes</Typography>
                       </View>
                       
-                      <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>vezes em cada</Typography>
-                      
-                      <View style={{ marginHorizontal: 8 }}>
-                         <WheelPicker value={autoDays} onChange={setAutoDays} min={1} max={31} width={60} />
+                      {/* LINHA 2: Extensão de Período em Dias */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: -4 }}>
+                        <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>em cada</Typography>
+                        <View style={{ marginHorizontal: 8 }}>
+                           <WheelPicker value={autoDays} onChange={setAutoDays} min={1} max={31} width={60} />
+                        </View>
+                        <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>dias</Typography>
                       </View>
-                      
-                      <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>dias</Typography>
                     </View>
                   </View>
                 )}
