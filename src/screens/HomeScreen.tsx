@@ -525,11 +525,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       onMoveShouldSetPanResponder: () => false,
       onPanResponderRelease: (_, { x0, dx, dy }) => {
         // Left Edge Swipe -> Themes (via ref so mutual exclusion guard applies)
-        if (x0 < 60 && dx > 80) {
+        if (x0 < 120 && dx > 50) {
           openThemesRef.current();
         }
         // Right Edge Swipe -> Data (via ref so mutual exclusion guard applies)
-        if (x0 > width - 60 && dx < -80) {
+        if (x0 > width - 120 && dx < -50) {
           openDataRef.current();
         }
         // Bottom Swipe Up -> App Drawer
@@ -554,11 +554,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       const dy = e.changedTouches[0].clientY - touchStartY;
       const screenW = window.innerWidth;
       // Left edge swipe right → open Temas (via ref for mutual exclusion)
-      if (touchStartX < 60 && dx > 60 && Math.abs(dy) < 80) {
+      if (touchStartX < 120 && dx > 50 && Math.abs(dy) < 80) {
         openThemesRef.current();
       }
       // Right edge swipe left → open Dados (via ref for mutual exclusion)
-      if (touchStartX > screenW - 60 && dx < -60 && Math.abs(dy) < 80) {
+      if (touchStartX > screenW - 120 && dx < -50 && Math.abs(dy) < 80) {
         openDataRef.current();
       }
     };
@@ -1547,12 +1547,12 @@ const styles = StyleSheet.create({
   leftEdgeHandle: {
     position: 'absolute',
     left: 0,
-    top: '38%',
-    width: 60, // Largura interativa dobrada para melhor arrasto de polegar
-    height: 140,
-    backgroundColor: 'rgba(5, 8, 14, 0.5)',
-    borderTopRightRadius: 16,
-    borderBottomRightRadius: 16,
+    top: '40%',
+    width: 45, // Reduzido da versão massiva anterior de 60px
+    height: 90, // Encurtamento transversal (antes 140)
+    backgroundColor: 'rgba(5, 8, 14, 0.45)',
+    borderTopRightRadius: 14,
+    borderBottomRightRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -1563,12 +1563,12 @@ const styles = StyleSheet.create({
   rightEdgeHandle: {
     position: 'absolute',
     right: 0,
-    top: '38%',
-    width: 60, // Largura interativa dobrada para melhor arrasto de polegar
-    height: 140,
-    backgroundColor: 'rgba(5, 8, 14, 0.5)',
-    borderTopLeftRadius: 16,
-    borderBottomLeftRadius: 16,
+    top: '40%',
+    width: 45,
+    height: 90,
+    backgroundColor: 'rgba(5, 8, 14, 0.45)',
+    borderTopLeftRadius: 14,
+    borderBottomLeftRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
