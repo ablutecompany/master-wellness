@@ -765,22 +765,31 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(2, 4, 8, 0.65)' }]} />
                     </View>
 
-                    {/* As 4 antigas setas da base foram varridas do espaço sideral! */}
-
-                    <Animated.View style={{ width: 240, height: 240, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
-                      {/* NOVA ESTRELA CADENTE (Affordance Dinâmica) */}
+                    {/* CASCATA DE SETAS DESLIZANTES PARA BAIXO (Affordance à Prova de Bala) */}
+                    <View style={{ position: 'absolute', top: 250, bottom: 0, left: 0, right: 0, justifyContent: 'center', alignItems: 'center', zIndex: 99999, pointerEvents: 'none' }}>
                       <Animated.View style={{ 
-                        position: 'absolute', 
-                        top: 260, 
-                        width: '100%',
-                        alignItems: 'center',
-                        zIndex: 10000,
-                        opacity: arrowAnim.interpolate({ inputRange: [0, 0.2, 0.8, 1], outputRange: [1, 1, 0, 0] }),
-                        transform: [{ translateY: arrowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 110] }) }]
+                        opacity: arrowAnim.interpolate({ inputRange: [0, 0.2, 0.4, 0.6, 0.8, 1], outputRange: [0, 1, 0, 0, 0, 0] }),
+                        transform: [{ translateY: arrowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 15] }) }]
                       }}>
-                        <ChevronDown size={44} strokeWidth={3} color="#FFFFFF" />
+                        <ChevronDown size={38} strokeWidth={3} color="#FFFFFF" style={{ marginBottom: -10 }} />
+                      </Animated.View>
+                      
+                      <Animated.View style={{ 
+                        opacity: arrowAnim.interpolate({ inputRange: [0, 0.2, 0.4, 0.6, 0.8, 1], outputRange: [0, 0, 1, 0, 0, 0] }),
+                        transform: [{ translateY: arrowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 15] }) }]
+                      }}>
+                        <ChevronDown size={38} strokeWidth={3} color="#FFFFFF" style={{ marginBottom: -10 }} />
                       </Animated.View>
 
+                      <Animated.View style={{ 
+                        opacity: arrowAnim.interpolate({ inputRange: [0, 0.2, 0.4, 0.6, 0.8, 1], outputRange: [0, 0, 0, 1, 0, 0] }),
+                        transform: [{ translateY: arrowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 15] }) }]
+                      }}>
+                        <ChevronDown size={38} strokeWidth={3} color="#FFFFFF" />
+                      </Animated.View>
+                    </View>
+
+                    <Animated.View style={{ width: 240, height: 240, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
                       <View style={[styles.pulseContainer, { marginBottom: 0 }]} pointerEvents="box-none">
                         {/* CHASSIS DO MOTOR GEOMÉTRICO (Zoom Out aplicado - 340) c/ Borda Metálica */}
                         <View style={{ position: 'absolute', width: 240, height: 240, borderRadius: 120, overflow: 'hidden', backgroundColor: '#020306', borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.6)', justifyContent: 'center', alignItems: 'center' }}>
