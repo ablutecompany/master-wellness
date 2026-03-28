@@ -281,8 +281,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   
   // Settings Form State (Modo de Análise)
   const [analysisMode, setAnalysisMode] = useState<'manual'|'automatico'>('automatico');
-  const [autoFrequency, setAutoFrequency] = useState<'diaria'|'2x_dia'|'2_em_2'|'custom'>('custom');
+  const [autoFrequency, setAutoFrequency] = useState<'diaria'|'2x_dia'|'custom'>('custom');
   const [customDays, setCustomDays] = useState(3);
+  const [showAutoWarning, setShowAutoWarning] = useState(false);
 
   // ── Inline mini-app for web (same pattern as AppsScreen) ─────────────────
   const [inlineApp, setInlineApp] = useState<MiniAppManifest | null>(null);
@@ -1480,7 +1481,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   
                   <TouchableOpacity 
                     activeOpacity={0.8}
-                    onPress={() => setAnalysisMode('automatico')}
+                    onPress={() => {
+                      if (analysisMode !== 'automatico') {
+                        setAnalysisMode('automatico');
+                        setShowAutoWarning(true);
+                      }
+                    }}
                     style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8, backgroundColor: analysisMode === 'automatico' ? 'rgba(0, 242, 255, 0.15)' : 'transparent', borderWidth: 1, borderColor: analysisMode === 'automatico' ? 'rgba(0, 242, 255, 0.4)' : 'transparent' }}
                   >
                     <Typography style={{ color: analysisMode === 'automatico' ? '#00F2FF' : 'rgba(255,255,255,0.4)', fontWeight: '600', fontSize: 13, textShadowColor: analysisMode === 'automatico' ? 'rgba(0, 242, 255, 0.5)' : 'transparent', textShadowRadius: 8 }}>AUTOMÁTICO</Typography>
@@ -1543,6 +1549,26 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 <Typography style={styles.settingsLabel}>Notificações</Typography>
                 <Typography style={styles.settingsValue}>Silenciadas</Typography>
               </View>
+            </BlurView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ── AUTO WARNING POUUP ────────────────────────────────────────────── */}
+      <Modal visible={showAutoWarning} transparent animationType="fade" onRequestClose={() => setShowAutoWarning(false)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowAutoWarning(false)}>
+          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+            <BlurView intensity={80} tint="dark" style={[styles.modalContent, { borderColor: 'rgba(0, 242, 255, 0.5)', borderWidth: 1 }]}>
+              <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: 'rgba(0, 242, 255, 0.15)', justifyContent: 'center', alignItems: 'center', alignSelf: 'center', marginBottom: 20, marginTop: 10 }}>
+                <Target size={26} color="#00F2FF" />
+              </View>
+              <Typography variant="h2" style={{ textAlign: 'center', color: '#fff', marginBottom: 15, fontSize: 18 }}>Identificação Biométrica</Typography>
+              <Typography style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 22, marginBottom: 30 }}>
+                Esta função usa NFC, ou dados de ECG, para identificar o utilizador, sem necessidade de emparelhamento com o telemóvel.
+              </Typography>
+              <TouchableOpacity style={[styles.saveBtn, { width: '100%', marginBottom: 10 }]} onPress={() => setShowAutoWarning(false)}>
+                <Typography style={styles.saveBtnText}>COMPREENDIDO</Typography>
+              </TouchableOpacity>
             </BlurView>
           </TouchableOpacity>
         </TouchableOpacity>
