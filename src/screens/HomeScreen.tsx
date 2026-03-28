@@ -1537,11 +1537,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               {/* --- FIM MODO ANÁLISE --- */}
               <View style={styles.dividerModal} />
 
-              <View style={styles.settingsRow}>
-                <Typography style={styles.settingsLabel}>Foco Principal (IA)</Typography>
-                <Typography style={styles.settingsValueHighlight}>Equilíbrio Funcional</Typography>
-              </View>
-              <View style={styles.dividerModal} />
+
               <View style={styles.settingsRow}>
                 <Typography style={styles.settingsLabel}>Sincronização HeathKit</Typography>
                 <Typography style={styles.settingsValue}>Ativo</Typography>
