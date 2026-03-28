@@ -261,13 +261,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   // HOTFIX CRUCIAL: Iniciar e Forçar o loop de animação das setas (estava cego sem isto!)
   React.useEffect(() => {
-    Animated.loop(
+    const loop = Animated.loop(
       Animated.timing(arrowAnim, {
         toValue: 1,
         duration: 1800, // Ciclo relaxado mas ritmado de 1.8 seg
-        useNativeDriver: true,
+        useNativeDriver: false, // Forçando JS Thread resolve bugs obscuros de opacidade fantasma na Web
       })
-    ).start();
+    );
+    loop.start();
+    return () => loop.stop();
   }, [arrowAnim]);
 
   // Backdrop darkening: fades to black when Temas or Dados panels slide open
