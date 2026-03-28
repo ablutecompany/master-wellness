@@ -870,8 +870,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           style={styles.leftEdgeHandle}
           onPress={openThemes}
         >
-          <View style={{ width: 140, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-90deg' }] }}>
-            <Typography variant="caption" style={{ fontSize: 11, color: 'rgba(255,255,255,0.95)', letterSpacing: 2, textTransform: 'uppercase' }}>
+          <View style={{ width: 136, height: 32, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-90deg' }] }}>
+            <Typography variant="caption" style={{ fontSize: 11, color: 'rgba(255,255,255,0.95)', letterSpacing: 2, textTransform: 'uppercase', textAlign: 'center' }}>
               LEITURA AI
             </Typography>
           </View>
@@ -882,8 +882,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           style={styles.rightEdgeHandle}
           onPress={openData}
         >
-          <View style={{ width: 140, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-90deg' }] }}>
-            <Typography variant="caption" style={{ fontSize: 11, color: 'rgba(255,255,255,0.95)', letterSpacing: 2, textTransform: 'uppercase' }}>
+          <View style={{ width: 136, height: 32, alignItems: 'center', justifyContent: 'center', transform: [{ rotate: '-90deg' }] }}>
+            <Typography variant="caption" style={{ fontSize: 11, color: 'rgba(255,255,255,0.95)', letterSpacing: 2, textTransform: 'uppercase', textAlign: 'center' }}>
               RESULTADOS
             </Typography>
           </View>
@@ -1548,7 +1548,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     top: '38%',
-    width: 45, // Espessura interativa
+    width: 32, // Espessura esguia para elegância
     height: 136, // Comprimento reposto para envolver perfeitamente os nomes rodados a 90deg
     backgroundColor: 'rgba(5, 8, 14, 0.45)',
     borderTopRightRadius: 16,
@@ -1564,7 +1564,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
     top: '38%',
-    width: 45,
+    width: 32, // Espessura fina simétrica
     height: 136, // Comprimento reposto para albergar Resultados
     backgroundColor: 'rgba(5, 8, 14, 0.45)',
     borderTopLeftRadius: 16,
