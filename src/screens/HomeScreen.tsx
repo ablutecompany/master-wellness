@@ -772,7 +772,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   elevation: 12
                 }} pointerEvents="none" />
 
-                {/* 2) Luz Expansiva Pulsante (Efeito degradê gigante animado, sem borda física) */}
+                {/* 2) Luz Expansiva Pulsante (Efeito degradê gigante animado com expansão brutal) */}
                 <Animated.View style={{ 
                   position: 'absolute',
                   width: 240, height: 410, 
@@ -781,9 +781,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   shadowColor: glowColorHex, 
                   shadowOffset: { width: 0, height: 0 }, 
                   shadowOpacity: 1, 
-                  shadowRadius: 100, 
-                  elevation: 40,
-                  opacity: glowOpacityAnim
+                  shadowRadius: 200, // Raio fundamental dobrado para máximo espalhamento ('raio bem maior')
+                  elevation: 60,
+                  opacity: glowOpacityAnim,
+                  transform: [{ 
+                    scale: pulseAnim.interpolate({
+                      inputRange: [1, 1.2],
+                      outputRange: [1.1, 1.55] // Aumenta brutalmente as calhas virtuais de luz cá para fora!
+                    })
+                  }]
                 }} pointerEvents="none" />
 
                 {/* The Track Base - Pill interior FIXO - Agora atua como Tubo Sideral */}
