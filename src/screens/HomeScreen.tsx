@@ -806,14 +806,14 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       {/* Seta Afixada ao Fundo do Círculo para Affordance Haptica de Swipe */}
                       <Animated.View style={{ 
                         position: 'absolute', 
-                        bottom: -35, 
+                        bottom: -45, 
                         left: 0, 
                         right: 0, 
                         alignItems: 'center',
-                        opacity: arrowAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.3, 0.8, 0.3] }),
+                        opacity: arrowAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.5, 1, 0.5] }),
                         transform: [{ translateY: arrowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 8] }) }]
                       }}>
-                        <ChevronDown size={28} color="rgba(255,255,255,0.6)" />
+                        <ChevronDown size={44} strokeWidth={2.5} color="rgba(255,255,255,0.9)" />
                       </Animated.View>
 
                       <View style={[styles.pulseContainer, { marginBottom: 0 }]} pointerEvents="box-none">
