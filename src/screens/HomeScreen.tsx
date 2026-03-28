@@ -803,6 +803,19 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                     </View>
 
                     <Animated.View style={{ width: 240, height: 240, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
+                      {/* Seta Afixada ao Fundo do Círculo para Affordance Haptica de Swipe */}
+                      <Animated.View style={{ 
+                        position: 'absolute', 
+                        bottom: -35, 
+                        left: 0, 
+                        right: 0, 
+                        alignItems: 'center',
+                        opacity: arrowAnim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.3, 0.8, 0.3] }),
+                        transform: [{ translateY: arrowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 8] }) }]
+                      }}>
+                        <ChevronDown size={28} color="rgba(255,255,255,0.6)" />
+                      </Animated.View>
+
                       <View style={[styles.pulseContainer, { marginBottom: 0 }]} pointerEvents="box-none">
                         {/* CHASSIS DO MOTOR GEOMÉTRICO (Zoom Out aplicado - 340) c/ Borda Metálica */}
                         <View style={{ position: 'absolute', width: 240, height: 240, borderRadius: 120, overflow: 'hidden', backgroundColor: '#020306', borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.6)', justifyContent: 'center', alignItems: 'center' }}>
