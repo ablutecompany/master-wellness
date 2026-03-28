@@ -219,29 +219,43 @@ const SlotMachineOdometer = ({ targetNumber }: { targetNumber: number }) => {
 };
 
 // --- MECHANICAL WHEEL PICKER COMPONENT ---
-const WheelPicker = ({ value, onChange, min = 1, max = 30 }: { value: number, onChange: (v: number)=>void, min?: number, max?: number }) => {
+const WheelPicker = ({ value, onChange, min = 1, max = 30, width = 80 }: { value: number, onChange: (v: number)=>void, min?: number, max?: number, width?: number }) => {
   const ITEM_HEIGHT = 34;
   const numbers = Array.from({length: max - min + 1}, (_, i) => i + min);
-  
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  useEffect(() => {
+    const index = numbers.indexOf(value);
+    if (index >= 0 && scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ y: index * ITEM_HEIGHT, animated: true });
+    }
+  }, [value, numbers]);
+
   return (
-    <View style={{ height: ITEM_HEIGHT * 3, overflow: 'hidden', alignItems: 'center', marginVertical: 0, width: 80, alignSelf: 'center' }}>
+    <View style={{ height: ITEM_HEIGHT * 3, overflow: 'hidden', alignItems: 'center', marginVertical: 0, width, alignSelf: 'center' }}>
       {/* Indicador Central Cyberpunk */}
       <View style={{ position: 'absolute', top: ITEM_HEIGHT, height: ITEM_HEIGHT, width: '100%', backgroundColor: 'rgba(0, 242, 255, 0.05)', borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'rgba(0, 242, 255, 0.3)', zIndex: 0 }} pointerEvents="none" />
       
       <ScrollView 
+        ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
         snapToInterval={ITEM_HEIGHT}
         decelerationRate="fast"
         onMomentumScrollEnd={(e) => {
           const index = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
-          if (numbers[index] !== undefined) {
+          if (numbers[index] !== undefined && numbers[index] !== value) {
              onChange(numbers[index]);
           }
         }}
         contentContainerStyle={{ paddingVertical: ITEM_HEIGHT }}
       >
         {numbers.map((n) => (
-          <View key={n} style={{ height: ITEM_HEIGHT, justifyContent: 'center', alignItems: 'center' }}>
+          <TouchableOpacity 
+            key={n}
+            activeOpacity={0.7}
+            onPress={() => onChange(n)}
+            style={{ height: ITEM_HEIGHT, justifyContent: 'center', alignItems: 'center', width: '100%' }}
+          >
             <Typography style={{ 
               fontSize: value === n ? 24 : 16, 
               color: value === n ? '#00F2FF' : 'rgba(255,255,255,0.2)', 
@@ -251,7 +265,7 @@ const WheelPicker = ({ value, onChange, min = 1, max = 30 }: { value: number, on
             }}>
               {n}
             </Typography>
-          </View>
+          </TouchableOpacity>
         ))}
       </ScrollView>
     </View>
@@ -281,8 +295,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   
   // Settings Form State (Modo de Análise)
   const [analysisMode, setAnalysisMode] = useState<'manual'|'automatico'>('automatico');
-  const [autoFrequency, setAutoFrequency] = useState<'diaria'|'2x_dia'|'custom'>('custom');
-  const [customDays, setCustomDays] = useState(3);
+  const [autoTimes, setAutoTimes] = useState(1);
+  const [autoDays, setAutoDays] = useState(1);
   const [showAutoWarning, setShowAutoWarning] = useState(false);
 
   // ── Inline mini-app for web (same pattern as AppsScreen) ─────────────────
@@ -1498,38 +1512,21 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   <View style={{ marginTop: 12, backgroundColor: 'rgba(0,0,0,0.3)', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)' }}>
                     <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 }}>Frequência de Monitorização</Typography>
                     
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                      {[
-                        { id: '2x_dia', label: '2x Dia' },
-                        { id: 'diaria', label: 'Diária' },
-                        { id: 'custom', label: 'Personalizado' },
-                      ].map(freq => (
-                        <TouchableOpacity
-                          key={freq.id}
-                          activeOpacity={0.8}
-                          onPress={() => setAutoFrequency(freq.id as any)}
-                          style={{
-                            paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20,
-                            backgroundColor: autoFrequency === freq.id ? 'rgba(0, 242, 255, 0.12)' : 'rgba(255,255,255,0.03)',
-                            borderWidth: 1,
-                            borderColor: autoFrequency === freq.id ? 'rgba(0, 242, 255, 0.4)' : 'rgba(255,255,255,0.08)'
-                          }}
-                        >
-                          <Typography style={{ color: autoFrequency === freq.id ? '#fff' : 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: autoFrequency === freq.id ? '600' : '400' }}>{freq.label}</Typography>
-                        </TouchableOpacity>
-                      ))}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', marginTop: 10, paddingVertical: 10 }}>
+                      <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>Gerar análise</Typography>
+                      
+                      <View style={{ marginHorizontal: 8 }}>
+                         <WheelPicker value={autoTimes} onChange={setAutoTimes} min={1} max={4} width={50} />
+                      </View>
+                      
+                      <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>vezes em cada</Typography>
+                      
+                      <View style={{ marginHorizontal: 8 }}>
+                         <WheelPicker value={autoDays} onChange={setAutoDays} min={1} max={31} width={60} />
+                      </View>
+                      
+                      <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>dias</Typography>
                     </View>
-
-                    {/* Wheel Picker Visível apenas se selecionado Personalizado */}
-                    {autoFrequency === 'custom' && (
-                       <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.05)', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                         <View style={{ flex: 1, paddingRight: 10 }}>
-                           <Typography style={{ color: 'rgba(0, 242, 255, 0.8)', fontSize: 13, marginBottom: 2 }}>Espaçamento de Exames</Typography>
-                           <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 0 }}>Gerar análise a cada {customDays} {customDays === 1 ? 'dia' : 'dias'}</Typography>
-                         </View>
-                         <WheelPicker value={customDays} onChange={setCustomDays} min={1} max={30} />
-                       </View>
-                    )}
                   </View>
                 )}
               </View>
