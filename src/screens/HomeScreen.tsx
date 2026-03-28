@@ -759,7 +759,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             <Animated.View style={[styles.centerContainer, { transform: [{ translateY: centerContentY }, { scale: 0.52 }] }]}>
               <View style={{ width: 240, height: 410, justifyContent: 'center', alignItems: 'center' }}>
                 
-                {/* 1) Luz Base Fixa (Glow denso e próximo à margem) */}
+                {/* 1) Luz Base Fixa (Glow denso que sela o contacto direto com as margens da pílula) */}
                 <View style={{ 
                   position: 'absolute',
                   width: 240, height: 410, 
@@ -767,12 +767,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   backgroundColor: 'transparent',
                   shadowColor: glowColorHex, 
                   shadowOffset: { width: 0, height: 0 }, 
-                  shadowOpacity: 0.9, 
-                  shadowRadius: 20, 
-                  elevation: 12
+                  shadowOpacity: 1, 
+                  shadowRadius: 40,  // Luz nuclear apertada
+                  elevation: 15
                 }} pointerEvents="none" />
 
-                {/* 2) Luz Expansiva Pulsante (Efeito degradê gigante animado com expansão brutal) */}
+                {/* 2) Luz Expansiva Média (Aura Primária) */}
                 <Animated.View style={{ 
                   position: 'absolute',
                   width: 240, height: 410, 
@@ -781,15 +781,23 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   shadowColor: glowColorHex, 
                   shadowOffset: { width: 0, height: 0 }, 
                   shadowOpacity: 1, 
-                  shadowRadius: 200, // Raio fundamental dobrado para máximo espalhamento ('raio bem maior')
+                  shadowRadius: 120, // Luz espalhada
+                  elevation: 40,
+                  opacity: glowOpacityAnim
+                }} pointerEvents="none" />
+
+                {/* 3) Luz Expansiva Extrema (O 'Raio Bem Maior' sem inflamar bordas fantasmas) */}
+                <Animated.View style={{ 
+                  position: 'absolute',
+                  width: 240, height: 410, 
+                  borderRadius: 120, 
+                  backgroundColor: 'transparent',
+                  shadowColor: glowColorHex, 
+                  shadowOffset: { width: 0, height: 0 }, 
+                  shadowOpacity: 0.9, 
+                  shadowRadius: 280, // Banho ótico gigante no background esquerdo/direito
                   elevation: 60,
-                  opacity: glowOpacityAnim,
-                  transform: [{ 
-                    scale: pulseAnim.interpolate({
-                      inputRange: [1, 1.2],
-                      outputRange: [1.1, 1.55] // Aumenta brutalmente as calhas virtuais de luz cá para fora!
-                    })
-                  }]
+                  opacity: glowOpacityAnim
                 }} pointerEvents="none" />
 
                 {/* The Track Base - Pill interior FIXO - Agora atua como Tubo Sideral */}
