@@ -768,7 +768,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   shadowColor: glowColorHex, 
                   shadowOffset: { width: 0, height: 0 }, 
                   shadowOpacity: 1, 
-                  shadowRadius: 40,  // Luz nuclear apertada
+                  shadowRadius: 60,  // Luz nuclear alargada
                   elevation: 15
                 }} pointerEvents="none" />
 
@@ -781,12 +781,26 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   shadowColor: glowColorHex, 
                   shadowOffset: { width: 0, height: 0 }, 
                   shadowOpacity: 1, 
-                  shadowRadius: 120, // Luz espalhada
+                  shadowRadius: 200, // Espalhamento intermédio vasto
                   elevation: 40,
                   opacity: glowOpacityAnim
                 }} pointerEvents="none" />
 
-                {/* 3) Luz Expansiva Extrema (O 'Raio Bem Maior' sem inflamar bordas fantasmas) */}
+                {/* 3) Luz Expansiva Extrema (Raio muito maior, preenche metade do ecrã) */}
+                <Animated.View style={{ 
+                  position: 'absolute',
+                  width: 240, height: 410, 
+                  borderRadius: 120, 
+                  backgroundColor: 'transparent',
+                  shadowColor: glowColorHex, 
+                  shadowOffset: { width: 0, height: 0 }, 
+                  shadowOpacity: 1, 
+                  shadowRadius: 400, // Aura profunda
+                  elevation: 60,
+                  opacity: glowOpacityAnim
+                }} pointerEvents="none" />
+
+                {/* 4) Luz Galática (Clarão que funde o abismo do background) */}
                 <Animated.View style={{ 
                   position: 'absolute',
                   width: 240, height: 410, 
@@ -795,8 +809,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   shadowColor: glowColorHex, 
                   shadowOffset: { width: 0, height: 0 }, 
                   shadowOpacity: 0.9, 
-                  shadowRadius: 280, // Banho ótico gigante no background esquerdo/direito
-                  elevation: 60,
+                  shadowRadius: 700, // Literalmente invade as extremidades do telemóvel
+                  elevation: 80,
                   opacity: glowOpacityAnim
                 }} pointerEvents="none" />
 
