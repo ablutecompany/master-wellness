@@ -1464,7 +1464,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingHorizontal: 24,
     marginTop: 20,
-    zIndex: 100,
+    zIndex: 9999, // Autoridade de clique absoluta sobrepõe qualquer zona de arraste
+    elevation: 99,
   },
   headerRight: {
     alignItems: 'flex-end',
@@ -1473,6 +1474,7 @@ const styles = StyleSheet.create({
   topIconRow: {
     flexDirection: 'row',
     gap: 8,
+    zIndex: 9999,
   },
   iconCircle: {
     width: 44,
@@ -1483,6 +1485,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 9999, // Botões furam qualquer UI invisível por perto
   },
   evalBadge: {
     backgroundColor: 'rgba(115, 188, 255, 0.1)',
