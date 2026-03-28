@@ -297,6 +297,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [analysisMode, setAnalysisMode] = useState<'manual'|'automatico'>('automatico');
   const [autoTimes, setAutoTimes] = useState(1);
   const [autoDays, setAutoDays] = useState(1);
+  const [autoExpanded, setAutoExpanded] = useState(false);
   const [showAutoWarning, setShowAutoWarning] = useState(false);
 
   // ── Inline mini-app for web (same pattern as AppsScreen) ─────────────────
@@ -1498,7 +1499,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                     onPress={() => {
                       if (analysisMode !== 'automatico') {
                         setAnalysisMode('automatico');
+                        setAutoTimes(1);
+                        setAutoDays(1);
+                        setAutoExpanded(true);
                         setShowAutoWarning(true);
+                      } else {
+                        setAutoExpanded(!autoExpanded);
                       }
                     }}
                     style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8, backgroundColor: analysisMode === 'automatico' ? 'rgba(0, 242, 255, 0.15)' : 'transparent', borderWidth: 1, borderColor: analysisMode === 'automatico' ? 'rgba(0, 242, 255, 0.4)' : 'transparent' }}
@@ -1507,8 +1513,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   </TouchableOpacity>
                 </View>
 
-                {/* Painel Expansível de Periodicidade (Só aparece em Automático) */}
-                {analysisMode === 'automatico' && (
+                {/* Painel Expansível de Periodicidade (Só aparece em Automático e Expandido) */}
+                {analysisMode === 'automatico' && autoExpanded && (
                   <View style={{ marginTop: 12, backgroundColor: 'rgba(0,0,0,0.3)', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)' }}>
                     <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 }}>Frequência de Monitorização</Typography>
                     
@@ -1531,7 +1537,31 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                         <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>dias</Typography>
                       </View>
                     </View>
+
+                    {/* Botão de Fixar / Guardar Frequência */}
+                    <TouchableOpacity 
+                      activeOpacity={0.8}
+                      onPress={() => setAutoExpanded(false)}
+                      style={{ marginTop: 24, paddingVertical: 12, backgroundColor: 'rgba(0, 242, 255, 0.15)', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.4)' }}
+                    >
+                      <Typography style={{ color: '#00F2FF', fontWeight: '700', letterSpacing: 1, fontSize: 13 }}>FIXAR FREQUÊNCIA</Typography>
+                    </TouchableOpacity>
                   </View>
+                )}
+
+                {/* Resumo Recolhido (Apenas Automático não-expandido) */}
+                {analysisMode === 'automatico' && !autoExpanded && (
+                  <TouchableOpacity 
+                    activeOpacity={0.8}
+                    onPress={() => setAutoExpanded(true)}
+                    style={{ marginTop: 12, backgroundColor: 'rgba(0, 242, 255, 0.05)', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.2)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+                  >
+                    <View>
+                      <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1 }}>Frequência Fixada</Typography>
+                      <Typography style={{ color: '#00F2FF', fontSize: 15, fontWeight: '600' }}>{autoTimes} {autoTimes === 1 ? 'vez' : 'vezes'} a cada {autoDays} {autoDays === 1 ? 'dia' : 'dias'}</Typography>
+                    </View>
+                    <Typography style={{ color: 'rgba(0, 242, 255, 0.6)', fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' }}>Editar</Typography>
+                  </TouchableOpacity>
                 )}
               </View>
               {/* --- FIM MODO ANÁLISE --- */}
