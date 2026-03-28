@@ -218,6 +218,46 @@ const SlotMachineOdometer = ({ targetNumber }: { targetNumber: number }) => {
   );
 };
 
+// --- MECHANICAL WHEEL PICKER COMPONENT ---
+const WheelPicker = ({ value, onChange, min = 1, max = 30 }: { value: number, onChange: (v: number)=>void, min?: number, max?: number }) => {
+  const ITEM_HEIGHT = 44;
+  const numbers = Array.from({length: max - min + 1}, (_, i) => i + min);
+  
+  return (
+    <View style={{ height: ITEM_HEIGHT * 3, overflow: 'hidden', alignItems: 'center', marginVertical: 10, width: 100, alignSelf: 'center' }}>
+      {/* Indicador Central Cyberpunk */}
+      <View style={{ position: 'absolute', top: ITEM_HEIGHT, height: ITEM_HEIGHT, width: '100%', backgroundColor: 'rgba(0, 242, 255, 0.05)', borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'rgba(0, 242, 255, 0.3)', zIndex: 0 }} pointerEvents="none" />
+      
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        snapToInterval={ITEM_HEIGHT}
+        decelerationRate="fast"
+        onMomentumScrollEnd={(e) => {
+          const index = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
+          if (numbers[index] !== undefined) {
+             onChange(numbers[index]);
+          }
+        }}
+        contentContainerStyle={{ paddingVertical: ITEM_HEIGHT }}
+      >
+        {numbers.map((n) => (
+          <View key={n} style={{ height: ITEM_HEIGHT, justifyContent: 'center', alignItems: 'center' }}>
+            <Typography style={{ 
+              fontSize: value === n ? 24 : 16, 
+              color: value === n ? '#00F2FF' : 'rgba(255,255,255,0.2)', 
+              fontWeight: value === n ? '800' : '500',
+              textShadowColor: value === n ? 'rgba(0, 242, 255, 0.5)' : 'transparent',
+              textShadowRadius: value === n ? 8 : 0
+            }}>
+              {n}
+            </Typography>
+          </View>
+        ))}
+      </ScrollView>
+    </View>
+  );
+};
+
 export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const { width, height } = useWindowDimensions();
   const { installedAppIds, launchApp, uninstallApp } = useStore();
@@ -238,6 +278,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [profileWeight, setProfileWeight] = useState('78');
   const [profileHeight, setProfileHeight] = useState('180');
   const [profileGoal, setProfileGoal] = useState('Performance');
+  
+  // Settings Form State (Modo de Análise)
+  const [analysisMode, setAnalysisMode] = useState<'manual'|'automatico'>('automatico');
+  const [autoFrequency, setAutoFrequency] = useState<'diaria'|'2x_dia'|'2_em_2'|'custom'>('custom');
+  const [customDays, setCustomDays] = useState(3);
+
   // ── Inline mini-app for web (same pattern as AppsScreen) ─────────────────
   const [inlineApp, setInlineApp] = useState<MiniAppManifest | null>(null);
 
@@ -1417,10 +1463,71 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 </TouchableOpacity>
               </View>
               <View style={styles.dividerModal} />
-              <View style={styles.settingsRow}>
-                <Typography style={styles.settingsLabel}>Modo de Análise</Typography>
-                <Typography style={styles.settingsValueHighlight}>Pico Performance</Typography>
+              
+              {/* --- NOVO: MODO DE ANÁLISE INTERATIVO --- */}
+              <View style={{ marginBottom: 24 }}>
+                <Typography style={[styles.settingsLabel, { marginBottom: 12 }]}>Modo de Análise</Typography>
+                
+                {/* Segmented Control - Manual vs Automático */}
+                <View style={{ flexDirection: 'row', backgroundColor: 'rgba(5, 10, 18, 0.4)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', padding: 4 }}>
+                  <TouchableOpacity 
+                    activeOpacity={0.8}
+                    onPress={() => setAnalysisMode('manual')}
+                    style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8, backgroundColor: analysisMode === 'manual' ? 'rgba(0, 242, 255, 0.15)' : 'transparent', borderWidth: 1, borderColor: analysisMode === 'manual' ? 'rgba(0, 242, 255, 0.4)' : 'transparent' }}
+                  >
+                    <Typography style={{ color: analysisMode === 'manual' ? '#00F2FF' : 'rgba(255,255,255,0.4)', fontWeight: '600', fontSize: 13, textShadowColor: analysisMode === 'manual' ? 'rgba(0, 242, 255, 0.5)' : 'transparent', textShadowRadius: 8 }}>MANUAL</Typography>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    activeOpacity={0.8}
+                    onPress={() => setAnalysisMode('automatico')}
+                    style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8, backgroundColor: analysisMode === 'automatico' ? 'rgba(0, 242, 255, 0.15)' : 'transparent', borderWidth: 1, borderColor: analysisMode === 'automatico' ? 'rgba(0, 242, 255, 0.4)' : 'transparent' }}
+                  >
+                    <Typography style={{ color: analysisMode === 'automatico' ? '#00F2FF' : 'rgba(255,255,255,0.4)', fontWeight: '600', fontSize: 13, textShadowColor: analysisMode === 'automatico' ? 'rgba(0, 242, 255, 0.5)' : 'transparent', textShadowRadius: 8 }}>AUTOMÁTICO</Typography>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Painel Expansível de Periodicidade (Só aparece em Automático) */}
+                {analysisMode === 'automatico' && (
+                  <View style={{ marginTop: 12, backgroundColor: 'rgba(0,0,0,0.3)', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)' }}>
+                    <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 }}>Frequência de Monitorização</Typography>
+                    
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                      {[
+                        { id: '2x_dia', label: '2x Dia' },
+                        { id: 'diaria', label: 'Diária' },
+                        { id: '2_em_2', label: '2 em 2 Dias' },
+                        { id: 'custom', label: 'Personalizado' },
+                      ].map(freq => (
+                        <TouchableOpacity
+                          key={freq.id}
+                          activeOpacity={0.8}
+                          onPress={() => setAutoFrequency(freq.id as any)}
+                          style={{
+                            paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20,
+                            backgroundColor: autoFrequency === freq.id ? 'rgba(0, 242, 255, 0.12)' : 'rgba(255,255,255,0.03)',
+                            borderWidth: 1,
+                            borderColor: autoFrequency === freq.id ? 'rgba(0, 242, 255, 0.4)' : 'rgba(255,255,255,0.08)'
+                          }}
+                        >
+                          <Typography style={{ color: autoFrequency === freq.id ? '#fff' : 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: autoFrequency === freq.id ? '600' : '400' }}>{freq.label}</Typography>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+
+                    {/* Wheel Picker Visível apenas se selecionado Personalizado */}
+                    {autoFrequency === 'custom' && (
+                       <View style={{ marginTop: 20, paddingTop: 20, borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.05)', alignItems: 'center' }}>
+                         <Typography style={{ color: 'rgba(0, 242, 255, 0.8)', fontSize: 12, marginBottom: 5 }}>Espaçamento de Exames</Typography>
+                         <WheelPicker value={customDays} onChange={setCustomDays} min={1} max={30} />
+                         <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 5 }}>A cada {customDays} {customDays === 1 ? 'dia' : 'dias'}</Typography>
+                       </View>
+                    )}
+                  </View>
+                )}
               </View>
+              {/* --- FIM MODO ANÁLISE --- */}
+
               <View style={styles.settingsRow}>
                 <Typography style={styles.settingsLabel}>Foco Principal (IA)</Typography>
                 <Typography style={styles.settingsValueHighlight}>Equilíbrio Funcional</Typography>
