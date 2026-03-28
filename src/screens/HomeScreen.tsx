@@ -261,15 +261,27 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   // HOTFIX CRUCIAL: Iniciar e Forçar o loop de animação das setas (estava cego sem isto!)
   React.useEffect(() => {
-    const loop = Animated.loop(
+    let isActive = true;
+    const runAnimation = () => {
+      arrowAnim.setValue(0); // Reinicia obrigatoriamente para 0
       Animated.timing(arrowAnim, {
         toValue: 1,
         duration: 1500, // Ciclo mais urgente de 1.5 seg
-        useNativeDriver: false, // Forçando JS Thread resolve bugs obscuros de opacidade fantasma na Web
-      })
-    );
-    loop.start();
-    return () => loop.stop();
+        useNativeDriver: false, // Forçando JS Thread obriga bypass à placa gráfica
+        isInteraction: false, // Para não ser pausado por toques do utilizador
+      }).start(({ finished }) => {
+        if (finished && isActive) {
+          runAnimation(); // Loop Recursivo Infinito à prova de falhas na Web!
+        }
+      });
+    };
+    
+    runAnimation();
+    
+    return () => { 
+      isActive = false; 
+      arrowAnim.stopAnimation(); 
+    };
   }, [arrowAnim]);
 
   // Backdrop darkening: fades to black when Temas or Dados panels slide open
