@@ -613,6 +613,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, { dx, dy, y0 }) => {
+        // Se a gaveta estiver aberta, protegemos o scroll horizontal das apps
+        if (lastDrawerY.current < 200 && y0 > 250 && Math.abs(dx) > Math.abs(dy)) {
+          return false;
+        }
+
         // Capture se for um arrastão longo (lateral para Menus ou para cima na zona inferior)
         if (Math.abs(dx) > 30) return true;
         if (Math.abs(dy) > 20 && y0 > 300) return true;
@@ -628,13 +633,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         }
       },
       onPanResponderRelease: (_, { x0, dx, dy, vy, y0 }) => {
-        // Left Edge Swipe -> Themes
-        if (x0 < 120 && dx > 50) {
+        const isDrawerOpen = lastDrawerY.current < 200;
+
+        // Left Edge Swipe -> Themes (blocked if drawer is open)
+        if (!isDrawerOpen && x0 < 120 && dx > 50) {
           openThemesRef.current();
           return;
         }
-        // Right Edge Swipe -> Data
-        if (x0 > width - 120 && dx < -50) {
+        // Right Edge Swipe -> Data (blocked if drawer is open)
+        if (!isDrawerOpen && x0 > width - 120 && dx < -50) {
           openDataRef.current();
           return;
         }
@@ -664,6 +671,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       touchStartY = e.touches[0].clientY;
     };
     const onTouchEnd = (e: TouchEvent) => {
+      // Se a gaveta estiver aberta, ignoramos gestos laterais (protege o carrocel das apps)
+      if (lastDrawerY.current < 200) return;
+
       const dx = e.changedTouches[0].clientX - touchStartX;
       const dy = e.changedTouches[0].clientY - touchStartY;
       const screenW = window.innerWidth;
