@@ -1358,9 +1358,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               <ScrollView 
                 horizontal 
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={[styles.appGrid, { paddingHorizontal: 24, gap: 24, justifyContent: 'flex-start' }]}
+                contentContainerStyle={[styles.appGrid, { justifyContent: 'flex-start' }]}
                 decelerationRate="fast"
-                snapToInterval={88} // Approximate width of item + gap
+                snapToInterval={width / 3}
               >
                 {[
                    { id: 'nutri-menu', name: '_Meal\nplanner', icon: <Utensils size={24} color="#00D4AA" />, color: '#00D4AA' },
@@ -1373,7 +1373,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                    return (
                    <TouchableOpacity
                      key={drawerApp.id}
-                     style={[styles.appItem, !installed && { opacity: 0.4 }]}
+                     style={[styles.appItem, { width: width / 3 }, !installed && { opacity: 0.4 }]}
                      activeOpacity={installed ? 0.7 : 1}
                      onPress={() => {
                        if (manifest && installed) {
