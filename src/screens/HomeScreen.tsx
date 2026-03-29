@@ -734,13 +734,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     if (app) {
       try {
         // Tentativa de navegação forçada para o topo
-        const nav = navigation.getParent() || navigation;
-        console.log('[HomeScreen] Navegando para MiniApp:', { appId, url: app.url });
-        
-        nav.navigate('MiniApp', {
-          appId: app.id,
-          name: app.name,
-          url: app.url
+        navigation.navigate('MiniApp', {
+          app
         });
       } catch (err: any) {
         console.error('[HomeScreen] Erro na navegação:', err);
@@ -1381,8 +1376,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                           if (Platform.OS === 'web') {
                             setInlineApp(manifest);
                           } else {
-                            const nav = navigation?.getParent() || navigation;
-                            nav?.navigate('MiniApp', { app: manifest });
+                            navigation?.navigate('MiniApp', { app: manifest });
                           }
                        }
                        // not installed → do nothing; install from the list below
@@ -1454,8 +1448,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                               if (Platform.OS === 'web') {
                                 setInlineApp(manifest);
                               } else {
-                                const nav = navigation?.getParent() || navigation;
-                                nav?.navigate('MiniApp', { app: manifest });
+                                navigation?.navigate('MiniApp', { app: manifest });
                               }
                             }
                           }
@@ -1475,8 +1468,21 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                           style={[styles.actionBtn, isInstalled ? styles.uninstallBtn : styles.installBtn, !isReal && { opacity: 0.4 }]}
                           onPress={() => {
                             if (!isReal) return;
-                            if (isInstalled) uninstallApp(id);
-                            else useStore.getState().installApp(id);
+                            if (isInstalled) {
+                              uninstallApp(id);
+                            } else {
+                              useStore.getState().installApp(id);
+                              
+                              // Auto-launch on install to give clear feedback
+                              const manifest = MINI_APP_CATALOG.find((m: any) => m.id === id);
+                              if (manifest) {
+                                if (Platform.OS === 'web') {
+                                  setInlineApp(manifest);
+                                } else {
+                                  navigation?.navigate('MiniApp', { app: manifest });
+                                }
+                              }
+                            }
                           }}
                         >
                           <Typography style={[styles.actionText, isInstalled ? styles.uninstallText : styles.installText]}>
