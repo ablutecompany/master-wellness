@@ -32,12 +32,12 @@ describe('Insights Service (UI Adapter)', () => {
 
     // Erro Técnico vs Dados Insuficientes
     expect(sleep?.status).toBe('error');
-    expect(sleep?.paragraph1).toBe('Serviço Indisponível');
-    expect(sleep?.refText2).toBe('Falha Técnica');
+    expect(sleep?.paragraph1).toBe('Não foi possível atualizar esta leitura');
+    expect(sleep?.refText2).toBe('Sem Dados');
 
     expect(nutrition?.status).toBe('insufficient_data');
-    expect(nutrition?.paragraph1).toBe('Dados Insuficientes');
-    expect(nutrition?.refText2).toBe('A Aguardar');
+    expect(nutrition?.paragraph1).toBe('Faltam mais registos');
+    expect(nutrition?.refText2).toBe('A Processar');
 
     // Confirmamos que não houve colapso
     expect(sleep?.paragraph1).not.toBe(nutrition?.paragraph1);
@@ -57,7 +57,7 @@ describe('Insights Service (UI Adapter)', () => {
   
       expect(sleep?.status).toBe('stale');
       expect(sleep?.isStale).toBe(true);
-      expect(sleep?.paragraph1).toBe('Revalidação Necessária');
+      expect(sleep?.paragraph1).toBe('Dados desatualizados');
   });
 
   it('deve formatar estado ready perfeitamente', () => {

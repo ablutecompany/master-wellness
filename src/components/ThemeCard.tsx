@@ -19,6 +19,9 @@ interface ThemeProps {
   textValue?: string;
   suggestions?: { title: string, desc: string }[];
   domain?: string;
+  status?: string;
+  isStale?: boolean;
+  onCtaPress?: () => void;
 }
 
 const ScoreGauge = ({ score, iconName, label }: { score: number, iconName?: keyof typeof IconMap, label?: string }) => {
@@ -96,7 +99,10 @@ export const ThemeCard: React.FC<ThemeProps> = ({
   iconName,
   textValue,
   suggestions,
-  domain
+  domain,
+  status,
+  isStale,
+  onCtaPress
 }) => {
   const [showRefs, setShowRefs] = useState(false);
   const [showSugs, setShowSugs] = useState(false);
@@ -125,6 +131,34 @@ export const ThemeCard: React.FC<ThemeProps> = ({
             </View>
           )}
         </View>
+
+        {!(status === 'stale' || status === 'unavailable' || status === 'insufficient_data' || status === 'error') && (
+          <View style={[styles.actionRow, { marginTop: 0, marginBottom: 20 }]}>
+            <TouchableOpacity 
+              style={styles.refButton} 
+              onPress={() => setShowRefs(true)}
+              activeOpacity={0.7}
+            >
+              <Typography variant="caption" style={styles.refText}>REFERÊNCIAS</Typography>
+            </TouchableOpacity>
+
+            {suggestions && suggestions.length > 0 && (
+              <TouchableOpacity 
+                style={[styles.refButton, styles.sugButton]} 
+                onPress={() => {
+                  setShowSugs(true);
+                  if (domain) {
+                     const { semanticOutputService } = require('../services/semantic-output');
+                     semanticOutputService.trackConsumption(domain, 'tapped');
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <Typography variant="caption" style={styles.sugText}>AÇÕES SUGERIDAS</Typography>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
         
         <View style={styles.divider} />
 
@@ -134,31 +168,22 @@ export const ThemeCard: React.FC<ThemeProps> = ({
           {paragraph2}
         </Typography>
 
-        <View style={styles.actionRow}>
-          <TouchableOpacity 
-            style={styles.refButton} 
-            onPress={() => setShowRefs(true)}
-            activeOpacity={0.7}
-          >
-            <Typography variant="caption" style={styles.refText}>REFERÊNCIAS</Typography>
-          </TouchableOpacity>
-
-          {suggestions && suggestions.length > 0 && (
-            <TouchableOpacity 
-              style={[styles.refButton, styles.sugButton]} 
-              onPress={() => {
-                setShowSugs(true);
-                if (domain) {
-                   const { semanticOutputService } = require('../services/semantic-output');
-                   semanticOutputService.trackConsumption(domain, 'tapped');
-                }
-              }}
-              activeOpacity={0.7}
-            >
-              <Typography variant="caption" style={styles.sugText}>OPTIMIZAÇÃO</Typography>
-            </TouchableOpacity>
-          )}
-        </View>
+        {(status === 'stale' || status === 'unavailable' || status === 'insufficient_data' || status === 'error') && (
+           <View style={{ marginTop: 24, backgroundColor: 'rgba(255,255,255,0.02)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+             <TouchableOpacity 
+               activeOpacity={0.7} 
+               onPress={onCtaPress}
+               style={{ backgroundColor: 'rgba(0, 242, 255, 0.1)', borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.3)', paddingVertical: 12, borderRadius: 12, alignItems: 'center' }}
+             >
+                <Typography style={{ color: '#00F2FF', fontWeight: '700', fontSize: 12, letterSpacing: 1 }}>
+                  {status === 'error' ? 'TENTAR NOVAMENTE' :
+                   status === 'stale' ? 'ATUALIZAR AGORA' :
+                   status === 'unavailable' ? 'COMEÇAR REGISTO' :
+                   'ADICIONAR MAIS REGISTOS'}
+                </Typography>
+             </TouchableOpacity>
+           </View>
+        )}
       </BlurView>
 
       {/* REFS MODAL */}
@@ -171,12 +196,21 @@ export const ThemeCard: React.FC<ThemeProps> = ({
           />
           <View style={styles.refModalCentered}>
             <View style={styles.refModal}>
-              <Typography style={styles.refModalContent1}>
-                {refText1}
-              </Typography>
-              <Typography variant="caption" style={styles.refModalContent2}>
-                {refText2}
-              </Typography>
+              <View style={{ marginBottom: 20 }}>
+                 <Typography style={{ color: '#00F2FF', fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>1. Como chegámos aqui</Typography>
+                 <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 20 }}>Cruzámos o seu histórico recente de sinais biográficos com a baseline estabelecida para si, em vez de compararmos com médias populacionais genéricas.</Typography>
+              </View>
+
+              <View style={{ marginBottom: 20 }}>
+                 <Typography style={{ color: '#00F2FF', fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>2. Sinais que mais pesaram</Typography>
+                 <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 20 }}>Esta interpretação valorizou primariamente a estabilidade cronológica face ao dia anterior e as assimetrias detetadas nos seus tempos de pausa e resposta metabólica.</Typography>
+              </View>
+
+              <View style={{ marginBottom: 24 }}>
+                 <Typography style={{ color: '#00F2FF', fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>3. Limites desta leitura</Typography>
+                 <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 20 }}>Uma leitura contextual não substitui avaliação técnica. Variáveis isoladas imprevisíveis (como stress súbito) não têm representação mecânica absoluta.</Typography>
+              </View>
+
               <TouchableOpacity 
                 style={styles.refCloseBtn} 
                 onPress={() => setShowRefs(false)}
@@ -198,12 +232,13 @@ export const ThemeCard: React.FC<ThemeProps> = ({
           />
           <View style={styles.refModalCentered}>
             <View style={[styles.refModal, { borderColor: 'rgba(0, 255, 149, 0.3)' }]}>
-              <Typography variant="h3" style={{ color: '#00FF9D', marginBottom: 16 }}>Sugestões</Typography>
+              <Typography variant="h3" style={{ color: '#00FF9D', marginBottom: 16 }}>Sugestões de Ação</Typography>
               <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
-                {suggestions?.map((sug, i) => (
-                  <View key={i} style={{ marginBottom: 16 }}>
-                    <Typography style={{ color: '#ffffff', fontWeight: '700', fontSize: 13, marginBottom: 4 }}>• {sug.title}</Typography>
-                    <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, lineHeight: 18 }}>{sug.desc}</Typography>
+                {suggestions?.slice(0, 3).map((sug: any, i: number) => (
+                  <View key={i} style={{ marginBottom: 12, backgroundColor: 'rgba(0, 255, 149, 0.05)', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(0, 255, 149, 0.1)' }}>
+                    <Typography style={{ color: '#00FF9D', fontWeight: '800', fontSize: 13, marginBottom: 6 }}>DICA {i + 1}</Typography>
+                    <Typography style={{ color: '#ffffff', fontWeight: '700', fontSize: 14, marginBottom: 4 }}>{sug.title}</Typography>
+                    <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 }}>{sug.desc}</Typography>
                   </View>
                 ))}
               </ScrollView>
@@ -229,7 +264,7 @@ const styles = StyleSheet.create({
   },
   glassCard: {
     padding: 24,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: 'rgba(25,25,30,0.6)', 
     paddingTop: 32,
     paddingBottom: 28,
   },

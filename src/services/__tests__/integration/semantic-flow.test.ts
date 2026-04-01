@@ -103,7 +103,7 @@ describe('Integration Flow: Semantic Lifecycle & Presenter Pipeline', () => {
     // Era "ready" mas estava Stale -> deve virar "stale" e exibir revalidação e não o summary
     expect(recovery?.status).toBe('stale');
     expect(recovery?.isStale).toBe(true);
-    expect(recovery?.paragraph1).toBe('Revalidação Necessária');
+    expect(recovery?.paragraph1).toBe('Dados desatualizados');
 
     // Performance test
     expect(performance?.status).toBe('ready');
@@ -112,11 +112,11 @@ describe('Integration Flow: Semantic Lifecycle & Presenter Pipeline', () => {
     // Sleep estava Ready no backend mas isStale = true. O Presenter MUTA para stale e usa copy PT-PT de revalidação.
     expect(sleep?.status).toBe('stale');
     expect(sleep?.isStale).toBe(true);
-    expect(sleep?.paragraph1).toBe('Revalidação Necessária');
+    expect(sleep?.paragraph1).toBe('Dados desatualizados');
 
     // Nutrition era logo Stale de nascença
     expect(nutrition?.status).toBe('stale');
-    expect(nutrition?.paragraph1).toBe('Revalidação Necessária');
+    expect(nutrition?.paragraph1).toBe('Dados desatualizados');
   });
 
   it('Flow B: Lifecycle Global Indisponível (insufficient_data)', () => {
@@ -133,10 +133,10 @@ describe('Integration Flow: Semantic Lifecycle & Presenter Pipeline', () => {
     const energy = insights.find(i => i.domain === 'energy');
 
     expect(sleep?.status).toBe('insufficient_data');
-    expect(sleep?.paragraph1).toBe('Dados Insuficientes');
+    expect(sleep?.paragraph1).toBe('Faltam mais registos');
 
     expect(energy?.status).toBe('insufficient_data');
-    expect(energy?.refText2).toBe('A Aguardar');
+    expect(energy?.refText2).toBe('A Processar');
   });
 
   it('Flow C: Fallbacks de Produção quando o Pipeline Falha ou quebra o Guardrail', () => {
@@ -155,10 +155,10 @@ describe('Integration Flow: Semantic Lifecycle & Presenter Pipeline', () => {
 
     // Presenter deve ter recebido a mutação do Guardrail e formatado o ecrã para ERRO
     expect(sleep?.status).toBe('error');
-    expect(sleep?.paragraph1).toBe('Serviço Indisponível'); 
+    expect(sleep?.paragraph1).toBe('Não foi possível atualizar esta leitura'); 
     
     // Prova de que error (falha técnica) não se confunde com insufficient_data
-    expect(sleep?.paragraph1).not.toBe('Dados Insuficientes');
+    expect(sleep?.paragraph1).not.toBe('Faltam mais registos');
   });
 
 });

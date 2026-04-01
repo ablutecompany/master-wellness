@@ -13,6 +13,7 @@ export interface UIInsight {
   score?: number;
   status: SemanticStatus;
   isStale?: boolean; // Sinalizador biográfico
+  band?: 'good' | 'fair' | 'poor' | string;
   
   // UI Presentation Fields
   paragraph1: string;
@@ -44,18 +45,34 @@ export function getSemanticInsights(): UIInsight[] {
     const output = semanticOutputService.getDomainOutput(d);
     
     // ── FALLBACK DETERMINÍSTICO (PT-PT) ──
-    if (!output || output.status === 'unavailable' || output.status === 'error') {
+    if (!output || output.status === 'error') {
       return {
         domain: d as any,
         title: mapDomainToTitle(d),
         iconName: mapDomainToIcon(d),
         score: output?.score || 0,
-        status: (output?.status || 'unavailable') as any,
+        status: 'error' as any,
         isStale: !!output?.isStale,
-        paragraph1: 'Serviço Indisponível',
-        paragraph2: 'Não foi possível carregar a interpretação biométrica deste domínio neste momento.',
+        paragraph1: 'Não foi possível atualizar esta leitura',
+        paragraph2: 'O recálculo diário não conseguiu completar-se com sucesso. Pode haver uma falha temporária.',
         refText1: 'Estado',
-        refText2: 'Falha Técnica',
+        refText2: 'Sem Dados',
+        suggestions: []
+      };
+    }
+
+    if (output.status === 'unavailable') {
+      return {
+        domain: d as any,
+        title: mapDomainToTitle(d),
+        iconName: mapDomainToIcon(d),
+        score: output?.score || 0,
+        status: 'unavailable',
+        isStale: !!output?.isStale,
+        paragraph1: 'Ainda sem dados suficientes',
+        paragraph2: 'Para ter acesso a esta interpretação, sincronize uma app aderente ou inicie os primeiros passos.',
+        refText1: 'Estado',
+        refText2: 'Sem Dados',
         suggestions: []
       };
     }
@@ -68,10 +85,10 @@ export function getSemanticInsights(): UIInsight[] {
         score: output?.score || 0,
         status: 'insufficient_data',
         isStale: !!output?.isStale,
-        paragraph1: 'Dados Insuficientes',
-        paragraph2: 'Aguardando massa crítica de sinais biográficos para interpretação formal e fiável.',
+        paragraph1: 'Faltam mais registos',
+        paragraph2: 'Temos alguns registos, porém precisamos de mais consistência para fechar o padrão.',
         refText1: 'Métricas',
-        refText2: 'A Aguardar',
+        refText2: 'A Processar',
         suggestions: []
       };
     }
@@ -85,27 +102,28 @@ export function getSemanticInsights(): UIInsight[] {
         score: output.score || 0,
         status: 'stale',
         isStale: true,
-        paragraph1: 'Revalidação Necessária',
-        paragraph2: 'Aguardando novos sinais biográficos para atualizar este domínio.',
+        paragraph1: 'Dados desatualizados',
+        paragraph2: 'Os indicadores que possuímos estão a perder a validade. Refresque a sua última medição.',
         refText1: 'Estado',
-        refText2: 'Pendente',
+        refText2: 'Desatualizado',
         suggestions: []
       };
     }
 
-    const { status, statusLabel, score, mainInsight, recommendations } = output;
+    const { status, statusLabel, score, band, mainInsight, recommendations } = output;
 
     return {
       domain: d as any,
       title: mapDomainToTitle(d),
       iconName: mapDomainToIcon(d),
       score,
+      band,
       status: status as any,
       isStale: false,
-      paragraph1: mainInsight?.summary || statusLabel || 'Tendência Estável',
-      paragraph2: mainInsight?.description || 'Os seus sinais biográficos indicam um rastro consistente.',
-      refText1: 'Integridade',
-      refText2: 'Verificada',
+      paragraph1: mainInsight?.summary || statusLabel || 'Tudo Regular',
+      paragraph2: mainInsight?.description || 'Os seus registos apontam para estabilidade nesta área.',
+      refText1: 'Sinais base',
+      refText2: 'Analisados',
       suggestions: (recommendations || []).map((r: any) => ({
         title: r.title,
         desc: r.actionable

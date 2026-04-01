@@ -5,7 +5,7 @@ import { theme } from '../theme';
 import { BrandLogo } from '../components/BrandLogo';
 import { ThemeCard } from '../components/ThemeCard';
 import { HistoricoModal } from '../components/HistoricoModal';
-import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, ChevronRight, ChevronDown, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, ChevronsDown, Sparkles } from 'lucide-react-native';
+import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, ChevronRight, ChevronDown, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, ChevronsDown, Sparkles, ArrowLeft } from 'lucide-react-native';
 import Svg, { Path, Text as SvgText, TextPath, Defs, G } from 'react-native-svg';
 import { BiomechanicRelic } from '../components/BiomechanicRelic';
 import { SiderealBackground } from '../components/SiderealBackground';
@@ -196,6 +196,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [bioTab, setBioTab] = useState(0);
   const [themesOpen, setThemesOpen] = useState(false);
   const [dataOpen, setDataOpen] = useState(false);
+  const [stableExpanded, setStableExpanded] = useState(false);
   // Profile Form State (Connected to real state)
   const [profileName, setProfileName] = useState(user?.name || 'Utilizadora');
   const [profileAge, setProfileAge] = useState(user?.age ? user.age.toString() : '');
@@ -986,7 +987,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
       {/* ── SIDE PANEL: THEMES (LEFT) ─────────────────────────────────────── */}
       <Animated.View style={[styles.sidePanel, styles.leftPanel, { transform: [{ translateX: themesAnim }] }]}>
-        <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill}>
+        <BlurView intensity={120} tint="dark" style={StyleSheet.absoluteFill}>
+          {/* SCRIM DE ESCURECIMENTO ADICIONAL PARA CORTAR BLEED-THROUGH */}
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0, 0, 0, 0.4)', zIndex: -1 }]} />
 
           {/* ── Compact Header ── */}
           <View style={styles.themePanelHeader}>
@@ -1052,62 +1055,161 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                         </TouchableOpacity>
                       </View>
 
-                      {/* CrossDomainCoherence (Transversal Info) */}
-                      {crossDomainSummary && crossDomainSummary.coherenceFlags.length > 0 && (
-                        <View style={{ marginBottom: 24, padding: 16, backgroundColor: 'rgba(0, 242, 255, 0.05)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.2)' }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                            <Zap size={16} color="#00F2FF" style={{ marginRight: 8 }} />
-                            <Typography style={{ color: '#00F2FF', fontWeight: '800', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase' }}>
-                              Leitura Harmonizada
-                            </Typography>
-                          </View>
-                          <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, lineHeight: 20, marginBottom: 12 }}>
-                            {crossDomainSummary.prioritySignals[0] || crossDomainSummary.summary}
-                          </Typography>
-                          {crossDomainSummary.deduplicatedRecommendations && crossDomainSummary.deduplicatedRecommendations.length > 0 && (
-                            <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)', paddingTop: 12 }}>
-                              <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>
-                                Prioridade Atual
-                              </Typography>
-                              <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>
-                                • {crossDomainSummary.deduplicatedRecommendations[0].actionable}
-                              </Typography>
-                            </View>
-                          )}
-                        </View>
-                      )}
+                      {(() => {
+                        const hasCrossDomain = crossDomainSummary && crossDomainSummary.coherenceFlags && crossDomainSummary.coherenceFlags.length > 0;
+                        
+                        let highestPriority: any = null;
+                        const urgentOrActionable: any[] = [];
+                        const stable: any[] = [];
 
-                      {/* Theme buttons */}
-                      <View style={styles.themeIndexList}>
-                        {semanticThemes.map((t: any, i: number) => {
+                        semanticThemes.forEach((t: any, idx: number) => {
+                          const isUrgent = t.band === 'poor' || t.band === 'fair' || t.status === 'stale' || t.status === 'unavailable' || t.status === 'insufficient_data';
+                          const item = { ...t, originalIndex: idx + 1 };
+
+                          if (isUrgent) {
+                            if (!highestPriority && !hasCrossDomain) {
+                              highestPriority = item;
+                            } else if (!hasCrossDomain) {
+                              const getWeight = (x: any) => {
+                                if (x.band === 'poor') return 5;
+                                if (x.status === 'stale' || x.status === 'unavailable') return 4;
+                                if (x.status === 'insufficient_data') return 3;
+                                if (x.band === 'fair') return 2;
+                                return 1;
+                              };
+                              if (getWeight(item) > getWeight(highestPriority)) {
+                                urgentOrActionable.push(highestPriority);
+                                highestPriority = item;
+                              } else {
+                                urgentOrActionable.push(item);
+                              }
+                            } else {
+                              urgentOrActionable.push(item);
+                            }
+                          } else {
+                            stable.push(item);
+                          }
+                        });
+
+                        // Se não houver CrossDomain nem Urgências, promover um estável a destaque.
+                        if (!highestPriority && !hasCrossDomain && stable.length > 0) {
+                          highestPriority = stable.shift();
+                        }
+
+                        const renderDomainBtn = (t: any) => {
                           const scoreColor =
                             t.score === undefined ? '#73BCFF'
                             : t.score >= 75 ? '#00F2FF'
                             : t.score >= 50 ? '#FFA500'
                             : '#FF6060';
-                          const IconCmp = ({ Activity: Activity, Zap: Zap, Target: Target, Heart: Heart, Moon: Moon, Brain: Brain, User: User } as any)[t.iconName || 'Activity'] || Activity;
+                          const IconCmp = ({ Activity, Zap, Target, Heart, Moon, Brain, User } as any)[t.iconName || 'Activity'] || Activity;
                           return (
                             <TouchableOpacity
-                              key={i}
+                              key={t.domain}
                               style={styles.themeIndexBtn}
                               activeOpacity={0.7}
-                              onPress={() => {
-                                themesFlatListRef.current?.scrollToIndex({ index: i + 1, animated: true });
-                              }}
+                              onPress={() => themesFlatListRef.current?.scrollToIndex({ index: t.originalIndex, animated: true })}
                             >
                               <View style={[styles.themeIndexBtnIcon, { borderColor: scoreColor + '40' }]}>
                                 <IconCmp size={16} color={scoreColor} />
                               </View>
                               <Typography style={styles.themeIndexBtnTitle}>{t.title}</Typography>
-                              <View style={[styles.themeIndexScore, { backgroundColor: scoreColor + '20', borderColor: scoreColor + '50' }]}>
-                                <Typography style={[styles.themeIndexScoreText, { color: scoreColor }]}>
-                                  {t.score !== undefined ? t.score : t.textValue}
-                                </Typography>
-                              </View>
+                              
+                              {(t.status === 'stale' || t.status === 'unavailable' || t.status === 'insufficient_data') ? (
+                                <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+                                  <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 9, fontWeight: '700', textTransform: 'uppercase' }}>
+                                    {t.status === 'stale' ? 'Desatualizado' : (t.status === 'unavailable' ? 'Sem dados' : 'A Processar')}
+                                  </Typography>
+                                </View>
+                              ) : (
+                                <View style={[styles.themeIndexScore, { backgroundColor: scoreColor + '20', borderColor: scoreColor + '50' }]}>
+                                  <Typography style={[styles.themeIndexScoreText, { color: scoreColor }]}>
+                                    {t.score !== undefined ? t.score : t.textValue}
+                                  </Typography>
+                                </View>
+                              )}
                             </TouchableOpacity>
                           );
-                        })}
-                      </View>
+                        };
+
+                        return (
+                          <View style={{ width: '100%' }}>
+                            {/* BLOCO A: Principal (CrossDomain ou Highest Priority) */}
+                            {hasCrossDomain ? (
+                              <View style={{ marginBottom: 24, padding: 20, backgroundColor: 'rgba(0, 242, 255, 0.05)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.3)' }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                                  <Zap size={18} color="#00F2FF" style={{ marginRight: 8 }} />
+                                  <Typography style={{ color: '#00F2FF', fontWeight: '800', fontSize: 13, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                                    Foco Principal
+                                  </Typography>
+                                </View>
+                                <Typography style={{ color: 'rgba(255,255,255,0.95)', fontSize: 15, lineHeight: 22, fontWeight: '500', marginBottom: 16 }}>
+                                  {crossDomainSummary.prioritySignals[0] || crossDomainSummary.summary}
+                                </Typography>
+                                {crossDomainSummary.deduplicatedRecommendations && crossDomainSummary.deduplicatedRecommendations.length > 0 && (
+                                  <View style={{ backgroundColor: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 12 }}>
+                                    <Typography style={{ color: '#00F2FF', fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6, fontWeight: '700' }}>
+                                      Ação Sugerida
+                                    </Typography>
+                                    <Typography style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 18 }}>
+                                      {crossDomainSummary.deduplicatedRecommendations[0].actionable}
+                                    </Typography>
+                                  </View>
+                                )}
+                              </View>
+                            ) : highestPriority ? (
+                              <TouchableOpacity
+                                style={{ marginBottom: 24, padding: 20, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
+                                activeOpacity={0.7}
+                                onPress={() => themesFlatListRef.current?.scrollToIndex({ index: highestPriority.originalIndex, animated: true })}
+                              >
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                                  <Target size={18} color="rgba(255,255,255,0.8)" style={{ marginRight: 8 }} />
+                                  <Typography style={{ color: 'rgba(255,255,255,0.8)', fontWeight: '800', fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase' }}>Foco do Dia</Typography>
+                                </View>
+                                <Typography style={{ color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 8 }}>{highestPriority.title}</Typography>
+                                <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, lineHeight: 20, marginBottom: 16 }}>{highestPriority.paragraph1}</Typography>
+                                
+                                <View style={{ alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 }}>
+                                  <Typography style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Ver Direção →</Typography>
+                                </View>
+                              </TouchableOpacity>
+                            ) : null}
+
+                            {/* BLOCO B: Necessitam Atenção / Ação */}
+                            {urgentOrActionable.length > 0 && (
+                              <View style={{ marginBottom: 24 }}>
+                                <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12, marginLeft: 4 }}>
+                                  Requerem Atenção
+                                </Typography>
+                                <View style={styles.themeIndexList}>
+                                  {urgentOrActionable.map(t => renderDomainBtn(t))}
+                                </View>
+                              </View>
+                            )}
+
+                            {/* BLOCO C: Estáveis (Recolhidos) */}
+                            {stable.length > 0 && (
+                              <View style={{ marginTop: 8, marginBottom: 24 }}>
+                                <TouchableOpacity
+                                  activeOpacity={0.7}
+                                  onPress={() => setStableExpanded(!stableExpanded)}
+                                  style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 4, borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
+                                >
+                                  <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '600' }}>Sinais Estáveis ({stable.length})</Typography>
+                                  <ChevronDown size={18} color="rgba(255,255,255,0.6)" style={{ transform: [{ rotate: stableExpanded ? '180deg' : '0deg' }] }} />
+                                </TouchableOpacity>
+                                
+                                {stableExpanded && (
+                                  <View style={styles.themeIndexList}>
+                                    {stable.map(t => renderDomainBtn(t))}
+                                  </View>
+                                )}
+                              </View>
+                            )}
+                          </View>
+                        );
+                      })()}
 
                       {/* Bottom section: hint */}
 
@@ -1122,29 +1224,57 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               return (
                 <View style={[styles.themePage, { height: panelH }]}>
                   <View style={styles.themeCardPageInner}>
-                    {/* Page indicator */}
-                    <View style={styles.themePageIndicatorRow}>
-                      <Typography style={styles.themePageIndicator}>{idx + 1} / {semanticThemes.length}</Typography>
+                    {/* STICKY TOP BAR */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', backgroundColor: 'transparent' }}>
+                      <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={() => themesFlatListRef.current?.scrollToIndex({ index: 0, animated: true })}
+                        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12 }}
+                      >
+                        <ArrowLeft size={16} color="#00F2FF" style={{ marginRight: 6 }} />
+                        <Typography style={{ color: '#00F2FF', fontSize: 13, fontWeight: '700' }}>Índice</Typography>
+                      </TouchableOpacity>
+
+                      <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 16, fontWeight: '800' }}>{t.title}</Typography>
+                      
+                      <View style={{ width: 80, alignItems: 'flex-end' }}>
+                        <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: '600' }}>{idx + 1} / {semanticThemes.length}</Typography>
+                      </View>
                     </View>
 
                     {/* The actual card — scrollable inside its page */}
                     <ScrollView
                       style={{ flex: 1 }}
-                      contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 16 }}
+                      contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 32, paddingTop: 16 }}
                       showsVerticalScrollIndicator={false}
                       nestedScrollEnabled
                     >
-                      <ThemeCard {...t} iconName={t.iconName as any} />
+                      <ThemeCard 
+                        {...t} 
+                        iconName={t.iconName as any} 
+                        onCtaPress={() => {
+                          const routeMap: Record<string, string> = {
+                             sleep: 'sleep-deep',
+                             nutrition: 'nutri-menu'
+                          };
+                          const appId = t.domain ? routeMap[t.domain] : null;
+                          if (appId) {
+                            const { MINI_APP_CATALOG } = require('../miniapps/catalog');
+                            const app = MINI_APP_CATALOG.find((a: any) => a.id === appId);
+                            if (app) {
+                              launchApp(app);
+                              if (Platform.OS === 'web') {
+                                setInlineApp(app);
+                              } else {
+                                navigation?.navigate('MiniApp', { app });
+                              }
+                            }
+                          } else {
+                            setDataOpen(true); 
+                          }
+                        }}
+                      />
                     </ScrollView>
-
-                    {/* Back to index */}
-                    <TouchableOpacity
-                      style={styles.themeBackBtn}
-                      activeOpacity={0.7}
-                      onPress={() => themesFlatListRef.current?.scrollToIndex({ index: 0, animated: true })}
-                    >
-                      <Typography style={styles.themeBackBtnText}>↑  índice</Typography>
-                    </TouchableOpacity>
                   </View>
                 </View>
               );
