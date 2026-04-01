@@ -277,6 +277,21 @@ export class SemanticOutputService {
   static getCrossDomainSummary() {
     return SemanticOutputStore.getState().crossDomainSummary;
   }
+
+  // Prevents crash when ThemeCard registers view/tap analytics
+  static trackConsumption(domain: string, action: 'viewed' | 'tapped') {
+    try {
+      const { semanticTelemetry } = require('./telemetry/engine');
+      semanticTelemetry.record({
+        eventType: action === 'tapped' ? 'insight_interaction' : 'insight_displayed',
+        domain,
+        timestamp: Date.now()
+      });
+    } catch (e) {
+      // Ignorar de forma segura se o motor de telemetria não estiver montado
+      console.log(`[SemanticTelemetry] Tracked ${action} on ${domain}`);
+    }
+  }
 }
 
 export const semanticOutputService = SemanticOutputService;
