@@ -1345,9 +1345,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             id: 'E', 
             shortLabel: 'Ecossistema',
             markers: activeFacts.map(f => ({
-              name: f.type.replace(/_/g, ' ').toUpperCase(),
-              value: typeof f.value === 'string' ? f.value : (f.value?.displayValue || 'Ativo'),
-              unit: f.sourceAppId
+              name: f?.type ? String(f.type).replace(/_/g, ' ').toUpperCase() : 'SINAL',
+              value: typeof f?.value === 'string' ? f.value : (f?.value?.displayValue || 'Ativo'),
+              unit: f?.sourceAppId || ''
             }))
           },
         ].filter(c => c.id === 'E' || selectedGroups.includes(c.id));
