@@ -138,8 +138,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const user = useStore(Selectors.selectUser);
   const credits = useStore(Selectors.selectCredits);
   const measurements = useStore(Selectors.selectMeasurements);
-  const themeScores = useStore(Selectors.selectThemeScores);
-  const localGlobalScore = useStore(Selectors.selectGlobalScore);
   const installedAppIds = useStore(Selectors.selectInstalledAppIds);
   const isMeasuring = useStore(Selectors.selectIsMeasuring);
   const isNfcLoading = useStore(Selectors.selectIsNfcLoading);
@@ -151,16 +149,14 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   // Subscrição ao Bundle Semântico v1.2.0 (Fonte de Verdade)
   const [semanticThemes, setSemanticThemes] = useState(getSemanticInsights());
   const [semanticStatus, setSemanticStatus] = useState(getSemanticStatus());
-  
-  // O score global principal agora vem do domínio 'general' do bundle
-  const semanticDomain = semanticOutputService.getDomainOutput('general');
-  const globalScore = semanticStatus === 'ready' ? (semanticDomain?.score || 0) : localGlobalScore;
+  const [crossDomainSummary, setCrossDomainSummary] = useState(semanticOutputService.getCrossDomainSummary());
 
   useEffect(() => {
     // Escuta alterações no bundle global e actualiza a UI da Shell
     const unsubscribe = semanticOutputService.subscribe(() => {
       setSemanticThemes(getSemanticInsights());
       setSemanticStatus(getSemanticStatus());
+      setCrossDomainSummary(semanticOutputService.getCrossDomainSummary());
 
       // Telemetria: Rastro de visualização de domínios na Home
       const bundle = semanticOutputService.getBundle();
@@ -181,7 +177,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           screen: 'home',
           status: output.status,
           insightIds: output.mainInsight ? [output.mainInsight.id] : [],
-          recommendationIds: output.recommendations.map(r => r.id),
+          recommendationIds: output.recommendations.map((r: any) => r.id),
           evidenceRefIds: [],
           source: 'shell'
         });
@@ -1055,6 +1051,31 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                           </Typography>
                         </TouchableOpacity>
                       </View>
+
+                      {/* CrossDomainCoherence (Transversal Info) */}
+                      {crossDomainSummary && crossDomainSummary.coherenceFlags.length > 0 && (
+                        <View style={{ marginBottom: 24, padding: 16, backgroundColor: 'rgba(0, 242, 255, 0.05)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.2)' }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                            <Zap size={16} color="#00F2FF" style={{ marginRight: 8 }} />
+                            <Typography style={{ color: '#00F2FF', fontWeight: '800', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                              Leitura Harmonizada
+                            </Typography>
+                          </View>
+                          <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, lineHeight: 20, marginBottom: 12 }}>
+                            {crossDomainSummary.prioritySignals[0] || crossDomainSummary.summary}
+                          </Typography>
+                          {crossDomainSummary.deduplicatedRecommendations && crossDomainSummary.deduplicatedRecommendations.length > 0 && (
+                            <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)', paddingTop: 12 }}>
+                              <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>
+                                Prioridade Atual
+                              </Typography>
+                              <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>
+                                • {crossDomainSummary.deduplicatedRecommendations[0].actionable}
+                              </Typography>
+                            </View>
+                          )}
+                        </View>
+                      )}
 
                       {/* Theme buttons */}
                       <View style={styles.themeIndexList}>

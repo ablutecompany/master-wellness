@@ -63,6 +63,13 @@ export interface SemanticDomainView {
   version: string;
 }
 
+export interface CrossDomainCoherenceView {
+  summary: string;
+  coherenceFlags: string[];
+  prioritySignals: string[];
+  deduplicatedRecommendations: SemanticRecommendationView[];
+}
+
 export interface SemanticOutputState {
   version: string;
   generatedAt: number;
@@ -70,4 +77,5 @@ export interface SemanticOutputState {
   status: SemanticOutputStatus;
   metadata: SemanticMetadata;
   isLive: boolean;
+  crossDomainSummary?: CrossDomainCoherenceView;
 }

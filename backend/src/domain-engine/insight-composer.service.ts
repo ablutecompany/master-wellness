@@ -55,6 +55,21 @@ export class InsightComposerService {
         optimal: { summary: 'Wellness Holístico', explanation: 'Todos os sistemas biográficos estão a operar em níveis ótimos.' },
         fair: { summary: 'Modo Manutenção', explanation: 'O seu estado geral é bom, mantendo o rastro operacional.' },
         poor: { summary: 'Fadiga Biológica', explanation: 'O seu score geral indica necessidade imediata de foco em recuperação.' }
+      },
+      energy: {
+        optimal: { summary: 'Energia Adequada', explanation: 'A sua reserva energética está num bom nível, suportada de forma sustentável.' },
+        fair: { summary: 'Energia Estável', explanation: 'A sua resposta metabólica e hidratação sustentam a atividade diária regular.' },
+        poor: { summary: 'Sinais de Energia Reduzida', explanation: 'Variações nos biomarcadores sugerem que convém reduzir a carga e privilegiar a recuperação.' }
+      },
+      recovery: {
+        optimal: { summary: 'Recuperação Adequada', explanation: 'Os marcadores indicam que a sua recuperação celular e descanso estão num rasto positivo e equilibrado.' },
+        fair: { summary: 'Recuperação Estável', explanation: 'O seu padrão biográfico de descanso é aceitável, permitindo a manutenção da rotina normal.' },
+        poor: { summary: 'Sinais de Recuperação Incompleta', explanation: 'Detetámos sinais contínuos de que convém abrandar a carga física e privilegiar tempo de repouso.' }
+      },
+      performance: {
+        optimal: { summary: 'Desempenho Adequado', explanation: 'Os indicadores demonstram uma capacidade física e gestão de esforço sustentáveis.' },
+        fair: { summary: 'Desempenho Estável', explanation: 'O seu perfil biomarcador e carga atual indiciam um esforço regular.' },
+        poor: { summary: 'Sinais de Desempenho Reduzido', explanation: 'Convém ajustar a carga biográfica e gerir melhor o esforço face aos dados recolhidos.' }
       }
     };
 

@@ -52,24 +52,10 @@ export interface Measurement {
   timestamp: number;
 }
 
-export interface ThemeScore {
-  id: string;
-  themeCode: string;
-  value: number;
-  stateLabel: string;
-  insight?: {
-    summaryShort: string;
-    explanationLong: string;
-  };
-  recommendations?: any[];
-}
-
 export interface AppState {
   // ── Core ──────────────────────────────────────────────────────────────────
   user: UserProfile | null;
   measurements: Measurement[];
-  themeScores: ThemeScore[];
-  globalScore: number;
   isNfcLoading: boolean;
   isMeasuring: boolean;
   credits: number;
@@ -84,8 +70,6 @@ export interface AppState {
   // ── Core Actions ──────────────────────────────────────────────────────────
   setUser: (user: UserProfile) => void;
   addMeasurement: (measurement: Measurement) => void;
-  setThemeScores: (scores: ThemeScore[]) => void;
-  setGlobalScore: (score: number) => void;
   setNfcLoading: (loading: boolean) => void;
   setIsMeasuring: (measuring: boolean) => void;
   setCredits: (credits: number) => void;

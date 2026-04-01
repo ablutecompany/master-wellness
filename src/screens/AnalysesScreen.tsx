@@ -161,7 +161,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             <View style={styles.modalBody}>
                <Typography style={styles.modalText}>
                   Leitura biológica indexada em tempo real pela infraestrutura de análise. 
-                  A interpretação cruzada deste marcador é processada pelo motor semântico para gerar insights contextuais.
+                  Registo factual de medição capturado e apresentado no seu estado bruto para acompanhamento diário.
                </Typography>
                <Typography variant="caption" style={styles.modalDisclaimer}>
                   <Info size={12} color={theme.colors.textMuted} style={{ marginRight: 4 }} />

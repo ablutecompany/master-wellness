@@ -3,16 +3,16 @@
  * Governed Mapping: Signals -> Semantic Domains
  */
 
-export type SemanticDomain = 'sleep' | 'nutrition' | 'general' | 'performance';
+export type SemanticDomain = 'sleep' | 'nutrition' | 'general' | 'performance' | 'energy' | 'recovery';
 
 /**
  * Mapeamento explícito de tipos de medição para domínios afectados.
  */
 const MEASUREMENT_AFFINITY: Record<string, SemanticDomain[]> = {
-  'urinalysis': ['sleep', 'nutrition', 'general'],
-  'weight': ['nutrition', 'general'],
+  'urinalysis': ['sleep', 'nutrition', 'general', 'energy', 'recovery', 'performance'],
+  'weight': ['nutrition', 'general', 'energy'],
   'ppg': ['sleep', 'general'],
-  'ecg': ['general', 'performance'],
+  'ecg': ['general'],
   'temp': ['sleep', 'general']
 };
 
@@ -30,11 +30,11 @@ const APP_AFFINITY: Record<string, SemanticDomain[]> = {
  * Mapeamento de tipos de evento biográfico (Contribution Events) para domínios.
  */
 const EVENT_AFFINITY: Record<string, SemanticDomain[]> = {
-  'sleep_log': ['sleep'],
-  'meal_log': ['nutrition'],
+  'sleep_log': ['sleep', 'recovery'],
+  'meal_log': ['nutrition', 'energy'],
   'nutrient_target_reached': ['nutrition', 'general'],
-  'step_goal_reached': ['performance', 'general'],
-  'heart_rate_variability': ['sleep', 'performance', 'general']
+  'step_goal_reached': ['general', 'performance'],
+  'heart_rate_variability': ['sleep', 'general']
 };
 
 export class DomainAffinity {

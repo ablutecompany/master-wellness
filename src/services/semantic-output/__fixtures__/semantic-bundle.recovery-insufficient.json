@@ -1,0 +1,14 @@
+{
+  "status": "insufficient_data",
+  "generatedAt": 1711987700000,
+  "domains": {
+    "recovery": {
+      "status": "insufficient_data",
+      "statusLabel": "A Aguardar Sinais",
+      "score": 0,
+      "isStale": false,
+      "mainInsight": null,
+      "recommendations": []
+    }
+  }
+}

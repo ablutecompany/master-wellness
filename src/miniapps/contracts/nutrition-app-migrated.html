@@ -20,61 +20,76 @@
     <div id="nutrition-panel" class="panel">A carregar plano nutricional...</div>
 
     <script>
-        // CLIENT-SIDE MIGRATION LOGIC (Ref: nutrition-v2-migration.ts)
-        
+        // SDK Simulation Layer - V1.3.0
+        window.AbluteSDK = {
+           resolvePackageState: (ctx, domain) => {
+               if (!ctx || !ctx.domainPackages) return { status: 'missing', pkg: null };
+               const pkg = ctx.domainPackages.find(p => p.domain === domain);
+               if (!pkg) return { status: 'missing', pkg: null };
+               return { status: pkg.exposurePolicy, pkg };
+           },
+           getPackageSignals: (ctx, domain) => {
+               const state = window.AbluteSDK.resolvePackageState(ctx, domain);
+               return state.status === 'allowed' ? state.pkg.signals : null;
+           },
+           getPackageFacts: (ctx, domain) => {
+               const state = window.AbluteSDK.resolvePackageState(ctx, domain);
+               return state.status === 'allowed' ? state.pkg.facts : [];
+           }
+        };
+
         window.addEventListener('ablute:ready', (e) => {
-            console.log('[NutriApp] Shell ready. Migrating to domainPackages...');
+            console.log('[NutriApp] Shell ready. Abstracting domainPackages via SDK...');
             runNutritionFlow();
         });
 
         function runNutritionFlow() {
-            const { domainPackages, derivedContext } = window.ablute;
+            const context = window.ablute;
+            const sdk = window.AbluteSDK;
             const statusEl = document.getElementById('status-container');
             const panelEl = document.getElementById('nutrition-panel');
 
-            // 1. Identificar package principal
-            const nutritionPkg = domainPackages.find(p => p.domain === 'nutrition');
+            // 1. Resolução polimórfica (Substitui find manual iterativo e previne ifs complexos)
+            const { status, pkg } = sdk.resolvePackageState(context, 'nutrition');
 
-            if (!nutritionPkg) {
+            if (status === 'missing') {
                 statusEl.innerHTML = '<span class="status-badge denied">ERRO: SEM ACESSO</span>';
-                panelEl.innerHTML = 'Este domínio de nutrição não está autorizado.';
+                panelEl.innerHTML = 'Este domínio não existe na bridge local.';
                 return;
             }
 
-            // 2. Resolver estados v1.2
-            const policy = nutritionPkg.exposurePolicy;
-            
-            if (policy === 'allowed') {
-                // TELEMETRIA DE CONSUMO REAL
+            if (status === 'allowed') {
+                // Leitura isolada dos sub-conteúdos p/ prevenir null pointers no objeto
+                const signals = sdk.getPackageSignals(context, 'nutrition');
+                const facts = sdk.getPackageFacts(context, 'nutrition');
+
+                // Telemetria c/ política resolvida
                 window.ablute.emit('package_read', { 
                   domain: 'nutrition', 
-                  version: nutritionPkg.packageVersion,
+                  version: pkg.packageVersion,
                   policy: 'allowed'
                 });
 
-                statusEl.innerHTML = '<span class="status-badge allowed">PLANO ATIVO (v1.2)</span>';
-                const score = nutritionPkg.signals.score || '--';
-                const label = nutritionPkg.signals.statusLabel || 'Estável';
+                statusEl.innerHTML = '<span class="status-badge allowed">PLANO ATIVO (v1.3)</span>';
+                const score = signals?.score || '--';
+                const label = signals?.statusLabel || 'Estável';
                 
                 panelEl.innerHTML = `
                     <div style="font-size: 24px; color: #00D4AA; font-weight: bold;">${score}%</div>
                     <div>Meta Metabólica: ${label}</div>
                     <div style="margin-top: 12px; font-size: 12px; color: #aaa;">
-                        Factos nutricionais ativos: ${nutritionPkg.facts.length}
+                        Factos nutricionais ativos: ${facts.length}
                     </div>
                 `;
-            } else if (policy === 'denied') {
+            } else if (status === 'denied') {
                 statusEl.innerHTML = '<span class="status-badge denied">RESTRICTED</span>';
                 panelEl.innerHTML = 'Ative as permissões de nutrição no perfil.';
-            } else if (policy === 'unavailable') {
+            } else if (status === 'unavailable') {
                 statusEl.innerHTML = '<span class="status-badge unavailable">SEM HISTÓRICO</span>';
                 panelEl.innerHTML = 'Nenhum registo de refeições disponível para gerar plano.';
             }
 
-            // 3. Fallback Documentado (Legacy)
-            if (!nutritionPkg && window.ablute.derivedContext) {
-                console.info('[NutriApp] Legacy fallback triggered.');
-            }
+            // Fallback legacy abandonado
         }
     </script>
 </body>

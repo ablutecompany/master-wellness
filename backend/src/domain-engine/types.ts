@@ -3,7 +3,7 @@
  * Deterministic Health Narratives - Stale Logic
  */
 
-export type DomainType = 'sleep' | 'nutrition' | 'general'; // Restrito conforme solicitado
+export type DomainType = 'sleep' | 'nutrition' | 'general' | 'energy' | 'recovery' | 'performance'; // Restrito conforme solicitado
 
 export type DomainStatus = 
   | 'sufficient_data' 
@@ -69,11 +69,19 @@ export interface DomainAuditTrace {
   timestamp: number;
 }
 
+export interface CrossDomainCoherence {
+  summary: string;
+  coherenceFlags: string[];
+  prioritySignals: string[];
+  deduplicatedRecommendations: RecommendationItem[];
+}
+
 export interface DomainSemanticBundle {
   bundleVersion: string;
   generatedAt: number;
   userId: string;
   domains: Record<string, DomainSemanticOutput>;
   coherenceFlags: string[];
+  crossDomainSummary?: CrossDomainCoherence;
   auditTrace: DomainAuditTrace; // NOVO
 }

@@ -1,0 +1,22 @@
+{
+  "domain": "sleep",
+  "packageVersion": "1.2.0",
+  "generatedAt": 1711987600000,
+  "exposurePolicy": "allowed",
+  "signals": {
+    "statusLabel": "Recuperação Plena",
+    "score": 90,
+    "confidence": "high"
+  },
+  "facts": [
+    {
+      "id": "f_1001",
+      "type": "deep_sleep_duration",
+      "value": 145,
+      "unit": "min"
+    }
+  ],
+  "provenanceSummary": {
+    "sources": ["wearable_ppg", "self_report"]
+  }
+}

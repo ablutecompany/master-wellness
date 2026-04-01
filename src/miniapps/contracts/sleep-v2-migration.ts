@@ -57,15 +57,6 @@ export function onSleepAppContextUpdate(context: AbluteContext) {
      console.info('[Sleep V2] Sem Dados: Mostrando ecrã de onboarding de exame.');
      // showNoDataEmptyState();
   }
-
-  // 4. Fallback Legado (Transitório e Secundário)
-  // CONDIÇÕES PARA REMOÇÃO:
-  // - Shell v1.2+ como standard mínimo e bridge v1.2+ em produção
-  // - Domínio 'sleep' normalizado 100% via contributors-normalizer
-  // - Todas as apps de sono migradas para v1.2.0
-  // @sunset v2.0-core
-  if (!sleepPkg && context.derivedContext) {
-    console.warn('[Sleep Migration] Usando fallback legado de emergência: derivedContext.');
-    // handleLegacyFlow(context.derivedContext);
-  }
 }
+
+

@@ -1,0 +1,11 @@
+{
+  "domain": "nutrition",
+  "packageVersion": "1.2.0",
+  "generatedAt": 1711987600000,
+  "exposurePolicy": "unavailable",
+  "signals": {},
+  "facts": [],
+  "provenanceSummary": {
+    "sources": []
+  }
+}

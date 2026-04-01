@@ -1,0 +1,17 @@
+{
+  "status": "ready",
+  "generatedAt": 1711987700000,
+  "domains": {
+    "recovery": {
+      "status": "ready",
+      "statusLabel": "Recuperado",
+      "score": 90,
+      "isStale": false,
+      "mainInsight": {
+        "summary": "Recuperação Adequada",
+        "description": "Os marcadores indicam que a sua recuperação celular e descanso estão equilibrados."
+      },
+      "recommendations": []
+    }
+  }
+}

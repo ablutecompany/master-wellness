@@ -57,15 +57,6 @@ export function onNutritionAppContextUpdate(context: AbluteContext) {
      console.info('[Nutrition V2] Sem Dados: Mostrando ecrã de histórico de refeições vazio.');
      // showEmptyNutritionOnboarding();
   }
-
-  // 4. Fallback Legado (Transitório e Secundário)
-  // CONDIÇÕES PARA REMOÇÃO:
-  // - Shell v1.2+ e bridge v1.2+ como standard de plataforma
-  // - Domínio 'nutrition' normalizado 100% via contributors-normalizer
-  // - Todas as apps de nutrição migradas para v1.2.0
-  // @sunset v2.0-core
-  if (!nutritionPkg && context.derivedContext) {
-    console.warn('[Nutrition Migration] Usando fallback legado de emergência: derivedContext.');
-    // handleLegacyNutritionFlow(context.derivedContext);
-  }
 }
+
+

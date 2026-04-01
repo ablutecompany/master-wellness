@@ -36,24 +36,42 @@ export function getSemanticStatus(): SemanticOutputStatus {
  */
 export function getSemanticInsights(): UIInsight[] {
   const bundle = semanticOutputService.getBundle();
-  const activeDomains = ['sleep', 'nutrition', 'general'];
+  const activeDomains = ['sleep', 'nutrition', 'general', 'energy', 'recovery', 'performance'];
   
   return activeDomains.map(d => {
-    const output = bundle.domains[d];
+    // Usamos getDomainOutput em vez de aceder direto no bundle para garantir que 
+    // os Guardrails de Fidelity (anti-falta de insights reais em ready) são despoletados.
+    const output = semanticOutputService.getDomainOutput(d);
     
     // ── FALLBACK DETERMINÍSTICO (PT-PT) ──
-    if (!output || output.status === 'unavailable' || output.status === 'insufficient_data') {
+    if (!output || output.status === 'unavailable' || output.status === 'error') {
       return {
         domain: d as any,
         title: mapDomainToTitle(d),
         iconName: mapDomainToIcon(d),
         score: output?.score || 0,
-        status: output?.status || 'unavailable',
+        status: (output?.status || 'unavailable') as any,
         isStale: !!output?.isStale,
-        paragraph1: output?.statusLabel || 'Sincronização em Curso',
-        paragraph2: 'Aguardando massa crítica de dados biográficos para interpretação.',
-        refText1: 'Estabilidade',
-        refText2: 'Baixa',
+        paragraph1: 'Serviço Indisponível',
+        paragraph2: 'Não foi possível carregar a interpretação biométrica deste domínio neste momento.',
+        refText1: 'Estado',
+        refText2: 'Falha Técnica',
+        suggestions: []
+      };
+    }
+
+    if (output.status === 'insufficient_data') {
+      return {
+        domain: d as any,
+        title: mapDomainToTitle(d),
+        iconName: mapDomainToIcon(d),
+        score: output?.score || 0,
+        status: 'insufficient_data',
+        isStale: !!output?.isStale,
+        paragraph1: 'Dados Insuficientes',
+        paragraph2: 'Aguardando massa crítica de sinais biográficos para interpretação formal e fiável.',
+        refText1: 'Métricas',
+        refText2: 'A Aguardar',
         suggestions: []
       };
     }
@@ -82,13 +100,13 @@ export function getSemanticInsights(): UIInsight[] {
       title: mapDomainToTitle(d),
       iconName: mapDomainToIcon(d),
       score,
-      status,
+      status: status as any,
       isStale: false,
       paragraph1: mainInsight?.summary || statusLabel || 'Tendência Estável',
       paragraph2: mainInsight?.description || 'Os seus sinais biográficos indicam um rastro consistente.',
       refText1: 'Integridade',
       refText2: 'Verificada',
-      suggestions: (recommendations || []).map(r => ({
+      suggestions: (recommendations || []).map((r: any) => ({
         title: r.title,
         desc: r.actionable
       }))
@@ -103,7 +121,10 @@ function mapDomainToTitle(domain: string): string {
   const titles: Record<string, string> = {
     sleep: 'Qualidade do Sono',
     nutrition: 'Equilíbrio Metabólico',
-    general: 'Ablute Wellness'
+    general: 'Ablute Wellness',
+    energy: 'Energia Biológica',
+    recovery: 'Capacidade de Recuperação',
+    performance: 'Capacidade de Desempenho'
   };
   return titles[domain] || domain;
 }
@@ -115,7 +136,10 @@ function mapDomainToIcon(domain: string): any {
   const icons: Record<string, string> = {
     sleep: 'Moon',
     nutrition: 'Zap',
-    general: 'User'
+    general: 'User',
+    energy: 'Activity',
+    recovery: 'Heart',
+    performance: 'Target'
   };
   return icons[domain] || 'Activity';
 }

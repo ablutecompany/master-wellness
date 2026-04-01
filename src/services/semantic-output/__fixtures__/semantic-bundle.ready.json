@@ -1,0 +1,33 @@
+{
+  "status": "ready",
+  "generatedAt": 1711987600000,
+  "domains": {
+    "sleep": {
+      "status": "ready",
+      "statusLabel": "Recuperação Otmizada",
+      "score": 85,
+      "isStale": false,
+      "mainInsight": {
+        "summary": "Excelente padrão de sono profundo",
+        "description": "Os sensores indicam uma boa proporção de REM e sono profundo contínuo."
+      },
+      "recommendations": [
+        {
+          "title": "Manter Padrão",
+          "actionable": "Continue a deitar-se à mesma hora."
+        }
+      ]
+    },
+    "nutrition": {
+      "status": "ready",
+      "statusLabel": "Estável",
+      "score": 75,
+      "isStale": false,
+      "mainInsight": {
+        "summary": "Ingestão calórica ideal",
+        "description": "Baseado nos últimos 3 dias, está dentro dos parâmetros."
+      },
+      "recommendations": []
+    }
+  }
+}

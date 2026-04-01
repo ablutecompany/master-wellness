@@ -1,0 +1,17 @@
+{
+  "status": "ready",
+  "generatedAt": 1711987600000,
+  "domains": {
+    "energy": {
+      "status": "ready",
+      "statusLabel": "Vigor Estável",
+      "score": 88,
+      "isStale": false,
+      "mainInsight": {
+        "summary": "Energia Adequada",
+        "description": "A sua reserva energética está num bom nível, suportada de forma sustentável."
+      },
+      "recommendations": []
+    }
+  }
+}

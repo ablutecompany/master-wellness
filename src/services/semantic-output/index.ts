@@ -7,6 +7,7 @@ import { AppState } from 'react-native';
 import { SemanticOutputStore } from './store';
 import { SemanticDomainView, SemanticOutputStatus } from './types';
 import { DomainAffinity } from './domain-affinity';
+import { SemanticGuardrails } from './guardrails';
 
 export class SemanticOutputService {
   private static isInitialized = false;
@@ -81,6 +82,7 @@ export class SemanticOutputService {
         generatedAt: response.generatedAt,
         domains: adapted,
         status: this.resolveGlobalStatus(adapted), // Decisão governada de status global
+        crossDomainSummary: response.crossDomainSummary,
         isLive: true
       });
 
@@ -145,14 +147,23 @@ export class SemanticOutputService {
       domains: {
         sleep: { score: { value: 85, status: 'sufficient_data', stateLabel: 'Regular' }, insights: [], recommendations: [], isStale: false, lastComputedAt: Date.now() },
         nutrition: { score: { value: 65, status: 'sufficient_data', stateLabel: 'Equilibrado' }, insights: [], recommendations: [], isStale: false, lastComputedAt: Date.now() },
-        general: { score: { value: 72, status: 'sufficient_data', stateLabel: 'Saudável' }, insights: [], recommendations: [], isStale: false, lastComputedAt: Date.now() }
+        general: { score: { value: 72, status: 'sufficient_data', stateLabel: 'Saudável' }, insights: [], recommendations: [], isStale: false, lastComputedAt: Date.now() },
+        energy: { score: { value: 78, status: 'sufficient_data', stateLabel: 'Energético' }, insights: [], recommendations: [], isStale: false, lastComputedAt: Date.now() },
+        recovery: { score: { value: 90, status: 'sufficient_data', stateLabel: 'Recuperado' }, insights: [], recommendations: [], isStale: false, lastComputedAt: Date.now() },
+        performance: { score: { value: 85, status: 'sufficient_data', stateLabel: 'Estável' }, insights: [], recommendations: [], isStale: false, lastComputedAt: Date.now() }
+      },
+      crossDomainSummary: {
+        summary: 'Ecossistema Global Biográfico Estreitamente Alinhado.',
+        coherenceFlags: ['multi_domain_sync_active'],
+        prioritySignals: [],
+        deduplicatedRecommendations: []
       }
     };
   }
 
   private static adaptBundle(raw: any): Record<string, SemanticDomainView> {
     const adapted: Record<string, SemanticDomainView> = {};
-    const domainsToMap = ['sleep', 'nutrition', 'general'];
+    const domainsToMap = ['sleep', 'nutrition', 'general', 'energy', 'recovery', 'performance'];
 
     for (const d of domainsToMap) {
       const source = raw.domains?.[d];
@@ -189,9 +200,26 @@ export class SemanticOutputService {
   // Pass-through
   static subscribe(callback: () => void) { return SemanticOutputStore.subscribe(callback); }
   static getState() { return SemanticOutputStore.getState(); }
-  static getBundle() { return SemanticOutputStore.getState(); }
+  static getBundle() { 
+    const bundle = SemanticOutputStore.getState();
+    const isValid = SemanticGuardrails.assertValidBundleConsumption(bundle);
+    if (!isValid && !__DEV__) {
+      return { ...bundle, status: 'error' } as any;
+    }
+    return bundle; 
+  }
   static getStatus() { return SemanticOutputStore.getState().status; }
-  static getDomainOutput(domain: string) { return SemanticOutputStore.getState().domains[domain]; }
+  static getDomainOutput(domain: string) { 
+    const output = SemanticOutputStore.getState().domains[domain];
+    const isValid = SemanticGuardrails.assertFactualFidelity(output, `Domain:${domain}`);
+    if (!isValid && !__DEV__ && output) {
+       return { ...output, status: 'error' };
+    }
+    return output;
+  }
+  static getCrossDomainSummary() {
+    return SemanticOutputStore.getState().crossDomainSummary;
+  }
 }
 
 export const semanticOutputService = SemanticOutputService;

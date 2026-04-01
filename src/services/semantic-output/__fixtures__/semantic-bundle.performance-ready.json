@@ -1,0 +1,17 @@
+{
+  "status": "ready",
+  "generatedAt": 1711987800000,
+  "domains": {
+    "performance": {
+      "status": "ready",
+      "statusLabel": "Estável",
+      "score": 85,
+      "isStale": false,
+      "mainInsight": {
+        "summary": "Desempenho Adequado",
+        "description": "Os indicadores demonstram uma capacidade física e gestão de esforço sustentáveis."
+      },
+      "recommendations": []
+    }
+  }
+}

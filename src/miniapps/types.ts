@@ -83,6 +83,15 @@ export interface MiniAppManifest {
   rating?: number;
   reviewCount?: number;
   description?: string;
+
+  // ──────────────────────────────────────────
+  // V1.4.0 Manifesto Semântico (Contract Requirements)
+  // ──────────────────────────────────────────
+  consumedDomains?: string[]; // Ex: ['sleep', 'nutrition']
+  supportedPackageVersions?: string[]; // Ex: ['1.2.0', '1.3.0']
+  supportsCrossDomainSummary?: boolean; // App lida com conclusões agregadas?
+  bridgeContractVersion?: string; // Ex: '1.4'
+  requiresFreshData?: boolean; // Manda invalidar caches ativamente?
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

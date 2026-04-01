@@ -41,7 +41,7 @@ export const MiniAppContainer: React.FC<MiniAppContainerProps> = ({
   const launchTime = useRef(Date.now());
 
   const storeState = useStore();
-  const { user, globalScore, credits, closeApp, recordAppEvent } = storeState;
+  const { user, credits, closeApp, recordAppEvent } = storeState;
   const { logEvent } = useAnalytics();
 
   const handleClose = () => {
@@ -70,7 +70,7 @@ export const MiniAppContainer: React.FC<MiniAppContainerProps> = ({
       if (iframeRef.current?.contentWindow) {
         const payload = buildBridgePayload(
           user ? { name: user.name, goals: user.goals } : null,
-          { globalScore, credits }
+          { globalScore: 0, credits }
         );
         iframeRef.current.contentWindow.postMessage(payload, '*');
       }

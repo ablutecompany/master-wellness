@@ -1,0 +1,22 @@
+{
+  "status": "ready",
+  "generatedAt": 1711987600000,
+  "domains": {
+    "sleep": {
+      "status": "ready",
+      "statusLabel": "Fadiga Recente",
+      "score": 60,
+      "isStale": false,
+      "mainInsight": {
+        "summary": "Noite fragmentada",
+        "description": "Foram detectadas 4 interrupções de sono."
+      },
+      "recommendations": []
+    },
+    "nutrition": {
+      "status": "stale",
+      "statusLabel": "A aguardar atualização",
+      "isStale": true
+    }
+  }
+}

@@ -75,12 +75,6 @@ export class SuperAppBridge {
           // Contrato Principal: Domain Packages
           domainPackages: payload.domainPackages || [],
 
-          // Legado: Marcado como deprecated (Runtime Warning)
-          get derivedContext() {
-            console.warn('[Ablute Bridge] O campo "derivedContext" está DEPRECATED. Por favor, utilize "domainPackages".');
-            return payload.derivedContext || [];
-          },
-
           // Helpers legados para compatibilidade
           getUser:   function() { return payload.profileContext || {}; },
           getHealth: function() { return payload.healthSummaryContext || {}; },

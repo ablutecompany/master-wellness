@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ScoringService } from './scoring.service';
 import { InsightComposerService } from './insight-composer.service';
 import { RecommendationComposerService } from './recommendation-composer.service';
+import { CrossDomainCoherenceService } from './cross-domain-coherence.service';
 import { DomainType, DomainSemanticOutput, DomainSemanticBundle, DomainStatus, DomainAuditTrace } from './types';
 
 @Injectable()
@@ -19,7 +20,7 @@ export class DomainEngineService {
    * Implementa a Política B: Placeholder determinístico para domínios não solicitados.
    */
   async generateBundle(userId: string, requestedDomains?: DomainType[]): Promise<DomainSemanticBundle> {
-    const allDomains: DomainType[] = ['sleep', 'nutrition', 'general'];
+    const allDomains: DomainType[] = ['sleep', 'nutrition', 'general', 'energy', 'recovery', 'performance'];
     const processedDomains: DomainType[] = [];
     const outputs: Record<string, DomainSemanticOutput> = {};
 
@@ -51,12 +52,24 @@ export class DomainEngineService {
       timestamp: Date.now()
     };
 
+    // CAMADA 2: COERÊNCIA (HARMONIZATION)
+    // Avalia o pool gerado e expurga contradições
+    const coherence = CrossDomainCoherenceService.harmonize(outputs);
+
+    if (coherence.coherenceFlags.includes('GENERAL_OVERLY_OPTIMISTIC')) {
+      if (outputs['general'] && outputs['general'].insights && outputs['general'].insights.length > 0) {
+        outputs['general'].insights[0].summary = 'Estado Geral c/ Reservas Periféricas';
+        outputs['general'].insights[0].explanation = 'Os sinais vitais de base estabilizam, mas sistemas específicos acusam stress e mitigam um otimismo clínico geral.';
+      }
+    }
+
     return {
       bundleVersion: '1.2.0',
       generatedAt: Date.now(),
       userId,
       domains: outputs,
-      coherenceFlags: ['multi_domain_sync_active', 'partial_bundle_v1_2_op_b'],
+      coherenceFlags: [...coherence.coherenceFlags, 'multi_domain_sync_active', 'partial_bundle_v1_2_op_b'],
+      crossDomainSummary: coherence,
       auditTrace
     };
   }

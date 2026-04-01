@@ -49,6 +49,10 @@ export const MINI_APP_CATALOG: MiniAppManifest[] = [
     reviewCount: 74,
     description:
       'Planeia as refeições da semana para toda a família, gera listas de compras partilháveis via WhatsApp ou email, e descobre menus personalizados com base nos teus objetivos nutricionais.',
+    consumedDomains: ['nutrition'],
+    supportedPackageVersions: ['1.2.0', '1.3.0'],
+    supportsCrossDomainSummary: false,
+    bridgeContractVersion: '1.4',
   },
   {
     id: 'sleep-deep',
@@ -68,6 +72,9 @@ export const MINI_APP_CATALOG: MiniAppManifest[] = [
     reviewCount: 64,
     description:
       'Melhora a qualidade do sono com sons binaurais, meditações guiadas e análise de HRV integrada com os teus wearables.',
+    consumedDomains: ['sleep', 'energy'], // Exemplifica que o sono consome a sua recuperação e a energia
+    supportedPackageVersions: ['1.2.0'],
+    bridgeContractVersion: '1.4',
   },
   {
     id: 'gut-sync',

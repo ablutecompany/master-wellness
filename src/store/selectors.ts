@@ -38,10 +38,8 @@ export const selectDaysSinceLastMeasurement = (state: AppState) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // C) Insight Selectors (DEPRECATED - Use SemanticOutput Bundle)
 // ─────────────────────────────────────────────────────────────────────────────
-/** @deprecated Fonte de verdade migrada para semanticOutputService.getBundle() */
-export const selectThemeScores = (state: AppState) => state.themeScores || [];
-/** @deprecated Fonte de verdade migrada para semanticOutputService.getBundle() */
-export const selectGlobalScore = (state: AppState) => state.globalScore ?? 0;
+// Fonte de verdade migrada para semanticOutputService.getBundle()
+// Antigos seletores de themeScores e globalScore removidos.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // D) App Runtime Selectors

@@ -1,0 +1,52 @@
+name: Semantic Guardian Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  anti-regression:
+    name: 🛡️ Legacy Anti-Regression Gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Anti-Regression Scanner
+        run: node scripts/anti-regression.js
+        # Fast fail: se quebrar contratos (ex: derivedContext), aborta de imediato
+
+  contract-tests:
+    name: 🧪 Semantic Contract & Integrations
+    runs-on: ubuntu-latest
+    needs: anti-regression
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Jest Test Suite
+        run: npx jest
