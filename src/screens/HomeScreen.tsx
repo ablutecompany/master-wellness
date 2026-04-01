@@ -141,6 +141,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const installedAppIds = useStore(Selectors.selectInstalledAppIds);
   const isMeasuring = useStore(Selectors.selectIsMeasuring);
   const isNfcLoading = useStore(Selectors.selectIsNfcLoading);
+  
+  // Safe memoized facts query to avoid Zustand infinite render loop
+  const rawEvents = useStore(state => state.appContributionEvents);
+  const activeFacts = React.useMemo(() => 
+    Selectors.selectActiveDerivedContextFacts({ appContributionEvents: rawEvents } as any),
+  [rawEvents]);
 
   // Ações via subscrição estática (sem re-render por estado)
   const launchApp = useStore(state => state.launchApp);
@@ -1327,7 +1333,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             };
           });
 
-        const activeFacts = useStore(Selectors.selectActiveDerivedContextFacts);
+        // activeFacts previously defined at component top-level to prevent hooks-in-render violations
 
         const factualBioCategories = [
           { label: 'Análises de Urina', color: '#00F2FF', markers: urinalysisMarkers, id: 'U', shortLabel: 'Urina' },
