@@ -207,11 +207,19 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     semanticOutputService.setDemoScenario(key);
     setShowDemoModal(false);
     
-    // Auto-abrir painel esquerdo após delay cénico
-    if (dataOpen) closeData();
+    // Inicia a fecho do menu direito explicitamente
+    setDataOpen(false);
+    Animated.spring(dataAnim, { toValue: width, useNativeDriver: true }).start();
+    
+    // Marca o menu da Esquerda como Aberto instantaneamente
+    // para que a variável "themesOpen" mantenha a "mask/backdrop" do ecrã escura
+    // sem "ficar claro" abruptamente no intervalo.
+    setThemesOpen(true);
+
+    // Atrasa puramente o deslize visual do ecrã da Esquerda por motivos cénicos
     setTimeout(() => {
-      openThemes();
-    }, 400);
+      Animated.spring(themesAnim, { toValue: 0, useNativeDriver: true }).start();
+    }, 300);
   };
 
   const [themesOpen, setThemesOpen] = useState(false);
