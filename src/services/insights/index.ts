@@ -1,7 +1,7 @@
 /**
  * INSIGHTS SERVICE v1.2.0
  * Pure UI Adapter for Semantic Output (PT-PT)
- * Operacional: Hardened Lifecycle support
+ * Operacional: Partial Bundle & Stale alignment
  */
 
 import { semanticOutputService } from '../semantic-output';
@@ -12,6 +12,7 @@ export interface UIInsight {
   iconName?: 'Activity' | 'Zap' | 'Target' | 'Heart' | 'Moon' | 'Brain' | 'User';
   score?: number;
   status: SemanticStatus;
+  isStale?: boolean; // Sinalizador biográfico
   
   // UI Presentation Fields
   paragraph1: string;
@@ -30,8 +31,8 @@ export function getSemanticStatus(): SemanticOutputStatus {
 }
 
 /**
- * Obter insights formatados para a Shell a partir do Semantic Bundle.
- * Ponto único de verdade para a UI (PT-PT).
+ * Obter insights formatados para a Shell a partir do Semantic Bundle (PT-PT).
+ * Ponto único de verdade para a UI com suporte a Stale.
  */
 export function getSemanticInsights(): UIInsight[] {
   const bundle = semanticOutputService.getBundle();
@@ -48,10 +49,28 @@ export function getSemanticInsights(): UIInsight[] {
         iconName: mapDomainToIcon(d),
         score: output?.score || 0,
         status: output?.status || 'unavailable',
+        isStale: !!output?.isStale,
         paragraph1: output?.statusLabel || 'Sincronização em Curso',
         paragraph2: 'Aguardando massa crítica de dados biográficos para interpretação.',
         refText1: 'Estabilidade',
         refText2: 'Baixa',
+        suggestions: []
+      };
+    }
+
+    // ── SUPORTE A REVALIDAÇÃO PENDENTE (STALE) ──
+    if (output.status === 'stale' || output.isStale) {
+      return {
+        domain: d as any,
+        title: mapDomainToTitle(d),
+        iconName: mapDomainToIcon(d),
+        score: output.score || 0,
+        status: 'stale',
+        isStale: true,
+        paragraph1: 'Revalidação Necessária',
+        paragraph2: 'Aguardando novos sinais biográficos para atualizar este domínio.',
+        refText1: 'Estado',
+        refText2: 'Pendente',
         suggestions: []
       };
     }
@@ -64,6 +83,7 @@ export function getSemanticInsights(): UIInsight[] {
       iconName: mapDomainToIcon(d),
       score,
       status,
+      isStale: false,
       paragraph1: mainInsight?.summary || statusLabel || 'Tendência Estável',
       paragraph2: mainInsight?.description || 'Os seus sinais biográficos indicam um rastro consistente.',
       refText1: 'Integridade',

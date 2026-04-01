@@ -1,13 +1,13 @@
 /**
  * SEMANTIC OUTPUT CONTRACT v1.2.0
- * Hardened Operational View Models - Selective Invalidation
+ * Hardened Operational View Models - Partial Bundle Alignment
  */
 
 export type SemanticStatus = 
   | 'sufficient_data' 
   | 'insufficient_data' 
   | 'unavailable' 
-  | 'stale';
+  | 'stale'; // Explicitamente suportado para revalidação parcial
 
 /**
  * ESTADO FORMAL DE SINCRONIZAÇÃO OPERACIONAL (v1.2.0)
@@ -26,7 +26,7 @@ export interface SemanticMetadata {
   lastRequestedAt: number;
   lastErrorAt?: number;
   isDirty: boolean;
-  dirtyDomains: Record<string, boolean>; // NOVO: Invalidação Seletiva
+  dirtyDomains: Record<string, boolean>;
   staleAfterMs: number;
   version: string;
   retryCount: number;
@@ -58,6 +58,8 @@ export interface SemanticDomainView {
   mainInsight?: SemanticInsightView;
   recommendations: SemanticRecommendationView[];
   generatedAt: number;
+  lastComputedAt: number; // NOVO: Rastro biográfico de computação
+  isStale: boolean;       // NOVO: Sinalizador de placeholder / revalidação pendente
   version: string;
 }
 

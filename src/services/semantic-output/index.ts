@@ -1,9 +1,9 @@
 /**
  * SEMANTIC OUTPUT SERVICE v1.2.0
- * Hardened Lifecycle: Governed Domain Affinity & Partial Refresh
+ * Hardened Lifecycle: Partial Bundle & isStale Alignment
  */
 
-import { AppState, Platform } from 'react-native';
+import { AppState } from 'react-native';
 import { SemanticOutputStore } from './store';
 import { SemanticDomainView, SemanticOutputStatus } from './types';
 import { DomainAffinity } from './domain-affinity';
@@ -43,7 +43,6 @@ export class SemanticOutputService {
   static markDirtyFromContribution(userId: string, appId: string, eventType?: string) {
     let affected = DomainAffinity.resolveFromApp(appId);
     
-    // Se o evento for específico, combinamos as afinidades
     if (eventType) {
       const eventAffected = DomainAffinity.resolveFromEvent(eventType);
       affected = [...new Set([...affected, ...eventAffected])];
@@ -55,8 +54,8 @@ export class SemanticOutputService {
   }
 
   /**
-   * Ponto único de obtenção do Bundle Semântico (v1.2.0).
-   * Contrato preparado para recomputação parcial: requestedDomains.
+   * Obtenção do Bundle Semântico (v1.2.0).
+   * Alinhamento de isStale e lastComputedAt.
    */
   static async refreshBundle(userId: string, isRetry = false) {
     const currentState = SemanticOutputStore.getState();
@@ -70,8 +69,6 @@ export class SemanticOutputService {
     }
 
     try {
-      // ── CONTRATO PARCIAL PREPARADO ──
-      // Passamos os domínios sujos que precisam re-interpretação.
       const response = await this.fetchFromBackend(userId, requestedDomains);
 
       if (!response || response.bundleVersion !== '1.2.0') {
@@ -83,7 +80,7 @@ export class SemanticOutputService {
       SemanticOutputStore.updateState({
         generatedAt: response.generatedAt,
         domains: adapted,
-        status: this.isAnySufficient(adapted) ? 'ready' : 'insufficient_data',
+        status: this.resolveGlobalStatus(adapted), // Decisão governada de status global
         isLive: true
       });
 
@@ -99,6 +96,21 @@ export class SemanticOutputService {
       console.error('[Semantic Operational] Falha:', e.message);
       this.handleError(userId, isRetry);
     }
+  }
+
+  private static resolveGlobalStatus(domains: Record<string, SemanticDomainView>): SemanticOutputStatus {
+    const v = Object.values(domains);
+    
+    // Se existir algum 'ready' (sufficient_data e não stale), o bundle global é ready
+    if (v.some(d => d.status === 'sufficient_data' && !d.isStale)) return 'ready';
+    
+    // Se não houver ready, mas houver stale, o bundle global é stale
+    if (v.some(d => d.isStale)) return 'stale';
+    
+    // Se tudo for insuficiente
+    if (v.every(d => d.status === 'insufficient_data')) return 'insufficient_data';
+    
+    return 'ready';
   }
 
   private static checkFreshnessAndRevalidate(userId: string) {
@@ -124,22 +136,16 @@ export class SemanticOutputService {
     }
   }
 
-  /**
-   * Fetch Real v1.2.0 (preparado para refresh parcial).
-   */
   private static async fetchFromBackend(userId: string, requestedDomains: string[]) {
-    // Audit-Ready Log
-    console.log(`[Semantic Sync] Revalidating domains: ${requestedDomains.length > 0 ? requestedDomains.join(',') : 'ALL'}`);
-    
-    // Conforme contexto fechado, o backend ainda devolve o bundle completo,
-    // mas o contrato de frontend já assinala a necessidade parcial.
+    // Simulação do Motor de Verdade Determinístico v1.2.0 (Backend alinhado)
+    // O backend já envia 'isStale' e 'lastComputedAt'.
     return {
       bundleVersion: '1.2.0',
       generatedAt: Date.now(),
       domains: {
-        sleep: { score: { value: 85, status: 'sufficient_data', stateLabel: 'Regular' }, insights: [], recommendations: [] },
-        nutrition: { score: { value: 65, status: 'sufficient_data', stateLabel: 'Equilibrado' }, insights: [], recommendations: [] },
-        general: { score: { value: 72, status: 'sufficient_data', stateLabel: 'Saudável' }, insights: [], recommendations: [] }
+        sleep: { score: { value: 85, status: 'sufficient_data', stateLabel: 'Regular' }, insights: [], recommendations: [], isStale: false, lastComputedAt: Date.now() },
+        nutrition: { score: { value: 65, status: 'sufficient_data', stateLabel: 'Equilibrado' }, insights: [], recommendations: [], isStale: false, lastComputedAt: Date.now() },
+        general: { score: { value: 72, status: 'sufficient_data', stateLabel: 'Saudável' }, insights: [], recommendations: [], isStale: false, lastComputedAt: Date.now() }
       }
     };
   }
@@ -150,20 +156,26 @@ export class SemanticOutputService {
 
     for (const d of domainsToMap) {
       const source = raw.domains?.[d];
-      adapted[d] = this.adaptDomain(d, source || { status: 'unavailable' });
+      adapted[d] = this.adaptDomain(d, source || { status: 'unavailable', isStale: true });
     }
     return adapted;
   }
 
   private static adaptDomain(domain: string, source: any): SemanticDomainView {
+    // RESOLUÇÃO DE STATUS: isStale tem precedência operacional
+    const baseStatus = source.score?.status || (source.status as any) || 'unavailable';
+    const status = source.isStale ? 'stale' : baseStatus;
+
     return {
       domain,
       label: domain,
       score: source.score?.value || 0,
-      status: source.score?.status || 'unavailable',
+      status,
       statusLabel: source.score?.stateLabel || 'Indisponível',
       band: source.score?.band || 'poor',
       generatedAt: source.generatedAt || Date.now(),
+      lastComputedAt: source.lastComputedAt || 0,
+      isStale: !!source.isStale,
       version: '1.2.0',
       mainInsight: source.insights?.[0],
       recommendations: source.recommendations || []
@@ -176,6 +188,7 @@ export class SemanticOutputService {
 
   // Pass-through
   static subscribe(callback: () => void) { return SemanticOutputStore.subscribe(callback); }
+  static getState() { return SemanticOutputStore.getState(); }
   static getBundle() { return SemanticOutputStore.getState(); }
   static getStatus() { return SemanticOutputStore.getState().status; }
   static getDomainOutput(domain: string) { return SemanticOutputStore.getState().domains[domain]; }
