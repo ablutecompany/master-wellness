@@ -89,16 +89,17 @@ export interface MiniAppManifest {
 // Analytics event
 // ─────────────────────────────────────────────────────────────────────────────
 export interface AnalyticsEvent {
-  event: 'APP_LAUNCHED' | 'APP_CLOSED' | 'APP_INSTALLED' | 'APP_UNINSTALLED';
+  event: 'APP_LAUNCHED' | 'APP_CLOSED' | 'APP_INSTALLED' | 'APP_UNINSTALLED' | 'MINI_APP_ANALYTICS' | 'MINI_APP_READY' | 'PACKAGE_CONSUMED';
   appId: string;
   timestamp: number;
   meta?: Record<string, unknown>;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Mini-App Write-Back Events
+// Mini-App Write-Back Events & Messaging
 // ─────────────────────────────────────────────────────────────────────────────
-export type MiniAppEventType =
+
+export type ContributionEventType =
   | 'preference_changed'
   | 'context_note_added'
   | 'meal_accepted'
@@ -108,10 +109,44 @@ export type MiniAppEventType =
   | 'sleep_debt_detected'
   | 'fatigue_context_added';
 
+export interface AppContributionEvent {
+  eventId: string;
+  sourceAppId: string;
+  eventType: ContributionEventType;
+  payload: any;
+  recordedAt: number;
+  receivedAt: number; // Metadata da Shell
+  eventVersion: string; // e.g. "1.0"
+  source: 'miniapp' | 'system' | 'bridge';
+  confidence?: number;
+  validityWindow?: number;
+  contextVersion?: string; // Versão do contexto no momento do evento
+}
+
+export type MiniAppMessageType = 
+  | 'app_ready'
+  | 'context_request'
+  | 'contribution_event'
+  | 'analytics_event'
+  | 'close_app'
+  | 'package_read';
+
+export interface MiniAppMessage {
+  type: MiniAppMessageType;
+  payload?: any;
+  // Metadata & Versioning (Harden Envelope)
+  appId?: string;
+  timestamp?: number;
+  version?: string;
+  source?: string;
+  sessionId?: string;
+}
+
+// Legacy support (to be deprecated)
 export interface MiniAppEvent {
   eventId: string;
   sourceApp: string;
-  eventType: MiniAppEventType;
+  eventType: string;
   payload: any;
   recordedAt: number;
   confidence?: number;

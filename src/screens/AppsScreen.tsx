@@ -20,6 +20,7 @@ import { CATEGORY_LABELS, MiniAppManifest, MiniAppCategory, Permission, PERMISSI
 import { PermissionSheet } from '../miniapps/PermissionSheet';
 import { MiniAppContainer } from '../miniapps/MiniAppContainer';
 import { useStore } from '../store/useStore';
+import * as Selectors from '../store/selectors';
 import { useAnalytics } from '../miniapps/analytics';
 
 const CATEGORY_TABS: Array<{ key: 'all' | MiniAppCategory; label: string }> = [
@@ -40,7 +41,8 @@ const WebPermissionView: React.FC<{
   onInstalled: () => void;
 }> = ({ app, onClose, onInstalled }) => {
   const [accepting, setAccepting] = useState(false);
-  const { installApp, grantPermissions } = useStore();
+  const installApp = useStore(state => state.installApp);
+  const grantPermissions = useStore(state => state.grantPermissions);
   const { logEvent } = useAnalytics();
 
   const handleAccept = () => {
@@ -129,7 +131,12 @@ export const AppsScreen = ({ navigation }: { navigation: any }) => {
   const [permSheet, setPermSheet] = useState<MiniAppManifest | null>(null);
   const [inlineApp, setInlineApp] = useState<MiniAppManifest | null>(null);
 
-  const { installedAppIds, isAppInstalled, launchApp } = useStore();
+  const installedAppIds = useStore(Selectors.selectInstalledAppIds);
+  const launchApp = useStore(state => state.launchApp);
+  
+  const isAppInstalled = (id: string) => {
+    return installedAppIds.includes(id);
+  };
   const { logEvent } = useAnalytics();
 
   const featured = getFeaturedApp();

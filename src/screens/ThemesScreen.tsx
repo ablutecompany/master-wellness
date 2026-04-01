@@ -2,13 +2,41 @@ import React from 'react';
 import { StyleSheet, View, ScrollView, Platform } from 'react-native';
 import { Container, Typography } from '../components/Base';
 import { ThemeCard } from '../components/ThemeCard';
-
-import { useStore } from '../store/useStore';
-import { generateInsights } from '../services/insights';
+import { getSemanticInsights } from '../services/insights';
+import { semanticOutputService } from '../services/semantic-output';
 
 export const ThemesScreen: React.FC = () => {
-  const store = useStore();
-  const themes = generateInsights(store);
+  const [themes, setThemes] = React.useState(getSemanticInsights());
+
+  React.useEffect(() => {
+    const unsubscribe = semanticOutputService.subscribe(() => {
+      const insights = getSemanticInsights();
+      setThemes(insights);
+
+      // Telemetria: Rastro de visualização de domínios na lista de Temas
+      insights.forEach(insight => {
+        const bundle = semanticOutputService.getBundle();
+        if (!bundle) return;
+        const output = bundle.domains[insight.domain];
+        if (!output) return;
+
+        const { semanticTelemetry } = require('../services/semantic-output/telemetry/engine');
+        semanticTelemetry.record({
+          eventType: output.status === 'sufficient_data' ? 'insight_displayed' : 'insufficient_data_state_displayed',
+          domain: insight.domain,
+          bundleVersion: bundle.bundleVersion,
+          semanticVersion: '1.2.0',
+          screen: 'themes',
+          status: output.status,
+          insightIds: output.insights.map(i => i.id),
+          recommendationIds: output.recommendations.map(r => r.id),
+          evidenceRefIds: output.inputSummary.trace,
+          source: 'shell'
+        });
+      });
+    });
+    return unsubscribe;
+  }, []);
 
   return (
     <Container safe style={styles.container}>
@@ -33,6 +61,7 @@ export const ThemesScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#05070A',
+    flex: 1,
   },
   atmosphere: {
     ...StyleSheet.absoluteFillObject,
@@ -46,7 +75,7 @@ const styles = StyleSheet.create({
     top: -200,
     right: -200,
     backgroundColor: 'rgba(0, 242, 255, 0.03)',
-    ...(Platform.OS === 'web' ? { filter: 'blur(100px)' } as any : {}),
+    ...(Platform.OS === 'web' ? { filter: 'blur(100px)' } : {}),
   },
   header: {
     marginTop: 40,

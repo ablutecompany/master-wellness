@@ -51,6 +51,14 @@ model User {
   notifications       NotificationEvent[]
   notificationPrefs   NotificationPreference[]
   trendSeries         TrendSeries[]
+  sessions            Session[]
+  devices             Device[]
+  semanticBundles     DomainSemanticBundle[]
+  telemetryEvents     SemanticTelemetryEvent[]
+  miniAppInstalls     MiniAppInstall[]
+  contributionEvents  AppContributionEvent[]
+  derivedFacts        DerivedContextFact[]
+  aiRequests          AIRequest[]
 }
 
 model UserProfile {
@@ -635,11 +643,133 @@ model AuditEvent {
   createdAt  DateTime @default(now())
 }
 
+// --- AUTH & SESSIONS (Section 25) ---
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  token        String   @unique
+  expiresAt    DateTime
+  clientInfo   String?
+  lastActiveAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+}
+
+model Device {
+  id               String   @id @default(uuid())
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id])
+  hardwareId       String   @unique
+  deviceType       String // h1_wash, mobile_ios, etc.
+  status           String
+  pairedAt         DateTime?
+  lastSyncAt       DateTime?
+  metadata         Json?
+  pairingTokens    PairingToken[]
+}
+
+model PairingToken {
+  id           String   @id @default(uuid())
+  deviceId     String
+  device       Device   @relation(fields: [deviceId], references: [id])
+  token        String   @unique
+  expiresAt    DateTime
+  status       String // pending, used, etc.
+  createdAt    DateTime @default(now())
+}
+
+// --- SEMANTIC DOMAIN BUNDLES & TELEMETRY (Section 26) ---
+model DomainSemanticBundle {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  domain           String // sleep, nutrition, recovery, etc.
+  bundleVersion    String
+  status           String
+  data             Json
+  generatedAt      DateTime @default(now())
+  trace            String[]
+  isCurrent        Boolean  @default(true)
+}
+
+model SemanticTelemetryEvent {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  sessionId        String
+  domain           String
+  eventType        String
+  bundleVersion    String
+  screen           String
+  payload          Json
+  timestamp        DateTime @default(now())
+}
+
+// --- MINI-APP ECOSYSTEM (Section 27) ---
+model MiniAppInstall {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  appId            String
+  status           String
+  permissions      Json
+  installedAt      DateTime @default(now())
+}
+
+model AppContributionEvent {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  appId            String
+  eventType        String
+  payload          Json
+  timestamp        DateTime @default(now())
+}
+
+model DerivedContextFact {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  sourceAppId      String?
+  type             String
+  data             Json
+  confidence       Int
+  validFrom        DateTime @default(now())
+  validUntil       DateTime?
+}
+
+// --- AI GATEWAY & PROMPTS (Section 28) ---
+model AIRequest {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  sessionId        String?
+  promptId         String
+  promptRun        PromptRun @relation(fields: [promptId], references: [id])
+  inputPayload     Json
+  resultPayload    Json?
+  status           String
+  execMillis       Int?
+  modelUsed        String?
+  costMetadata     Json?
+  createdAt        DateTime @default(now())
+}
+
+model PromptRun {
+  id               String   @id @default(uuid())
+  code             String   @unique
+  version          String
+  promptTemplate   String
+  parameters       Json
+  active           Boolean  @default(true)
+  requests         AIRequest[]
+}
+
 enum UserRole {
   END_USER
-  SUPPORT_ADMIN
-  CLINICAL_CONTENT_ADMIN
-  INTEGRATION_ADMIN
-  HYPER_ADMIN
+  ADMIN_INTERNAL
+  OPS_INTERNAL
+  MINIAPP_RUNTIME
+  SERVICE_BACKEND
 }
 

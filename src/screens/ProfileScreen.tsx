@@ -4,7 +4,14 @@ import { Container, Typography } from '../components/Base';
 import { theme } from '../theme';
 import { User, CreditCard, Settings, LogOut, ChevronRight, Globe, Activity } from 'lucide-react-native';
 
+import { useStore } from '../store/useStore';
+import * as Selectors from '../store/selectors';
+
 export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const userName = useStore(Selectors.selectUserName);
+  const credits = useStore(Selectors.selectCredits);
+  const user = useStore(Selectors.selectUser);
+
   return (
     <Container safe style={styles.container}>
       <View style={styles.header}>
@@ -12,7 +19,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           <Settings size={40} color={theme.colors.background} />
         </View>
         <Typography variant="h2">Configurações</Typography>
-        <Typography variant="caption">Nuno Mendes • Membro desde 2026</Typography>
+        <Typography variant="caption">{userName}</Typography>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -20,7 +27,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           <View style={styles.creditsInfo}>
             <CreditCard size={24} color={theme.colors.primary} />
             <View style={styles.creditsText}>
-              <Typography variant="h3">12 Créditos</Typography>
+              <Typography variant="h3">{credits} Créditos</Typography>
               <Typography variant="caption">Disponíveis para análise</Typography>
             </View>
           </View>

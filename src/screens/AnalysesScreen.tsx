@@ -12,6 +12,8 @@ import {
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
+import { useStore } from '../store/useStore';
+import * as Selectors from '../store/selectors';
 
 interface Exam {
   id: string;
@@ -22,63 +24,79 @@ interface Exam {
   timestamp: string;
 }
 
-const TOP_EXAMS: Exam[] = [
-  { id: 't1', name: 'Ritmo Cardíaco', value: '62', unit: 'bpm', source: 'health_kit', timestamp: 'Agora' },
-  { id: 't2', name: 'PPG', value: 'Estável', unit: '', source: 'health_kit', timestamp: 'Agora' },
-  { id: 't3', name: 'Análise Fecal', value: 'Sincronizado', unit: '', source: 'ablute', timestamp: 'Ontem, 08:30' },
-  { id: 't4', name: 'Temperatura', value: '36.6', unit: '°C', source: 'health_kit', timestamp: 'Agora' },
-];
-
-const URINARY_MARKERS: Exam[] = [
-  { id: '1', name: 'NT-proBNP', value: '120', unit: 'pg/mL', source: 'ablute', timestamp: 'Hoje, 09:42' },
-  { id: '2', name: 'F2-isoprostanos', value: '2.4', unit: 'ng/mg', source: 'ablute', timestamp: 'Hoje, 09:42' },
-  { id: '3', name: 'Sódio', value: '140', unit: 'mEq/L', source: 'ablute', timestamp: 'Hoje, 09:42' },
-  { id: '4', name: 'Potássio', value: '4.2', unit: 'mEq/L', source: 'ablute', timestamp: 'Hoje, 09:42' },
-  { id: '5', name: 'Creatinina', value: '0.9', unit: 'mg/dL', source: 'ablute', timestamp: 'Hoje, 09:42' },
-  { id: '6', name: 'Albumina', value: '4.5', unit: 'g/dL', source: 'ablute', timestamp: 'Hoje, 09:42' },
-  { id: '7', name: 'NGAL', value: '15', unit: 'ng/mL', source: 'ablute', timestamp: 'Hoje, 09:42' },
-  { id: '8', name: 'KIM-1', value: '0.8', unit: 'ng/mL', source: 'ablute', timestamp: 'Hoje, 09:42' },
-  { id: '9', name: 'Cistatina C', value: '0.85', unit: 'mg/L', source: 'ablute', timestamp: 'Hoje, 09:42' },
-  { id: '10', name: 'Glicose', value: '90', unit: 'mg/dL', source: 'ablute', timestamp: 'Hoje, 09:42' },
-  { id: '11', name: 'pH', value: '6.4', unit: 'pH', source: 'ablute', timestamp: 'Hoje, 09:42' },
-  { id: '12', name: 'Nitritos', value: 'Negativo', unit: '', source: 'ablute', timestamp: 'Hoje, 09:42' },
-  { id: '13', name: 'Ureia', value: '30', unit: 'mg/dL', source: 'ablute', timestamp: 'Hoje, 09:42' },
-  { id: '14', name: 'Ácido úrico', value: '5.2', unit: 'mg/dL', source: 'ablute', timestamp: 'Hoje, 09:42' },
-];
+const TYPE_MAP: Record<string, { name: string; unit: string; source: 'ablute' | 'health_kit' }> = {
+  urinalysis: { name: 'Análise Urinária', unit: '', source: 'ablute' },
+  ecg: { name: 'Ritmo Cardíaco', unit: 'bpm', source: 'health_kit' },
+  ppg: { name: 'PPG', unit: '', source: 'health_kit' },
+  weight: { name: 'Peso', unit: 'kg', source: 'health_kit' },
+  temp: { name: 'Temperatura', unit: '°C', source: 'health_kit' },
+};
 
 export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
+  const measurements = useStore(Selectors.selectMeasurements);
 
-  const renderSection = (title: string, data: Exam[]) => (
-    <View style={styles.section}>
-      <Typography variant="caption" style={styles.sectionTitle}>{title}</Typography>
-      
-      {data.map((item, index) => (
-        <TouchableOpacity 
-          key={item.id} 
-          style={[styles.row, index !== data.length - 1 && styles.rowBorder]}
-          onPress={() => setSelectedExam(item)}
-        >
-          <View style={styles.rowLeft}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              {item.source === 'ablute' ? (
-                <Database size={12} color={theme.colors.biologicalBlue} style={{ marginRight: 6 }} />
-              ) : (
-                <Smartphone size={12} color={theme.colors.textSecondary} style={{ marginRight: 6 }} />
-              )}
-              <Typography style={styles.name}>{item.name}</Typography>
+  const exams: Exam[] = measurements.map((m) => {
+    const config = TYPE_MAP[m.type] || { name: m.type, unit: '', source: 'health_kit' };
+    
+    // Se o valor for um objeto com campo 'marker', usamos como nome
+    const name = (m.type === 'urinalysis' && m.value?.marker) ? m.value.marker : config.name;
+    const valStr = typeof m.value === 'object' ? (m.value.displayValue || m.value.value || '---') : String(m.value);
+    const unit = m.value?.unit || config.unit;
+
+    return {
+      id: m.id,
+      name,
+      value: valStr,
+      unit,
+      source: config.source,
+      timestamp: new Date(m.timestamp).toLocaleDateString('pt-PT', { 
+        day: '2-digit', 
+        month: 'short', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }),
+    };
+  });
+
+  // Dividir em seções (exemplo: Core vs Biomarcadores)
+  const coreExams = exams.filter(e => e.source === 'health_kit');
+  const biomarkerExams = exams.filter(e => e.source === 'ablute');
+
+  const renderSection = (title: string, data: Exam[]) => {
+    if (data.length === 0) return null;
+    
+    return (
+      <View style={styles.section}>
+        <Typography variant="caption" style={styles.sectionTitle}>{title}</Typography>
+        
+        {data.map((item, index) => (
+          <TouchableOpacity 
+            key={item.id} 
+            style={[styles.row, index !== data.length - 1 && styles.rowBorder]}
+            onPress={() => setSelectedExam(item)}
+          >
+            <View style={styles.rowLeft}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {item.source === 'ablute' ? (
+                  <Database size={12} color={theme.colors.biologicalBlue} style={{ marginRight: 6 }} />
+                ) : (
+                  <Smartphone size={12} color={theme.colors.textSecondary} style={{ marginRight: 6 }} />
+                )}
+                <Typography style={styles.name}>{item.name}</Typography>
+              </View>
+              <Typography variant="caption" style={styles.timestamp}>{item.timestamp}</Typography>
             </View>
-            <Typography variant="caption" style={styles.timestamp}>{item.timestamp}</Typography>
-          </View>
-          
-          <View style={styles.rowRight}>
-            <Typography style={styles.value}>{item.value}</Typography>
-            <Typography variant="caption" style={styles.unit}>{item.unit}</Typography>
-          </View>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
+            
+            <View style={styles.rowRight}>
+              <Typography style={styles.value}>{item.value}</Typography>
+              <Typography variant="caption" style={styles.unit}>{item.unit}</Typography>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
 
   return (
     <Container safe style={styles.container}>
@@ -101,8 +119,26 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           </Typography>
         </View>
 
-        {renderSection('METABOLISMO & DADOS CORE', TOP_EXAMS)}
-        {renderSection('MARCADORES URINÁRIOS', URINARY_MARKERS)}
+        {measurements.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Typography style={styles.emptyText}>Ainda não existem medições disponíveis.</Typography>
+            <Typography variant="caption" style={styles.emptySubtext}>
+               As tuas leituras sincronizadas aparecerão aqui assim que forem capturadas.
+            </Typography>
+          </View>
+        ) : (
+          <>
+            {renderSection('METABOLISMO & DADOS CORE', coreExams)}
+            {renderSection('MARCADORES URINÁRIOS', biomarkerExams)}
+          </>
+        )}
+
+        <View style={styles.disclaimerContainer}>
+            <Typography variant="caption" style={styles.bottomDisclaimer}>
+               <Info size={12} color={theme.colors.textMuted} style={{ marginRight: 4 }} />
+               Estes dados são apenas para referência informativa e não substituem aconselhamento médico profissional.
+            </Typography>
+        </View>
         
       </ScrollView>
 
@@ -124,13 +160,13 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             
             <View style={styles.modalBody}>
                <Typography style={styles.modalText}>
-                  Este biomarcador é geralmente associado na literatura médica a várias condições funcionais e metabólicas. 
-                  Valores fora do intervalo comum podem indicar a necessidade de uma análise clínica mais profunda.
+                  Leitura biológica indexada em tempo real pela infraestrutura de análise. 
+                  A interpretação cruzada deste marcador é processada pelo motor semântico para gerar insights contextuais.
                </Typography>
                <Typography variant="caption" style={styles.modalDisclaimer}>
-                  <Info size={12} color={theme.colors.warning} style={{ marginRight: 4 }} />
-                  ALERTA: As informações aqui contidas servem estritamente um propósito de bem-estar e otimização biológica. 
-                  Não correspondem a um dispositivo médico certificado, nem substituem qualquer diagnóstico ou teste laboratorial em ambiente clínico.
+                  <Info size={12} color={theme.colors.textMuted} style={{ marginRight: 4 }} />
+                  Este dado faz parte do teu Audit Trace e serve para monitorização funcional. 
+                  Não substitui diagnósticos clínicos ou exames laboratoriais certificados.
                </Typography>
             </View>
           </View>
@@ -139,6 +175,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
     </Container>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -215,33 +252,50 @@ const styles = StyleSheet.create({
   rowLeft: {
     flex: 1,
   },
+  name: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  timestamp: {
+    color: 'rgba(255,255,255,0.3)',
+    marginTop: 4,
+    textTransform: 'uppercase',
+  },
   rowRight: {
     alignItems: 'flex-end',
   },
-  name: {
-    fontWeight: '600',
-    fontSize: 16,
-    color: '#ffffff',
-    letterSpacing: -0.3,
-  },
-  timestamp: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.3)',
-    marginTop: 4,
-    marginLeft: 18,
-  },
   value: {
-    fontSize: 22,
-    fontWeight: '300',
-    color: '#ffffff',
-    letterSpacing: -0.5,
+    color: '#00F2FF',
+    fontSize: 18,
+    fontWeight: '800',
   },
   unit: {
-    marginLeft: 4,
-    color: 'rgba(255,255,255,0.3)',
-    fontSize: 12,
-    fontWeight: '600',
+    color: 'rgba(255,255,255,0.4)',
+    marginTop: 2,
   },
+  emptyState: {
+    paddingVertical: 100,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    color: 'rgba(255,255,255,0.3)',
+    textAlign: 'center',
+  },
+  disclaimerContainer: {
+    marginTop: 24,
+  },
+  bottomDisclaimer: {
+    color: 'rgba(255,255,255,0.25)',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  // Modal Styles
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -250,13 +304,13 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   modalContent: {
-    backgroundColor: '#0D1117',
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
+    backgroundColor: '#0A0E14',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     padding: 32,
-    paddingBottom: 64,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(255,255,255,0.08)',
+    minHeight: 300,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -265,35 +319,25 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   modalTitle: {
-    color: '#ffffff',
+    color: '#fff',
   },
   modalClose: {
-    width: 36,
-    height: 36,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    padding: 8,
   },
   modalBody: {
-    marginTop: 8,
+    gap: 16,
   },
   modalText: {
-    fontSize: 16,
-    lineHeight: 26,
-    color: 'rgba(255,255,255,0.6)',
-    marginBottom: 32,
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 15,
+    lineHeight: 22,
   },
   modalDisclaimer: {
-    flexDirection: 'row',
-    padding: 20,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 215, 0, 0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.1)',
-    color: 'rgba(255, 215, 0, 0.6)',
-    lineHeight: 20,
+    color: 'rgba(255,255,255,0.4)',
+    lineHeight: 18,
+    padding: 16,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 16,
+    marginTop: 16,
   }
 });

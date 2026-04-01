@@ -43,7 +43,7 @@ export const MINI_APP_CATALOG: MiniAppManifest[] = [
     iconBg: 'rgba(0, 212, 170, 0.12)',
     url: 'https://eat-psi-three.vercel.app',
     permissions: ['PROFILE_READ', 'NUTRITION_DATA_READ', 'NOTIFICATIONS'],
-    version: '1.0.0',
+    version: '1.2.0', // Migração concluída para domainPackages (Real)
     featured: true,
     rating: 4.8,
     reviewCount: 74,
@@ -62,7 +62,7 @@ export const MINI_APP_CATALOG: MiniAppManifest[] = [
     iconBg: 'rgba(139, 92, 246, 0.12)',
     url: 'https://deepsleep-kappa.vercel.app/',
     permissions: ['PROFILE_READ', 'SLEEP_DATA_READ', 'NOTIFICATIONS'],
-    version: '0.9.2',
+    version: '1.2.0', // Migração concluída para domainPackages (Real)
     featured: false,
     rating: 4.7,
     reviewCount: 64,

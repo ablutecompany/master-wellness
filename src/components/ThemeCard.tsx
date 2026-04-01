@@ -18,6 +18,7 @@ interface ThemeProps {
   iconName?: keyof typeof IconMap;
   textValue?: string;
   suggestions?: { title: string, desc: string }[];
+  domain?: string;
 }
 
 const ScoreGauge = ({ score, iconName, label }: { score: number, iconName?: keyof typeof IconMap, label?: string }) => {
@@ -85,14 +86,6 @@ const ScoreGauge = ({ score, iconName, label }: { score: number, iconName?: keyo
   );
 };
 
-interface ThemeProps {
-  title: string;
-  paragraph1: string;
-  paragraph2: string;
-  refText1: string;
-  refText2: string;
-}
-
 export const ThemeCard: React.FC<ThemeProps> = ({
   title,
   paragraph1,
@@ -102,10 +95,18 @@ export const ThemeCard: React.FC<ThemeProps> = ({
   score,
   iconName,
   textValue,
-  suggestions
+  suggestions,
+  domain
 }) => {
   const [showRefs, setShowRefs] = useState(false);
   const [showSugs, setShowSugs] = useState(false);
+
+  React.useEffect(() => {
+    if (domain) {
+      const { semanticOutputService } = require('../services/semantic-output');
+      semanticOutputService.trackConsumption(domain, 'viewed');
+    }
+  }, [domain]);
 
   return (
     <View style={styles.cardContainer}>
@@ -145,7 +146,13 @@ export const ThemeCard: React.FC<ThemeProps> = ({
           {suggestions && suggestions.length > 0 && (
             <TouchableOpacity 
               style={[styles.refButton, styles.sugButton]} 
-              onPress={() => setShowSugs(true)}
+              onPress={() => {
+                setShowSugs(true);
+                if (domain) {
+                   const { semanticOutputService } = require('../services/semantic-output');
+                   semanticOutputService.trackConsumption(domain, 'tapped');
+                }
+              }}
               activeOpacity={0.7}
             >
               <Typography variant="caption" style={styles.sugText}>OPTIMIZAÇÃO</Typography>

@@ -17,4 +17,18 @@ export class AuditService {
       },
     });
   }
+
+  /**
+   * Log specialized health insight consumption for auditability.
+   */
+  async logInsightConsumption(userId: string, domain: string, insightId: string, bundleVersion: string, action: 'viewed' | 'tapped' = 'viewed') {
+    return this.log(
+      'user',
+      userId,
+      `insight_${action}`,
+      'domain_insight',
+      insightId,
+      { domain, bundleVersion, timestamp: new Date().toISOString() }
+    );
+  }
 }

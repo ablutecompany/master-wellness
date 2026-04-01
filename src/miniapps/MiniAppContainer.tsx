@@ -16,6 +16,7 @@ import { MiniAppManifest } from './types';
 import { useStore } from '../store/useStore';
 import { useAnalytics } from './analytics';
 import { buildContextPayload } from '../services/miniapp-context';
+import { SuperAppBridge } from '../services/SuperAppBridge';
 
 // react-native-webview is native-only. We lazy-import to avoid web crashes.
 let WebView: any = null;
@@ -28,40 +29,7 @@ interface MiniAppContainerProps {
   navigation?: any;
 }
 
-/**
- * The ablute_ JavaScript bridge injected into every mini-app WebView.
- * Mini-apps can call:
- *   window.ablute.getUser()        → { name, goals }
- *   window.ablute.getHealth()      → { globalScore, credits }
- *   window.ablute.emit(evt,payload) → sends postMessage back to native shell
- */
-function buildBridgeScript(payload: any): string {
-  const payloadJson = JSON.stringify(payload ?? {});
-  return `
-    (function() {
-      window.__ablute_context__ = ${payloadJson};
-      
-      // Fallback para mini-apps existentes
-      window.__ablute_user__   = window.__ablute_context__.profileContext || {};
-      window.__ablute_health__ = window.__ablute_context__.healthSummaryContext || {};
-      
-      window.ablute = {
-        getContext: function() { return window.__ablute_context__; },
-        getUser:    function() { return window.__ablute_user__; },
-        getHealth:  function() { return window.__ablute_health__; },
-        emit: function(event, payload) {
-          try {
-            window.ReactNativeWebView.postMessage(JSON.stringify({ event: event, payload: payload }));
-          } catch(e) {}
-        }
-      };
-      
-      // Dispatch a ready event so mini-apps can listen
-      window.dispatchEvent(new CustomEvent('ablute:ready', { detail: window.__ablute_context__ }));
-      true; // required for Android
-    })();
-  `;
-}
+// Bridge script is now handled via SuperAppBridge.getInjectionScript
 
 export const MiniAppContainer: React.FC<MiniAppContainerProps> = ({
   app,
@@ -72,33 +40,97 @@ export const MiniAppContainer: React.FC<MiniAppContainerProps> = ({
   const webViewRef = useRef<any>(null);
   const launchTime = useRef(Date.now());
 
-  const storeState = useStore();
-  const { closeApp, recordAppEvent } = storeState;
+  const closeApp = useStore(state => state.closeApp);
+  const addAppContributionEvent = useStore(state => state.addAppContributionEvent);
   const { logEvent } = useAnalytics();
 
   const handleClose = () => {
     const duration = Math.round((Date.now() - launchTime.current) / 1000);
     logEvent('APP_CLOSED', app.id, { duration_seconds: duration });
     closeApp();
-    navigation?.goBack();
+    if (navigation?.goBack) {
+      navigation.goBack();
+    }
   };
 
   const handleMessage = (event: any) => {
     try {
-      const data = JSON.parse(event.nativeEvent.data);
-      if (data && data.event && data.payload) {
-        recordAppEvent({
-          eventId: Math.random().toString(36).substring(2, 15),
-          sourceApp: app.id,
-          eventType: data.event as any,
-          payload: data.payload,
-          recordedAt: Date.now(),
-          confidence: data.payload.confidence,
-          validityWindow: data.payload.validityWindow,
-        });
-        console.log('[MiniApp Bridge] Guardado evento:', data.event);
+      const rawData = event.nativeEvent.data;
+      const message = SuperAppBridge.parseMessage(rawData);
+
+      if (!message || !SuperAppBridge.isValidMessage(message)) {
+        console.warn('[MiniApp Bridge] Mensagem ignorada ou inválida:', rawData);
+        return;
       }
-    } catch {}
+
+      const { type, payload, appId: msgAppId, version: msgVersion } = message;
+
+      // Governance: Validar appId se presente na mensagem
+      if (msgAppId && msgAppId !== app.id) {
+        console.warn(`[MiniApp Bridge] Mensagem rejeitada: appId mismatch (${msgAppId} != ${app.id})`);
+        return;
+      }
+
+      switch (type) {
+        case 'app_ready':
+          setLoading(false);
+          logEvent('MINI_APP_READY', app.id);
+          // Enviar contexto inicial automaticamente no ready
+          const initialContext = buildContextPayload(app.id, useStore.getState());
+          const initScript = SuperAppBridge.getInjectionScript(initialContext);
+          webViewRef.current?.injectJavaScript(initScript);
+          
+          // Log de migração: detetar se a app é compatível com v1.2
+          console.log(`[MiniApp Bridge] Launching ${app.id} with contextVersion ${initialContext.contextVersion}. DomainPackages: ${initialContext.domainPackages?.length}`);
+          break;
+
+        case 'context_request':
+          const newContext = buildContextPayload(app.id, useStore.getState());
+          const responseScript = `
+            if (window.ablute && typeof window.ablute.onContextUpdate === 'function') {
+              window.ablute.onContextUpdate(${JSON.stringify(newContext)});
+            }
+            window.dispatchEvent(new CustomEvent('ablute:context', { detail: ${JSON.stringify(newContext)} }));
+          `;
+          webViewRef.current?.injectJavaScript(responseScript);
+          break;
+
+        case 'contribution_event':
+          if (SuperAppBridge.isValidContribution(payload)) {
+            addAppContributionEvent({
+              eventId: payload.eventId || Math.random().toString(36).substring(2, 15),
+              sourceAppId: app.id,
+              eventType: payload.eventType,
+              payload: payload.data || payload.payload || payload,
+              recordedAt: payload.timestamp || Date.now(),
+              receivedAt: Date.now(),
+              eventVersion: message.version || '1.1',
+              source: 'bridge',
+              confidence: payload.confidence,
+              validityWindow: payload.validityWindow,
+            });
+            console.log('[MiniApp Bridge] Contributo aceite:', payload.eventType);
+          } else {
+            console.warn('[MiniApp Bridge] Contributo rejeitado por validação:', payload);
+          }
+          break;
+
+        case 'analytics_event':
+          logEvent('MINI_APP_ANALYTICS', app.id, payload);
+          break;
+
+        case 'close_app':
+          handleClose();
+          break;
+
+        case 'package_read':
+          console.log(`[MiniApp Bridge] App ${app.id} consumiu package:`, payload.domain);
+          logEvent('PACKAGE_CONSUMED', app.id, { domain: payload.domain, version: payload.version });
+          break;
+      }
+    } catch (e) {
+      console.error('[MiniApp Bridge] Erro ao tratar mensagem:', e);
+    }
   };
 
   // ── WEB FALLBACK ─────────────────────────────────────────────────────────
@@ -132,7 +164,7 @@ export const MiniAppContainer: React.FC<MiniAppContainerProps> = ({
   }
 
   // ── NATIVE WEBVIEW ────────────────────────────────────────────────────────
-  const bridgeScript = buildBridgeScript(buildContextPayload(app.id, storeState));
+  const bridgeScript = SuperAppBridge.getInjectionScript(buildContextPayload(app.id, useStore.getState()));
 
   return (
     <View style={styles.container}>

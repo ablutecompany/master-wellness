@@ -1,36 +1,66 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { UserService } from '../user/user.service';
-import * as bcrypt from 'bcrypt';
+import { PrismaService } from '../prisma/prisma.service';
+import { UserRole } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
-  constructor(
-    private userService: UserService,
-    private jwtService: JwtService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
-  async validateUser(email: string, pass: string): Promise<any> {
-    const user = await this.userService.findByEmail(email);
-    if (user && await bcrypt.compare(pass, (user as any).passwordHash)) {
-      const { passwordHash, ...result } = user as any;
-      return result;
+  /**
+   * Validar credenciais e gerar sessão.
+   * Foco em base técnica segura (JWT ou Bearer Token persistido).
+   */
+  async login(email: string, passwordHash: string) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    
+    if (!user || user.passwordHash !== passwordHash) {
+      throw new UnauthorizedException('Credenciais inválidas');
     }
-    return null;
-  }
 
-  async login(user: any) {
-    const payload = { email: user.email, sub: user.id };
+    // Criar sessão persistente (vão para a nova tabela Session)
+    const token = `sk_${Math.random().toString(36).substring(2)}${Date.now()}`;
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 dias de validade
+
+    const session = await this.prisma.session.create({
+      data: {
+        userId: user.id,
+        token,
+        expiresAt,
+        clientInfo: 'shell_base_v1.2'
+      }
+    });
+
     return {
-      access_token: this.jwtService.sign(payload),
+      token: session.token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role
+      }
     };
   }
 
-  async register(userData: any) {
-    const user = await this.userService.create({
-      ...userData,
-      dateOfBirth: new Date(userData.dateOfBirth),
+  /**
+   * Verificar se uma sessão é válida e devolver o utilizador com o seu papel.
+   */
+  async validateSession(token: string) {
+    const session = await this.prisma.session.findUnique({
+      where: { token },
+      include: { user: true }
     });
-    return this.login(user);
+
+    if (!session || session.expiresAt < new Date()) {
+      throw new UnauthorizedException('Sessão expirada ou inválida');
+    }
+
+    // Actualizar última actividade
+    await this.prisma.session.update({
+      where: { id: session.id },
+      data: { lastActiveAt: new Date() }
+    });
+
+    return session.user;
   }
 }

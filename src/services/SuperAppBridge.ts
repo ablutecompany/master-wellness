@@ -1,52 +1,114 @@
-import { WebViewMessageEvent } from 'react-native-webview';
-
-export interface MiniAppMessage {
-  type: string;
-  payload?: any;
-}
+import { MiniAppMessage, MiniAppMessageType, ContributionEventType, AppContributionEvent } from '../miniapps/types';
 
 export class SuperAppBridge {
-  static handleMessage(event: any, appId: string) {
+  static isValidMessage(data: any): data is MiniAppMessage {
+    const validTypes: MiniAppMessageType[] = [
+      'app_ready', 
+      'context_request', 
+      'contribution_event', 
+      'analytics_event', 
+      'close_app'
+    ];
+    return (
+      data &&
+      typeof data === 'object' &&
+      typeof data.type === 'string' &&
+      validTypes.includes(data.type)
+    );
+  }
+
+  static isValidContribution(payload: any): payload is { eventType: ContributionEventType; [key: string]: any } {
+    const validTypes: ContributionEventType[] = [
+      'preference_changed',
+      'context_note_added',
+      'meal_accepted',
+      'meal_rejected',
+      'ingredient_disliked',
+      'sleep_pattern_changed',
+      'sleep_debt_detected',
+      'fatigue_context_added'
+    ];
+    return payload && validTypes.includes(payload.eventType);
+  }
+
+  static parseMessage(raw: string): MiniAppMessage | null {
     try {
-      const data = typeof event.nativeEvent?.data === 'string' 
-        ? event.nativeEvent.data 
-        : event.data;
-
-      if (!data || typeof data !== 'string') return;
+      const data = JSON.parse(raw);
       
-      const message: MiniAppMessage = JSON.parse(data);
-      console.log(`[SuperAppBridge] Message from ${appId}:`, message);
-
-      switch (message.type) {
-        case 'TELEMETRY':
-          // Log analytics
-          break;
-        case 'GET_USER':
-          // Reply logic...
-          break;
-        default:
-          console.warn(`[SuperAppBridge] Unknown message type: ${message.type}`);
+      // Fallback para formato antigo { event, payload }
+      if (data.event && !data.type) {
+        return { 
+          type: data.event as any, 
+          payload: data.payload,
+          timestamp: Date.now(),
+          version: '1.0-legacy'
+        };
       }
-    } catch (e) {
-      // Ignore non-JSON messages (noise)
+
+      // Hardening do envelope com defaults se faltarem campos
+      return {
+        type: data.type,
+        payload: data.payload,
+        appId: data.appId,
+        timestamp: data.timestamp || Date.now(),
+        version: data.version || '1.0',
+        source: data.source || 'miniapp',
+        sessionId: data.sessionId
+      };
+    } catch {
+      return null;
     }
   }
 
-  static getInjectionScript(user: any) {
+  static getInjectionScript(payload: any): string {
+    const payloadJson = JSON.stringify(payload ?? {});
     return `
-      window.AbluteShell = {
-        user: ${JSON.stringify(user)},
-        send: (type, payload) => {
-          const data = JSON.stringify({ type, payload });
-          if (window.ReactNativeWebView) {
-            window.ReactNativeWebView.postMessage(data);
-          } else if (window.parent !== window) {
-            window.parent.postMessage(data, '*');
+      (function() {
+        const payload = ${payloadJson};
+        window.__ablute_context__ = payload;
+        
+        window.ablute = {
+          version: '1.2',
+          appId: payload.appId,
+          contextVersion: payload.contextVersion,
+          
+          // Contrato Principal: Domain Packages
+          domainPackages: payload.domainPackages || [],
+
+          // Legado: Marcado como deprecated (Runtime Warning)
+          get derivedContext() {
+            console.warn('[Ablute Bridge] O campo "derivedContext" está DEPRECATED. Por favor, utilize "domainPackages".');
+            return payload.derivedContext || [];
+          },
+
+          // Helpers legados para compatibilidade
+          getUser:   function() { return payload.profileContext || {}; },
+          getHealth: function() { return payload.healthSummaryContext || {}; },
+
+          // Comunicação
+          emit: function(type, data) {
+            try {
+              var msg = JSON.stringify({ 
+                type: type, 
+                payload: data,
+                appId: payload.appId,
+                timestamp: Date.now(),
+                version: '1.2',
+                source: 'bridge'
+              });
+              if (window.ReactNativeWebView && window.ReactNativeWebView.postMessage) {
+                window.ReactNativeWebView.postMessage(msg);
+              }
+            } catch(e) {
+              console.error('[Ablute Bridge] Error emitting:', e);
+            }
           }
-        }
-      };
-      console.log('[AbluteShell] Bridge initialized');
-      true;
+        };
+        
+        window.dispatchEvent(new CustomEvent('ablute:ready', { detail: window.ablute }));
+        console.log('[Ablute Bridge] Initialized v1.2 - domainPackages: ' + (window.ablute.domainPackages.length));
+        return true;
+      })();
     `;
   }
 }

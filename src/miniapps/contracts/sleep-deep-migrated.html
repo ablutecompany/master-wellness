@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep Sleep v2 - Migrated</title>
+    <style>
+        body { background: #05070A; color: #fff; font-family: sans-serif; padding: 20px; }
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .allowed { background: #00F2FF20; color: #00F2FF; border: 1px solid #00F2FF40; }
+        .denied { background: #FF606020; color: #FF6060; border: 1px solid #FF606040; }
+        .unavailable { background: #FFA50020; color: #FFA500; border: 1px solid #FFA50040; }
+        .panel { background: rgba(255,255,255,0.05); padding: 16px; border-radius: 12px; margin-top: 16px; }
+        h1 { font-size: 18px; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+    <h1>🌙 Deep Sleep v2</h1>
+    <div id="status-container"></div>
+    <div id="data-panel" class="panel">A carregar contexto...</div>
+
+    <script>
+        // MOCK SDK / INJECTED SCRIPT SIMULATION
+        // Na vida real isto é injetado pela Shell
+        
+        window.addEventListener('ablute:ready', (e) => {
+            console.log('[SleepApp] Shell is ready. Consuming domainPackages...');
+            renderApp();
+        });
+
+        function renderApp() {
+            const { domainPackages, derivedContext } = window.ablute;
+            const statusEl = document.getElementById('status-container');
+            const panelEl = document.getElementById('data-panel');
+
+            // 1. Localizar o package de sono (via SDK real ou direto no objeto window)
+            const sleepPkg = domainPackages.find(p => p.domain === 'sleep');
+
+            if (!sleepPkg) {
+                statusEl.innerHTML = '<span class="status-badge denied">ERRO: SEM ACESSO</span>';
+                panelEl.innerHTML = 'Este domínio não foi autorizado pela Shell.';
+                return;
+            }
+
+            // 2. Telemetria de consumo (Obrigatório no novo contrato)
+            window.ablute.emit('package_read', { domain: 'sleep', version: sleepPkg.packageVersion });
+
+            // 3. Implementação dos 3 estados
+            const policy = sleepPkg.exposurePolicy;
+            
+            if (policy === 'allowed') {
+                statusEl.innerHTML = '<span class="status-badge allowed">ACCESSO PERMITIDO (v1.2)</span>';
+                const score = sleepPkg.signals.score || '--';
+                const label = sleepPkg.signals.statusLabel || 'Sem dados';
+                panelEl.innerHTML = `
+                    <div style="font-size: 24px; color: #00F2FF; font-weight: bold;">${score}%</div>
+                    <div>${label}</div>
+                    <div style="margin-top: 12px; font-size: 12px; color: #aaa;">
+                        Factos ativos: ${sleepPkg.facts.length}
+                    </div>
+                `;
+            } else if (policy === 'denied') {
+                statusEl.innerHTML = '<span class="status-badge denied">NEGADO</span>';
+                panelEl.innerHTML = 'Não tem permissões para ler dados de sono.';
+            } else if (policy === 'unavailable') {
+                statusEl.innerHTML = '<span class="status-badge unavailable">SEM DADOS</span>';
+                panelEl.innerHTML = 'Nenhum exame de sono encontrado no sistema.';
+            }
+
+            // 4. Fallback Legado (apenas para compatibilidade, não usado no fluxo primário)
+            if (window.ablute.derivedContext && window.ablute.derivedContext.length > 0) {
+                console.info('[SleepApp] Fallback legacy context available.');
+            }
+        }
+
+        // Simulação para quando rodamos fora da Shell
+        if (window.ablute) {
+          renderApp();
+        }
+    </script>
+</body>
+</html>

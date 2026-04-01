@@ -30,151 +30,10 @@ import { MINI_APP_CATALOG } from '../miniapps/catalog';
 import { MiniAppContainer } from '../miniapps/MiniAppContainer';
 import { MiniAppManifest } from '../miniapps/types';
 import { useStore } from '../store/useStore';
-import { generateInsights } from '../services/insights';
+import * as Selectors from '../store/selectors';
+import { getSemanticInsights } from '../services/insights';
+import { semanticOutputService } from '../services/semantic-output';
 
-const BIO_CATEGORIES = [
-  {
-    label: 'Análises de Urina',
-    color: '#00F2FF',
-    markers: [
-      { name: 'F2-isoprostanos', value: '1,8', unit: 'ng/mg creatinina' },
-      { name: 'Sódio urinário', value: '118', unit: 'mmol/L' },
-      { name: 'Potássio urinário', value: '42', unit: 'mmol/L' },
-      { name: 'Creatinina urinária', value: '128', unit: 'mg/dL' },
-      { name: 'Albumina', value: '18', unit: 'mg/L' },
-      { name: 'NGAL', value: '22', unit: 'ng/mL' },
-      { name: 'KIM-1', value: '1,6', unit: 'ng/mL' },
-      { name: 'Cistatina C', value: '0,11', unit: 'mg/L' },
-      { name: 'Glicose', value: '0', unit: 'mg/dL' },
-      { name: 'pH', value: '5,9', unit: '' },
-      { name: 'Nitritos', value: 'Negativo', unit: '' },
-      { name: 'Ureia', value: '1460', unit: 'mg/dL' },
-      { name: 'Ácido úrico', value: '68', unit: 'mg/dL' },
-    ],
-  },
-  {
-    label: 'Monitorização Fisiológica',
-    color: '#00D4AA',
-    markers: [
-      { name: 'ECG · FC repouso', value: '74', unit: 'bpm' },
-      { name: 'ECG · HRV (RMSSD)', value: '27', unit: 'ms' },
-      { name: 'ECG · Ritmo', value: 'Sinusal', unit: '' },
-      { name: 'PPG · SpO2', value: '98', unit: '%' },
-      { name: 'PPG · Perfusão', value: '4,2', unit: 'índice' },
-      { name: 'Impedância · Água corporal', value: '52,1', unit: '%' },
-      { name: 'Impedância · Gordura', value: '24,8', unit: '%' },
-      { name: 'Impedância · Massa muscular', value: '31,4', unit: 'kg' },
-      { name: 'Impedância · Ângulo de fase', value: '5,7', unit: '°' },
-      { name: 'Peso', value: '74,8', unit: 'kg' },
-      { name: 'Temperatura', value: '36,7', unit: '°C' },
-    ],
-  },
-  {
-    label: 'Avaliação Fecal',
-    color: '#FFA500',
-    markers: [
-      { name: 'Bristol', value: 'Tipo 3', unit: '' },
-      { name: 'Forma', value: 'Cilíndrica, contínua', unit: '' },
-      { name: 'Textura', value: 'Fissuras visíveis', unit: '' },
-      { name: 'Consistência', value: 'Média a firme', unit: '' },
-      { name: 'Cor', value: 'Castanho escuro', unit: '' },
-    ],
-  },
-];
-
-const MOCK_THEMES_DEPRECATED = [
-  {
-    title: 'Performance & Equilíbrio',
-    score: 88,
-    iconName: 'Activity',
-    paragraph1: 'Tens base para ter um bom desempenho hoje, mas o teu corpo parece responder melhor a equilíbrio do que a excesso.',
-    paragraph2: 'Continua capaz e funcional, mas já com sinais de carga acumulada. Se mantiveres controlo, ritmo e boa gestão do esforço, a resposta tende a ser melhor do que se tentares puxar ao máximo.',
-    refText1: 'Para esta leitura, olharam-se sobretudo os sinais que ajudam a perceber como o teu corpo está a lidar com esforço e equilíbrio geral no dia de hoje. A tua frequência cardíaca de repouso apareceu um pouco acima do teu habitual e a variabilidade cardíaca ficou abaixo do teu baseline, o que muitas vezes é associado a maior carga fisiológica e menor frescura. Também foram considerados sinais urinários como creatinina e F2-isoprostanos, que ajudam a enquadrar concentração urinária e exigência do organismo após treino intenso.',
-    refText2: 'Esta leitura procura dar contexto funcional. Questões de saúde devem ser discutidas com o médico.',
-    suggestions: [
-      { title: 'Se fores treinar outra vez hoje, baixa 10–20% a intensidade prevista', desc: 'Hoje o teu corpo parece responder melhor a boa execução e controlo do que a tentar bater volume, carga ou ritmo.' },
-      { title: 'Faz 5 a 8 minutos de mobilidade e ativação antes de qualquer esforço', desc: 'Neste estado, entrar “a frio” aumenta a probabilidade de o corpo render pior do que aquilo que realmente consegue.' },
-      { title: 'Se tiveres uma tarefa fisicamente exigente, coloca-a na janela em que já comeste e hidrataste', desc: 'Hoje, o timing vai influenciar mais o desempenho do que num dia mais fresco.' },
-      { title: 'Evita blocos longos sem pausa se o dia for intenso fisicamente ou mentalmente', desc: 'Pequenas quebras podem ajudar a manter qualidade de resposta sem entrares em esforço desnecessário.' }
-    ]
-  },
-  {
-    title: 'Energia & Disponibilidade',
-    score: 72,
-    iconName: 'Zap',
-    paragraph1: 'Tens energia disponível para o dia, mas não de forma infinita.',
-    paragraph2: 'O teu corpo continua a responder bem, embora possa perder estabilidade se descurares hidratação, refeições ou pausas. Hoje, pequenos ajustes ao longo do dia podem fazer diferença na forma como te manténs disponível.',
-    refText1: 'Aqui pesaram mais os sinais ligados a hidratação, disponibilidade funcional e custo fisiológico do dia. O peso surgiu abaixo do teu habitual, e sódio, potássio e ureia urinários ajudaram a reforçar a ideia de um dia mais exigente, com sudorese e reposição ainda incompleta. Em conjunto, estes sinais são muitas vezes associados a energia disponível, mas menos estável se o corpo não for bem apoiado com água, alimentação e pausas.',
-    refText2: 'Isto não substitui avaliação clínica. Se houver dúvidas sobre saúde, o ideal é falar com um médico.',
-    suggestions: [
-      { title: 'Nas próximas 2 horas, faz reposição hídrica faseada e não de uma só vez', desc: 'O mais útil hoje é recuperar estabilidade, não apenas “beber muito” de repente.' },
-      { title: 'Na próxima refeição, combina proteína com hidratos de carbono simples de tolerar', desc: 'Hoje o teu corpo tende a responder melhor a reposição funcional do que a refeições aleatórias ou demasiado leves.' },
-      { title: 'Se costumas aguentar muito tempo sem comer, hoje não vale a pena testar isso', desc: 'Neste dia específico, passar demasiadas horas sem ingestão tende a penalizar mais a disponibilidade.' },
-      { title: 'Se estiveres a perder clareza ao fim da tarde, faz uma pausa curta antes de insistires', desc: 'Hoje poderá compensar mais restaurar disponibilidade do que empurrar o corpo em baixa.' }
-    ]
-  },
-  {
-    title: 'Trânsito Intestinal',
-    score: 68,
-    iconName: 'Target',
-    paragraph1: 'Nível de alerta visual: Baixo, pela imagem isolada.',
-    paragraph2: 'Padrão globalmente estável e organizado, sem aspeto de diarreia nem fragmentação marcada. A presença de fissuras e o aspeto compacto apontam para fezes algo mais secas do que o ideal, compatível com hidratação intestinal subótima ou trânsito intestinal ligeiramente lento.',
-    refText1: 'Interpretação resumida: Evacuação formada e relativamente dentro do esperado, mas com sinais de ligeira secura. O padrão ideal estaria mais próximo de Bristol tipo 4, com superfície mais lisa e menor compactação.',
-    refText2: 'Sinais que justificam atenção: Fezes negras tipo alcatrão, sangue vermelho visível, muco persistente, dor importante, esforço frequente, alteração mantida do padrão intestinal.',
-    suggestions: [
-      { title: 'Aumenta a ingestão de água ao longo do dia', desc: 'A hidratação intestinal subótima é uma das causas mais comuns de fezes mais secas e compactas.' },
-      { title: 'Inclui fibra solúvel nas refeições', desc: 'Aveia, fruta com pele, leguminosas e vegetais ajudam a suavizar o trânsito e melhorar a consistência.' },
-      { title: 'Mantém uma rotina de movimento regular', desc: 'A atividade física moderada é um dos estímulos mais eficazes para o trânsito intestinal saudável.' },
-      { title: 'Evita períodos prolongados sem comer', desc: 'Refeições regulares ativam o reflexo gastrocólico e favorecem a regularidade intestinal.' }
-    ]
-  },
-  {
-    title: 'Resistência saudável',
-    score: 81,
-    iconName: 'Heart',
-    paragraph1: 'O teu corpo mostra boa capacidade para aguentar bem o dia ou esforço moderado, desde que mantenhas um ritmo estável.',
-    paragraph2: 'Há base para continuidade, mas a melhor resposta tende a surgir com constância e não com picos de intensidade. Hoje, a tua resistência parece mais saudável quando é bem distribuída.',
-    refText1: 'Para este tema, o mais importante foi cruzar o teu baseline com os sinais do dia. O teu histórico mostra boa base cardiovascular e boa adaptação ao esforço, mas a leitura atual indica também algum custo acumulado. Foram especialmente relevantes a frequência cardíaca de repouso, a variabilidade cardíaca e alguns sinais urinários como ureia e creatinina, que ajudam a perceber como o corpo está a sustentar esforço e recuperação.',
-    refText2: 'Esta explicação serve apenas para contexto funcional e não para diagnóstico.',
-    suggestions: [
-      { title: 'Mantém um ritmo regular em vez de alternar entre longos períodos parados e picos de intensidade', desc: 'Hoje o teu corpo parece sustentar melhor a continuidade do que mudanças bruscas.' },
-      { title: 'Se fores caminhar, correr ou pedalar, fica numa zona confortável e estável', desc: 'Para este dia, o melhor estímulo parece ser contínuo e controlado, não competitivo.' },
-      { title: 'Divide tarefas exigentes em blocos com micro-pausas', desc: 'Isso ajuda a manter resistência funcional sem transformar o dia numa acumulação de fadiga.' },
-      { title: 'Evita terminar o dia com um “pico final” só porque ainda te sentes capaz', desc: 'Hoje, a resistência parece mais saudável quando não é levada até ao limite.' }
-    ]
-  },
-  {
-    title: 'Recuperação',
-    score: 45,
-    iconName: 'Moon',
-    paragraph1: 'O teu corpo está a recuperar, mas ainda não terminou esse processo.',
-    paragraph2: 'Não há sinais de quebra, mas há margem evidente para consolidar descanso, hidratação e reposição. Hoje, pode compensar mais proteger a recuperação do que acrescentar nova exigência.',
-    refText1: 'Este é um dos temas em que os sinais do dia pesam mais. A variabilidade cardíaca abaixo do teu habitual, a frequência cardíaca de repouso acima do baseline, a temperatura ligeiramente superior e marcadores como creatinina, ureia e F2-isoprostanos ajudam a reforçar a ideia de recuperação ainda em curso. A literatura associa muitas vezes este conjunto de sinais a um organismo que continua funcional, mas ainda a consolidar descanso, hidratação e reposição.',
-    refText2: 'Se existirem dúvidas sobre saúde, sintomas ou alterações persistentes, deve falar com o médico.',
-    suggestions: [
-      { title: 'Hoje à noite, protege um sono mais cedo do que o habitual, se conseguires', desc: 'Neste estado, uma boa janela de recuperação pode pesar mais do que qualquer otimização pequena durante o dia.' },
-      { title: 'Faz uma refeição de recuperação real e não apenas um snack improvisado', desc: 'O corpo parece precisar de reposição a sério, não só de “matar a fome”.' },
-      { title: 'Evita somar nova carga intensa antes de recompensares hidratação e descanso', desc: 'Hoje o corpo continua funcional, mas a recuperação ainda não fechou o ciclo.' },
-      { title: 'Se tiveres sinais de fadiga muscular ou sensação de corpo “pesado”, privilegia alongamento leve ou caminhada curta', desc: 'Para este momento, movimento leve pode ajudar mais do que repouso totalmente passivo ou nova intensidade.' },
-      { title: 'Não uses cafeína tardia para mascarar cansaço', desc: 'Neste caso, isso pode roubar qualidade à recuperação de que o corpo realmente precisa hoje.' }
-    ]
-  },
-  {
-    title: 'Idade muscular',
-    textValue: '35',
-    paragraph1: 'A tua base muscular parece boa para o teu contexto, mas hoje o corpo tende a responder melhor a consistência do que a estímulos agressivos.',
-    paragraph2: 'Há boa margem funcional, mas a adaptação muscular beneficia mais de regularidade, alimentação e recuperação do que de insistir em carga alta num dia já exigente.',
-    refText1: 'Aqui foram considerados sobretudo sinais que ajudam a enquadrar adaptação muscular, exigência do dia e capacidade de recuperação. Ureia e creatinina urinárias mais altas, juntamente com o peso ligeiramente abaixo do habitual e uma variabilidade cardíaca mais baixa, ajudam a perceber um corpo que treinou com intensidade e que pode beneficiar mais de regularidade e recuperação do que de insistência agressiva. Estes sinais são frequentemente usados na literatura para contextualizar esforço, adaptação e frescura funcional.',
-    refText2: 'Esta dimensão dá contexto sobre resposta muscular, mas lesões ou dor focalizada devem ser vistas num contexto clínico.',
-    suggestions: [
-      { title: 'Na próxima refeição principal, garante proteína suficiente e de boa qualidade', desc: 'Hoje isso pesa mais, porque o corpo está num contexto em que a adaptação depende de boa reposição.' },
-      { title: 'Se fores fazer trabalho de força, prefere técnica, controlo e amplitude a carga máxima', desc: 'Neste dia, qualidade muscular tende a render mais do que agressividade.' },
-      { title: 'Evita treinar grupos já muito exigidos como se estivesses num dia totalmente fresco', desc: 'Hoje a resposta muscular parece beneficiar mais de manutenção inteligente do que de estímulo extremo.' },
-      { title: 'Se não fores voltar a treinar hoje, usa 10–15 minutos para mobilidade ou libertação ligeira', desc: 'Isso pode ajudar a preservar melhor sensação muscular e recuperação funcional.' },
-      { title: 'Olha para o próximo treino como continuação da adaptação, não como teste de capacidade', desc: 'Neste momento, a consistência parece servir melhor o teu corpo do que tentar provar mais qualquer coisa hoje.' }
-    ]
-  }
-];
 
 // --- SLOT MACHINE ODOMETER COMPONENT ---
 const SlotMachineOdometer = ({ targetNumber }: { targetNumber: number }) => {
@@ -275,9 +134,57 @@ const WheelPicker = ({ value, onChange, min = 1, max = 30, width = 80 }: { value
 
 export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const { width, height } = useWindowDimensions();
-  const storeState = useStore();
-  const { installedAppIds, launchApp, uninstallApp } = storeState;
-  const MOCK_THEMES = React.useMemo(() => generateInsights(storeState), [storeState]);
+  // Subscrição seletiva por domínio
+  const user = useStore(Selectors.selectUser);
+  const credits = useStore(Selectors.selectCredits);
+  const measurements = useStore(Selectors.selectMeasurements);
+  const themeScores = useStore(Selectors.selectThemeScores);
+  const localGlobalScore = useStore(Selectors.selectGlobalScore);
+  const installedAppIds = useStore(Selectors.selectInstalledAppIds);
+  const isMeasuring = useStore(Selectors.selectIsMeasuring);
+  const isNfcLoading = useStore(Selectors.selectIsNfcLoading);
+
+  // Ações via subscrição estática (sem re-render por estado)
+  const launchApp = useStore(state => state.launchApp);
+  const uninstallApp = useStore(state => state.uninstallApp);
+  
+  // Subscrição ao Bundle Semântico v1.2.0 (Fonte de Verdade)
+  const [semanticThemes, setSemanticThemes] = useState(getSemanticInsights());
+  
+  // O score global principal agora vem do domínio 'general' do bundle
+  const globalScore = semanticOutputService.getDomainOutput('general')?.score?.value || localGlobalScore;
+
+  useEffect(() => {
+    // Escuta alterações no bundle global e actualiza a UI da Shell
+    const unsubscribe = semanticOutputService.subscribe(() => {
+      const insights = getSemanticInsights();
+      setSemanticThemes(insights);
+
+      // Telemetria: Rastro de visualização de domínios na Home
+      insights.forEach(insight => {
+        const bundle = semanticOutputService.getBundle();
+        if (!bundle) return;
+        const output = bundle.domains[insight.domain];
+        if (!output) return;
+
+        const { semanticTelemetry } = require('../services/semantic-output/telemetry/engine');
+        semanticTelemetry.record({
+          eventType: output.status === 'sufficient_data' ? 'insight_displayed' : 
+                     (output.status === 'insufficient_data' ? 'insufficient_data_state_displayed' : 'unavailable_state_displayed'),
+          domain: insight.domain,
+          bundleVersion: bundle.bundleVersion,
+          semanticVersion: '1.2.0',
+          screen: 'home',
+          status: output.status,
+          insightIds: output.insights.map(i => i.id),
+          recommendationIds: output.recommendations.map(r => r.id),
+          evidenceRefIds: output.inputSummary.trace,
+          source: 'shell'
+        });
+      });
+    });
+    return unsubscribe;
+  }, []);
 
   const themesFlatListRef = useRef<FlatList>(null);
   const themesPanelHeight = height;
@@ -289,14 +196,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [bioTab, setBioTab] = useState(0);
   const [themesOpen, setThemesOpen] = useState(false);
   const [dataOpen, setDataOpen] = useState(false);
-  const [diasSemExame, setDiasSemExame] = useState(25);
-  
-  // Profile Form State
-  const [profileName, setProfileName] = useState('Atleta Base');
-  const [profileAge, setProfileAge] = useState('34');
-  const [profileWeight, setProfileWeight] = useState('78');
-  const [profileHeight, setProfileHeight] = useState('180');
-  const [profileGoal, setProfileGoal] = useState('Performance');
+  // Profile Form State (Connected to real state)
+  const [profileName, setProfileName] = useState(user?.name || 'Utilizadora');
+  const [profileAge, setProfileAge] = useState(user?.age ? user.age.toString() : '');
+  const [profileWeight, setProfileWeight] = useState(user?.weight ? user.weight.toString() : '');
+  const [profileHeight, setProfileHeight] = useState(user?.height ? user.height.toString() : '');
+  const [profileGoal, setProfileGoal] = useState(user?.goals?.[0] || 'Performance');
+
+  // Odometer calculation (Factual)
+  const diasSemExame = useStore(Selectors.selectDaysSinceLastMeasurement);
   
   // Settings Form State (Modo de Análise)
   const [analysisMode, setAnalysisMode] = useState<'manual'|'automatico'>('automatico');
@@ -855,7 +763,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             {/* Máscara invisível para absorver os toques e impedir seleção de texto do logotipo */}
             <TouchableOpacity 
               activeOpacity={0.7}
-              onPress={() => setDiasSemExame((prev) => (prev + 2 >= 30 ? 1 : prev + 2))}
+              onPress={() => {
+                if (Platform.OS !== 'web') Vibration.vibrate(10);
+                console.log('Logo pressed');
+              }}
               style={[StyleSheet.absoluteFill, { zIndex: 10 }]}
             />
           </View>
@@ -1097,7 +1008,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             ref={themesFlatListRef}
             data={[
               { type: 'index' as const },
-              ...MOCK_THEMES.map((t, i) => ({ type: 'card' as const, theme: t, idx: i })),
+              ...semanticThemes.map((t: any, i: number) => ({ type: 'card' as const, theme: t, idx: i })),
               { type: 'index_clone' as const },
             ]}
             keyExtractor={(_, i) => String(i)}
@@ -1107,7 +1018,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             onMomentumScrollEnd={(e) => {
               const pageIndex = Math.round(e.nativeEvent.contentOffset.y / themesPanelHeight);
               // If user scrolled to the clone at the end, silently jump to page 0
-              if (pageIndex === MOCK_THEMES.length + 1) {
+              if (pageIndex === semanticThemes.length + 1) {
                 themesFlatListRef.current?.scrollToIndex({ index: 0, animated: false });
               }
             }}
@@ -1143,7 +1054,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
                       {/* Theme buttons */}
                       <View style={styles.themeIndexList}>
-                        {MOCK_THEMES.map((t, i) => {
+                        {semanticThemes.map((t: any, i: number) => {
                           const scoreColor =
                             t.score === undefined ? '#73BCFF'
                             : t.score >= 75 ? '#00F2FF'
@@ -1188,7 +1099,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   <View style={styles.themeCardPageInner}>
                     {/* Page indicator */}
                     <View style={styles.themePageIndicatorRow}>
-                      <Typography style={styles.themePageIndicator}>{idx + 1} / {MOCK_THEMES.length}</Typography>
+                      <Typography style={styles.themePageIndicator}>{idx + 1} / {semanticThemes.length}</Typography>
                     </View>
 
                     {/* The actual card — scrollable inside its page */}
@@ -1219,19 +1130,48 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
       {/* ── SIDE PANEL: DATA (RIGHT) ──────────────────────────────────────── */}
       {(() => {
-        // Mapeia o índice estático de BIO_CATEGORIES para os IDs de selectedGroups
-        const idMap = ['U', 'S', 'F'];
-        const shortLabels = ['Urina', 'Fisiológica', 'Fecal'];
-        
-        // Filtra proativamente as categorias mantendo os arrays enriquecidos
-        const activeBioCategories = BIO_CATEGORIES.map((cat, i) => ({
-          ...cat,
-          id: idMap[i],
-          shortLabel: shortLabels[i]
-        })).filter(c => selectedGroups.includes(c.id));
+        // --- FACTUAL DATA MAPPING ---
+        const urinalysisMarkers = measurements
+          .filter(m => m.type === 'urinalysis')
+          .map(m => ({
+            name: m.value?.marker || 'Análise Urinária',
+            value: m.value?.displayValue || m.value?.value || '---',
+            unit: m.value?.unit || ''
+          }));
+
+        const physiologyMarkers = measurements
+          .filter(m => ['ecg', 'ppg', 'temp', 'weight'].includes(m.type))
+          .map(m => {
+            const labels: Record<string, string> = { ecg: 'Ritmo Cardíaco', ppg: 'PPG', temp: 'Temperatura', weight: 'Peso' };
+            const units: Record<string, string> = { ecg: 'bpm', temp: '°C', weight: 'kg' };
+            return {
+              name: labels[m.type] || m.type,
+              value: m.value?.displayValue || m.value?.value || '---',
+              unit: m.value?.unit || units[m.type] || ''
+            };
+          });
+
+        const activeFacts = useStore(Selectors.selectActiveDerivedContextFacts);
+
+        const factualBioCategories = [
+          { label: 'Análises de Urina', color: '#00F2FF', markers: urinalysisMarkers, id: 'U', shortLabel: 'Urina' },
+          { label: 'Monitorização Fisiológica', color: '#00D4AA', markers: physiologyMarkers, id: 'S', shortLabel: 'Fisiológica' },
+          { label: 'Avaliação Fecal', color: '#FFA500', markers: [], id: 'F', shortLabel: 'Fecal' },
+          { 
+            label: 'Sinais do Ecossistema', 
+            color: '#FFD700', 
+            id: 'E', 
+            shortLabel: 'Ecossistema',
+            markers: activeFacts.map(f => ({
+              name: f.type.replace(/_/g, ' ').toUpperCase(),
+              value: typeof f.value === 'string' ? f.value : (f.value?.displayValue || 'Ativo'),
+              unit: f.sourceAppId
+            }))
+          },
+        ].filter(c => c.id === 'E' || selectedGroups.includes(c.id));
 
         // Previne crashes de índices se o utilizador desmarcar uma aba com o index maior selecionado.
-        const safeBioTab = bioTab >= activeBioCategories.length ? 0 : bioTab;
+        const safeBioTab = bioTab >= factualBioCategories.length ? 0 : bioTab;
 
         return (
           <Animated.View style={[styles.sidePanel, styles.rightPanel, { transform: [{ translateX: dataAnim }] }]}>
@@ -1249,7 +1189,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
               {/* ── Tab Bar ── */}
               <View style={styles.bioTabBar}>
-                {activeBioCategories.map((cat, i) => {
+                {factualBioCategories.map((cat, i) => {
                   const isActive = safeBioTab === i;
                   return (
                     <TouchableOpacity
@@ -1280,16 +1220,24 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
               {/* ── Active Tab Content ── */}
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.panelScroll}>
-                {activeBioCategories.length > 0 ? (
-                  activeBioCategories[safeBioTab].markers.map((item: any, i: number) => (
-                    <View key={i} style={styles.bioRow}>
-                      <Typography style={styles.bioName}>{item.name}</Typography>
-                      <View style={styles.bioValueArea}>
-                        <Typography style={styles.bioVal}>{item.value}</Typography>
-                        {item.unit ? <Typography variant="caption" style={styles.bioUnit}>{item.unit}</Typography> : null}
+                {factualBioCategories.length > 0 ? (
+                  factualBioCategories[safeBioTab].markers.length > 0 ? (
+                    factualBioCategories[safeBioTab].markers.map((item: any, i: number) => (
+                      <View key={i} style={styles.bioRow}>
+                        <Typography style={styles.bioName}>{item.name}</Typography>
+                        <View style={styles.bioValueArea}>
+                          <Typography style={styles.bioVal}>{item.value}</Typography>
+                          {item.unit ? <Typography variant="caption" style={styles.bioUnit}>{item.unit}</Typography> : null}
+                        </View>
                       </View>
+                    ))
+                  ) : (
+                    <View style={{ alignItems: 'center', justifyContent: 'center', height: 200, paddingHorizontal: 20 }}>
+                      <Typography style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', fontSize: 13 }}>
+                        Ainda não existem dados para esta categoria.
+                      </Typography>
                     </View>
-                  ))
+                  )
                 ) : (
                   <View style={{ alignItems: 'center', justifyContent: 'center', height: 200, paddingHorizontal: 20 }}>
                     <Database size={32} color="rgba(255,255,255,0.2)" style={{ marginBottom: 16 }} />
@@ -1370,58 +1318,44 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 decelerationRate="fast"
                 snapToInterval={width / 3}
               >
-                {[
-                   { id: 'nutri-menu', name: '_Meal\nplanner', icon: <Utensils size={24} color="#00D4AA" />, color: '#00D4AA' },
-                   { id: 'femmhealth', name: '_Fem\nsanctuary', icon: <View style={{ flexDirection: 'row', alignItems: 'center' }}><Typography style={{ color: '#FF6FBA', fontSize: 22, fontWeight: '800' }}>♀</Typography><Typography style={{ color: '#FF6FBA', fontSize: 16, fontWeight: '900', marginLeft: 2 }}>H</Typography></View>, color: '#FF6FBA' },
-                   { id: 'longevity-secrets', name: '_Healthspan', icon: <Sparkles size={24} color="#FFD700" />, color: '#FFD700' },
-                   { id: 'sleep-deep', name: '_deep\nsleep', icon: <Moon size={24} color="#00F2FF" />, color: '#00F2FF' },
-                 ].map((drawerApp) => {
-                    const manifest = MINI_APP_CATALOG.find((m: any) => m.id === drawerApp.id);
-                   const installed = installedAppIds.includes(drawerApp.id);
-                   return (
-                   <TouchableOpacity
-                     key={drawerApp.id}
-                     style={[styles.appItem, { width: width / 3 }, !installed && { opacity: 0.4 }]}
-                     activeOpacity={installed ? 0.7 : 1}
-                     onPress={() => {
-                       if (manifest && installed) {
-                         launchApp(manifest);
-                          if (Platform.OS === 'web') {
-                            setInlineApp(manifest);
-                          } else {
-                            navigation?.navigate('MiniApp', { app: manifest });
-                          }
-                       }
-                       // not installed → do nothing; install from the list below
-                     }}
-                   >
-                    <View style={{ position: 'relative' }}>
-                      <BlurView intensity={20} tint="light" style={[styles.appIconContainer, {
-                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                        shadowColor: '#fff',
-                        shadowOpacity: 0.2,
-                        shadowRadius: 16,
-                        shadowOffset: { width: 0, height: 4 },
-                        borderWidth: 1,
-                        borderColor: 'rgba(255,255,255,0.15)',
-                      }]}>
-
-                          {/* Curvatura 3D nas bordas */}
-                          <LinearGradient
-                            colors={['rgba(255,255,255,0.25)', 'transparent', 'rgba(0,0,0,0.4)']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            style={[StyleSheet.absoluteFillObject, { borderRadius: 28, overflow: 'hidden' }]}
-                            pointerEvents="none"
-                          />
-
-                        <View style={{ zIndex: 10 }}>{drawerApp.icon}</View>
-                      </BlurView>
-                    </View>
-                    <Typography variant="caption" style={[styles.appName, { textAlign: 'center', lineHeight: 12 }]}>{drawerApp.name}</Typography>
-                  </TouchableOpacity>
-                   );
-                 })}
+                {MINI_APP_CATALOG.filter(app => installedAppIds.includes(app.id)).map((app) => (
+                  <TouchableOpacity
+                    key={app.id}
+                    style={[styles.appItem, { width: width / 3 }]}
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      launchApp(app);
+                      if (Platform.OS === 'web') {
+                        setInlineApp(app);
+                      } else {
+                        navigation?.navigate('MiniApp', { app });
+                      }
+                    }}
+                  >
+                   <View style={{ position: 'relative' }}>
+                     <View style={[styles.appIconContainer, {
+                       backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                       borderWidth: 1,
+                       borderColor: 'rgba(255,255,255,0.15)',
+                       borderRadius: 28,
+                       width: 56,
+                       height: 56,
+                       justifyContent: 'center',
+                       alignItems: 'center'
+                     }]}>
+                        <Typography style={{ fontSize: 24 }}>{app.iconEmoji}</Typography>
+                     </View>
+                   </View>
+                   <Typography variant="caption" style={[styles.appName, { textAlign: 'center', lineHeight: 12, marginTop: 8 }]}>{app.name}</Typography>
+                 </TouchableOpacity>
+                ))}
+                {installedAppIds.length === 0 && (
+                  <View style={{ width, alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+                    <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, textAlign: 'center' }}>
+                      Nenhuma app instalada.
+                    </Typography>
+                  </View>
+                )}
               </ScrollView>
             </Animated.View>
           </View>
@@ -1530,7 +1464,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   <View style={styles.avatarMain}>
                     <User size={40} color="#00F2FF" />
                   </View>
-                  <Typography variant="caption" style={styles.profilePlan}>PRO · ATHLETE</Typography>
+                  <Typography variant="caption" style={styles.profilePlan}>{user?.goals?.[0] || 'Performance'}</Typography>
                 </View>
 
                 <View style={styles.inputGroup}>
@@ -1551,6 +1485,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       value={profileAge}
                       onChangeText={setProfileAge}
                       keyboardType="numeric"
+                      placeholder="Por definir"
                       placeholderTextColor="rgba(255,255,255,0.3)"
                     />
                   </View>
@@ -1561,6 +1496,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       value={profileWeight}
                       onChangeText={setProfileWeight}
                       keyboardType="numeric"
+                      placeholder="Por definir"
                       placeholderTextColor="rgba(255,255,255,0.3)"
                     />
                   </View>
@@ -1574,6 +1510,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       value={profileHeight}
                       onChangeText={setProfileHeight}
                       keyboardType="numeric"
+                      placeholder="Por definir"
                       placeholderTextColor="rgba(255,255,255,0.3)"
                     />
                   </View>
@@ -1588,7 +1525,20 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   </View>
                 </View>
 
-                <TouchableOpacity style={styles.saveBtn} onPress={() => setShowProfile(false)}>
+                <TouchableOpacity 
+                  style={styles.saveBtn} 
+                  onPress={() => {
+                    useStore.getState().setUser({
+                      ...user,
+                      name: profileName,
+                      age: profileAge ? parseInt(profileAge, 10) : undefined,
+                      weight: profileWeight ? parseFloat(profileWeight) : undefined,
+                      height: profileHeight ? parseFloat(profileHeight) : undefined,
+                      goals: [profileGoal]
+                    });
+                    setShowProfile(false);
+                  }}
+                >
                   <Typography style={styles.saveBtnText}>GRAVAR ALTERAÇÕES</Typography>
                 </TouchableOpacity>
               </ScrollView>

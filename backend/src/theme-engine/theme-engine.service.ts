@@ -1,9 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { ScoringService } from '../domain-engine/scoring.service';
+import { InsightComposerService } from '../domain-engine/insight-composer.service';
+import { RecommendationComposerService } from '../domain-engine/recommendation-composer.service';
+import { DomainType } from '../domain-engine/types';
 
 @Injectable()
 export class ThemeEngineService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private scoringService: ScoringService,
+    private insightComposer: InsightComposerService,
+    private recommendations: RecommendationComposerService
+  ) {}
 
   private getThemeWeights(themeCode: string): Record<string, number> {
     const weightsMap: Record<string, Record<string, number>> = {
@@ -14,140 +23,121 @@ export class ThemeEngineService {
     return weightsMap[themeCode] || { base: 1.0 };
   }
 
+  async getThemeBundle(userId: string): Promise<any> {
+    const domains: DomainType[] = ['sleep', 'nutrition', 'general', 'energy', 'recovery', 'performance'];
+    const bundle: Record<string, any> = {};
+
+    for (const d of domains) {
+       bundle[d] = await this.calculateScore(userId, d);
+    }
+
+    return {
+      bundleVersion: '1.2.0',
+      generatedAt: Date.now(),
+      userId,
+      domains: bundle,
+      coherenceFlags: ['multi_domain_sync_active']
+    };
+  }
+
   async calculateScore(userId: string, themeCode: string, sessionId?: string) {
     const theme = await this.prisma.themeDefinition.findUnique({ where: { code: themeCode } });
     if (!theme) throw new Error('Theme not found');
 
-    const weights = this.getThemeWeights(themeCode);
-    const weightCodes = Object.keys(weights);
-
     // 1. Fetch relevant signals (latest normalized measurements)
     const measurements = await this.prisma.normalizedMeasurement.findMany({
-      where: { session: { userId }, code: { in: weightCodes } },
+      where: { session: { userId } },
       orderBy: { capturedAt: 'desc' },
       distinct: ['code'],
     });
 
-    // 2. Base Calculation
-    let baseScore = 0;
-    const componentsData = [];
-    
-    for (const code of weightCodes) {
-      const weight = weights[code];
-      const match = measurements.find(m => m.code === code);
-      const val = match?.valueNumeric ?? 50; // Neutral fallback
-      
-      const contribution = val * weight;
-      baseScore += contribution;
+    // 2. Specialized Scoring (Layer 6)
+    const scoreOutput = this.scoringService.calculate(themeCode as DomainType, measurements);
 
-      componentsData.push({
-        type: 'biomarker',
-        code,
-        weight,
-        effectDirection: 1,
-        valueSummary: match ? `${match.valueNumeric}${match.unit}` : 'N/A',
-        contributionScore: Math.round(contribution),
-      });
-    }
-
-    // 3. Apply Penalties (Logic Engine Spec)
-    const freshnessPenalty = this.calculateFreshnessPenalty(measurements);
-    const completenessPenalty = (weightCodes.length - measurements.length) * 5;
-    
-    const finalValue = Math.max(0, Math.min(100, Math.round(baseScore - freshnessPenalty - completenessPenalty)));
-    const confidence = Math.max(0, 100 - (freshnessPenalty * 2 + completenessPenalty));
+    const componentsData = measurements.map(m => ({
+      type: 'biomarker',
+      code: m.code,
+      weight: 1.0, // Simplified for legacy component storage
+      effectDirection: 1,
+      valueSummary: `${m.valueNumeric}${m.unit}`,
+      contributionScore: Math.round(m.valueNumeric),
+    }));
 
     // 4. Persistence
     const themeScore = await this.prisma.themeScore.create({
       data: {
         userId,
         definitionId: theme.id,
-        value: finalValue,
-        stateLabel: this.getStateLabel(finalValue),
-        band: 'functional',
+        value: scoreOutput.value,
+        stateLabel: scoreOutput.stateLabel,
+        band: scoreOutput.band,
         version: '1.2.0',
-        confidence,
+        confidence: scoreOutput.confidence,
         sessionId,
-        dataWindow: { period: '7d', signalsCaptured: measurements.length },
+        dataWindow: { 
+          period: '7d', 
+          signalsCaptured: measurements.length,
+          freshnessPenalty: scoreOutput.freshnessPenalty,
+          completenessPenalty: scoreOutput.completenessPenalty 
+        },
         components: { create: componentsData as any },
       },
     });
 
-    // 5. Generate Insight (Layer 5)
-    await this.generateInsight(themeScore.id, userId, themeCode, finalValue);
+    // 5. specialized Insight Composition (Layer 5)
+    await this.generateInsights(themeScore.id, userId, themeCode as DomainType, scoreOutput, measurements);
 
-    // 6. Select Top 3 Recommendations (Layer 4)
-    await this.selectRecommendations(themeScore.id, userId, themeCode, finalValue);
+    // 6. Specialized Recommendation Selection (Layer 4)
+    await this.generateRecommendations(themeScore.id, userId, themeCode as DomainType, scoreOutput);
 
     return themeScore;
   }
 
-  private calculateFreshnessPenalty(measurements: any[]): number {
-    if (measurements.length === 0) return 20;
-    const now = new Date();
-    const oldest = Math.min(...measurements.map(m => m.capturedAt.getTime()));
-    const hoursDiff = (now.getTime() - oldest) / (1000 * 60 * 60);
-    return Math.min(30, Math.floor(hoursDiff / 12)); // 1 point per 12h capped at 30
+  private async generateInsights(scoreId: string, userId: string, domain: DomainType, score: any, measurements: any[]) {
+    const insights = this.insightComposer.compose(domain, score, measurements);
+    
+    for (const insight of insights) {
+      await this.prisma.themeInsight.create({
+        data: {
+          userId,
+          scoreId,
+          summaryShort: insight.summary,
+          explanationLong: insight.explanation,
+          explanationFactors: insight.factors as any,
+          language: 'pt-PT',
+          version: insight.version,
+          tone: insight.tone,
+        },
+      });
+    }
   }
 
-  private getStateLabel(score: number): string {
-    if (score >= 80) return 'excelente';
-    if (score >= 65) return 'bom';
-    if (score >= 50) return 'moderado';
-    return 'fraco';
-  }
-
-  private async generateInsight(scoreId: string, userId: string, themeCode: string, score: number) {
-    const templates = {
-      energy: score > 60 
-        ? 'A tua energia está funcional, mas ainda pouco estável.' 
-        : 'Os teus níveis de energia sugerem fadiga metabólica.',
-      recovery: score > 60
-        ? 'A tua recuperação está em bom ritmo.'
-        : 'Sinais de stress muscular detetados na ureia.',
-    };
-
-    const text = templates[themeCode as keyof typeof templates] || 'Estado funcional analisado.';
-
-    await this.prisma.themeInsight.create({
-      data: {
-        userId,
-        scoreId,
-        summaryShort: text,
-        explanationLong: `Com um score de ${score}, identificamos que os teus drivers positivos estão a compensar os fatores limitantes, mas há margem para otimização nutricional.`,
-        explanationFactors: { status: 'analyzed' },
-        language: 'pt-PT',
-        version: '1.0.5',
-        tone: 'clinical-light',
-      },
-    });
-  }
-
-  private async selectRecommendations(scoreId: string, userId: string, themeCode: string, score: number) {
-    // Simulated selection of Top 3
-    const pool = [
-      { type: 'nutrition', title: 'Aumenta o magnésio', body: 'Espinafres e amêndoas ajudam na estabilidade.', rank: 1 },
-      { type: 'habit', title: 'Dorme +15min', body: 'Pequenos incrementos melhoram o score.', rank: 2 },
-      { type: 'hydration', title: 'Bebe mais água', body: 'Fundamental para o transporte de nutrientes.', rank: 3 },
-    ];
-
-    for (const rec of pool) {
+  private async generateRecommendations(scoreId: string, userId: string, domain: DomainType, score: any) {
+    if (score.status === 'insufficient_data' || score.status === 'unavailable') {
+      console.log(`[Domain Engine] Skipping recommendations for ${domain} due to: ${score.status}`);
+      return; // Coherence Policy: No recommendations on weak data
+    }
+    
+    const recs = this.recommendations.compose(domain, score);
+    
+    for (const rec of recs) {
       await this.prisma.recommendation.create({
         data: {
           userId,
           scoreId,
           type: rec.type,
           title: rec.title,
-          bodyShort: rec.body,
-          bodyLong: rec.body,
-          priorityRank: rec.rank,
-          effortLevel: 'low',
-          impactLevel: 'medium',
-          version: '1.0',
+          bodyShort: rec.bodyShort,
+          bodyLong: rec.bodyLong,
+          priorityRank: rec.priorityRank,
+          effortLevel: rec.effortLevel,
+          impactLevel: rec.impactLevel,
+          version: '1.2',
         },
       });
     }
   }
+
 
   async getUserThemes(userId: string) {
     return this.prisma.themeScore.findMany({

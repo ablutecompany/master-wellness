@@ -1,4 +1,8 @@
 import { theme } from '../../theme';
+import { AppState } from '../../store/useStore';
+import { semanticOutputService } from '../semantic-output';
+import { DomainType } from '../semantic-output/types';
+import { semanticTelemetry } from '../semantic-output/telemetry/engine';
 
 export interface UIInsight {
   title: string;
@@ -12,138 +16,153 @@ export interface UIInsight {
   refText1: string;
   refText2: string;
   suggestions?: { title: string; desc: string }[];
-  
-  // Propriedades herdadas se a UI no futuro usar as antigas
-  state?: string;
-  summary?: string;
-  explanation?: string;
-  potential?: string;
-  optimizations?: { type: string; description: string }[];
+  domain: DomainType;
 }
 
-export function generateInsights(state: {
-  themeScores: any[];
-  globalScore: number;
-  measurements: any[];
-}): UIInsight[] {
-  const hasData = state.measurements && state.measurements.length > 0;
-
-  // Se não tem dados completos, devolvemos afirmações conservadoras e neutras
-  if (!hasData) {
-    const insufficientText = "Dados ainda insuficientes para estabilizar este insight.";
-    const intermediateText = "A leitura atual sugere um estado intermédio, ainda com base limitada.";
-    const noRefText = "Aguardamos mais leituras de sincronização para suportar com rigor este pilar.";
-
-    return [
-      {
-        title: 'Performance & Equilíbrio',
-        iconName: 'Activity',
-        paragraph1: insufficientText,
-        paragraph2: "Este sinal precisa de histórico de atividade contínua para formar uma avaliação segura.",
-        refText1: noRefText,
-        refText2: "Garante sincronização regular do teu dispositivo.",
-        suggestions: []
-      },
-      {
-        title: 'Energia & Disponibilidade',
-        iconName: 'Zap',
-        paragraph1: intermediateText,
-        paragraph2: "Sem cobertura densa de métricas de repouso, a interpretação energética mantém-se genérica.",
-        refText1: noRefText,
-        refText2: "A avaliação fisiológica está em compasso de espera.",
-        suggestions: []
-      },
-      {
-        title: 'Recuperação Muscular',
-        iconName: 'Moon',
-        paragraph1: insufficientText,
-        paragraph2: "Sem inputs como F2-isoprostanos ou variação térmica noturna, não é possível traçar a tua recuperação.",
-        refText1: noRefText,
-        refText2: "Cálculos biométricos encontram-se inativos neste quadrante temporariamente.",
-        suggestions: []
-      }
-    ];
+/**
+ * NOVO: Obter insights a partir do Semantic Bundle (v1.2.0)
+ * Esta é agora a única fonte de verdade para a Shell.
+ */
+export function getSemanticInsights(): UIInsight[] {
+  const bundle = semanticOutputService.getBundle();
+  if (!bundle) {
+    // Telemetria: Falha de recepção do rastro semântico
+    return generateFallbackInsights();
   }
 
-  // Com dados, cálculo puramente determinístico assente no globalScore base
-  // Zero matemática randomizada, zero alucinações.
-  const base = state.globalScore;
-  const isOptimal = base > 70;
-
-  const moderateConfidenceText = "Este sinal foi calculado com confiança moderada devido à cobertura parcial dos dados.";
-
-  return [
-    {
-      title: 'Performance & Equilíbrio',
-      iconName: 'Activity',
-      score: base, 
-      paragraph1: isOptimal 
-        ? "Os dados recebidos assinalam estabilidade na tua performance física corrente." 
-        : "As métricas calculadas sublinham um perfil conservador para hoje.",
-      paragraph2: moderateConfidenceText,
-      refText1: "Determinado por correlação direta com os scores registados de forma determinística.",
-      refText2: "Aviso: interpretação funcional, não médica.",
-      suggestions: [
-        { title: 'Gestão de Esforço', desc: 'Opta por respeitar o baseline registado sem ultrapassar limiares desconhecidos hoje.' }
-      ]
-    },
-    {
-      title: 'Energia & Disponibilidade',
-      iconName: 'Zap',
-      score: base > 5 ? base - 2 : base,
-      paragraph1: isOptimal 
-        ? "Perfil metabólico dentro da banda de disponibilidade adequada." 
-        : "Poderá existir alguma quebra se não forem intercalados períodos de recuperação.",
-      paragraph2: moderateConfidenceText,
-      refText1: "Extração transversal ao estado de sincronização gravado nas últimas 24 horas.",
-      refText2: "Qualificação sujeita a limitações por amostragem pontual.",
-      suggestions: [
-        { title: 'Distribuição Cuidada', desc: 'Não agregues demasiada carga num curto espaço temporal.' }
-      ]
-    },
-    {
-      title: 'Trânsito Intestinal',
-      iconName: 'Target',
-      score: 85, // Determinístico estático 
-      paragraph1: "Padrão de deposição mapeado dentro de parâmetros habituais referenciados.",
-      paragraph2: "Interpretação mecânica derivada passivamente sem leitura analítica complexa agregada atualmente.",
-      refText1: "Calculado a partir de assunções passivas. Confiança limitada.",
-      refText2: "Não dispensa rigor analítico ou contacto clínico perante dor.",
-      suggestions: []
-    },
-    {
-      title: 'Resistência saudável',
-      iconName: 'Heart',
-      score: base > 0 ? base + 1 : 0,
-      paragraph1: isOptimal 
-        ? "Capacidade cardiovascular mapeável não denota atritos sob os perfis testados."
-        : "Adaptação a carga sustentada intermédia, mas sem indicativos de pico.",
-      paragraph2: moderateConfidenceText,
-      refText1: "Transposto do score de atividade basal detetada pelo motor primário.",
-      refText2: "Indicador sem valor diagnóstico cardiovascular.",
-      suggestions: []
-    },
-    {
-      title: 'Recuperação',
-      iconName: 'Moon',
-      score: isOptimal ? base - 6 : base, // Atraso habitual da recuperação face ao score global
-      paragraph1: "A leitura atual sugere um estado intermédio, ainda com base limitada.",
-      paragraph2: "O sistema processa o teu reset metabólico com reserva face à ausência prolongada do detalhe noturno completo.",
-      refText1: "Valores inferidos deterministicamente com base em desvios entre parâmetros isolados diurnos.",
-      refText2: "Necessária janela de repouso noturno ininterrupto para maior precisão.",
-      suggestions: [
-        { title: 'Privilegiar Repouso', desc: 'Face a confiança estatística menor, o descanso preventivo é favorecido.' }
-      ]
-    },
-    {
-      title: 'Idade muscular',
-      iconName: 'Brain',
-      textValue: '35', 
-      paragraph1: "Correlação sistémica do teu perfil físico base mantida sem alarmismos estruturais mensurados.",
-      paragraph2: "Este sinal foi calculado com confiança moderada devido à cobertura parcial dos dados mecânicos específicos.",
-      refText1: "Assentamento de métricas gerais e idade reportada.",
-      refText2: "Dado de estimativa contextual, sem valor em medicina metabólica orientada.",
-      suggestions: []
+  const domains: DomainType[] = ['performance', 'energy', 'recovery', 'sleep', 'nutrition'];
+  
+  return domains.map(d => {
+    const output = bundle.domains[d];
+    
+    // ── TELEMETRIA DE ESTADO ──
+    if (!output || output.status === 'unavailable' || output.status === 'insufficient_data') {
+      semanticTelemetry.record({
+        eventType: output?.status === 'insufficient_data' ? 'insufficient_data_state_displayed' : 'unavailable_state_displayed',
+        domain: d,
+        bundleVersion: bundle.bundleVersion,
+        semanticVersion: '1.2.0',
+        screen: 'home',
+        status: output?.status || 'unavailable',
+        insightIds: [],
+        recommendationIds: [],
+        evidenceRefIds: output?.inputSummary.trace || [],
+        source: 'shell'
+      });
+      return generateSingleDomainFallback(d);
     }
-  ];
+
+    const mainInsight = output.insights[0];
+    const allRecommendations = output.recommendations;
+    
+    // ── LÓGICA DE SUPRESSÃO (UX/COERÊNCIA) ──
+    // Regra: Mostrar apenas as 3 recomendações de maior prioridade na UI
+    const visibleRecs = allRecommendations.slice(0, 3);
+    const suppressedRecs = allRecommendations.slice(3);
+
+    // ── TELEMETRIA DE CONSUMO & SUPRESSÃO ──
+    
+    // 1. Insight Displayed (Ponto Central de Verdade)
+    semanticTelemetry.record({
+      eventType: 'insight_displayed',
+      domain: d,
+      bundleVersion: bundle.bundleVersion,
+      semanticVersion: '1.2.0',
+      screen: 'home',
+      status: output.status,
+      insightIds: [mainInsight?.id].filter(Boolean) as string[],
+      recommendationIds: [], // Separado para evitar redundância ruidosa
+      evidenceRefIds: output.inputSummary.trace,
+      source: 'shell'
+    });
+
+    // 2. Recommendations Displayed (Só se houver visíveis)
+    if (visibleRecs.length > 0) {
+      semanticTelemetry.record({
+        eventType: 'recommendation_displayed',
+        domain: d,
+        bundleVersion: bundle.bundleVersion,
+        semanticVersion: '1.2.0',
+        screen: 'home',
+        status: output.status,
+        insightIds: [],
+        recommendationIds: visibleRecs.map(r => r.id),
+        evidenceRefIds: [],
+        source: 'shell'
+      });
+    }
+
+    // 3. UI Limitation Suppression
+    if (suppressedRecs.length > 0) {
+      semanticTelemetry.record({
+        eventType: 'recommendation_not_rendered_ui_limit',
+        domain: d,
+        bundleVersion: bundle.bundleVersion,
+        semanticVersion: '1.2.0',
+        screen: 'home',
+        status: output.status,
+        insightIds: [],
+        recommendationIds: [],
+        suppressedRecommendationIds: suppressedRecs.map(r => r.id),
+        suppressionReason: 'coherence_rule_ux_limit',
+        evidenceRefIds: [],
+        source: 'shell'
+      });
+    }
+
+    return {
+      title: mapDomainToTitle(d),
+      iconName: mapDomainToIcon(d),
+      score: output.score.value,
+      textValue: output.score.stateLabel,
+      paragraph1: mainInsight?.summary || 'Análise funcional ativa.',
+      paragraph2: mainInsight?.explanation || 'Factores de disponibilidade metabólica em monitorização.',
+      refText1: `Baseado em ${output.inputSummary.signalsCount} sinais biológicos normalizados.`,
+      refText2: `Audit Trace: ${output.inputSummary.trace.join(', ')}`,
+      suggestions: visibleRecs.map(r => ({ title: r.title, desc: r.bodyShort })),
+      domain: d
+    };
+  });
+}
+
+function mapDomainToTitle(domain: string): string {
+  const map: any = { 
+    general: 'Visão Holística',
+    performance: 'Performance & Equilíbrio', 
+    energy: 'Energia & Disponibilidade', 
+    recovery: 'Recuperação Muscular',
+    sleep: 'Qualidade de Sono',
+    nutrition: 'Monitorização Nutricional'
+  };
+  return map[domain] || domain;
+}
+
+function mapDomainToIcon(domain: string): any {
+  const map: any = {
+    general: 'Activity',
+    performance: 'Activity',
+    energy: 'Zap',
+    recovery: 'Moon',
+    sleep: 'Moon',
+    nutrition: 'Heart'
+  };
+  return map[domain] || 'Activity';
+}
+
+function generateSingleDomainFallback(domain: string): UIInsight {
+  return {
+    title: mapDomainToTitle(domain),
+    iconName: mapDomainToIcon(domain),
+    paragraph1: "Monitorização em curso ou dados insuficientes.",
+    paragraph2: "O sistema aguarda por mais leituras de sincronização para estabilizar este pilar de análise.",
+    refText1: "Estado: Aguardando sincronização contínua.",
+    refText2: "Aviso: Sem cobertura de sinais suficiente para análise.",
+    suggestions: [],
+    domain: domain as DomainType
+  };
+}
+
+function generateFallbackInsights(): UIInsight[] {
+  // Mock para desenvolvimento se o bundle for null
+  return [];
 }

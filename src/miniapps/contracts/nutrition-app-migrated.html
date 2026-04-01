@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meal Planner v2 - Migrated</title>
+    <style>
+        body { background: #05070A; color: #fff; font-family: sans-serif; padding: 20px; }
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .allowed { background: #00D4AA20; color: #00D4AA; border: 1px solid #00D4AA40; }
+        .denied { background: #FF606020; color: #FF6060; border: 1px solid #FF606040; }
+        .unavailable { background: #FFA50020; color: #FFA500; border: 1px solid #FFA50040; }
+        .panel { background: rgba(255,255,255,0.05); padding: 16px; border-radius: 12px; margin-top: 16px; }
+        h1 { font-size: 18px; margin-bottom: 8px; color: #00D4AA; }
+    </style>
+</head>
+<body>
+    <h1>🥗 _Meal planner v1.2</h1>
+    <div id="status-container"></div>
+    <div id="nutrition-panel" class="panel">A carregar plano nutricional...</div>
+
+    <script>
+        // CLIENT-SIDE MIGRATION LOGIC (Ref: nutrition-v2-migration.ts)
+        
+        window.addEventListener('ablute:ready', (e) => {
+            console.log('[NutriApp] Shell ready. Migrating to domainPackages...');
+            runNutritionFlow();
+        });
+
+        function runNutritionFlow() {
+            const { domainPackages, derivedContext } = window.ablute;
+            const statusEl = document.getElementById('status-container');
+            const panelEl = document.getElementById('nutrition-panel');
+
+            // 1. Identificar package principal
+            const nutritionPkg = domainPackages.find(p => p.domain === 'nutrition');
+
+            if (!nutritionPkg) {
+                statusEl.innerHTML = '<span class="status-badge denied">ERRO: SEM ACESSO</span>';
+                panelEl.innerHTML = 'Este domínio de nutrição não está autorizado.';
+                return;
+            }
+
+            // 2. Resolver estados v1.2
+            const policy = nutritionPkg.exposurePolicy;
+            
+            if (policy === 'allowed') {
+                // TELEMETRIA DE CONSUMO REAL
+                window.ablute.emit('package_read', { 
+                  domain: 'nutrition', 
+                  version: nutritionPkg.packageVersion,
+                  policy: 'allowed'
+                });
+
+                statusEl.innerHTML = '<span class="status-badge allowed">PLANO ATIVO (v1.2)</span>';
+                const score = nutritionPkg.signals.score || '--';
+                const label = nutritionPkg.signals.statusLabel || 'Estável';
+                
+                panelEl.innerHTML = `
+                    <div style="font-size: 24px; color: #00D4AA; font-weight: bold;">${score}%</div>
+                    <div>Meta Metabólica: ${label}</div>
+                    <div style="margin-top: 12px; font-size: 12px; color: #aaa;">
+                        Factos nutricionais ativos: ${nutritionPkg.facts.length}
+                    </div>
+                `;
+            } else if (policy === 'denied') {
+                statusEl.innerHTML = '<span class="status-badge denied">RESTRICTED</span>';
+                panelEl.innerHTML = 'Ative as permissões de nutrição no perfil.';
+            } else if (policy === 'unavailable') {
+                statusEl.innerHTML = '<span class="status-badge unavailable">SEM HISTÓRICO</span>';
+                panelEl.innerHTML = 'Nenhum registo de refeições disponível para gerar plano.';
+            }
+
+            // 3. Fallback Documentado (Legacy)
+            if (!nutritionPkg && window.ablute.derivedContext) {
+                console.info('[NutriApp] Legacy fallback triggered.');
+            }
+        }
+    </script>
+</body>
+</html>
