@@ -220,10 +220,13 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       // - Renderizamos a gaveta da Esquerda em background
       setThemesOpen(true);
 
-      // - Passamos o controlo ao browser e disparamos a entrada suave da gaveta Esquerda
-      setTimeout(() => {
-        Animated.spring(themesAnim, { toValue: 0, useNativeDriver: true }).start();
-      }, 50);
+      // - Forçamos o browser a pintar a nova árvore gigante do React antes
+      // de injetar a classe de transição acelerada por hardware (Impede "UI Freeze").
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          Animated.spring(themesAnim, { toValue: 0, useNativeDriver: true }).start();
+        });
+      });
     });
   };
 
