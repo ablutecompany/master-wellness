@@ -204,27 +204,34 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   // -- DEMO MODE STATE --
   const [showDemoModal, setShowDemoModal] = useState(false);
   const handleSelectDemo = (key: any) => {
-    // 1. Oculta Modal imediatamente para libertar a layer de touch
+    // 1. Oculta Modal para libertar DOM touch (gera RE-RENDER violento do Ecrã)
     setShowDemoModal(false);
     
-    // 2. Arranca a animação de fecho da gaveta Direita
-    Animated.spring(dataAnim, { toValue: width, useNativeDriver: true }).start(({ finished }) => {
-      // SÓ EM CALLBACK (quando a animação acaba de deslizar passados ~400ms):
-      // - Desmontamos o backdrop da Direita
-      setDataOpen(false);
-      
-      // - Injetamos os dados massivos na cache (O Ecrã fará Re-Render síncrono aqui!)
-      // Sendo que a animação anterior já terminou, o React Native Web não congela a UI!
-      semanticOutputService.setDemoScenario(key);
-      
-      // - Renderizamos a gaveta da Esquerda em background
-      setThemesOpen(true);
-
-      // - Forçamos o browser a pintar a nova árvore gigante do React antes
-      // de injetar a classe de transição acelerada por hardware (Impede "UI Freeze").
+    // 2. PROTEÇÃO REACT NATIVE WEB: 
+    // Só podemos iniciar a transição CSS quando a árvore DOM estiver estabilizada.
+    // 2 ticks de rAF dão garantia total de que a eliminação do <Modal> já pintou.
+    requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          Animated.spring(themesAnim, { toValue: 0, useNativeDriver: true }).start();
+        
+        // 3. Arranca o fecho da gaveta Direita
+        Animated.spring(dataAnim, { toValue: width, useNativeDriver: true }).start(({ finished }) => {
+          
+          // Se o utilizador clicou como um louco ou a animação foi forçada a parar, saímos!
+          if (!finished) return; 
+
+          // 4. Fecho completo. Limpa background fantasma.
+          setDataOpen(false);
+          
+          // 5. Injeta carga maciça de dados falsos e acorda a UI (RE-RENDER violento #2)
+          semanticOutputService.setDemoScenario(key);
+          setThemesOpen(true);
+
+          // 6. Protege a renderização maciça da Esquerda e inicia abertura suave
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              Animated.spring(themesAnim, { toValue: 0, useNativeDriver: true }).start();
+            });
+          });
         });
       });
     });
