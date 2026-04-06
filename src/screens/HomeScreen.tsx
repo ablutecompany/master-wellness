@@ -153,6 +153,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   // --- UI & NAVIGATION STATE (MOVIDO PARA O TOPO PARA EVITAR TDZ EM MEMOS) ---
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showDemoModal, setShowDemoModal] = useState(false);
+  const [activeDemoKey, setActiveDemoKey] = useState<string | null>(null);
   const [showHistorico, setShowHistorico] = useState(false);
   const [bioTab, setBioTab] = useState(0);
   const [themesOpen, setThemesOpen] = useState(false);
@@ -163,7 +164,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     const dates = new Set<string>();
 
     // 1. Integrar datas do Modo Demo (Sintético)
-    const activeDemo = semanticOutputService.getActiveDemoScenario();
+    const activeDemo = activeDemoKey;
     if (activeDemo) {
       dates.add('2026-04-02');
     }
@@ -186,7 +187,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     });
 
     return Array.from(dates).sort((a, b) => b.localeCompare(a));
-  }, [measurements, rawEvents, showDemoModal]); // Recalcula se o modal demo fechar
+  }, [measurements, rawEvents, activeDemoKey]); // Recalcula se o modal demo fechar
 
   // Inicializa e sincroniza a data ativa
   useEffect(() => {
@@ -202,7 +203,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   // --- FILTRAGEM POR DATA (C/ SUPORTE A DEMO) ---
   const filteredMeasurements = React.useMemo(() => {
-    const activeDemo = semanticOutputService.getActiveDemoScenario();
+    const activeDemo = activeDemoKey;
 
     // Se estiver em Demo e a data for a de hoje, injetamos mocks para as tabs
     if (activeDemo && selectedDate === '2026-04-02') {
@@ -220,10 +221,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         return new Date(m.timestamp).toISOString().split('T')[0] === selectedDate;
       } catch (e) { return false; }
     });
-  }, [measurements, selectedDate, showDemoModal]);
+  }, [measurements, selectedDate, activeDemoKey]);
 
   const filteredEvents = React.useMemo(() => {
-    const activeDemo = semanticOutputService.getActiveDemoScenario();
+    const activeDemo = activeDemoKey;
     if (activeDemo && selectedDate === '2026-04-02') {
       return [
         { appId: 'urinalysis', recordedAt: '2026-04-02T08:00:00Z', type: 'marker_check', value: 'Sincronizado' }
@@ -235,7 +236,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         return new Date(e.recordedAt).toISOString().split('T')[0] === selectedDate;
       } catch (err) { return false; }
     });
-  }, [rawEvents, selectedDate, showDemoModal]);
+  }, [rawEvents, selectedDate, activeDemoKey]);
 
   const activeFacts = React.useMemo(() =>
     Selectors.selectActiveDerivedContextFacts({ appContributionEvents: filteredEvents } as any),
@@ -249,6 +250,19 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [semanticThemes, setSemanticThemes] = useState(getSemanticInsights());
   const [semanticStatus, setSemanticStatus] = useState(getSemanticStatus());
   const [crossDomainSummary, setCrossDomainSummary] = useState(semanticOutputService.getCrossDomainSummary());
+
+  // --- SOURCE OF TRUTH (CONTEXTO ATIVO) ---
+  const activeAnalysisContext = React.useMemo(() => ({
+    selectedDate,
+    filteredMeasurements,
+    filteredEvents,
+    isDemo: !!activeDemoKey,
+    demoScenarioKey: activeDemoKey
+  }), [selectedDate, filteredMeasurements, filteredEvents, activeDemoKey]);
+
+  useEffect(() => {
+    semanticOutputService.updateTemporalContext(activeAnalysisContext);
+  }, [activeAnalysisContext]);
 
   useEffect(() => {
     // Escuta alterações no bundle global e actualiza a UI da Shell
@@ -312,7 +326,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           setDataOpen(false);
 
           // 5. Injeta carga maciça de dados falsos e acorda a UI (RE-RENDER violento #2)
-          semanticOutputService.setDemoScenario(key);
+          setActiveDemoKey(key);
           setThemesOpen(true);
 
           // 6. Protege a renderização maciça da Esquerda e inicia abertura suave
@@ -1127,7 +1141,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                 <Typography style={styles.themePanelTitle}>INTERPRETAÇÃO DAS ANÁLISES POR IA</Typography>
-                {semanticOutputService.getActiveDemoScenario() && (
+                {activeDemoKey && (
                   <View style={{ backgroundColor: '#00F2FF20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 8, borderWidth: 1, borderColor: '#00F2FF40' }}>
                     <Typography style={{ color: '#00F2FF', fontSize: 9, fontWeight: 'bold' }}>MODO DEMO</Typography>
                   </View>

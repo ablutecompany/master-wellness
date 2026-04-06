@@ -10,9 +10,19 @@ import { DomainAffinity } from './domain-affinity';
 import { SemanticGuardrails } from './guardrails';
 // DECOUPLED: Facts are now passed or derived via SemanticOutputStore or Context
 
+// Novo tipo que define o snapshot temporal/verdade exato
+export interface ActiveAnalysisContext {
+  selectedDate: string | null;
+  analysisId?: string;
+  filteredMeasurements: any[];
+  filteredEvents: any[];
+  isDemo: boolean;
+  demoScenarioKey: string | null;
+}
+
 export class SemanticOutputService {
   private static isInitialized = false;
-  private static activeDemoKey: DemoScenarioKey | null = null;
+  private static activeContext: ActiveAnalysisContext | null = null;
 
   /**
    * Inicialização operacional: Ligar ao Lifecycle da App.
@@ -141,29 +151,30 @@ export class SemanticOutputService {
   }
 
   /**
-   * Ativar Cenário Fixo para Demonstração Rica
+   * Injeta o único contexto válido (UI source-of-truth) na camada semântica.
+   * A IA passa a viver exclusivamente desta fotografia temporal.
    */
-  static setDemoScenario(key: DemoScenarioKey | null) {
-    this.activeDemoKey = key;
-    if (key) {
-      const demoBundle = DEMO_SCENARIOS[key] as any;
-      SemanticOutputStore.updateState(demoBundle);
+  static updateTemporalContext(context: ActiveAnalysisContext) {
+    this.activeContext = context;
+    
+    if (context.isDemo && context.demoScenarioKey && DEMO_SCENARIOS[context.demoScenarioKey as any]) {
+      SemanticOutputStore.updateState({
+        ...DEMO_SCENARIOS[context.demoScenarioKey as any],
+        bundleVersion: '1.2.0'
+      } as any);
       SemanticOutputStore.clearDirty();
     } else {
-      // Reverter para factuais reais da pessoa
       this.refreshBundle('user_current_session_1');
     }
   }
 
-  static getActiveDemoScenario(): DemoScenarioKey | null {
-    return this.activeDemoKey;
-  }
-
-  private static async fetchFromBackend(userId: string, requestedDomains: string[], activeFacts: any[] = []) {
+  private static async fetchFromBackend(userId: string, requestedDomains: string[]) {
+    const activeFacts = this.activeContext?.filteredEvents || [];
+    
     // 1. Se estivermos em Demo Mode, interceptar e parar o fetch real
-    if (this.activeDemoKey && DEMO_SCENARIOS[this.activeDemoKey]) {
+    if (this.activeContext?.isDemo && this.activeContext.demoScenarioKey && DEMO_SCENARIOS[this.activeContext.demoScenarioKey as any]) {
       return {
-        ...DEMO_SCENARIOS[this.activeDemoKey],
+        ...DEMO_SCENARIOS[this.activeContext.demoScenarioKey as any],
         bundleVersion: '1.2.0'
       } as any;
     }
