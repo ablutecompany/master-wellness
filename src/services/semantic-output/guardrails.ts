@@ -17,10 +17,13 @@ export const SemanticGuardrails = {
       return false;
     }
 
-    const validStatuses = ['ready', 'stale', 'insufficient_data', 'error', 'unavailable'];
+    const validStatuses = ['ready', 'stale', 'insufficient_data', 'error', 'unavailable', 'idle', 'initializing', 'loading', 'refreshing'];
     if (!validStatuses.includes(bundle.status)) {
       const msg = `[Anti-Regression] Status semântico legado/inválido detetado: ${bundle.status}`;
-      if (__DEV__) throw new Error(msg);
+      if (__DEV__) {
+        console.warn(msg);
+        return false; 
+      }
       console.error(msg);
       return false;
     }

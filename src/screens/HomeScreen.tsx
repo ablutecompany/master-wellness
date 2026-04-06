@@ -5,7 +5,7 @@ import { theme } from '../theme';
 import { BrandLogo } from '../components/BrandLogo';
 import { ThemeCard } from '../components/ThemeCard';
 import { HistoricoModal } from '../components/HistoricoModal';
-import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, ChevronRight, ChevronDown, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, ChevronsDown, Sparkles, ArrowLeft } from 'lucide-react-native';
+import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, ChevronRight, ChevronDown, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, ChevronsDown, Sparkles, ArrowLeft, Calendar, History } from 'lucide-react-native';
 import Svg, { Path, Text as SvgText, TextPath, Defs, G } from 'react-native-svg';
 import { BiomechanicRelic } from '../components/BiomechanicRelic';
 import { SiderealBackground } from '../components/SiderealBackground';
@@ -15,15 +15,15 @@ import { SiderealBackground } from '../components/SiderealBackground';
 // Web-safe LinearGradient fallback
 const LinearGradient = Platform.OS === 'web'
   ? ({ style, colors, ...props }: any) => (
-      <View style={[style, { backgroundColor: colors?.[0] ?? 'rgba(0,0,0,0.8)' }]} {...props} />
-    )
+    <View style={[style, { backgroundColor: colors?.[0] ?? 'rgba(0,0,0,0.8)' }]} {...props} />
+  )
   : (() => { const { LinearGradient: LG } = require('expo-linear-gradient'); return LG; })();
 
 // Web-safe BlurView fallback
 const BlurView = Platform.OS === 'web'
   ? ({ style, ...props }: any) => (
-      <View style={[style, { backgroundColor: 'rgba(0,0,0,0.6)' }]} {...props} />
-    )
+    <View style={[style, { backgroundColor: 'rgba(0,0,0,0.6)' }]} {...props} />
+  )
   : (() => { const { BlurView: BV } = require('expo-blur'); return BV; })();
 
 import { MINI_APP_CATALOG } from '../miniapps/catalog';
@@ -57,7 +57,7 @@ const SlotMachineOdometer = ({ targetNumber }: { targetNumber: number }) => {
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center' }}>
-      
+
       {/* Caleira interna completamente invisível & minimalista onde os números correm */}
       <View style={{ height: H, overflow: 'hidden', justifyContent: 'flex-start', alignItems: 'center', minWidth: 26 }}>
         <Animated.View style={{ transform: [{ translateY: scrollAnim }] }}>
@@ -79,9 +79,9 @@ const SlotMachineOdometer = ({ targetNumber }: { targetNumber: number }) => {
 };
 
 // --- MECHANICAL WHEEL PICKER COMPONENT ---
-const WheelPicker = ({ value, onChange, min = 1, max = 30, width = 80 }: { value: number, onChange: (v: number)=>void, min?: number, max?: number, width?: number }) => {
+const WheelPicker = ({ value, onChange, min = 1, max = 30, width = 80 }: { value: number, onChange: (v: number) => void, min?: number, max?: number, width?: number }) => {
   const ITEM_HEIGHT = 34;
-  const numbers = Array.from({length: max - min + 1}, (_, i) => i + min);
+  const numbers = Array.from({ length: max - min + 1 }, (_, i) => i + min);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -95,8 +95,8 @@ const WheelPicker = ({ value, onChange, min = 1, max = 30, width = 80 }: { value
     <View style={{ height: ITEM_HEIGHT * 3, overflow: 'hidden', alignItems: 'center', marginVertical: 0, width, alignSelf: 'center' }}>
       {/* Indicador Central Cyberpunk */}
       <View style={{ position: 'absolute', top: ITEM_HEIGHT, height: ITEM_HEIGHT, width: '100%', backgroundColor: 'rgba(0, 242, 255, 0.05)', borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'rgba(0, 242, 255, 0.3)', zIndex: 0 }} pointerEvents="none" />
-      
-      <ScrollView 
+
+      <ScrollView
         ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
         snapToInterval={ITEM_HEIGHT}
@@ -104,21 +104,21 @@ const WheelPicker = ({ value, onChange, min = 1, max = 30, width = 80 }: { value
         onMomentumScrollEnd={(e) => {
           const index = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
           if (numbers[index] !== undefined && numbers[index] !== value) {
-             onChange(numbers[index]);
+            onChange(numbers[index]);
           }
         }}
         contentContainerStyle={{ paddingVertical: ITEM_HEIGHT }}
       >
         {numbers.map((n) => (
-          <TouchableOpacity 
+          <TouchableOpacity
             key={n}
             activeOpacity={0.7}
             onPress={() => onChange(n)}
             style={{ height: ITEM_HEIGHT, justifyContent: 'center', alignItems: 'center', width: '100%' }}
           >
-            <Typography style={{ 
-              fontSize: value === n ? 24 : 16, 
-              color: value === n ? '#00F2FF' : 'rgba(255,255,255,0.2)', 
+            <Typography style={{
+              fontSize: value === n ? 24 : 16,
+              color: value === n ? '#00F2FF' : 'rgba(255,255,255,0.2)',
               fontWeight: value === n ? '800' : '500',
               textShadowColor: value === n ? 'rgba(0, 242, 255, 0.5)' : 'transparent',
               textShadowRadius: value === n ? 8 : 0
@@ -141,17 +141,110 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const installedAppIds = useStore(Selectors.selectInstalledAppIds);
   const isMeasuring = useStore(Selectors.selectIsMeasuring);
   const isNfcLoading = useStore(Selectors.selectIsNfcLoading);
-  
+
+  // Garantir inicialização do serviço sem dependência circular
+  useEffect(() => {
+    semanticOutputService.init('user_current_session_1');
+  }, []);
+
   // Safe memoized facts query to avoid Zustand infinite render loop
   const rawEvents = useStore(state => state.appContributionEvents);
-  const activeFacts = React.useMemo(() => 
-    Selectors.selectActiveDerivedContextFacts({ appContributionEvents: rawEvents } as any),
-  [rawEvents]);
+
+  // --- UI & NAVIGATION STATE (MOVIDO PARA O TOPO PARA EVITAR TDZ EM MEMOS) ---
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [showDemoModal, setShowDemoModal] = useState(false);
+  const [showHistorico, setShowHistorico] = useState(false);
+  const [bioTab, setBioTab] = useState(0);
+  const [themesOpen, setThemesOpen] = useState(false);
+  const [dataOpen, setDataOpen] = useState(false);
+
+  // --- LÓGICA DE DATAS DISPONÍVEIS ---
+  const availableDates = React.useMemo(() => {
+    const dates = new Set<string>();
+
+    // 1. Integrar datas do Modo Demo (Sintético)
+    const activeDemo = semanticOutputService.getActiveDemoScenario();
+    if (activeDemo) {
+      dates.add('2026-04-02');
+    }
+
+    // 2. Datas Reais
+    const toShortDate = (d: any) => {
+      try {
+        const iso = new Date(d).toISOString().split('T')[0];
+        return iso;
+      } catch (e) { return null; }
+    };
+
+    measurements.forEach(m => {
+      const d = toShortDate(m.timestamp);
+      if (d) dates.add(d);
+    });
+    rawEvents.forEach(e => {
+      const d = toShortDate(e.recordedAt);
+      if (d) dates.add(d);
+    });
+
+    return Array.from(dates).sort((a, b) => b.localeCompare(a));
+  }, [measurements, rawEvents, showDemoModal]); // Recalcula se o modal demo fechar
+
+  // Inicializa e sincroniza a data ativa
+  useEffect(() => {
+    if (availableDates.length > 0) {
+      if (!selectedDate || !availableDates.includes(selectedDate)) {
+        setSelectedDate(availableDates[0]);
+      }
+    } else if (!selectedDate) {
+      // Fallback absoluto para evitar "Carregando..." eterno
+      setSelectedDate('2026-04-02');
+    }
+  }, [availableDates, selectedDate]);
+
+  // --- FILTRAGEM POR DATA (C/ SUPORTE A DEMO) ---
+  const filteredMeasurements = React.useMemo(() => {
+    const activeDemo = semanticOutputService.getActiveDemoScenario();
+
+    // Se estiver em Demo e a data for a de hoje, injetamos mocks para as tabs
+    if (activeDemo && selectedDate === '2026-04-02') {
+      return [
+        { type: 'urinalysis', timestamp: '2026-04-02T08:00:00Z', value: { marker: 'Gravidade Específica', value: '1.025', unit: 'sg' } },
+        { type: 'urinalysis', timestamp: '2026-04-02T08:00:00Z', value: { marker: 'pH Urinário', value: '6.5', unit: 'pH' } },
+        { type: 'ecg', timestamp: '2026-04-02T08:00:00Z', value: { value: '72', unit: 'bpm' } },
+        { type: 'weight', timestamp: '2026-04-02T08:00:00Z', value: { value: '74.2', unit: 'kg' } },
+      ];
+    }
+
+    if (!selectedDate) return [];
+    return measurements.filter(m => {
+      try {
+        return new Date(m.timestamp).toISOString().split('T')[0] === selectedDate;
+      } catch (e) { return false; }
+    });
+  }, [measurements, selectedDate, showDemoModal]);
+
+  const filteredEvents = React.useMemo(() => {
+    const activeDemo = semanticOutputService.getActiveDemoScenario();
+    if (activeDemo && selectedDate === '2026-04-02') {
+      return [
+        { appId: 'urinalysis', recordedAt: '2026-04-02T08:00:00Z', type: 'marker_check', value: 'Sincronizado' }
+      ];
+    }
+    if (!selectedDate) return [];
+    return rawEvents.filter(e => {
+      try {
+        return new Date(e.recordedAt).toISOString().split('T')[0] === selectedDate;
+      } catch (err) { return false; }
+    });
+  }, [rawEvents, selectedDate, showDemoModal]);
+
+  const activeFacts = React.useMemo(() =>
+    Selectors.selectActiveDerivedContextFacts({ appContributionEvents: filteredEvents } as any),
+    [filteredEvents]);
 
   // Ações via subscrição estática (sem re-render por estado)
   const launchApp = useStore(state => state.launchApp);
   const uninstallApp = useStore(state => state.uninstallApp);
-  
+
   // Subscrição ao Bundle Semântico v1.2.0 (Fonte de Verdade)
   const [semanticThemes, setSemanticThemes] = useState(getSemanticInsights());
   const [semanticStatus, setSemanticStatus] = useState(getSemanticStatus());
@@ -175,8 +268,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
         const { semanticTelemetry } = require('../services/semantic-output/telemetry/engine');
         semanticTelemetry.record({
-          eventType: output.status === 'sufficient_data' ? 'insight_displayed' : 
-                     (output.status === 'insufficient_data' ? 'insufficient_data_state_displayed' : 'unavailable_state_displayed'),
+          eventType: output.status === 'sufficient_data' ? 'insight_displayed' :
+            (output.status === 'insufficient_data' ? 'insufficient_data_state_displayed' : 'unavailable_state_displayed'),
           domain: insight.domain,
           bundleVersion: bundle.version,
           semanticVersion: '1.2.0',
@@ -198,30 +291,26 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [showControl, setShowControl] = useState(false);
   const [showNfcModal, setShowNfcModal] = useState(false);
   const [isNfcScanning, setIsNfcScanning] = useState(false);
-  const [showHistorico, setShowHistorico] = useState(false);
-  const [bioTab, setBioTab] = useState(0);
-
   // -- DEMO MODE STATE --
-  const [showDemoModal, setShowDemoModal] = useState(false);
   const handleSelectDemo = (key: any) => {
     // 1. Oculta Modal para libertar DOM touch (gera RE-RENDER violento do Ecrã)
     setShowDemoModal(false);
-    
+
     // 2. PROTEÇÃO REACT NATIVE WEB: 
     // Só podemos iniciar a transição CSS quando a árvore DOM estiver estabilizada.
     // 2 ticks de rAF dão garantia total de que a eliminação do <Modal> já pintou.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        
+
         // 3. Arranca o fecho da gaveta Direita
         Animated.spring(dataAnim, { toValue: width, useNativeDriver: true }).start(({ finished }) => {
-          
+
           // Se o utilizador clicou como um louco ou a animação foi forçada a parar, saímos!
-          if (!finished) return; 
+          if (!finished) return;
 
           // 4. Fecho completo. Limpa background fantasma.
           setDataOpen(false);
-          
+
           // 5. Injeta carga maciça de dados falsos e acorda a UI (RE-RENDER violento #2)
           semanticOutputService.setDemoScenario(key);
           setThemesOpen(true);
@@ -237,8 +326,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     });
   };
 
-  const [themesOpen, setThemesOpen] = useState(false);
-  const [dataOpen, setDataOpen] = useState(false);
   const [stableExpanded, setStableExpanded] = useState(false);
   // Profile Form State (Connected to real state)
   const [profileName, setProfileName] = useState(user?.name || 'Utilizadora');
@@ -249,9 +336,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   // Odometer calculation (Factual)
   const diasSemExame = useStore(Selectors.selectDaysSinceLastMeasurement);
-  
+
   // Settings Form State (Modo de Análise)
-  const [analysisMode, setAnalysisMode] = useState<'manual'|'automatico'>('automatico');
+  const [analysisMode, setAnalysisMode] = useState<'manual' | 'automatico'>('automatico');
   const [autoTimes, setAutoTimes] = useState(1);
   const [autoDays, setAutoDays] = useState(1);
   const [autoExpanded, setAutoExpanded] = useState(false);
@@ -261,7 +348,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [selectedGroups, setSelectedGroups] = useState<string[]>(['U', 'S', 'F', 'O']);
   const [groupsExpanded, setGroupsExpanded] = useState(false);
   const [showOutrosWarning, setShowOutrosWarning] = useState(false);
-  
+
   const handleToggleGroup = (id: string) => {
     if (selectedGroups.includes(id)) {
       setSelectedGroups(selectedGroups.filter(g => g !== id));
@@ -272,7 +359,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       }
     }
   };
-  
+
   // Settings Form State (Notificações)
   type NotificationMode = 'Ativas' | 'Apenas Alertas' | 'Silenciadas';
   const [notificationMode, setNotificationMode] = useState<NotificationMode>('Ativas');
@@ -309,9 +396,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     let isActive = true;
     const runAnimation = () => {
       if (!isActive) return;
-      
+
       arrowAnim.setValue(0); // Reinicia obrigatoriamente para 0
-      
+
       Animated.timing(arrowAnim, {
         toValue: 1,
         duration: 1500, // Ciclo urgente de 1.5 seg
@@ -320,16 +407,16 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       }).start(() => {
         if (isActive) {
           // Quebra a Call Stack síncrona para que o RN Web não ignore o reinício
-          setTimeout(runAnimation, 20); 
+          setTimeout(runAnimation, 20);
         }
       });
     };
-    
+
     runAnimation();
-    
-    return () => { 
-      isActive = false; 
-      arrowAnim.stopAnimation(); 
+
+    return () => {
+      isActive = false;
+      arrowAnim.stopAnimation();
     };
   }, [arrowAnim]);
 
@@ -373,8 +460,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const homeShrink = Animated.multiply(homeShrinkFromThemes, homeShrinkFromData);
 
   // Mutable refs for edge gesture callbacks (avoid stale closures in PanResponder)
-  const openThemesRef = useRef<() => void>(() => {});
-  const openDataRef = useRef<() => void>(() => {});
+  const openThemesRef = useRef<() => void>(() => { });
+  const openDataRef = useRef<() => void>(() => { });
 
   // ── Panel open/close helpers (sync animation + state for web backdrop) ────
   const openThemes = () => {
@@ -601,7 +688,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           openDataRef.current();
           return;
         }
-        
+
         // Vertical Swipe (Bottom Half) -> App Drawer
         if (y0 > 300 && Math.abs(dy) > Math.abs(dx)) {
           if (dy < -60 || vy < -0.5) {
@@ -695,7 +782,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const handleOpenMiniApp = (appId: string) => {
     console.log('[HomeScreen] Intentando abrir MiniApp:', appId);
     // Vibration.vibrate([0, 10, 5, 10]); // Padrão de vibração se quiseres manter
-    
+
     const app = MINI_APP_CATALOG.find((a: any) => a.id === appId);
     if (app) {
       try {
@@ -806,7 +893,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           <View style={{ position: 'relative' }}>
             <BrandLogo size="medium" />
             {/* Máscara invisível para absorver os toques e impedir seleção de texto do logotipo */}
-            <TouchableOpacity 
+            <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => {
                 if (Platform.OS !== 'web') Vibration.vibrate(10);
@@ -836,7 +923,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
           // Fator de saúde (1.0 = Max radiance [0 dias: "Pos 7"], 0.0 = Min radiance [8 dias: "Pos 1 original"])
           const healthFactor = Math.max(0, 1 - (Math.min(diasSemExame, 8) / 8));
-          
+
           // Memória Exata da Posição 1: Base era 20, Expansiva era 100.
           // Interpolação linear da Pos 1 (0.0) para Pos 7 (1.0)
           const radiusBase = 20 + (healthFactor * 40);      // Pos 1: 20  | Pos 7: 60
@@ -852,63 +939,63 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
           const glowOpacityAnim = pulseAnim.interpolate({
             inputRange: [1, 1.2],
-            outputRange: [minOpacity, maxOpacity] 
+            outputRange: [minOpacity, maxOpacity]
           });
 
           return (
             <Animated.View style={[styles.centerContainer, { transform: [{ translateY: centerContentY }, { scale: 0.52 }] }]}>
               <View style={{ width: 240, height: 410, justifyContent: 'center', alignItems: 'center' }}>
-                
+
                 {/* 1) Luz Base Fixa (Afasta e aperta rigorosamente segundo as Posições 1-7) */}
-                <View style={{ 
+                <View style={{
                   position: 'absolute',
-                  width: 240, height: 410, 
-                  borderRadius: 120, 
+                  width: 240, height: 410,
+                  borderRadius: 120,
                   backgroundColor: 'transparent',
-                  shadowColor: glowColorHex, 
-                  shadowOffset: { width: 0, height: 0 }, 
-                  shadowOpacity: 1, 
+                  shadowColor: glowColorHex,
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: 1,
                   shadowRadius: radiusBase,
                   elevation: 15
                 }} pointerEvents="none" />
 
                 {/* 2) Luz Expansiva Média */}
-                <Animated.View style={{ 
+                <Animated.View style={{
                   position: 'absolute',
-                  width: 240, height: 410, 
-                  borderRadius: 120, 
+                  width: 240, height: 410,
+                  borderRadius: 120,
                   backgroundColor: 'transparent',
-                  shadowColor: glowColorHex, 
-                  shadowOffset: { width: 0, height: 0 }, 
-                  shadowOpacity: 1, 
+                  shadowColor: glowColorHex,
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: 1,
                   shadowRadius: radiusMedia,
                   elevation: 40,
                   opacity: glowOpacityAnim
                 }} pointerEvents="none" />
 
                 {/* 3) Luz Expansiva Extrema (Anula-se a zero se Pos 1) */}
-                <Animated.View style={{ 
+                <Animated.View style={{
                   position: 'absolute',
-                  width: 240, height: 410, 
-                  borderRadius: 120, 
+                  width: 240, height: 410,
+                  borderRadius: 120,
                   backgroundColor: 'transparent',
-                  shadowColor: glowColorHex, 
-                  shadowOffset: { width: 0, height: 0 }, 
-                  shadowOpacity: healthFactor > 0 ? 1 : 0, 
+                  shadowColor: glowColorHex,
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: healthFactor > 0 ? 1 : 0,
                   shadowRadius: radiusExtrema,
                   elevation: 60,
                   opacity: glowOpacityAnim
                 }} pointerEvents="none" />
 
                 {/* 4) Luz Galática (Anula-se a zero se Pos 1) */}
-                <Animated.View style={{ 
+                <Animated.View style={{
                   position: 'absolute',
-                  width: 240, height: 410, 
-                  borderRadius: 120, 
+                  width: 240, height: 410,
+                  borderRadius: 120,
                   backgroundColor: 'transparent',
-                  shadowColor: glowColorHex, 
-                  shadowOffset: { width: 0, height: 0 }, 
-                  shadowOpacity: healthFactor > 0 ? 0.9 : 0, 
+                  shadowColor: glowColorHex,
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: healthFactor > 0 ? 0.9 : 0,
                   shadowRadius: radiusGalatica,
                   elevation: 80,
                   opacity: glowOpacityAnim
@@ -916,77 +1003,77 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
                 {/* The Track Base - Pill interior FIXO - Agora atua como Tubo Sideral */}
                 <View style={{ width: 240, height: 410, borderRadius: 120, overflow: 'hidden', backgroundColor: '#000', borderWidth: 1, borderColor: 'rgba(255, 230, 184, 0.08)', zIndex: 10 }}>
-                    <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
-                      <SiderealBackground />
-                      {/* Subtil manto para apaziguar a simulação e encaixar no breu */}
-                      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(2, 4, 8, 0.65)' }]} />
-                    </View>
+                  <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+                    <SiderealBackground />
+                    {/* Subtil manto para apaziguar a simulação e encaixar no breu */}
+                    <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(2, 4, 8, 0.65)' }]} />
+                  </View>
 
-                    {/* INDICADOR KINETICO DE DESLIZE (Swipe Down Affordance iOS Style) */}
-                    <View style={{ position: 'absolute', top: 250, bottom: 0, left: 0, right: 0, alignItems: 'center', zIndex: 99999, pointerEvents: 'none' }}>
-                      <Animated.View style={{ 
-                        opacity: arrowAnim.interpolate({ inputRange: [0, 0.05, 0.9, 1], outputRange: [0, 1, 1, 0] }),
-                        transform: [{ translateY: arrowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 120] }) }]
-                      }}>
-                        <ChevronDown size={36} strokeWidth={1.5} color="rgba(255, 255, 255, 0.95)" />
-                      </Animated.View>
-                    </View>
-
-                    <Animated.View style={{ width: 240, height: 240, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
-                      <View style={[styles.pulseContainer, { marginBottom: 0 }]} pointerEvents="box-none">
-                        {/* CHASSIS DO MOTOR GEOMÉTRICO (Zoom Out aplicado - 340) c/ Borda Metálica */}
-                        <View style={{ position: 'absolute', width: 240, height: 240, borderRadius: 120, overflow: 'hidden', backgroundColor: '#020306', borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.6)', justifyContent: 'center', alignItems: 'center' }}>
-                          <BiomechanicRelic size={340} />
-                          {/* Vidro fosco geral (frost filter) a 30% intensidade */}
-                          <BlurView intensity={30} tint="dark" style={[StyleSheet.absoluteFill, { borderRadius: 120 }]} pointerEvents="none" />
-                        </View>
-
-                        {/* Cúpula Mestra Interior (Mantida para limites) */}
-                        <View style={{ position: 'absolute', width: 223, height: 223, borderRadius: 111.5, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
-                          
-                          {/* MÁSCARAS DE DIFUSÃO (BlurViews localizados para os textos superiores e odómetro) */}
-                          <View style={{ position: 'absolute', top: 12, left: '50%', marginLeft: -80, width: 160, height: 35, borderRadius: 18, overflow: 'hidden' }}>
-                            <BlurView intensity={45} tint="dark" style={StyleSheet.absoluteFill} />
-                          </View>
-                          
-                          <View style={{ position: 'absolute', top: '50%', left: '50%', marginTop: -35, marginLeft: -70, width: 140, height: 70, borderRadius: 35, overflow: 'hidden' }}>
-                            <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
-                          </View>
-
-                          {/* Informação Centralizada no Círculo: Svg Curvo + Odometer Giratório */}
-                          <View style={{ position: 'absolute', zIndex: 10, width: 223, height: 223, alignItems: 'center', justifyContent: 'center' }}>
-                            <Svg height="223" width="223" viewBox="0 0 223 223" style={{ position: 'absolute', top: 0, left: 0, transform: [{ rotate: '4.5deg' }] }}>
-                              <Defs>
-                                {/* Arco concêntrico guiando o topo do círculo. */}
-                                <Path id="circleRoda" d="M 22.5, 111.5 A 89, 89 0 0, 1 200.5, 111.5" />
-                              </Defs>
-                              <SvgText fill="rgba(255,255,255,0.7)" fontSize="13" fontWeight="800" letterSpacing="3">
-                                <TextPath href="#circleRoda" startOffset="50%" textAnchor="middle">
-                                  ÚLTIMA AVALIAÇÃO HÁ
-                                </TextPath>
-                              </SvgText>
-                            </Svg>
-
-                            {/* Odometer agora centralizado no eixo absoluto do ecrã sem margins */}
-                            <SlotMachineOdometer targetNumber={diasSemExame} />
-                          </View>
-
-                          {/* Old Green Overlay Was Removed */}
-
-                          {/* Inner Bezel (Aro Fino Metálico 3D) */}
-                          <View style={[StyleSheet.absoluteFill, { 
-                            borderRadius: 111.5, 
-                            borderWidth: 1.5, 
-                            borderTopColor: 'rgba(255,255,255,0.4)', 
-                            borderBottomColor: 'rgba(0,0,0,0.9)', 
-                            borderLeftColor: 'rgba(255,255,255,0.1)', 
-                            borderRightColor: 'rgba(0,0,0,0.6)',
-                            opacity: 0.9
-                          }]} pointerEvents="none" />
-                          <View style={[StyleSheet.absoluteFill, { borderRadius: 111.5, borderWidth: 3, borderColor: 'rgba(5,10,18,0.2)' }]} pointerEvents="none" />
-                        </View>
-                      </View>
+                  {/* INDICADOR KINETICO DE DESLIZE (Swipe Down Affordance iOS Style) */}
+                  <View style={{ position: 'absolute', top: 250, bottom: 0, left: 0, right: 0, alignItems: 'center', zIndex: 99999, pointerEvents: 'none' }}>
+                    <Animated.View style={{
+                      opacity: arrowAnim.interpolate({ inputRange: [0, 0.05, 0.9, 1], outputRange: [0, 1, 1, 0] }),
+                      transform: [{ translateY: arrowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 120] }) }]
+                    }}>
+                      <ChevronDown size={36} strokeWidth={1.5} color="rgba(255, 255, 255, 0.95)" />
                     </Animated.View>
+                  </View>
+
+                  <Animated.View style={{ width: 240, height: 240, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
+                    <View style={[styles.pulseContainer, { marginBottom: 0 }]} pointerEvents="box-none">
+                      {/* CHASSIS DO MOTOR GEOMÉTRICO (Zoom Out aplicado - 340) c/ Borda Metálica */}
+                      <View style={{ position: 'absolute', width: 240, height: 240, borderRadius: 120, overflow: 'hidden', backgroundColor: '#020306', borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.6)', justifyContent: 'center', alignItems: 'center' }}>
+                        <BiomechanicRelic size={340} />
+                        {/* Vidro fosco geral (frost filter) a 30% intensidade */}
+                        <BlurView intensity={30} tint="dark" style={[StyleSheet.absoluteFill, { borderRadius: 120 }]} pointerEvents="none" />
+                      </View>
+
+                      {/* Cúpula Mestra Interior (Mantida para limites) */}
+                      <View style={{ position: 'absolute', width: 223, height: 223, borderRadius: 111.5, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
+
+                        {/* MÁSCARAS DE DIFUSÃO (BlurViews localizados para os textos superiores e odómetro) */}
+                        <View style={{ position: 'absolute', top: 12, left: '50%', marginLeft: -80, width: 160, height: 35, borderRadius: 18, overflow: 'hidden' }}>
+                          <BlurView intensity={45} tint="dark" style={StyleSheet.absoluteFill} />
+                        </View>
+
+                        <View style={{ position: 'absolute', top: '50%', left: '50%', marginTop: -35, marginLeft: -70, width: 140, height: 70, borderRadius: 35, overflow: 'hidden' }}>
+                          <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+                        </View>
+
+                        {/* Informação Centralizada no Círculo: Svg Curvo + Odometer Giratório */}
+                        <View style={{ position: 'absolute', zIndex: 10, width: 223, height: 223, alignItems: 'center', justifyContent: 'center' }}>
+                          <Svg height="223" width="223" viewBox="0 0 223 223" style={{ position: 'absolute', top: 0, left: 0, transform: [{ rotate: '4.5deg' }] }}>
+                            <Defs>
+                              {/* Arco concêntrico guiando o topo do círculo. */}
+                              <Path id="circleRoda" d="M 22.5, 111.5 A 89, 89 0 0, 1 200.5, 111.5" />
+                            </Defs>
+                            <SvgText fill="rgba(255,255,255,0.7)" fontSize="13" fontWeight="800" letterSpacing="3">
+                              <TextPath href="#circleRoda" startOffset="50%" textAnchor="middle">
+                                ÚLTIMA AVALIAÇÃO HÁ
+                              </TextPath>
+                            </SvgText>
+                          </Svg>
+
+                          {/* Odometer agora centralizado no eixo absoluto do ecrã sem margins */}
+                          <SlotMachineOdometer targetNumber={diasSemExame} />
+                        </View>
+
+                        {/* Old Green Overlay Was Removed */}
+
+                        {/* Inner Bezel (Aro Fino Metálico 3D) */}
+                        <View style={[StyleSheet.absoluteFill, {
+                          borderRadius: 111.5,
+                          borderWidth: 1.5,
+                          borderTopColor: 'rgba(255,255,255,0.4)',
+                          borderBottomColor: 'rgba(0,0,0,0.9)',
+                          borderLeftColor: 'rgba(255,255,255,0.1)',
+                          borderRightColor: 'rgba(0,0,0,0.6)',
+                          opacity: 0.9
+                        }]} pointerEvents="none" />
+                        <View style={[StyleSheet.absoluteFill, { borderRadius: 111.5, borderWidth: 3, borderColor: 'rgba(5,10,18,0.2)' }]} pointerEvents="none" />
+                      </View>
+                    </View>
+                  </Animated.View>
                 </View>
               </View>
             </Animated.View>
@@ -1037,17 +1124,17 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
           {/* ── Compact Header ── */}
           <View style={styles.themePanelHeader}>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-              <Typography style={styles.themePanelTitle}>INTERPRETAÇÃO DAS ANÁLISES POR IA</Typography>
-              {semanticOutputService.getActiveDemoScenario() && (
-                <View style={{ backgroundColor: '#00F2FF20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 8, borderWidth: 1, borderColor: '#00F2FF40' }}>
-                  <Typography style={{ color: '#00F2FF', fontSize: 9, fontWeight: 'bold' }}>MODO DEMO</Typography>
-                </View>
-              )}
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                <Typography style={styles.themePanelTitle}>INTERPRETAÇÃO DAS ANÁLISES POR IA</Typography>
+                {semanticOutputService.getActiveDemoScenario() && (
+                  <View style={{ backgroundColor: '#00F2FF20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 8, borderWidth: 1, borderColor: '#00F2FF40' }}>
+                    <Typography style={{ color: '#00F2FF', fontSize: 9, fontWeight: 'bold' }}>MODO DEMO</Typography>
+                  </View>
+                )}
+              </View>
+              <Typography style={styles.themePanelTagline}>O que o teu corpo está a dizer hoje.</Typography>
             </View>
-            <Typography style={styles.themePanelTagline}>O que o teu corpo está a dizer hoje.</Typography>
-          </View>
             <TouchableOpacity
               onPress={closeThemes}
               style={[styles.themePanelClose, { padding: 24 }]}
@@ -1056,6 +1143,30 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               <X size={24} color="rgba(255,255,255,0.8)" />
             </TouchableOpacity>
           </View>
+          
+          {/* ── Temporal Context Header (Consistência com Dados) ── */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16, backgroundColor: 'rgba(255,255,255,0.03)', borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Calendar size={14} color="rgba(255,255,255,0.5)" style={{ marginRight: 8 }} />
+              <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: '700', letterSpacing: 0.5 }}>
+                {(() => {
+                  if (!selectedDate) return 'Carregando...';
+                  const d = new Date(selectedDate);
+                  const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+                  return `${d.getDate().toString().padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
+                })()}
+              </Typography>
+            </View>
+
+            <TouchableOpacity 
+              onPress={() => setShowHistorico(true)}
+              style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
+            >
+              <History size={14} color="rgba(255,255,255,0.8)" style={{ marginRight: 6 }} />
+              <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>HISTÓRICO</Typography>
+            </TouchableOpacity>
+          </View>
+
 
           {/* ── Paginated FlatList ── */}
           <FlatList
@@ -1092,23 +1203,19 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       contentContainerStyle={styles.themeIndexContent}
                       showsVerticalScrollIndicator={false}
                     >
-                      {/* Top section: Tabs de Navegação (Estilo Pill idêntico a Dados) */}
-                      <View style={[styles.bioTabBar, { justifyContent: 'center', marginBottom: 32 }]}>
-                        <TouchableOpacity style={[styles.bioTabBtn, { backgroundColor: '#00F2FF15', borderColor: '#00F2FF40' }]} activeOpacity={0.7}>
-                          <Typography style={[styles.bioTabLabel, { color: '#00F2FF', fontWeight: '800' }]}>
-                            Últimas Análises
-                          </Typography>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.bioTabBtn} onPress={() => setShowHistorico(true)} activeOpacity={0.7}>
-                          <Typography style={[styles.bioTabLabel, { color: 'rgba(255,255,255,0.4)' }]}>
-                            Histórico
-                          </Typography>
-                        </TouchableOpacity>
+                      {/* Top section: Status da Leitura (Indicação de Frescura) */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 32 }}>
+                        <View style={{ height: 1, flex: 1, backgroundColor: 'rgba(255,255,255,0.05)' }} />
+                        <Typography style={{ marginHorizontal: 16, color: 'rgba(255,255,255,0.25)', fontSize: 10, fontWeight: '800', letterSpacing: 2, textTransform: 'uppercase' }}>
+                          Últimas Análises
+                        </Typography>
+                        <View style={{ height: 1, flex: 1, backgroundColor: 'rgba(255,255,255,0.05)' }} />
                       </View>
+
 
                       {(() => {
                         const hasCrossDomain = crossDomainSummary && crossDomainSummary.coherenceFlags && crossDomainSummary.coherenceFlags.length > 0;
-                        
+
                         let highestPriority: any = null;
                         const urgentOrActionable: any[] = [];
                         const stable: any[] = [];
@@ -1150,9 +1257,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                         const renderDomainBtn = (t: any) => {
                           const scoreColor =
                             t.score === undefined ? '#73BCFF'
-                            : t.score >= 75 ? '#00F2FF'
-                            : t.score >= 50 ? '#FFA500'
-                            : '#FF6060';
+                              : t.score >= 75 ? '#00F2FF'
+                                : t.score >= 50 ? '#FFA500'
+                                  : '#FF6060';
                           const IconCmp = ({ Activity, Zap, Target, Heart, Moon, Brain, User } as any)[t.iconName || 'Activity'] || Activity;
                           return (
                             <TouchableOpacity
@@ -1165,7 +1272,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                                 <IconCmp size={16} color={scoreColor} />
                               </View>
                               <Typography style={styles.themeIndexBtnTitle}>{t.title}</Typography>
-                              
+
                               {(t.status === 'stale' || t.status === 'unavailable' || t.status === 'insufficient_data') ? (
                                 <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
                                   <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 9, fontWeight: '700', textTransform: 'uppercase' }}>
@@ -1220,7 +1327,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                                 </View>
                                 <Typography style={{ color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 8 }}>{highestPriority.title}</Typography>
                                 <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, lineHeight: 20, marginBottom: 16 }}>{highestPriority.paragraph1}</Typography>
-                                
+
                                 <View style={{ alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 }}>
                                   <Typography style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Ver Direção →</Typography>
                                 </View>
@@ -1250,7 +1357,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                                   <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '600' }}>Sinais Estáveis ({stable.length})</Typography>
                                   <ChevronDown size={18} color="rgba(255,255,255,0.6)" style={{ transform: [{ rotate: stableExpanded ? '180deg' : '0deg' }] }} />
                                 </TouchableOpacity>
-                                
+
                                 {stableExpanded && (
                                   <View style={styles.themeIndexList}>
                                     {stable.map(t => renderDomainBtn(t))}
@@ -1287,7 +1394,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       </TouchableOpacity>
 
                       <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 16, fontWeight: '800' }}>{t.title}</Typography>
-                      
+
                       <View style={{ width: 80, alignItems: 'flex-end' }}>
                         <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: '600' }}>{idx + 1} / {semanticThemes.length}</Typography>
                       </View>
@@ -1300,13 +1407,13 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       showsVerticalScrollIndicator={false}
                       nestedScrollEnabled
                     >
-                      <ThemeCard 
-                        {...t} 
-                        iconName={t.iconName as any} 
+                      <ThemeCard
+                        {...t}
+                        iconName={t.iconName as any}
                         onCtaPress={() => {
                           const routeMap: Record<string, string> = {
-                             sleep: 'sleep-deep',
-                             nutrition: 'nutri-menu'
+                            sleep: 'sleep-deep',
+                            nutrition: 'nutri-menu'
                           };
                           const appId = t.domain ? routeMap[t.domain] : null;
                           if (appId) {
@@ -1321,7 +1428,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                               }
                             }
                           } else {
-                            setDataOpen(true); 
+                            setDataOpen(true);
                           }
                         }}
                       />
@@ -1336,8 +1443,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
       {/* ── SIDE PANEL: DATA (RIGHT) ──────────────────────────────────────── */}
       {(() => {
-        // --- FACTUAL DATA MAPPING ---
-        const urinalysisMarkers = measurements
+        // --- FACTUAL DATA MAPPING (FILTERED BY DATE) ---
+        const urinalysisMarkers = filteredMeasurements
           .filter(m => m.type === 'urinalysis')
           .map(m => ({
             name: m.value?.marker || 'Análise Urinária',
@@ -1345,7 +1452,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             unit: m.value?.unit || ''
           }));
 
-        const physiologyMarkers = measurements
+        const physiologyMarkers = filteredMeasurements
           .filter(m => ['ecg', 'ppg', 'temp', 'weight'].includes(m.type))
           .map(m => {
             const labels: Record<string, string> = { ecg: 'Ritmo Cardíaco', ppg: 'PPG', temp: 'Temperatura', weight: 'Peso' };
@@ -1357,16 +1464,14 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             };
           });
 
-        // activeFacts previously defined at component top-level to prevent hooks-in-render violations
-
         const factualBioCategories = [
           { label: 'Análises de Urina', color: '#00F2FF', markers: urinalysisMarkers, id: 'U', shortLabel: 'Urina' },
           { label: 'Monitorização Fisiológica', color: '#00D4AA', markers: physiologyMarkers, id: 'S', shortLabel: 'Fisiológica' },
           { label: 'Avaliação Fecal', color: '#FFA500', markers: [], id: 'F', shortLabel: 'Fecal' },
-          { 
-            label: 'Sinais do Ecossistema', 
-            color: '#FFD700', 
-            id: 'E', 
+          {
+            label: 'Sinais do Ecossistema',
+            color: '#FFD700',
+            id: 'E',
             shortLabel: 'Ecossistema',
             markers: activeFacts.map(f => ({
               name: f?.type ? String(f.type).replace(/_/g, ' ').toUpperCase() : 'SINAL',
@@ -1380,8 +1485,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         const safeBioTab = bioTab >= factualBioCategories.length ? 0 : bioTab;
 
         return (
-          <Animated.View style={[styles.sidePanel, styles.rightPanel, { transform: [{ translateX: dataAnim }] }]}>
-            <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill}>
+          <Animated.View style={[styles.sidePanel, styles.rightPanel, { transform: [{ translateX: dataAnim }], backgroundColor: '#020306' }]}>
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: '#020306' }]} />
+            <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill}>
               <View style={styles.panelHeader}>
                 <TouchableOpacity
                   onPress={closeData}
@@ -1392,12 +1498,58 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 </TouchableOpacity>
                 <Typography variant="h2" style={styles.panelTitle}>Bioanálise</Typography>
 
-                <TouchableOpacity 
-                   style={{ backgroundColor: 'rgba(0, 242, 255, 0.1)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, flexDirection: 'row', alignItems: 'center' }}
-                   onPress={() => setShowDemoModal(true)}
+                {/* Script de limpeza para remover artefatos de debug (Getting DOM...) no browser */}
+                {Platform.OS === 'web' && (
+                  <View style={{ display: 'none' }}>
+                    <ActivityIndicator
+                      onLayout={() => {
+                        if (typeof window !== 'undefined') {
+                          // Limpeza agressiva e recorrente de artefatos visuais de debug
+                          const clean = () => {
+                            const entries = document.querySelectorAll('*');
+                            entries.forEach(el => {
+                              if (el.textContent && (el.textContent.includes('Getting DOM') || el.textContent.includes('browser_get_dom'))) {
+                                el.remove();
+                              }
+                            });
+                          };
+                          clean();
+                          setTimeout(clean, 1000);
+                        }
+                      }}
+                    />
+                  </View>
+                )}
+
+                <TouchableOpacity
+                  style={{ backgroundColor: 'rgba(0, 242, 255, 0.1)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, flexDirection: 'row', alignItems: 'center' }}
+                  onPress={() => setShowDemoModal(true)}
                 >
-                   <Sparkles size={16} color="#00F2FF" />
-                   <Typography style={{ color: '#00F2FF', fontSize: 13, fontWeight: 'bold', marginLeft: 8 }}>MODO DEMO</Typography>
+                  <Sparkles size={16} color="#00F2FF" />
+                  <Typography style={{ color: '#00F2FF', fontSize: 13, fontWeight: 'bold', marginLeft: 8 }}>MODO DEMO</Typography>
+                </TouchableOpacity>
+              </View>
+
+              {/* ── Temporal Context Header ── */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16, backgroundColor: 'rgba(255,255,255,0.03)', borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Calendar size={14} color="rgba(255,255,255,0.5)" style={{ marginRight: 8 }} />
+                  <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: '700', letterSpacing: 0.5 }}>
+                    {(() => {
+                      if (!selectedDate) return 'Carregando...';
+                      const d = new Date(selectedDate);
+                      const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+                      return `${d.getDate().toString().padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
+                    })()}
+                  </Typography>
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => setShowHistorico(true)}
+                  style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
+                >
+                  <History size={14} color="rgba(255,255,255,0.8)" style={{ marginRight: 6 }} />
+                  <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>HISTÓRICO</Typography>
                 </TouchableOpacity>
               </View>
 
@@ -1421,15 +1573,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                     </TouchableOpacity>
                   );
                 })}
-                <TouchableOpacity
-                  style={[styles.bioTabBtn, { marginLeft: 4 }]}
-                  onPress={() => setShowHistorico(true)}
-                  activeOpacity={0.7}
-                >
-                  <Typography style={[styles.bioTabLabel, { color: 'rgba(255,255,255,0.8)' }]}>
-                    Histórico
-                  </Typography>
-                </TouchableOpacity>
               </View>
 
               {/* ── Active Tab Content ── */}
@@ -1472,7 +1615,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                         <X size={20} color="rgba(255,255,255,0.5)" />
                       </TouchableOpacity>
                     </View>
-                    
+
                     <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 400 }}>
                       {[
                         { key: 'balanced', label: 'Equilíbrio geral', color: '#00D4AA', colorBg: 'rgba(0, 212, 170, 0.1)' },
@@ -1557,38 +1700,38 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           <View style={{ zIndex: 10, width: '100%', backgroundColor: 'transparent' }}>
             {/* Frizo continuo que liga as laterais limpas diretamente à aba central */}
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', width: '100%' }}>
-               <View style={{ flex: 1, borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }} />
-               <TouchableOpacity
-                 {...drawerPanResponder.panHandlers}
-                 style={{ 
-                   alignItems: 'center',
-                   justifyContent: 'center',
-                   paddingHorizontal: 40,
-                   paddingTop: 10, // Torna a aba inferior e mais justa superiormente (tocado pelo utilizador)
-                   paddingBottom: 4,
-                   borderTopLeftRadius: 16,
-                   borderTopRightRadius: 16,
-                   borderWidth: 1,
-                   borderBottomWidth: 0,
-                   borderColor: 'rgba(255,255,255,0.15)',
-                   backgroundColor: 'transparent' // Limpo e sem cartão verde
-                 }}
-                 activeOpacity={Platform.OS === 'web' ? 0.7 : 1}
-                 onPress={Platform.OS === 'web' ? () => {
-                   const isDown = lastDrawerY.current >= DRAWER_DOWN / 2;
-                   const toValue = isDown ? DRAWER_UP : DRAWER_DOWN;
-                   Animated.spring(drawerAnim, { toValue, bounciness: 0, useNativeDriver: false })
-                     .start(() => { lastDrawerY.current = toValue; });
-                 } : undefined}
-               >
-                 <Typography variant="caption" style={[styles.drawerTitle, { color: 'rgba(255,255,255,0.9)', fontSize: 11 }]}>APP PLACE</Typography>
-               </TouchableOpacity>
-               <View style={{ flex: 1, borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }} />
+              <View style={{ flex: 1, borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }} />
+              <TouchableOpacity
+                {...drawerPanResponder.panHandlers}
+                style={{
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingHorizontal: 40,
+                  paddingTop: 10, // Torna a aba inferior e mais justa superiormente (tocado pelo utilizador)
+                  paddingBottom: 4,
+                  borderTopLeftRadius: 16,
+                  borderTopRightRadius: 16,
+                  borderWidth: 1,
+                  borderBottomWidth: 0,
+                  borderColor: 'rgba(255,255,255,0.15)',
+                  backgroundColor: 'transparent' // Limpo e sem cartão verde
+                }}
+                activeOpacity={Platform.OS === 'web' ? 0.7 : 1}
+                onPress={Platform.OS === 'web' ? () => {
+                  const isDown = lastDrawerY.current >= DRAWER_DOWN / 2;
+                  const toValue = isDown ? DRAWER_UP : DRAWER_DOWN;
+                  Animated.spring(drawerAnim, { toValue, bounciness: 0, useNativeDriver: false })
+                    .start(() => { lastDrawerY.current = toValue; });
+                } : undefined}
+              >
+                <Typography variant="caption" style={[styles.drawerTitle, { color: 'rgba(255,255,255,0.9)', fontSize: 11 }]}>APP PLACE</Typography>
+              </TouchableOpacity>
+              <View style={{ flex: 1, borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }} />
             </View>
 
             <Animated.View style={{ paddingBottom: 20 }}>
-              <ScrollView 
-                horizontal 
+              <ScrollView
+                horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={[styles.appGrid, { justifyContent: 'flex-start' }]}
                 decelerationRate="fast"
@@ -1608,22 +1751,22 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       }
                     }}
                   >
-                   <View style={{ position: 'relative' }}>
-                     <View style={[styles.appIconContainer, {
-                       backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                       borderWidth: 1,
-                       borderColor: 'rgba(255,255,255,0.15)',
-                       borderRadius: 28,
-                       width: 56,
-                       height: 56,
-                       justifyContent: 'center',
-                       alignItems: 'center'
-                     }]}>
+                    <View style={{ position: 'relative' }}>
+                      <View style={[styles.appIconContainer, {
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        borderWidth: 1,
+                        borderColor: 'rgba(255,255,255,0.15)',
+                        borderRadius: 28,
+                        width: 56,
+                        height: 56,
+                        justifyContent: 'center',
+                        alignItems: 'center'
+                      }]}>
                         <Typography style={{ fontSize: 24 }}>{app.iconEmoji}</Typography>
-                     </View>
-                   </View>
-                   <Typography variant="caption" style={[styles.appName, { textAlign: 'center', lineHeight: 12, marginTop: 8 }]}>{app.name}</Typography>
-                 </TouchableOpacity>
+                      </View>
+                    </View>
+                    <Typography variant="caption" style={[styles.appName, { textAlign: 'center', lineHeight: 12, marginTop: 8 }]}>{app.name}</Typography>
+                  </TouchableOpacity>
                 ))}
                 {installedAppIds.length === 0 && (
                   <View style={{ width, alignItems: 'center', justifyContent: 'center', padding: 20 }}>
@@ -1646,21 +1789,21 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               <View style={styles.downloadList}>
                 {/* Todas as apps — install/uninstall dinâmico */}
                 {[
-                  { id: 'femmhealth',         title: '_Fem sanctuary',    desc: 'Saúde Feminina',      icon: <View style={{ flexDirection: 'row', alignItems: 'center' }}><Typography style={{ color: '#FF6FBA', fontSize: 22, fontWeight: '800' }}>♀</Typography><Typography style={{ color: '#FF6FBA', fontSize: 16, fontWeight: '900', marginLeft: 2 }}>H</Typography></View> },
-                  { id: 'nutri-menu',         title: '_Meal planner',     desc: 'Nutrição Personalizada', icon: <Utensils size={22} color="#00D4AA" /> },
-                  { id: 'longevity-secrets',  title: '_Healthspan',       desc: 'Longevidade & Bem-estar', icon: <Sparkles size={22} color="#FFD700" /> },
-                  { id: 'sleep-deep',         title: 'deep sleep',       desc: 'Integração Profunda de Sono',  icon: <Moon size={22} color="#00F2FF" /> },
-                  { id: '_hydra',             title: 'HydraTrack',        desc: 'Gestão de Água',       icon: <Droplet size={22} color="#00F2FF" opacity={0.6} /> },
-                  { id: '_mind',              title: 'Mind',              desc: 'Foco e Meditação',     icon: <Brain size={22} color="#00F2FF" opacity={0.6} /> },
-                  { id: '_fasting',           title: 'Fasting',           desc: 'Jejum Intermitente',   icon: <Activity size={22} color="#00F2FF" opacity={0.6} /> },
-                  { id: '_cardio',            title: 'CardioSync',        desc: 'Saúde Cardiovascular',  icon: <Heart size={22} color="#00F2FF" opacity={0.6} /> },
-                  { id: '_macro',             title: 'MacroTrack',        desc: 'Nutrição Detalhada',   icon: <Target size={22} color="#00F2FF" opacity={0.6} /> },
+                  { id: 'femmhealth', title: '_Fem sanctuary', desc: 'Saúde Feminina', icon: <View style={{ flexDirection: 'row', alignItems: 'center' }}><Typography style={{ color: '#FF6FBA', fontSize: 22, fontWeight: '800' }}>♀</Typography><Typography style={{ color: '#FF6FBA', fontSize: 16, fontWeight: '900', marginLeft: 2 }}>H</Typography></View> },
+                  { id: 'nutri-menu', title: '_Meal planner', desc: 'Nutrição Personalizada', icon: <Utensils size={22} color="#00D4AA" /> },
+                  { id: 'longevity-secrets', title: '_Healthspan', desc: 'Longevidade & Bem-estar', icon: <Sparkles size={22} color="#FFD700" /> },
+                  { id: 'sleep-deep', title: 'deep sleep', desc: 'Integração Profunda de Sono', icon: <Moon size={22} color="#00F2FF" /> },
+                  { id: '_hydra', title: 'HydraTrack', desc: 'Gestão de Água', icon: <Droplet size={22} color="#00F2FF" opacity={0.6} /> },
+                  { id: '_mind', title: 'Mind', desc: 'Foco e Meditação', icon: <Brain size={22} color="#00F2FF" opacity={0.6} /> },
+                  { id: '_fasting', title: 'Fasting', desc: 'Jejum Intermitente', icon: <Activity size={22} color="#00F2FF" opacity={0.6} /> },
+                  { id: '_cardio', title: 'CardioSync', desc: 'Saúde Cardiovascular', icon: <Heart size={22} color="#00F2FF" opacity={0.6} /> },
+                  { id: '_macro', title: 'MacroTrack', desc: 'Nutrição Detalhada', icon: <Target size={22} color="#00F2FF" opacity={0.6} /> },
                 ].map(({ id, title, desc, icon }) => {
                   const isInstalled = installedAppIds.includes(id);
                   const isReal = !id.startsWith('_'); // real apps have install/uninstall wired up
                   return (
                     <View key={id} style={styles.downloadRow}>
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={styles.rowIcon}
                         activeOpacity={isInstalled && isReal ? 0.7 : 1}
                         onPress={() => {
@@ -1695,7 +1838,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                               uninstallApp(id);
                             } else {
                               useStore.getState().installApp(id);
-                              
+
                               // Auto-launch on install to give clear feedback
                               const manifest = MINI_APP_CATALOG.find((m: any) => m.id === id);
                               if (manifest) {
@@ -1801,8 +1944,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   </View>
                 </View>
 
-                <TouchableOpacity 
-                  style={styles.saveBtn} 
+                <TouchableOpacity
+                  style={styles.saveBtn}
                   onPress={() => {
                     useStore.getState().setUser({
                       ...user,
@@ -1835,22 +1978,22 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 </TouchableOpacity>
               </View>
               <View style={styles.dividerModal} />
-              
+
               {/* --- NOVO: MODO DE ANÁLISE INTERATIVO --- */}
               <View style={{ marginBottom: 24 }}>
                 <Typography style={[styles.settingsLabel, { marginBottom: 12 }]}>Modo de Análise</Typography>
-                
+
                 {/* Segmented Control - Manual vs Automático */}
                 <View style={{ flexDirection: 'row', backgroundColor: 'rgba(5, 10, 18, 0.4)', borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', padding: 4 }}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={() => setAnalysisMode('manual')}
                     style={{ flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8, backgroundColor: analysisMode === 'manual' ? 'rgba(0, 242, 255, 0.15)' : 'transparent', borderWidth: 1, borderColor: analysisMode === 'manual' ? 'rgba(0, 242, 255, 0.4)' : 'transparent' }}
                   >
                     <Typography style={{ color: analysisMode === 'manual' ? '#00F2FF' : 'rgba(255,255,255,0.4)', fontWeight: '600', fontSize: 13, textShadowColor: analysisMode === 'manual' ? 'rgba(0, 242, 255, 0.5)' : 'transparent', textShadowRadius: 8 }}>MANUAL</Typography>
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={() => {
                       if (analysisMode !== 'automatico') {
@@ -1873,29 +2016,29 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 {analysisMode === 'automatico' && autoExpanded && (
                   <View style={{ marginTop: 12, backgroundColor: 'rgba(0,0,0,0.3)', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.03)' }}>
                     <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 }}>Frequência de Monitorização</Typography>
-                    
+
                     <View style={{ marginTop: 10, paddingVertical: 10 }}>
                       {/* LINHA 1: Vezes por Extração */}
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
                         <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>Efetuar análise</Typography>
                         <View style={{ marginHorizontal: 8 }}>
-                           <WheelPicker value={autoTimes} onChange={setAutoTimes} min={1} max={4} width={50} />
+                          <WheelPicker value={autoTimes} onChange={setAutoTimes} min={1} max={4} width={50} />
                         </View>
                         <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>vezes</Typography>
                       </View>
-                      
+
                       {/* LINHA 2: Extensão de Período em Dias */}
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: -4 }}>
                         <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>em cada</Typography>
                         <View style={{ marginHorizontal: 8 }}>
-                           <WheelPicker value={autoDays} onChange={setAutoDays} min={1} max={31} width={60} />
+                          <WheelPicker value={autoDays} onChange={setAutoDays} min={1} max={31} width={60} />
                         </View>
                         <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 16 }}>dias</Typography>
                       </View>
                     </View>
 
                     {/* Botão de Fixar / Guardar Frequência */}
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       activeOpacity={0.8}
                       onPress={() => setAutoExpanded(false)}
                       style={{ marginTop: 24, paddingVertical: 12, backgroundColor: 'rgba(0, 242, 255, 0.15)', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.4)' }}
@@ -1907,7 +2050,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
                 {/* Resumo Recolhido (Apenas Automático não-expandido) */}
                 {analysisMode === 'automatico' && !autoExpanded && (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     activeOpacity={0.8}
                     onPress={() => setAutoExpanded(true)}
                     style={{ marginTop: 12, backgroundColor: 'rgba(0, 242, 255, 0.05)', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.2)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
@@ -1925,7 +2068,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
               {/* --- NOVO SECIONADOR DE GRUPOS DE ANÁLISE --- */}
               <View style={{ marginBottom: groupsExpanded ? 16 : 0 }}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   activeOpacity={0.8}
                   onPress={() => setGroupsExpanded(!groupsExpanded)}
                   style={styles.settingsRow}
@@ -1966,7 +2109,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 )}
               </View>
               {/* --- FIM GRUPOS --- */}
-              <TouchableOpacity 
+              <TouchableOpacity
                 activeOpacity={0.8}
                 onPress={cycleNotificationMode}
                 style={styles.settingsRow}
@@ -2062,7 +2205,18 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         </TouchableOpacity>
       </Modal>
 
-      <HistoricoModal visible={showHistorico} onClose={() => setShowHistorico(false)} />
+      <HistoricoModal
+        visible={showHistorico}
+        onClose={() => setShowHistorico(false)}
+        availableDates={availableDates}
+        selectedDate={selectedDate}
+        onSelectDate={(date) => {
+          setSelectedDate(date);
+          setShowHistorico(false);
+          // Otimização: Força re-render das tabs se necessário
+          setBioTab(0);
+        }}
+      />
 
     </Container>
   );

@@ -2,6 +2,7 @@ export type SemanticTelemetryEventType =
   | 'semantic_bundle_received'
   | 'semantic_card_viewed'
   | 'insight_displayed'
+  | 'insight_interaction'
   | 'recommendation_displayed'
   | 'recommendation_suppressed'
   | 'recommendation_not_rendered_ui_limit'

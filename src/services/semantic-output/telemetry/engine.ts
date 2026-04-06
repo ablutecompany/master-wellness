@@ -45,11 +45,11 @@ class SemanticTelemetryEngine {
 
   private generateFingerprint(event: Omit<SemanticTelemetryEvent, 'sessionId' | 'timestamp'>): string {
     // Fingerprint endurecido: (ecrã, domínio, status, bundle, tipo, conteúdo-específico)
-    const insightPart = event.insightIds.join(',');
-    const recPart = event.recommendationIds.join(',');
+    const insightPart = (event.insightIds || []).join(',');
+    const recPart = (event.recommendationIds || []).join(',');
     const suppressedPart = (event.suppressedRecommendationIds || []).join(',');
     
-    return `${event.screen}_${event.domain}_${event.status}_${event.bundleVersion}_${event.eventType}_${insightPart}_${recPart}_${suppressedPart}`;
+    return `${event.screen || 'unknown'}_${event.domain}_${event.status || 'sufficient_data'}_${event.bundleVersion || '1.0'}_${event.eventType}_${insightPart}_${recPart}_${suppressedPart}`;
   }
 
   getSessionId() {

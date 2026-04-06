@@ -1,20 +1,21 @@
 import { AppState, DomainPackage, ContextFact } from '../../store/types';
-import * as Selectors from '../../store/selectors';
+import { selectActiveFactsByDomain } from '../../store/selectors';
 import { Permission } from '../../miniapps/types';
+import { semanticOutputService } from '../semantic-output';
 
 /**
  * Construtor determinístico de Domain Packages.
  * Agrega Factos, Scores e Metadados para consumo seguro por mini-apps.
  */
 export function buildDomainPackage(
-  domain: DomainPackage['domain'], 
-  state: AppState, 
+  domain: DomainPackage['domain'],
+  state: AppState,
   permissions: Permission[]
 ): DomainPackage {
   // 1. Determinar política de exposição baseada em permissões
   const hasPermission = checkPermissionForDomain(domain, permissions);
-  const facts = Selectors.selectActiveFactsByDomain(state, domain as any);
-  
+  const facts = selectActiveFactsByDomain(state, domain as any);
+
   let exposurePolicy: DomainPackage['exposurePolicy'] = 'allowed';
   if (!hasPermission) {
     exposurePolicy = 'denied';
@@ -22,7 +23,10 @@ export function buildDomainPackage(
     exposurePolicy = 'unavailable';
   }
 
-  const themeScore = Selectors.selectThemeScores(state).find(ts => ts.themeCode === domain);
+  // 2. Integrar Sinais do Bundle Semântico v1.2.0 (Substitui Selectors Legados)
+  const bundle = semanticOutputService.getBundle();
+  const domainOutput = (bundle.domains as any)[domain];
+  
   const sourceAppIds = Array.from(new Set(facts.map(f => f.sourceAppId)));
   const lastUpdated = facts.length > 0 ? Math.max(...facts.map(f => f.createdAt)) : Date.now();
 
@@ -32,8 +36,8 @@ export function buildDomainPackage(
     generatedAt: Date.now(),
     facts: hasPermission ? facts : [],
     signals: {
-      score: themeScore?.value,
-      statusLabel: themeScore?.stateLabel,
+      score: domainOutput?.score,
+      statusLabel: domainOutput?.statusLabel,
     },
     provenanceSummary: {
       sourceAppIds,
@@ -42,6 +46,7 @@ export function buildDomainPackage(
     exposurePolicy
   };
 }
+
 
 function checkPermissionForDomain(domain: string, permissions: Permission[]): boolean {
   if (domain === 'sleep') return permissions.includes('SLEEP_DATA_READ');

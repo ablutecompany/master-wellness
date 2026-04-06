@@ -1,6 +1,8 @@
 import { Permission } from '../../miniapps/types';
 import { AppState, DomainPackage } from '../../store/types';
 import * as Selectors from '../../store/selectors';
+import * as DomainSelectors from '../../store/domainSelectors';
+
 import { MINI_APP_CATALOG } from '../../miniapps/catalog';
 import { semanticOutputService } from '../semantic-output';
 
@@ -138,10 +140,11 @@ export function buildContextPayload(appId: string, state: AppState) {
   const STALE_THRESHOLD = 86400000; // 24 horas
 
   const rawPackages = [
-    Selectors.selectSleepDomainPackage(state, perms),
-    Selectors.selectNutritionDomainPackage(state, perms),
-    Selectors.selectGeneralWellnessPackage(state, perms),
+    DomainSelectors.selectSleepDomainPackage(state, perms),
+    DomainSelectors.selectNutritionDomainPackage(state, perms),
+    DomainSelectors.selectGeneralWellnessPackage(state, perms),
   ];
+
 
   const domainPackages = rawPackages
     .map((pkg) => {

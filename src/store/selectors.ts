@@ -1,6 +1,5 @@
 import { AppState, ContextFact, DomainPackage } from './types';
 import { normalizeEvent, filterActiveFacts } from '../services/contributions-normalizer';
-import { buildDomainPackage } from '../services/domain-packages';
 
 /**
  * Camada de Selectors (Adapters de Leitura)
@@ -79,15 +78,3 @@ export const selectActiveDerivedContextFacts = (state: AppState): ContextFact[] 
 
 export const selectActiveFactsByDomain = (state: AppState, domain: ContextFact['domain']): ContextFact[] => 
   selectActiveDerivedContextFacts(state).filter(f => f.domain === domain);
-
-// ─────────────────────────────────────────────────────────────────────────────
-// I) Domain Package Selectors (Governed Exposure)
-// ─────────────────────────────────────────────────────────────────────────────
-export const selectSleepDomainPackage = (state: AppState, permissions: any[]): DomainPackage => 
-  buildDomainPackage('sleep', state, permissions);
-
-export const selectNutritionDomainPackage = (state: AppState, permissions: any[]): DomainPackage => 
-  buildDomainPackage('nutrition', state, permissions);
-
-export const selectGeneralWellnessPackage = (state: AppState, permissions: any[]): DomainPackage => 
-  buildDomainPackage('general', state, permissions);

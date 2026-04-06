@@ -8,9 +8,7 @@ import { SemanticOutputStore } from './store';
 import { SemanticDomainView, SemanticOutputStatus } from './types';
 import { DomainAffinity } from './domain-affinity';
 import { SemanticGuardrails } from './guardrails';
-import { DEMO_SCENARIOS, DemoScenarioKey } from './demo-scenarios';
-import { useStore } from '../../store/useStore';
-import { selectActiveDerivedContextFacts } from '../../store/selectors';
+// DECOUPLED: Facts are now passed or derived via SemanticOutputStore or Context
 
 export class SemanticOutputService {
   private static isInitialized = false;
@@ -47,7 +45,7 @@ export class SemanticOutputService {
    */
   static markDirtyFromContribution(userId: string, appId: string, eventType?: string) {
     let affected = DomainAffinity.resolveFromApp(appId);
-    
+
     if (eventType) {
       const eventAffected = DomainAffinity.resolveFromEvent(eventType);
       affected = [...new Set([...affected, ...eventAffected])];
@@ -81,7 +79,7 @@ export class SemanticOutputService {
       }
 
       const adapted = this.adaptBundle(response);
-      
+
       SemanticOutputStore.updateState({
         generatedAt: response.generatedAt,
         domains: adapted,
@@ -106,16 +104,16 @@ export class SemanticOutputService {
 
   private static resolveGlobalStatus(domains: Record<string, SemanticDomainView>): SemanticOutputStatus {
     const v = Object.values(domains);
-    
+
     // Se existir algum 'ready' (sufficient_data e não stale), o bundle global é ready
     if (v.some(d => d.status === 'sufficient_data' && !d.isStale)) return 'ready';
-    
+
     // Se não houver ready, mas houver stale, o bundle global é stale
     if (v.some(d => d.isStale)) return 'stale';
-    
+
     // Se tudo for insuficiente
     if (v.every(d => d.status === 'insufficient_data')) return 'insufficient_data';
-    
+
     return 'ready';
   }
 
@@ -161,20 +159,19 @@ export class SemanticOutputService {
     return this.activeDemoKey;
   }
 
-  private static async fetchFromBackend(userId: string, requestedDomains: string[]) {
+  private static async fetchFromBackend(userId: string, requestedDomains: string[], activeFacts: any[] = []) {
     // 1. Se estivermos em Demo Mode, interceptar e parar o fetch real
     if (this.activeDemoKey && DEMO_SCENARIOS[this.activeDemoKey]) {
-      return { 
-        ...DEMO_SCENARIOS[this.activeDemoKey], 
-        bundleVersion: '1.2.0' 
+      return {
+        ...DEMO_SCENARIOS[this.activeDemoKey],
+        bundleVersion: '1.2.0'
       } as any;
     }
 
     // 2. Fallback orgânico: Cruzar com dados factuais em 'Resultados'
-    const activeFacts = selectActiveDerivedContextFacts(useStore.getState());
-    
-    // Se não existirem factos reais da pessoa sincronizados na Gaveta direita,
-    // devolver insuficiente para espelhar a verdade na Gaveta da AI.
+    // DECOUPLED: Agora os fatos devem ser injetados ou o serviço retorna 'insufficient_data'
+
+    // Se não existirem factos reais, devolver insuficiente.
     if (!activeFacts || activeFacts.length === 0) {
       return {
         bundleVersion: '1.2.0',
@@ -245,7 +242,7 @@ export class SemanticOutputService {
       lastComputedAt: source.lastComputedAt || 0,
       isStale: !!source.isStale,
       version: '1.2.0',
-      mainInsight: source.insights?.[0],
+      mainInsight: source.mainInsight || source.insights?.[0], // Suporte a Injeção Direta (Modo Demo)
       recommendations: source.recommendations || []
     };
   }
@@ -257,20 +254,20 @@ export class SemanticOutputService {
   // Pass-through
   static subscribe(callback: () => void) { return SemanticOutputStore.subscribe(callback); }
   static getState() { return SemanticOutputStore.getState(); }
-  static getBundle() { 
+  static getBundle() {
     const bundle = SemanticOutputStore.getState();
     const isValid = SemanticGuardrails.assertValidBundleConsumption(bundle);
     if (!isValid && !__DEV__) {
       return { ...bundle, status: 'error' } as any;
     }
-    return bundle; 
+    return bundle;
   }
   static getStatus() { return SemanticOutputStore.getState().status; }
-  static getDomainOutput(domain: string) { 
+  static getDomainOutput(domain: string) {
     const output = SemanticOutputStore.getState().domains[domain];
     const isValid = SemanticGuardrails.assertFactualFidelity(output, `Domain:${domain}`);
     if (!isValid && !__DEV__ && output) {
-       return { ...output, status: 'error' };
+      return { ...output, status: 'error' };
     }
     return output;
   }
@@ -285,8 +282,15 @@ export class SemanticOutputService {
       semanticTelemetry.record({
         eventType: action === 'tapped' ? 'insight_interaction' : 'insight_displayed',
         domain,
-        timestamp: Date.now()
-      });
+        bundleVersion: '1.2.0',
+        semanticVersion: '1.2.0',
+        screen: 'themes',
+        status: 'sufficient_data',
+        insightIds: [],
+        recommendationIds: [],
+        evidenceRefIds: [],
+        source: 'shell'
+      } as any);
     } catch (e) {
       // Ignorar de forma segura se o motor de telemetria não estiver montado
       console.log(`[SemanticTelemetry] Tracked ${action} on ${domain}`);
