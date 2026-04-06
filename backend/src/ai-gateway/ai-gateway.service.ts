@@ -54,7 +54,7 @@ export class AiGatewayService {
       const resultMessage = this.simulateAiResponse(input.promptCode, input.variables);
 
       // 5. Persistir AIRequest (O rastro individual)
-      const aiRequest = await this.prisma.aiRequest.create({
+      const aiRequest = await this.prisma.aIRequest.create({
         data: {
           runId: run.id,
           userId: actor.id,

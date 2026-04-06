@@ -59,6 +59,7 @@ model User {
   contributionEvents  AppContributionEvent[]
   derivedFacts        DerivedContextFact[]
   aiRequests          AIRequest[]
+  promptRuns          PromptRun[]
 }
 
 model UserProfile {
@@ -797,5 +798,6 @@ enum UserRole {
   OPS_INTERNAL
   MINIAPP_RUNTIME
   SERVICE_BACKEND
+  HYPER_ADMIN
 }
 

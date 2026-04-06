@@ -1,6 +1,6 @@
 import { Controller, Post, Body, Get, Query, UseGuards } from '@nestjs/common';
 import { SemanticTelemetryService } from './semantic-telemetry.service';
-import { SemanticTelemetryEvent } from './types';
+import type { SemanticTelemetryEvent } from './types';
 import { AuthGuard } from '../auth/auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
