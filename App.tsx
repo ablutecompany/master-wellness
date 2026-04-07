@@ -33,7 +33,7 @@ const Stack = createNativeStackNavigator();
 function MainTabs() {
   return (
     <Tab.Navigator
-      initialRouteName="Apps"
+      initialRouteName="Home"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
