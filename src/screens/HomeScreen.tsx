@@ -360,6 +360,14 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [showControl, setShowControl] = useState(false);
   const [showNfcModal, setShowNfcModal] = useState(false);
   const [isNfcScanning, setIsNfcScanning] = useState(false);
+  // ── Animation States ────────────────────────────────────────────────────
+  const themesAnim = useRef(new Animated.Value(-width)).current;
+  const dataAnim = useRef(new Animated.Value(width)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const floatAnim1 = useRef(new Animated.Value(0)).current;
+  const floatAnim2 = useRef(new Animated.Value(1)).current;
+  const arrowAnim = useRef(new Animated.Value(0)).current;
+
   // -- DEMO MODE STATE --
   const handleSelectDemo = (key: any) => {
     // 1. Oculta Modal para libertar DOM touch (gera RE-RENDER violento do Ecrã)
@@ -425,14 +433,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   // ── Inline mini-app for web (same pattern as AppsScreen) ─────────────────
   const [inlineApp, setInlineApp] = useState<MiniAppManifest | null>(null);
-
-  // ── Animation States ──────────────────────────────────────────────────────
-  const themesAnim = useRef(new Animated.Value(-width)).current;
-  const dataAnim = useRef(new Animated.Value(width)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const floatAnim1 = useRef(new Animated.Value(0)).current;
-  const floatAnim2 = useRef(new Animated.Value(1)).current;
-  const arrowAnim = useRef(new Animated.Value(0)).current;
 
   const arrowTranslate = arrowAnim.interpolate({
     inputRange: [0, 1],
@@ -602,6 +602,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     },
   })).current;
 
+  const DRAWER_DOWN = 583;
+  const DRAWER_UP = 0;
+  const lastDrawerY = useRef(DRAWER_DOWN);
+  const drawerAnim = useRef(new Animated.Value(DRAWER_DOWN)).current;
+
   // Bottom edge gesture zone (App Place drawer) - swipe up from bottom to open
   const bottomEdgeGesture = useRef(PanResponder.create({
     onStartShouldSetPanResponder: () => Platform.OS === 'web',
@@ -613,11 +618,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       }
     },
   })).current;
-
-  const DRAWER_DOWN = 583;
-  const DRAWER_UP = 0;
-  const lastDrawerY = useRef(DRAWER_DOWN);
-  const drawerAnim = useRef(new Animated.Value(DRAWER_DOWN)).current;
 
   // Force sync drawer position on hot reload so user sees exact bottom state
   React.useEffect(() => {
