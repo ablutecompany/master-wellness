@@ -8,6 +8,7 @@ import { SemanticOutputStore } from './store';
 import { SemanticDomainView, SemanticOutputStatus } from './types';
 import { DomainAffinity } from './domain-affinity';
 import { SemanticGuardrails } from './guardrails';
+import { DEMO_SCENARIOS } from './demo-scenarios';
 // DECOUPLED: Facts are now passed or derived via SemanticOutputStore or Context
 
 // Novo tipo que define o snapshot temporal/verdade exato
