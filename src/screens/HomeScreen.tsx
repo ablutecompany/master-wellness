@@ -1538,8 +1538,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         const safeBioTab = bioTab >= factualBioCategories.length ? 0 : bioTab;
 
         return (
-          <Animated.View style={[styles.sidePanel, styles.rightPanel, { transform: [{ translateX: dataAnim }] }]}>
-            <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill}>
+          <Animated.View style={[styles.sidePanel, styles.rightPanel, { transform: [{ translateX: dataAnim }], backgroundColor: '#020306' }]}>
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: '#020306' }]} />
+            <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill}>
               <View style={styles.panelHeader}>
                 <TouchableOpacity
                   onPress={closeData}
