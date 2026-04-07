@@ -58,34 +58,65 @@ function MainTabs() {
   );
 }
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, errorStr: '' };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, errorStr: error?.toString() || 'Unknown Error' };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("ErrorBoundary caught error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, backgroundColor: 'red', padding: 24, justifyContent: 'center' }}>
+          <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 20 }}>CRASH:</Text>
+          <Text style={{ color: 'white', marginTop: 10 }}>{this.state.errorStr}</Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+import { View, Text } from 'react-native';
+
 export default function App() {
   return (
-    <NavigationContainer>
-      <StatusBar style="light" />
-      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Main">
-        <Stack.Screen name="Welcome" component={WelcomeScreen} />
-        <Stack.Screen name="OnboardingGoals" component={OnboardingGoals} />
-        <Stack.Screen name="OnboardingPermissions" component={OnboardingPermissions} />
-        <Stack.Screen name="Pairing" component={PairingScreen} />
-        <Stack.Screen name="Main" component={MainTabs} />
-        <Stack.Screen name="GlobalDetail" component={GlobalDetailScreen} options={{ presentation: 'modal' }} />
-        <Stack.Screen 
-          name="Profile" 
-          component={ProfileScreen} 
-          options={{ presentation: 'modal' }} 
-        />
-        <Stack.Screen
-          name="MiniApp"
-          options={{
-            presentation: 'fullScreenModal',
-            animation: 'slide_from_bottom',
-          }}
-        >
-          {({ route, navigation }: any) => (
-            <MiniAppContainer app={(route.params as any).app} navigation={navigation} />
-          )}
-        </Stack.Screen>
-      </Stack.Navigator>
-    </NavigationContainer>
+    <ErrorBoundary>
+      <NavigationContainer>
+        <StatusBar style="light" />
+        <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Main">
+          <Stack.Screen name="Welcome" component={WelcomeScreen} />
+          <Stack.Screen name="OnboardingGoals" component={OnboardingGoals} />
+          <Stack.Screen name="OnboardingPermissions" component={OnboardingPermissions} />
+          <Stack.Screen name="Pairing" component={PairingScreen} />
+          <Stack.Screen name="Main" component={MainTabs} />
+          <Stack.Screen name="GlobalDetail" component={GlobalDetailScreen} options={{ presentation: 'modal' }} />
+          <Stack.Screen 
+            name="Profile" 
+            component={ProfileScreen} 
+            options={{ presentation: 'modal' }} 
+          />
+          <Stack.Screen
+            name="MiniApp"
+            options={{
+              presentation: 'fullScreenModal',
+              animation: 'slide_from_bottom',
+            }}
+          >
+            {({ route, navigation }: any) => (
+              <MiniAppContainer app={(route.params as any).app} navigation={navigation} />
+            )}
+          </Stack.Screen>
+        </Stack.Navigator>
+      </NavigationContainer>
+    </ErrorBoundary>
   );
 }

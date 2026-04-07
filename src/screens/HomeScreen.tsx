@@ -242,6 +242,22 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     Selectors.selectActiveDerivedContextFacts({ appContributionEvents: filteredEvents } as any),
     [filteredEvents]);
 
+  // Settings Form State (Grupos de Análise)
+  const [selectedGroups, setSelectedGroups] = useState<string[]>(['U', 'S', 'F', 'O']);
+  const [groupsExpanded, setGroupsExpanded] = useState(false);
+  const [showOutrosWarning, setShowOutrosWarning] = useState(false);
+
+  const handleToggleGroup = (id: string) => {
+    if (selectedGroups.includes(id)) {
+      setSelectedGroups(selectedGroups.filter(g => g !== id));
+    } else {
+      setSelectedGroups([...selectedGroups, id]);
+      if (id === 'O') {
+        setShowOutrosWarning(true);
+      }
+    }
+  };
+
   const factualBioCategories = React.useMemo(() => {
     const urinalysisMarkers = measurements
       .filter(m => m.type === 'urinalysis')
@@ -397,23 +413,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [autoExpanded, setAutoExpanded] = useState(false);
   const [showAutoWarning, setShowAutoWarning] = useState(false);
 
-  // Settings Form State (Grupos de Análise)
-  const [selectedGroups, setSelectedGroups] = useState<string[]>(['U', 'S', 'F', 'O']);
-  const [groupsExpanded, setGroupsExpanded] = useState(false);
-  const [showOutrosWarning, setShowOutrosWarning] = useState(false);
 
-  const handleToggleGroup = (id: string) => {
-    if (selectedGroups.includes(id)) {
-      setSelectedGroups(selectedGroups.filter(g => g !== id));
-    } else {
-      setSelectedGroups([...selectedGroups, id]);
-      if (id === 'O') {
-        setShowOutrosWarning(true);
-      }
-    }
-  };
-
-  // Settings Form State (Notificações)
   type NotificationMode = 'Ativas' | 'Apenas Alertas' | 'Silenciadas';
   const [notificationMode, setNotificationMode] = useState<NotificationMode>('Ativas');
 
