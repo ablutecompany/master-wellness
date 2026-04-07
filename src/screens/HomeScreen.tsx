@@ -242,6 +242,45 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     Selectors.selectActiveDerivedContextFacts({ appContributionEvents: filteredEvents } as any),
     [filteredEvents]);
 
+  const factualBioCategories = React.useMemo(() => {
+    const urinalysisMarkers = measurements
+      .filter(m => m.type === 'urinalysis')
+      .map(m => ({
+        name: m.value?.marker || 'Análise Urinária',
+        value: m.value?.displayValue || m.value?.value || '---',
+        unit: m.value?.unit || ''
+      }));
+
+    const physiologyMarkers = measurements
+      .filter(m => ['ecg', 'ppg', 'temp', 'weight'].includes(m.type))
+      .map(m => {
+        const labels: Record<string, string> = { ecg: 'Ritmo Cardíaco', ppg: 'PPG', temp: 'Temperatura', weight: 'Peso' };
+        const units: Record<string, string> = { ecg: 'bpm', temp: '°C', weight: 'kg' };
+        return {
+          name: labels[m.type] || m.type,
+          value: m.value?.displayValue || m.value?.value || '---',
+          unit: m.value?.unit || units[m.type] || ''
+        };
+      });
+
+    return [
+      { label: 'Análises de Urina', color: '#00F2FF', markers: urinalysisMarkers, id: 'U', shortLabel: 'Urina' },
+      { label: 'Monitorização Fisiológica', color: '#00D4AA', markers: physiologyMarkers, id: 'S', shortLabel: 'Fisiológica' },
+      { label: 'Avaliação Fecal', color: '#FFA500', markers: [], id: 'F', shortLabel: 'Fecal' },
+      { 
+        label: 'Sinais do Ecossistema', 
+        color: '#FFD700', 
+        id: 'E', 
+        shortLabel: 'Ecossistema',
+        markers: activeFacts.map(f => ({
+          name: f?.type ? String(f.type).replace(/_/g, ' ').toUpperCase() : 'SINAL',
+          value: typeof f?.value === 'string' ? f.value : (f?.value?.displayValue || 'Ativo'),
+          unit: f?.sourceAppId || ''
+        }))
+      },
+    ].filter(c => c.id === 'E' || selectedGroups.includes(c.id));
+  }, [measurements, activeFacts, selectedGroups]);
+
   // Ações via subscrição estática (sem re-render por estado)
   const launchApp = useStore(state => state.launchApp);
   const uninstallApp = useStore(state => state.uninstallApp);
@@ -1499,9 +1538,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         const safeBioTab = bioTab >= factualBioCategories.length ? 0 : bioTab;
 
         return (
-          <Animated.View style={[styles.sidePanel, styles.rightPanel, { transform: [{ translateX: dataAnim }], backgroundColor: '#020306' }]}>
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: '#020306' }]} />
-            <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill}>
+          <Animated.View style={[styles.sidePanel, styles.rightPanel, { transform: [{ translateX: dataAnim }] }]}>
+            <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill}>
               <View style={styles.panelHeader}>
                 <TouchableOpacity
                   onPress={closeData}
@@ -1684,7 +1722,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           </Animated.View>
         );
       })()}
-
       {/* ── BOTTOM DRAWER: APPS ───────────────────────────────────────────── */}
       <Animated.View
         ref={drawerHandleRef}

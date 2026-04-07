@@ -133,6 +133,24 @@ export const MINI_APP_CATALOG: MiniAppManifest[] = [
     description:
       'Guia baseado em ciência para protocolos de longevidade: jejum intermitente, exposição ao frio, zona 2 e suplementação baseada em biomarcadores.',
   },
+  {
+    id: '_motion',
+    name: '_motion',
+    tagline: 'Captura passiva e validação de treinos',
+    developer: 'ablute_ Labs',
+    developerVerified: true,
+    category: 'training',
+    iconEmoji: '🏊‍♂️',
+    iconColor: '#3B82F6',
+    iconBg: 'rgba(59, 130, 246, 0.12)',
+    url: 'http://localhost:5175',
+    permissions: ['PROFILE_READ', 'ACTIVITY_DATA_WRITE', 'NOTIFICATIONS'],
+    version: '5.1.0',
+    featured: true,
+    rating: 5.0,
+    reviewCount: 0,
+    description: 'Gestor dinâmico fisiológico.'
+  }
 ];
 
 export const getFeaturedApp = (): MiniAppManifest | undefined =>

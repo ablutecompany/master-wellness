@@ -33,7 +33,7 @@ const Stack = createNativeStackNavigator();
 function MainTabs() {
   return (
     <Tab.Navigator
-      initialRouteName="Home"
+      initialRouteName="Apps"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
@@ -62,7 +62,7 @@ export default function App() {
   return (
     <NavigationContainer>
       <StatusBar style="light" />
-      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Welcome">
+      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Main">
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
         <Stack.Screen name="OnboardingGoals" component={OnboardingGoals} />
         <Stack.Screen name="OnboardingPermissions" component={OnboardingPermissions} />
