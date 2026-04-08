@@ -10,9 +10,14 @@ import { EquipmentModule } from './equipment/equipment.module';
 import { NotificationModule } from './notifications/notification.module';
 import { AuditModule } from './audit/audit.module';
 import { AdminModule } from './admin/admin.module';
+import { ConfigModule } from '@nestjs/config';
+import { AiGatewayModule } from './ai-gateway/ai-gateway.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true, // Torna o ConfigService globalmente disponível em todos os módulos
+    }),
     PrismaModule,
     AuthModule,
     UserModule,
@@ -24,6 +29,7 @@ import { AdminModule } from './admin/admin.module';
     NotificationModule,
     AuditModule,
     AdminModule,
+    AiGatewayModule,
   ],
   controllers: [],
   providers: [],

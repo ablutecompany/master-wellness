@@ -1,133 +1,89 @@
-import { Injectable, InternalServerErrorException, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { PromptInput, PromptResult } from './types';
-import { UserRole } from '@prisma/client';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import OpenAI from 'openai';
 
+/**
+ * Service minimalista que gera insights estruturados via OpenAI Responses API.
+ * Utiliza json_schema para garantir output robusto e faz dump do objeto bruto.
+ */
 @Injectable()
 export class AiGatewayService {
-  constructor(private prisma: PrismaService) {}
+  private readonly openai: OpenAI;
+
+  constructor(private readonly configService: ConfigService) {
+    const apiKey = this.configService.get<string>('OPENAI_API_KEY');
+    if (!apiKey) {
+      throw new InternalServerErrorException('OPENAI_API_KEY não está definida');
+    }
+    this.openai = new OpenAI({ apiKey });
+  }
 
   /**
-   * Executar um prompt versionado (Governança Total).
-   * 1. Resolve Template e Versão Ativa
-   * 2. Valida Input
-   * 3. Regista PromptRun e AIRequest
-   * 4. Executa via Provider (Simulado)
+   * Gera insights a partir do contexto de análise ativo.
+   * Retorna o objeto já validado em `response.data`.
    */
-  async executePrompt(input: PromptInput, actor: { id: string, role: UserRole }): Promise<PromptResult> {
-    // 1. RBAC Check Interno (Double-Lock)
-    if (actor.role !== UserRole.ADMIN_INTERNAL && actor.role !== UserRole.SERVICE_BACKEND) {
-      throw new ForbiddenException('Execução de prompt AI restrita a papéis governados.');
-    }
+  async generateInsights(activeAnalysisContext: {
+    analysisId: string;
+    selectedDate: string;
+    measurements: any[];
+    events: any[];
+    ecosystemFacts: any[];
+    isDemo: boolean;
+    demoScenarioKey?: string;
+  }): Promise<any> {
+    const prompt = `
+Recebe o contexto da análise abaixo e gera um relatório estruturado em JSON com os campos:
+  headline, summary, domains (energia_disponibilidade, recuperacao_resiliencia, digestao_trato_intestinal, ritmo_renovacao) e suggestions (lista de strings).
+Utiliza linguagem neutra e natural em português de Portugal. Não te dirijas ao utilizador.
+Contexto da análise (JSON):
+${JSON.stringify(activeAnalysisContext, null, 2)}
+`;
 
-    // 2. Resolver Template e Versão
-    const template = await this.prisma.promptTemplate.findUnique({
-      where: { code: input.promptCode },
-      include: {
-        versions: {
-          where: { version: input.version, active: true },
-          take: 1
-        }
-      }
-    });
-
-    if (!template || template.versions.length === 0) {
-      throw new NotFoundException(`Prompt [${input.promptCode}] v${input.version} não encontrado ou inativo.`);
-    }
-
-    const versionDoc = template.versions[0];
+    const insightsSchema = {
+      type: 'object',
+      properties: {
+        headline: { type: 'string' },
+        summary: { type: 'string' },
+        domains: {
+          type: 'object',
+          properties: {
+            energia_disponibilidade: { type: 'string' },
+            recuperacao_resiliencia: { type: 'string' },
+            digestao_trato_intestinal: { type: 'string' },
+            ritmo_renovacao: { type: 'string' },
+          },
+          required: [
+            'energia_disponibilidade',
+            'recuperacao_resiliencia',
+            'digestao_trato_intestinal',
+            'ritmo_renovacao',
+          ],
+        },
+        suggestions: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['headline', 'summary', 'domains', 'suggestions'],
+      additionalProperties: false,
+    };
 
     try {
-      const start = Date.now();
-
-      // 3. Criar a sessão de execução (PromptRun)
-      const run = await this.prisma.promptRun.create({
-        data: {
-          versionId: versionDoc.id,
-          userId: actor.id,
-          status: 'processing'
-        }
+      // @ts-ignore – typings for responses ainda podem faltar
+      const response: any = await (this.openai as any).responses.create({
+        model: 'gpt-5.4-mini',
+        input: prompt,
+        response_format: {
+          type: 'json_schema',
+          json_schema: { name: 'Insights', strict: true, schema: insightsSchema },
+        },
       });
 
-      // 4. Execução Simulada (Placeholder para o Provider OpenAI)
-      // Aqui o backend montaria o prompt final usando versionDoc.systemPrompt + input.variables
-      const resultMessage = this.simulateAiResponse(input.promptCode, input.variables);
+      // Dump completo do objeto retornado pelo SDK
+      console.dir(response, { depth: null });
 
-      // 5. Persistir AIRequest (O rastro individual)
-      const aiRequest = await this.prisma.aIRequest.create({
-        data: {
-          runId: run.id,
-          userId: actor.id,
-          sessionId: input.sessionId,
-          inputPayload: input.variables,
-          resultPayload: { content: resultMessage },
-          status: 'success',
-          execMillis: Date.now() - start,
-          modelUsed: 'gpt-4o-governed-v1',
-          tokensUsed: 150,
-          costMetadata: { currency: 'USD', value: 0.002 }
-        }
-      });
-
-      // Atualizar status da Run
-      await this.prisma.promptRun.update({
-        where: { id: run.id },
-        data: { status: 'completed' }
-      });
-
-      return {
-        requestId: aiRequest.id,
-        promptCode: input.promptCode,
-        version: input.version,
-        content: resultMessage,
-        metadata: {
-          model: 'gpt-4o-governed-v1',
-          tokensUsed: 150,
-          execMillis: Date.now() - start,
-          finishReason: 'stop',
-          timestamp: Date.now()
-        }
-      };
-
-    } catch (e) {
-      throw new InternalServerErrorException(`Falha na Governança AI: ${e.message}`);
+      // O JSON estruturado está em response.data
+      return { status: 'success', payload: response.data };
+    } catch (err) {
+      console.error('Erro ao gerar insights via OpenAI:', err);
+      throw new InternalServerErrorException('Falha ao gerar insights: ' + (err as Error).message);
     }
-  }
-
-  /**
-   * Inicialização do Catálogo de Prompts Governados.
-   */
-  async syncPromptCatalogue() {
-    const sleepCode = 'sleep_semantic_narrative';
-    const nutriCode = 'nutrition_semantic_narrative';
-
-    // Sleep Narrative Template
-    await this.prisma.promptTemplate.upsert({
-      where: { code: sleepCode },
-      update: {},
-      create: {
-        code: sleepCode,
-        name: 'Sleep Semantic Narrative Generator',
-        description: 'Gera narrativa de suporte baseada no bundle de sono v1.2.0'
-      }
-    });
-
-    // Nutrition Narrative Template
-    await this.prisma.promptTemplate.upsert({
-      where: { code: nutriCode },
-      update: {},
-      create: {
-        code: nutriCode,
-        name: 'Nutrition Advice Narrative',
-        description: 'Gera interpretação biográfica baseada no rastro nutricional'
-      }
-    });
-
-    // Registar Versões Ativas (Deveria vir de ficheiros de config em prod)
-    // Placeholder para garantir que o sistema tem algo para correr
-  }
-
-  private simulateAiResponse(code: string, variables: any): string {
-    return `[Governed Response for ${code}] Baseado nos dados biográficos fornecidos (score: ${variables.score || 'N/A'}), a sua narrativa de wellness está estável e auditada.`;
   }
 }

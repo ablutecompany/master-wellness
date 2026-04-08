@@ -9,7 +9,9 @@ import { SemanticDomainView, SemanticOutputStatus } from './types';
 import { DomainAffinity } from './domain-affinity';
 import { SemanticGuardrails } from './guardrails';
 import { DEMO_SCENARIOS } from './demo-scenarios';
-// DECOUPLED: Facts are now passed or derived via SemanticOutputStore or Context
+import { computeSemanticFromMeasurements } from './analysis-engine';
+import { Analysis } from '../../store/types';
+// DECOUPLED: Facts are now passed or derived via Analysis objects
 
 // Novo tipo que define o snapshot temporal/verdade exato
 export interface ActiveAnalysisContext {
@@ -152,17 +154,45 @@ export class SemanticOutputService {
   }
 
   /**
+   * FONTE ÚNICA DE VERDADE — Ponto de entrada para qualquer Analysis.
+   * Computa o bundle semântico a partir dos biomarcadores da análise
+   * e injeta-o no store. Tanto Resultados como Leitura AI leem daqui.
+   *
+   * @param analysis — pode ser uma análise real ou um demo (source: 'demo')
+   */
+  static loadAnalysis(analysis: Analysis | null) {
+    if (!analysis) {
+      // Sem análise activa — estado vazio honesto
+      const emptyBundle = computeSemanticFromMeasurements([], []);
+      SemanticOutputStore.updateState(emptyBundle as any);
+      SemanticOutputStore.clearDirty();
+      return;
+    }
+    const bundle = computeSemanticFromMeasurements(
+      analysis.measurements,
+      analysis.ecosystemFacts,
+    );
+    SemanticOutputStore.updateState(bundle as any);
+    SemanticOutputStore.clearDirty();
+  }
+
+  /**
    * Injeta o único contexto válido (UI source-of-truth) na camada semântica.
    * A IA passa a viver exclusivamente desta fotografia temporal.
+   * @deprecated Prefer loadAnalysis(analysis) for unified source of truth.
    */
   static updateTemporalContext(context: ActiveAnalysisContext) {
     this.activeContext = context;
-    
-    if (context.isDemo && context.demoScenarioKey && DEMO_SCENARIOS[context.demoScenarioKey as any]) {
-      SemanticOutputStore.updateState({
-        ...DEMO_SCENARIOS[context.demoScenarioKey as any],
-        bundleVersion: '1.2.0'
-      } as any);
+
+    if (context.isDemo && context.demoScenarioKey) {
+      // Demo: computa bundle directamente via analysis-engine (sem DEMO_SCENARIOS indexing)
+      const { getDemoMeasurements, getDemoEcosystemFacts, DemoScenarioKey } = require('./demo-scenarios');
+      const key = context.demoScenarioKey as import('./demo-scenarios').DemoScenarioKey;
+      const bundle = computeSemanticFromMeasurements(
+        getDemoMeasurements(key),
+        getDemoEcosystemFacts(key),
+      );
+      SemanticOutputStore.updateState(bundle as any);
       SemanticOutputStore.clearDirty();
     } else {
       this.refreshBundle('user_current_session_1');
@@ -173,11 +203,13 @@ export class SemanticOutputService {
     const activeFacts = this.activeContext?.filteredEvents || [];
     
     // 1. Se estivermos em Demo Mode, interceptar e parar o fetch real
-    if (this.activeContext?.isDemo && this.activeContext.demoScenarioKey && DEMO_SCENARIOS[this.activeContext.demoScenarioKey as any]) {
-      return {
-        ...DEMO_SCENARIOS[this.activeContext.demoScenarioKey as any],
-        bundleVersion: '1.2.0'
-      } as any;
+    if (this.activeContext?.isDemo && this.activeContext.demoScenarioKey) {
+      const { getDemoMeasurements, getDemoEcosystemFacts } = require('./demo-scenarios');
+      const key = this.activeContext.demoScenarioKey as import('./demo-scenarios').DemoScenarioKey;
+      return computeSemanticFromMeasurements(
+        getDemoMeasurements(key),
+        getDemoEcosystemFacts(key),
+      ) as any;
     }
 
     // 2. Fallback orgânico: Cruzar com dados factuais em 'Resultados'

@@ -52,10 +52,43 @@ export interface Measurement {
   timestamp: number;
 }
 
+// ── Análise unificada ─────────────────────────────────────────────────────────
+// Um Analysis é uma sessão de dados completa: medições + sinais de ecossistema.
+// É a ÚNICA fonte de verdade para Resultados e Leitura AI.
+export interface AnalysisMeasurement {
+  id: string;
+  type: 'urinalysis' | 'ecg' | 'ppg' | 'temp' | 'weight' | 'fecal';
+  marker?: string;    // para urinalysis e fecal
+  value: string;      // valor legível
+  unit: string;
+  recordedAt: string; // ISO timestamp
+}
+
+export interface AnalysisEvent {
+  id: string;
+  type: string;         // ex: 'sleep_duration_logged'
+  value: string;        // ex: '7h 12m'
+  sourceAppId: string;
+  recordedAt: string;
+}
+
+export interface Analysis {
+  id: string;
+  label?: string;
+  analysisDate: string;  // 'YYYY-MM-DD' — data da recolha
+  source: 'device' | 'manual' | 'demo';
+  demoScenarioKey?: string;
+  measurements: AnalysisMeasurement[];
+  ecosystemFacts: AnalysisEvent[];
+  createdAt: string;
+}
+
 export interface AppState {
   // ── Core ──────────────────────────────────────────────────────────────────
   user: UserProfile | null;
-  measurements: Measurement[];
+  measurements: Measurement[];       // medições raw do dispositivo (legado)
+  analyses: Analysis[];              // análises estruturadas (fonte de verdade)
+  activeAnalysisId: string | null;   // qual a análise activa no painel
   isNfcLoading: boolean;
   isMeasuring: boolean;
   credits: number;
@@ -70,6 +103,9 @@ export interface AppState {
   // ── Core Actions ──────────────────────────────────────────────────────────
   setUser: (user: UserProfile) => void;
   addMeasurement: (measurement: Measurement) => void;
+  addAnalysis: (analysis: Analysis) => void;
+  removeAnalysis: (id: string) => void;
+  setActiveAnalysisId: (id: string | null) => void;
   setNfcLoading: (loading: boolean) => void;
   setIsMeasuring: (measuring: boolean) => void;
   setCredits: (credits: number) => void;

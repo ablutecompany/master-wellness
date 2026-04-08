@@ -33,7 +33,8 @@ import { useStore } from '../store/useStore';
 import * as Selectors from '../store/selectors';
 import { getSemanticInsights, getSemanticStatus } from '../services/insights';
 import { semanticOutputService } from '../services/semantic-output';
-import { getDemoMeasurements, getDemoEcosystemFacts, DemoScenarioKey } from '../services/semantic-output/demo-scenarios';
+import { createDemoAnalysis, DemoScenarioKey, DEMO_LABELS } from '../services/semantic-output/demo-scenarios';
+import { Analysis } from '../store/types';
 
 
 // --- SLOT MACHINE ODOMETER COMPONENT ---
@@ -150,95 +151,48 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   // Safe memoized facts query to avoid Zustand infinite render loop
   const rawEvents = useStore(state => state.appContributionEvents);
+  const analyses = useStore(state => state.analyses);
+  const activeAnalysisId = useStore(state => state.activeAnalysisId);
+  const setActiveAnalysisId = useStore(state => state.setActiveAnalysisId);
 
-  // --- UI & NAVIGATION STATE (MOVIDO PARA O TOPO PARA EVITAR TDZ EM MEMOS) ---
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  // --- UI & NAVIGATION STATE ---
   const [showDemoModal, setShowDemoModal] = useState(false);
-  const [activeDemoKey, setActiveDemoKey] = useState<string | null>(null);
+  // Demo cria uma Analysis temporária em memória. NÃO contamina analyses[].
+  const [demoAnalysis, setDemoAnalysis] = useState<Analysis | null>(null);
   const [showHistorico, setShowHistorico] = useState(false);
   const [bioTab, setBioTab] = useState(0);
   const [themesOpen, setThemesOpen] = useState(false);
   const [dataOpen, setDataOpen] = useState(false);
 
-  // --- LÓGICA DE DATAS DISPONÍVEIS ---
-  const availableDates = React.useMemo(() => {
-    const dates = new Set<string>();
+  // ── FONTE ÚNICA DE VERDADE ──────────────────────────────────────────────────────
+  // activeAnalysis: se Demo activo usa a análise temporária (source:'demo').
+  // Caso contrário usa a análise apontada por activeAnalysisId no store.
+  // Resultados + Leitura AI leem EXCLUSIVAMENTE daqui.
+  const activeAnalysis = React.useMemo<Analysis | null>(() => {
+    if (demoAnalysis) return demoAnalysis;
+    if (activeAnalysisId) return analyses.find(a => a.id === activeAnalysisId) ?? null;
+    // Sem nada seleccionado — fallback para a última análise real
+    return analyses[0] ?? null;
+  }, [demoAnalysis, activeAnalysisId, analyses]);
 
-    // 1. Integrar datas do Modo Demo (Sintético)
-    const activeDemo = activeDemoKey;
-    if (activeDemo) {
-      dates.add('2026-04-02');
-    }
-
-    // 2. Datas Reais
-    const toShortDate = (d: any) => {
-      try {
-        const iso = new Date(d).toISOString().split('T')[0];
-        return iso;
-      } catch (e) { return null; }
-    };
-
-    measurements.forEach(m => {
-      const d = toShortDate(m.timestamp);
-      if (d) dates.add(d);
-    });
-    rawEvents.forEach(e => {
-      const d = toShortDate(e.recordedAt);
-      if (d) dates.add(d);
-    });
-
-    return Array.from(dates).sort((a, b) => b.localeCompare(a));
-  }, [measurements, rawEvents, activeDemoKey]); // Recalcula se o modal demo fechar
-
-  // Inicializa e sincroniza a data ativa
-  useEffect(() => {
-    if (availableDates.length > 0) {
-      if (!selectedDate || !availableDates.includes(selectedDate)) {
-        setSelectedDate(availableDates[0]);
-      }
-    } else if (!selectedDate) {
-      // Fallback absoluto para evitar "Carregando..." eterno
-      setSelectedDate('2026-04-02');
-    }
-  }, [availableDates, selectedDate]);
-
-  // --- FILTRAGEM POR DATA (C/ SUPORTE A DEMO) ---
+  // Leitura dos biomarcadores da análise activa (formaáto normalizado)
   const filteredMeasurements = React.useMemo(() => {
-    // PRIORIDADE 1: Demo usa dados do cenário ativo (getDemoMeasurements)
-    if (activeDemoKey && selectedDate === '2026-04-02') {
-      return getDemoMeasurements(activeDemoKey as DemoScenarioKey) as any[];
-    }
+    if (!activeAnalysis) return [];
+    // Converte AnalysisMeasurement para o formato legado esperado pela UI
+    return activeAnalysis.measurements.map(m => ({
+      type: m.type,
+      timestamp: m.recordedAt,
+      value: { marker: m.marker, value: m.value, unit: m.unit },
+    }));
+  }, [activeAnalysis]);
 
-    if (!selectedDate) return [];
-    return measurements.filter(m => {
-      try {
-        return new Date(m.timestamp).toISOString().split('T')[0] === selectedDate;
-      } catch (e) { return false; }
-    });
-  }, [measurements, selectedDate, activeDemoKey]);
-
-  const filteredEvents = React.useMemo(() => {
-    const activeDemo = activeDemoKey;
-    if (activeDemo && selectedDate === '2026-04-02') {
-      return [
-        { appId: 'urinalysis', recordedAt: '2026-04-02T08:00:00Z', type: 'marker_check', value: 'Sincronizado' }
-      ];
-    }
-    if (!selectedDate) return [];
-    return rawEvents.filter(e => {
-      try {
-        return new Date(e.recordedAt).toISOString().split('T')[0] === selectedDate;
-      } catch (err) { return false; }
-    });
-  }, [rawEvents, selectedDate, activeDemoKey]);
-
-  // PRIORIDADE 1: Demo injeta ecosystemFacts diretamente (bypassa normalizer)
+  // Sinais de ecossistema da análise activa
   const activeFacts = React.useMemo(() => {
-    if (activeDemoKey && selectedDate === '2026-04-02') {
-      return getDemoEcosystemFacts(activeDemoKey as DemoScenarioKey) as any[];
-    }
-    return Selectors.selectActiveDerivedContextFacts({ appContributionEvents: filteredEvents } as any);
-  }, [filteredEvents, activeDemoKey, selectedDate]);
+    return activeAnalysis?.ecosystemFacts ?? [];
+  }, [activeAnalysis]);
+
+  // selectedDate — derivado da análise activa (para compat. com componentes que o esperam)
+  const selectedDate = activeAnalysis?.analysisDate ?? null;
 
   // Settings Form State (Grupos de Análise)
   const [selectedGroups, setSelectedGroups] = useState<string[]>(['U', 'S', 'F', 'O']);
@@ -257,59 +211,35 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   };
 
   const factualBioCategories = React.useMemo(() => {
-    const src = activeDemoKey && selectedDate === '2026-04-02'
-      ? getDemoMeasurements(activeDemoKey as DemoScenarioKey) as any[]
-      : measurements;
+    const src = activeAnalysis?.measurements ?? [];
+    const ecoSrc = activeAnalysis?.ecosystemFacts ?? [];
 
     const urinalysisMarkers = src
-      .filter((m: any) => m.type === 'urinalysis')
-      .map((m: any) => ({
-        name: m.value?.marker || 'Análise Urinária',
-        value: m.value?.displayValue || m.value?.value || '---',
-        unit: m.value?.unit || ''
-      }));
+      .filter(m => m.type === 'urinalysis')
+      .map(m => ({ name: m.marker || 'Análise Urinária', value: m.value, unit: m.unit }));
 
     const physiologyMarkers = src
-      .filter((m: any) => ['ecg', 'ppg', 'temp', 'weight'].includes(m.type))
-      .map((m: any) => {
-        const labels: Record<string, string> = { ecg: 'Ritmo Cardíaco', ppg: 'PPG', temp: 'Temperatura', weight: 'Peso' };
-        const units: Record<string, string> = { ecg: 'bpm', temp: '°C', weight: 'kg' };
-        return {
-          name: m.value?.marker || labels[m.type] || m.type,
-          value: m.value?.displayValue || m.value?.value || '---',
-          unit: m.value?.unit || units[m.type] || ''
-        };
-      });
+      .filter(m => ['ecg', 'ppg', 'temp', 'weight'].includes(m.type))
+      .map(m => ({ name: m.marker || m.type, value: m.value, unit: m.unit }));
 
     const fecalMarkers = src
-      .filter((m: any) => m.type === 'fecal')
-      .map((m: any) => ({
-        name: m.value?.marker || 'Marcador Fecal',
-        value: m.value?.displayValue || m.value?.value || '---',
-        unit: m.value?.unit || ''
-      }));
-
-    const ecoSrc = activeDemoKey && selectedDate === '2026-04-02'
-      ? getDemoEcosystemFacts(activeDemoKey as DemoScenarioKey) as any[]
-      : activeFacts;
+      .filter(m => m.type === 'fecal')
+      .map(m => ({ name: m.marker || 'Marcador Fecal', value: m.value, unit: m.unit }));
 
     return [
-      { label: 'Análises de Urina', color: '#00F2FF', markers: urinalysisMarkers, id: 'U', shortLabel: 'Urina' },
+      { label: 'Análises de Urina',          color: '#00F2FF', markers: urinalysisMarkers, id: 'U', shortLabel: 'Urina' },
       { label: 'Monitorização Fisiológica', color: '#00D4AA', markers: physiologyMarkers, id: 'S', shortLabel: 'Fisiológica' },
-      { label: 'Avaliação Fecal', color: '#FFA500', markers: fecalMarkers, id: 'F', shortLabel: 'Fecal' },
+      { label: 'Avaliação Fecal',           color: '#FFA500', markers: fecalMarkers,       id: 'F', shortLabel: 'Fecal' },
       {
-        label: 'Sinais do Ecossistema',
-        color: '#FFD700',
-        id: 'E',
-        shortLabel: 'Ecossistema',
-        markers: ecoSrc.map((f: any) => ({
-          name: f?.type ? String(f.type).replace(/_/g, ' ').toUpperCase() : 'SINAL',
-          value: typeof f?.value === 'string' ? f.value : (f?.value?.displayValue || 'Ativo'),
-          unit: f?.sourceAppId || ''
+        label: 'Sinais do Ecossistema', color: '#FFD700', id: 'E', shortLabel: 'Ecossistema',
+        markers: ecoSrc.map(f => ({
+          name: String(f.type).replace(/_/g, ' ').toUpperCase(),
+          value: f.value,
+          unit: f.sourceAppId,
         }))
       },
     ].filter(c => c.id === 'E' || selectedGroups.includes(c.id));
-  }, [measurements, activeFacts, selectedGroups, activeDemoKey, selectedDate]);
+  }, [activeAnalysis, selectedGroups]);
 
   // Ações via subscrição estática (sem re-render por estado)
   const launchApp = useStore(state => state.launchApp);
@@ -320,18 +250,13 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [semanticStatus, setSemanticStatus] = useState(getSemanticStatus());
   const [crossDomainSummary, setCrossDomainSummary] = useState(semanticOutputService.getCrossDomainSummary());
 
-  // --- SOURCE OF TRUTH (CONTEXTO ATIVO) ---
-  const activeAnalysisContext = React.useMemo(() => ({
-    selectedDate,
-    filteredMeasurements,
-    filteredEvents,
-    isDemo: !!activeDemoKey,
-    demoScenarioKey: activeDemoKey
-  }), [selectedDate, filteredMeasurements, filteredEvents, activeDemoKey]);
-
+  // ── FONTE ÚNICA DE VERDADE ──────────────────────────────────────────────────────
+  // activeAnalysis muda → loadAnalysis injeta bundle calculado → SemanticOutputStore
+  // notifica subscritores → setSemanticThemes/setSemanticStatus actualiza a UI.
+  // Resultados e Leitura AI leem do mesmo objecto — zero fontes paralelas.
   useEffect(() => {
-    semanticOutputService.updateTemporalContext(activeAnalysisContext);
-  }, [activeAnalysisContext]);
+    semanticOutputService.loadAnalysis(activeAnalysis);
+  }, [activeAnalysis]);
 
   useEffect(() => {
     // Escuta alterações no bundle global e actualiza a UI da Shell
@@ -382,31 +307,26 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const floatAnim2 = useRef(new Animated.Value(1)).current;
   const arrowAnim = useRef(new Animated.Value(0)).current;
 
-  // -- DEMO MODE STATE --
+  // ── DEMO MODE ────────────────────────────────────────────────────────────────
+  // Demo cria análise temporária em memória (source:'demo').
+  // NÃO é adicionada a analyses[] — não contamina o histórico real.
+  // Sair do demo: setDemoAnalysis(null) — volta ao activeAnalysisId.
   const handleSelectDemo = (key: any) => {
-    // 1. Oculta Modal para libertar DOM touch (gera RE-RENDER violento do Ecrã)
     setShowDemoModal(false);
 
-    // 2. PROTEÇÃO REACT NATIVE WEB: 
-    // Só podemos iniciar a transição CSS quando a árvore DOM estiver estabilizada.
-    // 2 ticks de rAF dão garantia total de que a eliminação do <Modal> já pintou.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
 
-        // 3. Arranca o fecho da gaveta Direita
+        // Fecha Resultados (se aberto)
         Animated.spring(dataAnim, { toValue: width, bounciness: 0, useNativeDriver: false }).start(({ finished }) => {
-
-          // Se o utilizador clicou como um louco ou a animação foi forçada a parar, saímos!
           if (!finished) return;
-
-          // 4. Fecho completo. Limpa background fantasma.
           setDataOpen(false);
 
-          // 5. Injeta carga maciça de dados falsos e acorda a UI (RE-RENDER violento #2)
-          setActiveDemoKey(key);
+          // Cria análise demo temporária (não vai para o store)
+          const demo = createDemoAnalysis(key as DemoScenarioKey);
+          setDemoAnalysis(demo);
           setThemesOpen(true);
 
-          // 6. Protege a renderização maciça da Esquerda e inicia abertura suave
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
               Animated.spring(themesAnim, { toValue: 0, useNativeDriver: false }).start();
@@ -415,6 +335,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         });
       });
     });
+  };
+
+  const handleExitDemo = () => {
+    setDemoAnalysis(null);
   };
 
   const [stableExpanded, setStableExpanded] = useState(false);
@@ -1194,7 +1118,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                 <Typography style={styles.themePanelTitle}>INTERPRETAÇÃO DAS ANÁLISES POR IA</Typography>
-                {activeDemoKey && (
+                {demoAnalysis && (
                   <View style={{ backgroundColor: '#00F2FF20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 8, borderWidth: 1, borderColor: '#00F2FF40' }}>
                     <Typography style={{ color: '#00F2FF', fontSize: 9, fontWeight: 'bold' }}>MODO DEMO</Typography>
                   </View>
@@ -1510,35 +1434,20 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
       {/* ── SIDE PANEL: DATA (RIGHT) ──────────────────────────────────────── */}
       {(() => {
-        // --- FACTUAL DATA MAPPING (FILTERED BY DATE) ---
-        const urinalysisMarkers = filteredMeasurements
+        // ── Painel Resultados — lê directamente de activeAnalysis ─────────────
+        const src = activeAnalysis?.measurements ?? [];
+
+        const urinalysisMarkers = src
           .filter(m => m.type === 'urinalysis')
-          .map(m => ({
-            name: m.value?.marker || 'Análise Urinária',
-            value: m.value?.displayValue || m.value?.value || '---',
-            unit: m.value?.unit || ''
-          }));
+          .map(m => ({ name: m.marker || 'Análise Urinária', value: m.value, unit: m.unit }));
 
-        const physiologyMarkers = filteredMeasurements
+        const physiologyMarkers = src
           .filter(m => ['ecg', 'ppg', 'temp', 'weight'].includes(m.type))
-          .map(m => {
-            const labels: Record<string, string> = { ecg: 'Ritmo Cardíaco', ppg: 'PPG', temp: 'Temperatura', weight: 'Peso' };
-            const units: Record<string, string> = { ecg: 'bpm', temp: '°C', weight: 'kg' };
-            return {
-              name: m.value?.marker || labels[m.type] || m.type,
-              value: m.value?.displayValue || m.value?.value || '---',
-              unit: m.value?.unit || units[m.type] || ''
-            };
-          });
+          .map(m => ({ name: m.marker || m.type, value: m.value, unit: m.unit }));
 
-        // PRIORIDADE 2: Fecal agora tem fonte de dados (type === 'fecal')
-        const fecalMarkers = filteredMeasurements
+        const fecalMarkers = src
           .filter(m => m.type === 'fecal')
-          .map(m => ({
-            name: m.value?.marker || 'Marcador Fecal',
-            value: m.value?.displayValue || m.value?.value || '---',
-            unit: m.value?.unit || ''
-          }));
+          .map(m => ({ name: m.marker || 'Marcador Fecal', value: m.value, unit: m.unit }));
 
         const factualBioCategories = [
           { label: 'Análises de Urina', color: '#00F2FF', markers: urinalysisMarkers, id: 'U', shortLabel: 'Urina' },
@@ -1549,10 +1458,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             color: '#FFD700',
             id: 'E',
             shortLabel: 'Ecossistema',
-            markers: activeFacts.map(f => ({
-              name: f?.type ? String(f.type).replace(/_/g, ' ').toUpperCase() : 'SINAL',
-              value: typeof f?.value === 'string' ? f.value : (f?.value?.displayValue || 'Ativo'),
-              unit: f?.sourceAppId || ''
+            markers: (activeAnalysis?.ecosystemFacts ?? []).map(f => ({
+              name: String(f.type).replace(/_/g, ' ').toUpperCase(),
+              value: f.value,
+              unit: f.sourceAppId,
             }))
           },
         ].filter(c => c.id === 'E' || selectedGroups.includes(c.id));
@@ -2283,12 +2192,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       <HistoricoModal
         visible={showHistorico}
         onClose={() => setShowHistorico(false)}
-        availableDates={availableDates}
-        selectedDate={selectedDate}
-        onSelectDate={(date) => {
-          setSelectedDate(date);
+        analyses={analyses.filter(a => a.source !== 'demo')}
+        activeAnalysisId={activeAnalysisId}
+        onSelectAnalysis={(id) => {
+          setDemoAnalysis(null); // sai do demo se activo
+          setActiveAnalysisId(id);
           setShowHistorico(false);
-          // Otimização: Força re-render das tabs se necessário
           setBioTab(0);
         }}
       />
