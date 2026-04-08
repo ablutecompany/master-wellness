@@ -33,6 +33,7 @@ import { useStore } from '../store/useStore';
 import * as Selectors from '../store/selectors';
 import { getSemanticInsights, getSemanticStatus } from '../services/insights';
 import { semanticOutputService } from '../services/semantic-output';
+import { getDemoMeasurements, getDemoEcosystemFacts, DemoScenarioKey } from '../services/semantic-output/demo-scenarios';
 
 
 // --- SLOT MACHINE ODOMETER COMPONENT ---
@@ -203,16 +204,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   // --- FILTRAGEM POR DATA (C/ SUPORTE A DEMO) ---
   const filteredMeasurements = React.useMemo(() => {
-    const activeDemo = activeDemoKey;
-
-    // Se estiver em Demo e a data for a de hoje, injetamos mocks para as tabs
-    if (activeDemo && selectedDate === '2026-04-02') {
-      return [
-        { type: 'urinalysis', timestamp: '2026-04-02T08:00:00Z', value: { marker: 'Gravidade Específica', value: '1.025', unit: 'sg' } },
-        { type: 'urinalysis', timestamp: '2026-04-02T08:00:00Z', value: { marker: 'pH Urinário', value: '6.5', unit: 'pH' } },
-        { type: 'ecg', timestamp: '2026-04-02T08:00:00Z', value: { value: '72', unit: 'bpm' } },
-        { type: 'weight', timestamp: '2026-04-02T08:00:00Z', value: { value: '74.2', unit: 'kg' } },
-      ];
+    // PRIORIDADE 1: Demo usa dados do cenário ativo (getDemoMeasurements)
+    if (activeDemoKey && selectedDate === '2026-04-02') {
+      return getDemoMeasurements(activeDemoKey as DemoScenarioKey) as any[];
     }
 
     if (!selectedDate) return [];
@@ -238,9 +232,13 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     });
   }, [rawEvents, selectedDate, activeDemoKey]);
 
-  const activeFacts = React.useMemo(() =>
-    Selectors.selectActiveDerivedContextFacts({ appContributionEvents: filteredEvents } as any),
-    [filteredEvents]);
+  // PRIORIDADE 1: Demo injeta ecosystemFacts diretamente (bypassa normalizer)
+  const activeFacts = React.useMemo(() => {
+    if (activeDemoKey && selectedDate === '2026-04-02') {
+      return getDemoEcosystemFacts(activeDemoKey as DemoScenarioKey) as any[];
+    }
+    return Selectors.selectActiveDerivedContextFacts({ appContributionEvents: filteredEvents } as any);
+  }, [filteredEvents, activeDemoKey, selectedDate]);
 
   // Settings Form State (Grupos de Análise)
   const [selectedGroups, setSelectedGroups] = useState<string[]>(['U', 'S', 'F', 'O']);
@@ -259,43 +257,59 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   };
 
   const factualBioCategories = React.useMemo(() => {
-    const urinalysisMarkers = measurements
-      .filter(m => m.type === 'urinalysis')
-      .map(m => ({
+    const src = activeDemoKey && selectedDate === '2026-04-02'
+      ? getDemoMeasurements(activeDemoKey as DemoScenarioKey) as any[]
+      : measurements;
+
+    const urinalysisMarkers = src
+      .filter((m: any) => m.type === 'urinalysis')
+      .map((m: any) => ({
         name: m.value?.marker || 'Análise Urinária',
         value: m.value?.displayValue || m.value?.value || '---',
         unit: m.value?.unit || ''
       }));
 
-    const physiologyMarkers = measurements
-      .filter(m => ['ecg', 'ppg', 'temp', 'weight'].includes(m.type))
-      .map(m => {
+    const physiologyMarkers = src
+      .filter((m: any) => ['ecg', 'ppg', 'temp', 'weight'].includes(m.type))
+      .map((m: any) => {
         const labels: Record<string, string> = { ecg: 'Ritmo Cardíaco', ppg: 'PPG', temp: 'Temperatura', weight: 'Peso' };
         const units: Record<string, string> = { ecg: 'bpm', temp: '°C', weight: 'kg' };
         return {
-          name: labels[m.type] || m.type,
+          name: m.value?.marker || labels[m.type] || m.type,
           value: m.value?.displayValue || m.value?.value || '---',
           unit: m.value?.unit || units[m.type] || ''
         };
       });
 
+    const fecalMarkers = src
+      .filter((m: any) => m.type === 'fecal')
+      .map((m: any) => ({
+        name: m.value?.marker || 'Marcador Fecal',
+        value: m.value?.displayValue || m.value?.value || '---',
+        unit: m.value?.unit || ''
+      }));
+
+    const ecoSrc = activeDemoKey && selectedDate === '2026-04-02'
+      ? getDemoEcosystemFacts(activeDemoKey as DemoScenarioKey) as any[]
+      : activeFacts;
+
     return [
       { label: 'Análises de Urina', color: '#00F2FF', markers: urinalysisMarkers, id: 'U', shortLabel: 'Urina' },
       { label: 'Monitorização Fisiológica', color: '#00D4AA', markers: physiologyMarkers, id: 'S', shortLabel: 'Fisiológica' },
-      { label: 'Avaliação Fecal', color: '#FFA500', markers: [], id: 'F', shortLabel: 'Fecal' },
-      { 
-        label: 'Sinais do Ecossistema', 
-        color: '#FFD700', 
-        id: 'E', 
+      { label: 'Avaliação Fecal', color: '#FFA500', markers: fecalMarkers, id: 'F', shortLabel: 'Fecal' },
+      {
+        label: 'Sinais do Ecossistema',
+        color: '#FFD700',
+        id: 'E',
         shortLabel: 'Ecossistema',
-        markers: activeFacts.map(f => ({
+        markers: ecoSrc.map((f: any) => ({
           name: f?.type ? String(f.type).replace(/_/g, ' ').toUpperCase() : 'SINAL',
           value: typeof f?.value === 'string' ? f.value : (f?.value?.displayValue || 'Ativo'),
           unit: f?.sourceAppId || ''
         }))
       },
     ].filter(c => c.id === 'E' || selectedGroups.includes(c.id));
-  }, [measurements, activeFacts, selectedGroups]);
+  }, [measurements, activeFacts, selectedGroups, activeDemoKey, selectedDate]);
 
   // Ações via subscrição estática (sem re-render por estado)
   const launchApp = useStore(state => state.launchApp);
@@ -1511,16 +1525,25 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             const labels: Record<string, string> = { ecg: 'Ritmo Cardíaco', ppg: 'PPG', temp: 'Temperatura', weight: 'Peso' };
             const units: Record<string, string> = { ecg: 'bpm', temp: '°C', weight: 'kg' };
             return {
-              name: labels[m.type] || m.type,
+              name: m.value?.marker || labels[m.type] || m.type,
               value: m.value?.displayValue || m.value?.value || '---',
               unit: m.value?.unit || units[m.type] || ''
             };
           });
 
+        // PRIORIDADE 2: Fecal agora tem fonte de dados (type === 'fecal')
+        const fecalMarkers = filteredMeasurements
+          .filter(m => m.type === 'fecal')
+          .map(m => ({
+            name: m.value?.marker || 'Marcador Fecal',
+            value: m.value?.displayValue || m.value?.value || '---',
+            unit: m.value?.unit || ''
+          }));
+
         const factualBioCategories = [
           { label: 'Análises de Urina', color: '#00F2FF', markers: urinalysisMarkers, id: 'U', shortLabel: 'Urina' },
           { label: 'Monitorização Fisiológica', color: '#00D4AA', markers: physiologyMarkers, id: 'S', shortLabel: 'Fisiológica' },
-          { label: 'Avaliação Fecal', color: '#FFA500', markers: [], id: 'F', shortLabel: 'Fecal' },
+          { label: 'Avaliação Fecal', color: '#FFA500', markers: fecalMarkers, id: 'F', shortLabel: 'Fecal' },
           {
             label: 'Sinais do Ecossistema',
             color: '#FFD700',
