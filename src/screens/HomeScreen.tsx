@@ -394,7 +394,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       requestAnimationFrame(() => {
 
         // 3. Arranca o fecho da gaveta Direita
-        Animated.spring(dataAnim, { toValue: width, useNativeDriver: true }).start(({ finished }) => {
+        Animated.spring(dataAnim, { toValue: width, bounciness: 0, useNativeDriver: false }).start(({ finished }) => {
 
           // Se o utilizador clicou como um louco ou a animação foi forçada a parar, saímos!
           if (!finished) return;
@@ -409,7 +409,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           // 6. Protege a renderização maciça da Esquerda e inicia abertura suave
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-              Animated.spring(themesAnim, { toValue: 0, useNativeDriver: true }).start();
+              Animated.spring(themesAnim, { toValue: 0, useNativeDriver: false }).start();
             });
           });
         });
@@ -534,18 +534,18 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const openThemes = () => {
     if (dataOpen) return; // prevent overlap: don't open if Dados is open
     setThemesOpen(true);
-    Animated.spring(themesAnim, { toValue: 0, useNativeDriver: true }).start();
+    Animated.spring(themesAnim, { toValue: 0, bounciness: 0, useNativeDriver: false }).start();
   };
   const closeThemes = () => {
-    Animated.spring(themesAnim, { toValue: -width, useNativeDriver: true }).start(() => setThemesOpen(false));
+    Animated.spring(themesAnim, { toValue: -width, bounciness: 0, useNativeDriver: false }).start(() => setThemesOpen(false));
   };
   const openData = () => {
     if (themesOpen) return; // prevent overlap: don't open if Temas is open
     setDataOpen(true);
-    Animated.spring(dataAnim, { toValue: 0, useNativeDriver: true }).start();
+    Animated.spring(dataAnim, { toValue: 0, bounciness: 0, useNativeDriver: false }).start();
   };
   const closeData = () => {
-    Animated.spring(dataAnim, { toValue: width, useNativeDriver: true }).start(() => setDataOpen(false));
+    Animated.spring(dataAnim, { toValue: width, bounciness: 0, useNativeDriver: false }).start(() => setDataOpen(false));
   };
 
   // Keep edge gesture callbacks up to date every render
