@@ -487,8 +487,14 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   };
   const closeData = () => {
     setDataOpen(false);
-    setDataInteractive(false);
-    dataAnim.setValue(width);
+    Animated.spring(dataAnim, {
+      toValue: width,
+      bounciness: 0,
+      speed: 14,
+      useNativeDriver: false // Mantemos false para interpolar layout home
+    }).start(() => {
+      setDataInteractive(false);
+    });
   };
 
   // Keep edge gesture callbacks up to date every render
@@ -1544,8 +1550,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         // Previne crashes de índices se o utilizador desmarcar uma aba com o index maior selecionado.
         const safeBioTab = bioTab >= factualBioCategories.length ? 0 : bioTab;
 
-        return dataOpen ? (
-          <Animated.View style={[styles.sidePanel, styles.rightPanel, { transform: [{ translateX: dataAnim }], backgroundColor: '#020306' }]}>
+        return (
+          <Animated.View 
+            style={[
+              styles.sidePanel, 
+              styles.rightPanel, 
+              { transform: [{ translateX: dataAnim }], backgroundColor: '#020306' }
+            ]}
+            pointerEvents={dataInteractive ? 'auto' : 'none'}
+          >
             <View style={[StyleSheet.absoluteFill, { backgroundColor: '#020306' }]} />
             <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill}>
               <View style={styles.panelHeader}>
@@ -1728,7 +1741,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
             </BlurView>
           </Animated.View>
-        ) : null;
+        );
       })()}
       {/* ── BOTTOM DRAWER: APPS ───────────────────────────────────────────── */}
       <Animated.View
