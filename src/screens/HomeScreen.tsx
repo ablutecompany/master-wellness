@@ -486,14 +486,14 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     Animated.spring(dataAnim, { toValue: 0, bounciness: 0, useNativeDriver: false }).start();
   };
   const closeData = () => {
+    setDataInteractive(false);
     Animated.spring(dataAnim, {
       toValue: width,
       bounciness: 0,
       speed: 14,
-      useNativeDriver: false
+      useNativeDriver: false,
     }).start(() => {
       setDataOpen(false);
-      setDataInteractive(false);
     });
   };
 
@@ -891,7 +891,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
       <Animated.View
         {...mainPanResponder.panHandlers}
-        pointerEvents={(dataInteractive || themesInteractive) ? 'none' : 'auto'}
         style={[
           styles.mainView,
           {
@@ -1551,22 +1550,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         // Previne crashes de índices se o utilizador desmarcar uma aba com o index maior selecionado.
         const safeBioTab = bioTab >= factualBioCategories.length ? 0 : bioTab;
 
-        return (
-          <Animated.View 
-            style={[
-              styles.sidePanel, 
-              styles.rightPanel, 
-              { transform: [{ translateX: dataAnim }], backgroundColor: '#020306' }
-            ]}
-            pointerEvents={dataInteractive ? 'auto' : 'none'}
-          >
+        return dataOpen ? (
+          <Animated.View style={[styles.sidePanel, styles.rightPanel, { transform: [{ translateX: dataAnim }], backgroundColor: '#020306' }]}>
             <View style={[StyleSheet.absoluteFill, { backgroundColor: '#020306' }]} />
             <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill}>
               <View style={styles.panelHeader}>
                 <TouchableOpacity
                   onPress={closeData}
-                  style={{ padding: 24, zIndex: 100 }}
-                  hitSlop={{ top: 24, bottom: 40, left: 24, right: 40 }}
+                  style={{ padding: 24 }}
+                  hitSlop={{ top: 24, bottom: 24, left: 24, right: 24 }}
                 >
                   <X size={24} color="rgba(255,255,255,0.8)" />
                 </TouchableOpacity>
@@ -1742,7 +1734,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
             </BlurView>
           </Animated.View>
-        );
+        ) : null;
       })()}
       {/* ── BOTTOM DRAWER: APPS ───────────────────────────────────────────── */}
       <Animated.View
@@ -2464,7 +2456,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: '100%',
-    zIndex: 10000,
+    zIndex: 500,
   },
   leftPanel: {
     left: 0,
