@@ -7,7 +7,7 @@ POST /ai-gateway/generate-insights
 ```
 
 - Sem global prefix
-- Sem auth (provisório — a documentar como gap)
+- **Sem Auth (Limitação Actual / Gap Conhecido):** A rota está aberta e não exige autenticação nesta milestone. Esta é uma decisão de desenvolvimento para facilitar a integração inicial.
 - Input validado via `ValidationPipe` com `whitelist: true`
 
 ---
@@ -25,11 +25,11 @@ POST /ai-gateway/generate-insights
 
 ```json
 {
-  "analysisId": "string (obrigatório)",
-  "selectedDate": "string (obrigatório)",
+  "analysisId": "string (obrigatório, não vazio)",
+  "selectedDate": "string (obrigatório, não vazio)",
   "measurements": "any[] (obrigatório)",
   "events": "any[] (obrigatório)",
-  "ecosystemFacts": "any[] (obrigatório)",
+  "ecosystemFacts": "any[] (opcional)",
   "isDemo": "boolean (obrigatório)",
   "demoScenarioKey": "string (opcional)"
 }
@@ -64,7 +64,8 @@ HTTP 200 sempre (sucesso e erro normalizado).
     "tokensUsed": 450,
     "inputTokens": 320,
     "outputTokens": 130,
-    "finishReason": "completed"
+    "finishReason": "completed",
+    "parsingSource": "output_text | output_array"
   }
 }
 ```
@@ -121,16 +122,14 @@ HTTP 200 sempre (sucesso e erro normalizado).
 
 ---
 
-## Parsing do provider
+## Parsing do provider (Estratégia Defensiva)
 
-O service lê **exclusivamente** `response.output_text` (Responses API).
+O service utiliza uma estratégia de duas camadas:
 
-- `response.data` → **NÃO é usado** (não existe na Responses API)
-- `response.output_text` → string JSON, parseada com `JSON.parse()`
-- Validação pós-parse dos 4 campos obrigatórios
-- Se `output_text` for `undefined` → erro `PARSE_FAILED`
-- Se `JSON.parse` falhar → erro `PARSE_FAILED`
-- Se campos em falta → erro `SCHEMA_MISMATCH`
+1. **Primário:** Lê `response.output_text` (propriedade de conveniência do SDK).
+2. **Fallback Defensivo:** Se o primário for vazio, extrai manualmente o texto percorrendo o array `response.output[*].content[*]` onde `type: "output_text"`.
+
+Esta abordagem resolve a fragilidade de leitura caso a estrutura de resposta varie ou o SDK mude o seu comportamento de conveniência.
 
 ---
 
@@ -138,12 +137,10 @@ O service lê **exclusivamente** `response.output_text` (Responses API).
 
 | # | Limitação | Impacto |
 |---|-----------|---------|
-| 1 | Sem auth — rota aberta | Qualquer request anónimo pode chamar |
-| 2 | Sem retry | Uma falha transitória não é re-tentada |
-| 3 | Sem timeout explícito | Depende do timeout default do SDK |
-| 4 | Sem rate limiting próprio | Depende apenas do rate limit do provider |
-| 5 | DTO aceita `any[]` em measurements/events | Sem validação de shape interno dos arrays |
-| 6 | Domains OpenAI divergem do analysis-engine local | Integração frontend requer mapeamento |
+| 1 | **Sem Auth** | **Gap Prioritário.** Qualquer cliente pode chamar o endpoint livremente. |
+| 2 | Sem retry automático | Falhas de rede temporárias resultam em erro imediato. |
+| 3 | Sem rate limiting local | O stress-test pode ser travado apenas pelos limites do provider. |
+| 4 | Validação rasa de arrays | O DTO garante a presença de `measurements` mas não valida o schema interno de cada item. |
 
 ---
 

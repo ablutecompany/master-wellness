@@ -79,10 +79,14 @@
 
 ## 4. Response esperada (sucesso)
 
+HTTP 200 sempre para respostas normalizadas.
+
 ```json
 {
-  "status": "success",
-  "payload": {
+  "ok": true,
+  "provider": "openai",
+  "model": "gpt-4o-mini",
+  "insight": {
     "headline": "Marcadores biológicos dentro dos parâmetros normais",
     "summary": "Os indicadores urinários e fisiológicos apontam para um estado de equilíbrio metabólico e hidratação adequada.",
     "domains": {
@@ -95,6 +99,14 @@
       "Manter ingestão hídrica acima de 2L diários",
       "Registar duração de sono para análise mais completa"
     ]
+  },
+  "meta": {
+    "execMillis": 1250,
+    "tokensUsed": 450,
+    "inputTokens": 320,
+    "outputTokens": 130,
+    "finishReason": "completed",
+    "parsingSource": "output_text"
   }
 }
 ```
@@ -105,8 +117,15 @@
 
 ```json
 {
-  "statusCode": 500,
-  "message": "Falha ao gerar insights: Request failed with status code 401"
+  "ok": false,
+  "error": {
+    "code": "AUTH_FAILED",
+    "message": "Incorrect API key provided",
+    "details": {
+      "execMillis": 45,
+      "model": "gpt-4o-mini"
+    }
+  }
 }
 ```
 

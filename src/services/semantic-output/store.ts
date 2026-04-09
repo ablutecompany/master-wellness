@@ -20,7 +20,11 @@ export class SemanticOutputStore {
       staleAfterMs: 300000,
       version: '1.2.0',
       retryCount: 0
-    }
+    },
+    // ── AI Gateway Enrichment (v1.3.0) ──
+    aiStatus: 'idle',
+    aiInsight: undefined,
+    aiError: undefined
   };
 
   private static refreshTimer: any = null;

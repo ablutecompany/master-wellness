@@ -51,7 +51,7 @@ export class AiGatewayService {
 
   async generateInsights(
     dto: GenerateInsightsDto,
-  ): Promise<{ ok: true; provider: string; model: string; insight: any; meta: any } | never> {
+  ): Promise<{ ok: true; provider: string; model: string; insight: any; meta: any }> {
     const startMs = Date.now();
 
     const prompt = [
@@ -80,37 +80,48 @@ export class AiGatewayService {
 
       const execMillis = Date.now() - startMs;
 
-      // ── Parsing determinístico ──────────────────────────────────────
-      // A Responses API retorna output_text como string JSON.
-      // response.data NÃO existe nesta API.
-      const rawText: string | undefined = response?.output_text;
+      // ── Parsing determinístico de duas camadas ──────────────────────
+      let rawText = response?.output_text;
+      let source = 'output_text';
+
+      // Fallback defensivo: extrair do array output se output_text vier vazio
+      if (!rawText && response?.output && Array.isArray(response.output)) {
+        this.logger.debug('output_text vazio, a tentar extrair do array output...');
+        rawText = response.output
+          .filter((item: any) => item.content && Array.isArray(item.content))
+          .flatMap((item: any) => item.content)
+          .filter((c: any) => c.type === 'output_text')
+          .map((c: any) => c.text)
+          .join('\n');
+        source = 'output_array';
+      }
 
       if (!rawText) {
         this.logger.error(
-          'output_text ausente na resposta do provider. Chaves disponíveis: ' +
+          'Falha total de parsing: output_text e output_array vazios. Chaves: ' +
             Object.keys(response || {}).join(', '),
         );
-        throw new Error('Resposta do provider sem output_text');
+        throw new AiGatewayError('PARSE_FAILED', 'Provider não devolveu texto legível');
       }
 
       let parsed: any;
       try {
         parsed = JSON.parse(rawText);
       } catch {
-        this.logger.error('output_text não é JSON válido: ' + rawText.slice(0, 500));
-        throw new Error('output_text do provider não é JSON válido');
+        this.logger.error(`JSON inválido de ${source}: ${rawText.slice(0, 500)}`);
+        throw new AiGatewayError('PARSE_FAILED', `O texto de ${source} não é JSON válido`);
       }
 
       // Validação mínima dos campos obrigatórios
       const required = ['headline', 'summary', 'domains', 'suggestions'];
       const missing = required.filter((k) => !(k in parsed));
       if (missing.length > 0) {
-        this.logger.error('Campos em falta no insight: ' + missing.join(', '));
-        throw new Error('Campos obrigatórios em falta: ' + missing.join(', '));
+        this.logger.error(`Campos em falta no insight (${source}): ${missing.join(', ')}`);
+        throw new AiGatewayError('SCHEMA_MISMATCH', `Campos obrigatórios em falta: ${missing.join(', ')}`);
       }
 
       this.logger.log(
-        `Insight gerado em ${execMillis}ms | model=${response.model || this.model} | usage=${JSON.stringify(response.usage || {})}`,
+        `Insight gerado [source=${source}] em ${execMillis}ms | model=${response.model || this.model} | tokens=${response.usage?.total_tokens ?? '?'}`
       );
 
       return {
@@ -124,20 +135,21 @@ export class AiGatewayService {
           inputTokens: response.usage?.input_tokens ?? null,
           outputTokens: response.usage?.output_tokens ?? null,
           finishReason: response.status ?? null,
+          parsingSource: source,
         },
       };
     } catch (err) {
       const execMillis = Date.now() - startMs;
       const error = err as any;
 
-      // Classificação de erros
+      // Classificação de erros simplificada
       const code = this.classifyError(error);
 
       this.logger.error(
         `Falha ao gerar insights [${code}] em ${execMillis}ms: ${error.message || error}`,
       );
 
-      throw new AiGatewayError(code, error.message || 'Erro desconhecido do provider', {
+      throw new AiGatewayError(code, error.message || 'Erro inesperado do provider', {
         execMillis,
         model: this.model,
       });
@@ -148,14 +160,13 @@ export class AiGatewayService {
     if (err instanceof AiGatewayError) return err.code;
     const msg = (err.message || '').toLowerCase();
     const status = err.status || err.statusCode || 0;
+    
     if (status === 401 || msg.includes('api key')) return 'AUTH_FAILED';
     if (status === 429 || msg.includes('rate limit')) return 'RATE_LIMITED';
-    if (status === 400 || msg.includes('schema')) return 'INVALID_REQUEST';
+    if (status === 400 || msg.includes('schema') || msg.includes('invalid')) return 'INVALID_REQUEST';
     if (status === 404 || msg.includes('model')) return 'MODEL_NOT_FOUND';
-    if (msg.includes('timeout') || msg.includes('ECONNREFUSED')) return 'PROVIDER_UNREACHABLE';
-    if (msg.includes('output_text')) return 'PARSE_FAILED';
-    if (msg.includes('JSON')) return 'PARSE_FAILED';
-    if (msg.includes('campos')) return 'SCHEMA_MISMATCH';
+    if (msg.includes('timeout') || msg.includes('econnrefused')) return 'PROVIDER_UNREACHABLE';
+    
     return 'PROVIDER_ERROR';
   }
 }

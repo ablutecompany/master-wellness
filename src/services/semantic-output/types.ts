@@ -70,6 +70,18 @@ export interface CrossDomainCoherenceView {
   deduplicatedRecommendations: SemanticRecommendationView[];
 }
 
+export interface AiInsight {
+  headline: string;
+  summary: string;
+  domains: {
+    energia_disponibilidade: string;
+    recuperacao_resiliencia: string;
+    digestao_trato_intestinal: string;
+    ritmo_renovacao: string;
+  };
+  suggestions: string[];
+}
+
 export interface SemanticOutputState {
   version: string;
   generatedAt: number;
@@ -78,4 +90,17 @@ export interface SemanticOutputState {
   metadata: SemanticMetadata;
   isLive: boolean;
   crossDomainSummary?: CrossDomainCoherenceView;
+  
+  // ── AI Gateway Enrichment (v1.3.0) ──
+  aiStatus: 'idle' | 'loading' | 'ready' | 'error';
+  aiInsight?: AiInsight;
+  aiError?: {
+    code: string;
+    message: string;
+  };
+  aiMeta?: {
+    provider: string;
+    model: string;
+    execMillis: number;
+  };
 }

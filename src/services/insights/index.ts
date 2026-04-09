@@ -32,16 +32,29 @@ export function getSemanticStatus(): SemanticOutputStatus {
 }
 
 /**
+ * Obter estado da IA Gateway (v1.3.0)
+ */
+export function getAiStatus() {
+  const state = semanticOutputService.getState();
+  return {
+    status: state.aiStatus,
+    error: state.aiError,
+    meta: state.aiMeta
+  };
+}
+
+/**
  * Obter insights formatados para a Shell a partir do Semantic Bundle (PT-PT).
- * Ponto único de verdade para a UI com suporte a Stale.
+ * Ponto único de verdade para a UI com suporte a Stale e Enriquecimento IA.
  */
 export function getSemanticInsights(): UIInsight[] {
   const bundle = semanticOutputService.getBundle();
+  const state = semanticOutputService.getState();
   const activeDomains = ['sleep', 'nutrition', 'general', 'energy', 'recovery', 'performance'];
   
+  const aiInsight = state.aiStatus === 'ready' ? state.aiInsight : null;
+
   return activeDomains.map(d => {
-    // Usamos getDomainOutput em vez de aceder direto no bundle para garantir que 
-    // os Guardrails de Fidelity (anti-falta de insights reais em ready) são despoletados.
     const output = semanticOutputService.getDomainOutput(d);
     
     // ── FALLBACK DETERMINÍSTICO (PT-PT) ──
@@ -54,7 +67,7 @@ export function getSemanticInsights(): UIInsight[] {
         status: 'error' as any,
         isStale: !!output?.isStale,
         paragraph1: 'Não foi possível atualizar esta leitura',
-        paragraph2: 'O recálculo diário não conseguiu completar-se com sucesso. Pode haver uma falha temporária.',
+        paragraph2: 'O recálculo diário não conseguiu completar-se com sucesso.',
         refText1: 'Estado',
         refText2: 'Sem Dados',
         suggestions: []
@@ -70,7 +83,7 @@ export function getSemanticInsights(): UIInsight[] {
         status: 'unavailable',
         isStale: !!output?.isStale,
         paragraph1: 'Ainda sem dados suficientes',
-        paragraph2: 'Para ter acesso a esta interpretação, sincronize uma app aderente ou inicie os primeiros passos.',
+        paragraph2: 'Sincronize uma app aderente para iniciar a interpretação.',
         refText1: 'Estado',
         refText2: 'Sem Dados',
         suggestions: []
@@ -86,7 +99,7 @@ export function getSemanticInsights(): UIInsight[] {
         status: 'insufficient_data',
         isStale: !!output?.isStale,
         paragraph1: 'Faltam mais registos',
-        paragraph2: 'Temos alguns registos, porém precisamos de mais consistência para fechar o padrão.',
+        paragraph2: 'Temos alguns registos, porém precisamos de mais consistência.',
         refText1: 'Métricas',
         refText2: 'A Processar',
         suggestions: []
@@ -103,7 +116,7 @@ export function getSemanticInsights(): UIInsight[] {
         status: 'stale',
         isStale: true,
         paragraph1: 'Dados desatualizados',
-        paragraph2: 'Os indicadores que possuímos estão a perder a validade. Refresque a sua última medição.',
+        paragraph2: 'Os indicadores estão a perder validade. Refresque a sua última medição.',
         refText1: 'Estado',
         refText2: 'Desatualizado',
         suggestions: []
@@ -111,6 +124,30 @@ export function getSemanticInsights(): UIInsight[] {
     }
 
     const { status, statusLabel, score, band, mainInsight, recommendations } = output;
+
+    // ── ENRIQUECIMENTO COM BACKEND IA (v1.3.0) ──
+    let p1 = mainInsight?.summary || statusLabel || 'Estabilidade Detetada';
+    let p2 = mainInsight?.description || 'Os seus registos apontam para equilíbrio nesta área.';
+    let sugs = (recommendations || []).map((r: any) => ({ title: r.title, desc: r.actionable }));
+
+    if (aiInsight) {
+      // Mapeamento explícito de domínios Backend -> Frontend
+      if (d === 'energy' && aiInsight.domains.energia_disponibilidade) {
+        p2 = aiInsight.domains.energia_disponibilidade;
+      } else if (d === 'recovery' && aiInsight.domains.recuperacao_resiliencia) {
+        p2 = aiInsight.domains.recuperacao_resiliencia;
+      } else if (d === 'nutrition' && aiInsight.domains.digestao_trato_intestinal) {
+        p2 = aiInsight.domains.digestao_trato_intestinal;
+      } else if (d === 'general') {
+        // FOCO PRINCIPAL: Usa headline + summary globais da IA
+        p1 = aiInsight.headline || p1;
+        p2 = aiInsight.summary || p2;
+        // Injetar sugestões do backend se for o card geral
+        if (aiInsight.suggestions && aiInsight.suggestions.length > 0) {
+          sugs = aiInsight.suggestions.map(s => ({ title: 'Sugestão IA', desc: s }));
+        }
+      }
+    }
 
     return {
       domain: d as any,
@@ -120,14 +157,11 @@ export function getSemanticInsights(): UIInsight[] {
       band,
       status: status as any,
       isStale: false,
-      paragraph1: mainInsight?.summary || statusLabel || 'Tudo Regular',
-      paragraph2: mainInsight?.description || 'Os seus registos apontam para estabilidade nesta área.',
-      refText1: 'Sinais base',
-      refText2: 'Analisados',
-      suggestions: (recommendations || []).map((r: any) => ({
-        title: r.title,
-        desc: r.actionable
-      }))
+      paragraph1: p1,
+      paragraph2: p2,
+      refText1: aiInsight ? 'Análise IA' : 'Sinais base',
+      refText2: aiInsight ? 'Enriquecida' : 'Analisados',
+      suggestions: sugs
     };
   });
 }

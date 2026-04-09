@@ -45,7 +45,7 @@ export class AiGatewayController {
         ok: false,
         error: {
           code: 'INTERNAL_ERROR',
-          message: (err as Error).message || 'Erro interno inesperado',
+          message: (err as Error).message || 'Erro inesperado no servidor',
         },
       };
     }

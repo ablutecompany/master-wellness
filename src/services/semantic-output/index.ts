@@ -155,25 +155,89 @@ export class SemanticOutputService {
 
   /**
    * FONTE ÚNICA DE VERDADE — Ponto de entrada para qualquer Analysis.
-   * Computa o bundle semântico a partir dos biomarcadores da análise
-   * e injeta-o no store. Tanto Resultados como Leitura AI leem daqui.
+   * 1. Computa bundle semântico LOCAL imediatamente (zero latência).
+   * 2. Dispara pedido assíncrono ao AI Gateway backend.
+   * 3. Quando o backend responde, enriquece o bundle com insights reais.
+   *
+   * Tanto Resultados como Leitura AI leem do store — zero fontes paralelas.
    *
    * @param analysis — pode ser uma análise real ou um demo (source: 'demo')
    */
   static loadAnalysis(analysis: Analysis | null) {
+    // 1. Cancelar qualquer pedido pendente (proteção contra race conditions)
+    const { cancelPendingInsights, generateInsights } = require('../ai-gateway/client');
+    cancelPendingInsights();
+
     if (!analysis) {
-      // Sem análise activa — estado vazio honesto
       const emptyBundle = computeSemanticFromMeasurements([], []);
-      SemanticOutputStore.updateState(emptyBundle as any);
+      SemanticOutputStore.updateState({
+        ...emptyBundle,
+        aiStatus: 'idle',
+        aiInsight: undefined,
+        aiError: undefined
+      } as any);
       SemanticOutputStore.clearDirty();
       return;
     }
+
+    // 2. Computação local instantânea + Iniciar Loading da IA
     const bundle = computeSemanticFromMeasurements(
       analysis.measurements,
       analysis.ecosystemFacts,
     );
-    SemanticOutputStore.updateState(bundle as any);
+    SemanticOutputStore.updateState({
+      ...bundle,
+      aiStatus: 'loading',
+      aiInsight: undefined,
+      aiError: undefined
+    } as any);
     SemanticOutputStore.clearDirty();
+
+    // 3. Pedido assíncrono ao backend
+    this.fetchBackendInsights(analysis, generateInsights);
+  }
+
+  private static async fetchBackendInsights(
+    analysis: Analysis,
+    generateInsights: typeof import('../ai-gateway/client').generateInsights,
+  ) {
+    try {
+      const response = await generateInsights(analysis);
+
+      // null = pedido descartado por troca rápida de análise (race protection)
+      if (!response) return;
+
+      if (response.ok) {
+        SemanticOutputStore.updateState({
+          aiStatus: 'ready',
+          aiInsight: response.insight,
+          aiMeta: {
+            provider: response.provider,
+            model: response.model,
+            execMillis: response.meta.execMillis,
+          },
+          aiError: undefined
+        } as any);
+      } else {
+        console.warn('[AI Gateway] Erro no Backend:', response.error.code);
+        SemanticOutputStore.updateState({
+          aiStatus: 'error',
+          aiError: {
+            code: response.error.code,
+            message: response.error.message,
+          }
+        } as any);
+      }
+    } catch (err: any) {
+      console.warn('[AI Gateway] Erro de rede/runtime:', err.message);
+      SemanticOutputStore.updateState({
+        aiStatus: 'error', 
+        aiError: {
+          code: 'NETWORK_ERROR',
+          message: 'Falha ao contactar o servidor de IA.',
+        }
+      } as any);
+    }
   }
 
   /**

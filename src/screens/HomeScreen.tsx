@@ -31,10 +31,11 @@ import { MiniAppContainer } from '../miniapps/MiniAppContainer';
 import { MiniAppManifest } from '../miniapps/types';
 import { useStore } from '../store/useStore';
 import * as Selectors from '../store/selectors';
-import { getSemanticInsights, getSemanticStatus } from '../services/insights';
+import { getSemanticInsights, getSemanticStatus, getAiStatus } from '../services/insights';
 import { semanticOutputService } from '../services/semantic-output';
 import { createDemoAnalysis, DemoScenarioKey, DEMO_LABELS } from '../services/semantic-output/demo-scenarios';
 import { Analysis } from '../store/types';
+import { AiInsight } from '../services/semantic-output/types';
 
 
 // --- SLOT MACHINE ODOMETER COMPONENT ---
@@ -251,6 +252,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [semanticThemes, setSemanticThemes] = useState(getSemanticInsights());
   const [semanticStatus, setSemanticStatus] = useState(getSemanticStatus());
   const [crossDomainSummary, setCrossDomainSummary] = useState(semanticOutputService.getCrossDomainSummary());
+  
+  // ── ESTADO DA IA (v1.3.0) ──
+  const [aiState, setAiState] = useState(getAiStatus());
 
   // ── FONTE ÚNICA DE VERDADE ──────────────────────────────────────────────────────
   // activeAnalysis muda → loadAnalysis injeta bundle calculado → SemanticOutputStore
@@ -265,6 +269,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     const unsubscribe = semanticOutputService.subscribe(() => {
       setSemanticThemes(getSemanticInsights());
       setSemanticStatus(getSemanticStatus());
+      setAiState(getAiStatus());
       setCrossDomainSummary(semanticOutputService.getCrossDomainSummary());
 
       // Telemetria: Rastro de visualização de domínios na Home
@@ -1294,8 +1299,77 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
                         return (
                           <View style={{ width: '100%' }}>
-                            {/* BLOCO A: Principal (CrossDomain ou Highest Priority) */}
-                            {hasCrossDomain ? (
+                            {/* ESTADO DE CARREGAMENTO / ERRO DA IA (M3) */}
+                            {aiState.status === 'loading' && (
+                              <View style={{ marginBottom: 24, padding: 32, backgroundColor: 'rgba(0, 242, 255, 0.03)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.15)', alignItems: 'center' }}>
+                                <ActivityIndicator color="#00F2FF" size="small" style={{ marginBottom: 16 }} />
+                                <Typography style={{ color: '#00F2FF', fontSize: 13, fontWeight: '700', letterSpacing: 1, textAlign: 'center' }}>
+                                  INTERPRETANDO SINAIS...
+                                </Typography>
+                                <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 4, textAlign: 'center' }}>
+                                  A cruzar padrões biográficos com a rede neuronal.
+                                </Typography>
+                              </View>
+                            )}
+
+                            {aiState.status === 'error' && (
+                              <View style={{ marginBottom: 24, padding: 24, backgroundColor: 'rgba(255, 96, 96, 0.05)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255, 96, 96, 0.2)' }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                                  <X size={18} color="#FF6060" style={{ marginRight: 8 }} />
+                                  <Typography style={{ color: '#FF6060', fontWeight: '800', fontSize: 12, letterSpacing: 1 }}>FALHA NA ANÁLISE</Typography>
+                                </View>
+                                <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18, marginBottom: 16 }}>
+                                  {aiState.error?.message || 'Não foi possível contactar o motor de IA.'}
+                                </Typography>
+                                <TouchableOpacity 
+                                  onPress={() => semanticOutputService.loadAnalysis(activeAnalysis)}
+                                  style={{ backgroundColor: 'rgba(255, 96, 96, 0.1)', paddingVertical: 10, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255, 96, 96, 0.2)' }}
+                                >
+                                  <Typography style={{ color: '#FF6060', fontWeight: '700', fontSize: 11 }}>TENTAR NOVAMENTE</Typography>
+                                </TouchableOpacity>
+                              </View>
+                            )}
+
+                            {/* BLOCO A: Principal (FOCO PRINCIPAL M3) */}
+                            {aiState.status === 'ready' && aiState.status !== 'loading' && (
+                              <View style={{ marginBottom: 24, padding: 24, backgroundColor: 'rgba(0, 242, 255, 0.05)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.3)' }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                    <Sparkles size={18} color="#00F2FF" style={{ marginRight: 8 }} />
+                                    <Typography style={{ color: '#00F2FF', fontWeight: '800', fontSize: 13, letterSpacing: 1.5, textTransform: 'uppercase' }}>
+                                      Foco Principal
+                                    </Typography>
+                                  </View>
+                                  {aiState.meta && (
+                                    <Typography style={{ color: 'rgba(0, 242, 255, 0.4)', fontSize: 9, fontWeight: '700' }}>
+                                      {aiState.meta.model.split('/')[1]?.toUpperCase() || aiState.meta.model.toUpperCase()}
+                                    </Typography>
+                                  )}
+                                </View>
+                                
+                                <Typography style={{ color: '#fff', fontSize: 22, fontWeight: '800', lineHeight: 28, marginBottom: 12 }}>
+                                  {aiState.insight?.headline || "Síntese em Processamento"}
+                                </Typography>
+                                
+                                <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 15, lineHeight: 22, fontWeight: '500', marginBottom: 16 }}>
+                                  {aiState.insight?.summary || "Estamos a fechar a leitura biográfica para esta análise."}
+                                </Typography>
+
+                                {aiState.insight?.suggestions && aiState.insight.suggestions.length > 0 && (
+                                  <View style={{ backgroundColor: 'rgba(0,0,0,0.3)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.1)' }}>
+                                    <Typography style={{ color: '#00F2FF', fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8, fontWeight: '700' }}>
+                                      Prioridade Sugerida
+                                    </Typography>
+                                    <Typography style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, lineHeight: 19 }}>
+                                      {aiState.insight.suggestions[0]}
+                                    </Typography>
+                                  </View>
+                                )}
+                              </View>
+                            )}
+
+                            {/* Caso a IA ainda esteja em IDLE e não haja CrossDomain (Fallback) */}
+                            {aiState.status === 'idle' && hasCrossDomain && (
                               <View style={{ marginBottom: 24, padding: 20, backgroundColor: 'rgba(0, 242, 255, 0.05)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.3)' }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
                                   <Zap size={18} color="#00F2FF" style={{ marginRight: 8 }} />
@@ -1306,18 +1380,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                                 <Typography style={{ color: 'rgba(255,255,255,0.95)', fontSize: 15, lineHeight: 22, fontWeight: '500', marginBottom: 16 }}>
                                   {crossDomainSummary.prioritySignals[0] || crossDomainSummary.summary}
                                 </Typography>
-                                {crossDomainSummary.deduplicatedRecommendations && crossDomainSummary.deduplicatedRecommendations.length > 0 && (
-                                  <View style={{ backgroundColor: 'rgba(0,0,0,0.3)', padding: 12, borderRadius: 12 }}>
-                                    <Typography style={{ color: '#00F2FF', fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6, fontWeight: '700' }}>
-                                      Ação Sugerida
-                                    </Typography>
-                                    <Typography style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 18 }}>
-                                      {crossDomainSummary.deduplicatedRecommendations[0].actionable}
-                                    </Typography>
-                                  </View>
-                                )}
                               </View>
-                            ) : highestPriority ? (
+                            )}
                               <TouchableOpacity
                                 style={{ marginBottom: 24, padding: 20, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
                                 activeOpacity={0.7}

@@ -1,10 +1,12 @@
-import { IsString, IsArray, IsBoolean, IsOptional } from 'class-validator';
+import { IsString, IsArray, IsBoolean, IsOptional, IsNotEmpty } from 'class-validator';
 
 export class GenerateInsightsDto {
   @IsString()
+  @IsNotEmpty()
   analysisId: string;
 
   @IsString()
+  @IsNotEmpty()
   selectedDate: string;
 
   @IsArray()
@@ -14,7 +16,8 @@ export class GenerateInsightsDto {
   events: any[];
 
   @IsArray()
-  ecosystemFacts: any[];
+  @IsOptional()
+  ecosystemFacts?: any[];
 
   @IsBoolean()
   isDemo: boolean;

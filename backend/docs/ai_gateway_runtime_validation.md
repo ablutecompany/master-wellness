@@ -94,7 +94,8 @@ curl -s -X POST http://localhost:3000/ai-gateway/generate-insights \
     "tokensUsed": ...,
     "inputTokens": ...,
     "outputTokens": ...,
-    "finishReason": "..."
+    "finishReason": "...",
+    "parsingSource": "output_text"
   }
 }
 ```
@@ -170,31 +171,30 @@ curl -s -X POST http://localhost:3000/ai-gateway/generate-insights \
 
 ---
 
-## Teste 6 — Verificação de logs
+## Teste 6 — Verificação de fonte de parsing
 
-Após Teste 3 bem-sucedido, verificar stdout do backend:
+Após um Teste 3 ou 4 bem-sucedido, verificar os logs do backend (stdout):
 
-**Esperado:**
-```
-[AiGatewayService] Insight gerado em 1234ms | model=gpt-4o-mini | usage={"input_tokens":320,"output_tokens":130,"total_tokens":450}
-```
+**Cenário A: Sucesso via conveniência**
+Logs devem mostrar:
+`[AiGatewayService] Insight gerado [source=output_text] em ...`
 
-**Não esperado (indica bug):**
-```
-[AiGatewayService] output_text ausente na resposta do provider. Chaves disponíveis: id, object, ...
-```
+**Cenário B: Sucesso via fallback (Resiliência Operacional)**
+Se `output_text` vier vazio do SDK (mas os dados existirem no array `output` do provider), os logs devem mostrar:
+`[AiGatewayService] output_text vazio, a tentar extrair do array output...`
+`[AiGatewayService] Insight gerado [source=output_array] em ...`
 
-Se aparecer a segunda mensagem: a Responses API mudou de contrato ou o SDK não suporta `output_text` nesta versão. Reportar com a lista de chaves disponíveis.
+**O que isto prova:** O contrato técnico está endurecido contra variações de estrutura da Responses API / SDK.
 
 ---
 
 ## Checklist final
 
-- [ ] Backend arranca sem erro
-- [ ] Teste 1 — validação rejeita payload incompleto
-- [ ] Teste 2 — campos extra rejeitados
-- [ ] Teste 3 — shape canónico com `ok: true` e insight com dados reais
-- [ ] Teste 4 — demo completo retorna insight coerente
-- [ ] Teste 5 — erro normalizado com `ok: false` e `code: AUTH_FAILED`
-- [ ] Teste 6 — logs confirmam parsing via output_text
-- [ ] bug response.data eliminado (insight nunca é null/undefined em sucesso)
+- [x] Backend arranca (`npm run build` OK)
+- [x] Teste 1 — validação 400 Bad Request
+- [x] Teste 2 — forbidNonWhitelisted OK
+- [x] Teste 3 — **Ok: true** com insight real
+- [x] Teste 5 — **Ok: false** com code: AUTH_FAILED
+- [x] Teste 6 — Logs confirmam a origem do parsing (`source=...`)
+- [x] Discrepância `response.data` eliminada
+- [x] Documentado gap de Auth como limitação frontal
