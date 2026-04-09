@@ -163,6 +163,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [bioTab, setBioTab] = useState(0);
   const [themesOpen, setThemesOpen] = useState(false);
   const [dataOpen, setDataOpen] = useState(false);
+  const [themesInteractive, setThemesInteractive] = useState(false);
+  const [dataInteractive, setDataInteractive] = useState(false);
 
   // ── FONTE ÚNICA DE VERDADE ──────────────────────────────────────────────────────
   // activeAnalysis: se Demo activo usa a análise temporária (source:'demo').
@@ -320,21 +322,22 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       // Fecha ambos os painéis limpo
       setDataOpen(false);
       setThemesOpen(false);
-      Animated.spring(dataAnim, { toValue: width, bounciness: 0, useNativeDriver: false }).start();
-      Animated.spring(themesAnim, { toValue: -width, bounciness: 0, useNativeDriver: false }).start();
+      Animated.spring(dataAnim, { toValue: width, bounciness: 0, useNativeDriver: false }).start(() => setDataInteractive(false));
+      Animated.spring(themesAnim, { toValue: -width, bounciness: 0, useNativeDriver: false }).start(() => setThemesInteractive(false));
       return;
     }
 
     // ── Activar cenário Demo ───────────────────────────────────────────────
     // 1. Fecha Resultados (estado imediato — não depende de animação terminar)
     setDataOpen(false);
-    Animated.spring(dataAnim, { toValue: width, bounciness: 0, useNativeDriver: false }).start();
+    Animated.spring(dataAnim, { toValue: width, bounciness: 0, useNativeDriver: false }).start(() => setDataInteractive(false));
 
     // 2. Cria análise demo temporária (não vai para o store)
     const demo = createDemoAnalysis(key as DemoScenarioKey);
     setDemoAnalysis(demo);
 
     // 3. Abre painel Leitura AI com ligeiro atraso para o fecho visual do Resultados
+    setThemesInteractive(true);
     setThemesOpen(true);
     requestAnimationFrame(() => {
       Animated.spring(themesAnim, { toValue: 0, useNativeDriver: false }).start();
@@ -461,21 +464,27 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   // ── Panel open/close helpers (sync animation + state for web backdrop) ────
   const openThemes = () => {
     if (dataOpen) return; // prevent overlap: don't open if Dados is open
+    setThemesInteractive(true);
     setThemesOpen(true);
     Animated.spring(themesAnim, { toValue: 0, bounciness: 0, useNativeDriver: false }).start();
   };
   const closeThemes = () => {
     setThemesOpen(false);
-    Animated.spring(themesAnim, { toValue: -width, bounciness: 0, useNativeDriver: false }).start();
+    Animated.spring(themesAnim, { toValue: -width, bounciness: 0, useNativeDriver: false }).start(() => {
+      setThemesInteractive(false);
+    });
   };
   const openData = () => {
     if (themesOpen) return; // prevent overlap: don't open if Temas is open
+    setDataInteractive(true);
     setDataOpen(true);
     Animated.spring(dataAnim, { toValue: 0, bounciness: 0, useNativeDriver: false }).start();
   };
   const closeData = () => {
     setDataOpen(false);
-    Animated.spring(dataAnim, { toValue: width, bounciness: 0, useNativeDriver: false }).start();
+    Animated.spring(dataAnim, { toValue: width, bounciness: 0, useNativeDriver: false }).start(() => {
+      setDataInteractive(false);
+    });
   };
 
   // Keep edge gesture callbacks up to date every render
@@ -830,32 +839,29 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       </View>
 
       {/* ── BACKDROP: darkens home and allows tap-to-close on home side only ── */}
-      {themesOpen && (
-        <Animated.View
-          style={[StyleSheet.absoluteFillObject, { backgroundColor: '#000', opacity: themesBackdropOpacity, zIndex: 10 }]}
-          pointerEvents="box-none"
-        >
+      <Animated.View
+        style={[StyleSheet.absoluteFillObject, { backgroundColor: '#000', opacity: themesBackdropOpacity, zIndex: 10 }]}
+        pointerEvents={themesOpen ? "box-none" : "none"}
+      >
           {/* Only RIGHT half is pressable — left is the panel, right is the shifted home */}
           <TouchableOpacity
             style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '50%' }}
             activeOpacity={1}
             onPress={closeThemes}
           />
-        </Animated.View>
-      )}
-      {dataOpen && (
-        <Animated.View
-          style={[StyleSheet.absoluteFillObject, { backgroundColor: '#000', opacity: dataBackdropOpacity, zIndex: 10 }]}
-          pointerEvents="box-none"
-        >
+      </Animated.View>
+
+      <Animated.View
+        style={[StyleSheet.absoluteFillObject, { backgroundColor: '#000', opacity: dataBackdropOpacity, zIndex: 10 }]}
+        pointerEvents={dataOpen ? "box-none" : "none"}
+      >
           {/* Only LEFT half is pressable — right is the panel, left is the shifted home */}
           <TouchableOpacity
             style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '50%' }}
             activeOpacity={1}
             onPress={closeData}
           />
-        </Animated.View>
-      )}
+      </Animated.View>
 
 
       {/* ── WEB EDGE GESTURE ZONES (only when both panels closed) ──────────── */}
@@ -1114,7 +1120,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
 
       {/* ── SIDE PANEL: THEMES (LEFT) ─────────────────────────────────────── */}
-      <Animated.View style={[styles.sidePanel, styles.leftPanel, { transform: [{ translateX: themesAnim }] }]}>
+      <Animated.View style={[styles.sidePanel, styles.leftPanel, { transform: [{ translateX: themesAnim }] }]} pointerEvents={themesInteractive ? 'auto' : 'none'}>
         <BlurView intensity={120} tint="dark" style={StyleSheet.absoluteFill}>
           {/* SCRIM DE ESCURECIMENTO ADICIONAL PARA CORTAR BLEED-THROUGH */}
           <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0, 0, 0, 0.4)', zIndex: -1 }]} />
@@ -1476,7 +1482,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         const safeBioTab = bioTab >= factualBioCategories.length ? 0 : bioTab;
 
         return (
-          <Animated.View style={[styles.sidePanel, styles.rightPanel, { transform: [{ translateX: dataAnim }], backgroundColor: '#020306' }]}>
+          <Animated.View style={[styles.sidePanel, styles.rightPanel, { transform: [{ translateX: dataAnim }], backgroundColor: '#020306' }]} pointerEvents={dataInteractive ? 'auto' : 'none'}>
             <View style={[StyleSheet.absoluteFill, { backgroundColor: '#020306' }]} />
             <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill}>
               <View style={styles.panelHeader}>
