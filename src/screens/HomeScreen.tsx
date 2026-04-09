@@ -487,13 +487,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   };
   const closeData = () => {
     setDataOpen(false);
-    Animated.spring(dataAnim, {
-      toValue: width,
-      bounciness: 0,
-      speed: 14,
-      useNativeDriver: false // Mantemos false para interpolar layout home
-    }).start(() => {
-      setDataInteractive(false);
+    requestAnimationFrame(() => {
+      Animated.spring(dataAnim, {
+        toValue: width,
+        bounciness: 0,
+        speed: 14,
+        useNativeDriver: false
+      }).start(() => {
+        setDataInteractive(false);
+      });
     });
   };
 
@@ -1562,14 +1564,14 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             <View style={[StyleSheet.absoluteFill, { backgroundColor: '#020306' }]} />
             <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill}>
               <View style={styles.panelHeader}>
+                <Typography variant="h2" style={styles.panelTitle}>Bioanálise</Typography>
                 <TouchableOpacity
                   onPress={closeData}
                   style={{ padding: 24 }}
-                  hitSlop={{ top: 24, bottom: 24, left: 24, right: 24 }}
+                  hitSlop={{ top: 24, bottom: 40, left: 40, right: 24 }}
                 >
                   <X size={24} color="rgba(255,255,255,0.8)" />
                 </TouchableOpacity>
-                <Typography variant="h2" style={styles.panelTitle}>Bioanálise</Typography>
 
                 {/* Script de limpeza para remover artefatos de debug (Getting DOM...) no browser */}
                 {Platform.OS === 'web' && (
@@ -2463,7 +2465,7 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: '100%',
-    zIndex: 500,
+    zIndex: 10000,
   },
   leftPanel: {
     left: 0,
