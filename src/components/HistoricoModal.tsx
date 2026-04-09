@@ -16,15 +16,17 @@ import { Activity, Zap, Target, Heart, Moon, X, ChevronRight, Calendar } from 'l
 // O Modal agora foca-se exclusivamente na navegação temporal
 
 // ── Modal ─────────────────────────────────────────────────────────────────────
+import { Analysis } from '../store/types';
+
 interface Props {
   visible: boolean;
   onClose: () => void;
-  availableDates?: string[];
-  selectedDate?: string | null;
-  onSelectDate?: (date: string) => void;
+  analyses?: Analysis[];
+  activeAnalysisId?: string | null;
+  onSelectAnalysis?: (id: string) => void;
 }
 
-export const HistoricoModal: React.FC<Props> = ({ visible, onClose, availableDates = [], selectedDate, onSelectDate }) => {
+export const HistoricoModal: React.FC<Props> = ({ visible, onClose, analyses = [], activeAnalysisId, onSelectAnalysis }) => {
   const { width } = useWindowDimensions();
   const cardW = Math.min(width - 32, 460);
   const chartW = cardW - 48;
@@ -59,18 +61,18 @@ export const HistoricoModal: React.FC<Props> = ({ visible, onClose, availableDat
             <View style={{ paddingVertical: 8 }}>
               <Typography style={[styles.headerTitle, { color: 'rgba(255,255,255,0.4)', marginBottom: 16 }]}>SELECIONAR ANÁLISE</Typography>
               
-              {availableDates.length > 0 ? (
-                availableDates.map((date, idx) => {
-                  const isSelected = date === selectedDate;
+              {analyses.length > 0 ? (
+                analyses.map((analysis, idx) => {
+                  const isSelected = analysis.id === activeAnalysisId;
                   const isLatest = idx === 0;
-                  const dateObj = new Date(date);
+                  const dateObj = new Date(analysis.analysisDate);
                   const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
                   const displayDate = `${dateObj.getDate().toString().padStart(2, '0')} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
 
                   return (
                     <TouchableOpacity
-                      key={date}
-                      onPress={() => onSelectDate?.(date)}
+                      key={analysis.id}
+                      onPress={() => onSelectAnalysis?.(analysis.id)}
                       style={[
                         styles.dateRow,
                         isSelected && { borderColor: '#00F2FF', backgroundColor: 'rgba(0, 242, 255, 0.05)' }
