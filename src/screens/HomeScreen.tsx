@@ -841,7 +841,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       {/* ── BACKDROP: darkens home and allows tap-to-close on home side only ── */}
       <Animated.View
         style={[StyleSheet.absoluteFillObject, { backgroundColor: '#000', opacity: themesBackdropOpacity, zIndex: 10 }]}
-        pointerEvents={themesOpen ? "box-none" : "none"}
+        pointerEvents={themesInteractive ? "box-none" : "none"}
       >
           {/* Only RIGHT half is pressable — left is the panel, right is the shifted home */}
           <TouchableOpacity
@@ -853,7 +853,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
       <Animated.View
         style={[StyleSheet.absoluteFillObject, { backgroundColor: '#000', opacity: dataBackdropOpacity, zIndex: 10 }]}
-        pointerEvents={dataOpen ? "box-none" : "none"}
+        pointerEvents={dataInteractive ? "box-none" : "none"}
       >
           {/* Only LEFT half is pressable — right is the panel, left is the shifted home */}
           <TouchableOpacity
