@@ -486,16 +486,14 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     Animated.spring(dataAnim, { toValue: 0, bounciness: 0, useNativeDriver: false }).start();
   };
   const closeData = () => {
-    setDataOpen(false);
-    requestAnimationFrame(() => {
-      Animated.spring(dataAnim, {
-        toValue: width,
-        bounciness: 0,
-        speed: 14,
-        useNativeDriver: false
-      }).start(() => {
-        setDataInteractive(false);
-      });
+    Animated.spring(dataAnim, {
+      toValue: width,
+      bounciness: 0,
+      speed: 14,
+      useNativeDriver: false
+    }).start(() => {
+      setDataOpen(false);
+      setDataInteractive(false);
     });
   };
 
@@ -893,7 +891,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
       <Animated.View
         {...mainPanResponder.panHandlers}
-        pointerEvents={(dataOpen || themesOpen) ? 'none' : 'auto'}
+        pointerEvents={(dataInteractive || themesInteractive) ? 'none' : 'auto'}
         style={[
           styles.mainView,
           {
@@ -1565,14 +1563,14 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             <View style={[StyleSheet.absoluteFill, { backgroundColor: '#020306' }]} />
             <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill}>
               <View style={styles.panelHeader}>
-                <Typography variant="h2" style={styles.panelTitle}>Bioanálise</Typography>
                 <TouchableOpacity
                   onPress={closeData}
-                  style={{ padding: 24 }}
-                  hitSlop={{ top: 24, bottom: 40, left: 40, right: 24 }}
+                  style={{ padding: 24, zIndex: 100 }}
+                  hitSlop={{ top: 24, bottom: 40, left: 24, right: 40 }}
                 >
                   <X size={24} color="rgba(255,255,255,0.8)" />
                 </TouchableOpacity>
+                <Typography variant="h2" style={styles.panelTitle}>Bioanálise</Typography>
 
                 {/* Script de limpeza para remover artefatos de debug (Getting DOM...) no browser */}
                 {Platform.OS === 'web' && (
