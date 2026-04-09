@@ -893,6 +893,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
       <Animated.View
         {...mainPanResponder.panHandlers}
+        pointerEvents={(dataOpen || themesOpen) ? 'none' : 'auto'}
         style={[
           styles.mainView,
           {
