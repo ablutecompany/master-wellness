@@ -9,9 +9,8 @@ import {
   Platform,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
-import Svg, { Polyline, Circle, Line, Text as SvgText, G } from 'react-native-svg';
 import { Typography } from './Base';
-import { Activity, Zap, Target, Heart, Moon, X, ChevronRight, Calendar } from 'lucide-react-native';
+import { X, ChevronRight, Calendar } from 'lucide-react-native';
 
 // O Modal agora foca-se exclusivamente na navegação temporal
 
