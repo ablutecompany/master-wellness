@@ -314,26 +314,30 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const handleSelectDemo = (key: any) => {
     setShowDemoModal(false);
 
+    // ── Desativar Demo (key === null) ──────────────────────────────────────
+    if (!key) {
+      setDemoAnalysis(null);
+      // Fecha ambos os painéis limpo
+      setDataOpen(false);
+      setThemesOpen(false);
+      Animated.spring(dataAnim, { toValue: width, bounciness: 0, useNativeDriver: false }).start();
+      Animated.spring(themesAnim, { toValue: -width, bounciness: 0, useNativeDriver: false }).start();
+      return;
+    }
+
+    // ── Activar cenário Demo ───────────────────────────────────────────────
+    // 1. Fecha Resultados (estado imediato — não depende de animação terminar)
+    setDataOpen(false);
+    Animated.spring(dataAnim, { toValue: width, bounciness: 0, useNativeDriver: false }).start();
+
+    // 2. Cria análise demo temporária (não vai para o store)
+    const demo = createDemoAnalysis(key as DemoScenarioKey);
+    setDemoAnalysis(demo);
+
+    // 3. Abre painel Leitura AI com ligeiro atraso para o fecho visual do Resultados
+    setThemesOpen(true);
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-
-        // Fecha Resultados (se aberto)
-        Animated.spring(dataAnim, { toValue: width, bounciness: 0, useNativeDriver: false }).start(({ finished }) => {
-          if (!finished) return;
-          setDataOpen(false);
-
-          // Cria análise demo temporária (não vai para o store)
-          const demo = createDemoAnalysis(key as DemoScenarioKey);
-          setDemoAnalysis(demo);
-          setThemesOpen(true);
-
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              Animated.spring(themesAnim, { toValue: 0, useNativeDriver: false }).start();
-            });
-          });
-        });
-      });
+      Animated.spring(themesAnim, { toValue: 0, useNativeDriver: false }).start();
     });
   };
 
@@ -461,7 +465,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     Animated.spring(themesAnim, { toValue: 0, bounciness: 0, useNativeDriver: false }).start();
   };
   const closeThemes = () => {
-    Animated.spring(themesAnim, { toValue: -width, bounciness: 0, useNativeDriver: false }).start(() => setThemesOpen(false));
+    setThemesOpen(false);
+    Animated.spring(themesAnim, { toValue: -width, bounciness: 0, useNativeDriver: false }).start();
   };
   const openData = () => {
     if (themesOpen) return; // prevent overlap: don't open if Temas is open
@@ -469,7 +474,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     Animated.spring(dataAnim, { toValue: 0, bounciness: 0, useNativeDriver: false }).start();
   };
   const closeData = () => {
-    Animated.spring(dataAnim, { toValue: width, bounciness: 0, useNativeDriver: false }).start(() => setDataOpen(false));
+    setDataOpen(false);
+    Animated.spring(dataAnim, { toValue: width, bounciness: 0, useNativeDriver: false }).start();
   };
 
   // Keep edge gesture callbacks up to date every render
