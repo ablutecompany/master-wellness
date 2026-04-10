@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AiGatewayService } from './ai-gateway.service';
 import { AiGatewayController } from './ai-gateway.controller';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
+  imports: [PrismaModule],
   providers: [AiGatewayService],
   controllers: [AiGatewayController],
   exports: [AiGatewayService],

@@ -63,9 +63,9 @@ model User {
 }
 
 model UserProfile {
-  id                    String   @id @default(uuid())
-  userId                String   @unique
-  user                  User     @relation(fields: [userId], references: [id])
+  id                    String   @id @map("id")
+  activeAnalysisId      String?  @map("active_analysis_id")
+  activeAnalysis        Analysis? @relation("ActiveAnalysis", fields: [activeAnalysisId], references: [id])
   height                Float
   baseWeight            Float
   mainGoal              String
@@ -83,7 +83,80 @@ model UserProfile {
   menstrualCycleInfo    Json?
   contextualNotes       String?
   completenessScore     Int      @default(0)
-  updatedAt             DateTime @updatedAt
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  analyses              Analysis[] @relation("ProfileAnalyses")
+  user                  User?    @relation(fields: [id], references: [id])
+
+  @@map("profiles")
+}
+
+model Analysis {
+  id               String   @id @default(uuid()) @map("id")
+  ownerId          String   @map("owner_id")
+  owner            UserProfile @relation("ProfileAnalyses", fields: [ownerId], references: [id])
+  title            String?
+  analysisDate     DateTime @default(now()) @map("analysis_date")
+  source           String   @default("manual")
+  status           String   @default("active")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  activeInProfiles UserProfile[] @relation("ActiveAnalysis")
+  measurements     AnalysisMeasurement[]
+  events           AnalysisEvent[]
+  insights         AnalysisInsight[]
+
+  @@map("analyses")
+}
+
+model AnalysisMeasurement {
+  id            String   @id @default(uuid()) @map("id")
+  analysisId    String   @map("analysis_id")
+  analysis      Analysis @relation(fields: [analysisId], references: [id])
+  category      String
+  metricKey     String   @map("metric_key")
+  label         String?
+  valueNumeric  Float?   @map("value_numeric")
+  valueText     String?  @map("value_text")
+  valueBoolean  Boolean? @map("value_boolean")
+  unit          String?
+  status        String   @default("active")
+  measuredAt    DateTime @default(now()) @map("measured_at")
+  displayOrder  Int      @default(0) @map("display_order")
+  payload       Json?
+  sourceDetails Json?    @map("source_details")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("analysis_measurements")
+}
+
+model AnalysisEvent {
+  id         String   @id @default(uuid()) @map("id")
+  analysisId String   @map("analysis_id")
+  analysis   Analysis @relation(fields: [analysisId], references: [id])
+  eventType  String   @map("event_type")
+  occurredAt DateTime @default(now()) @map("occurred_at")
+  payload    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("analysis_events")
+}
+
+model AnalysisInsight {
+  id            String   @id @default(uuid()) @map("id")
+  analysisId    String   @map("analysis_id")
+  analysis      Analysis @relation(fields: [analysisId], references: [id])
+  provider      String
+  model         String
+  promptVersion String?  @map("prompt_version")
+  language      String   @default("pt")
+  status        String   @default("ready")
+  summaryText   String?  @map("summary_text")
+  outputJson    Json     @map("output_json")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("analysis_insights")
 }
 
 model UserPreferences {

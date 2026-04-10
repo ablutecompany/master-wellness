@@ -1,17 +1,29 @@
 import { StateCreator } from 'zustand';
 import { AppState, Analysis } from '../types';
 
+import { ProfileService } from '../../services/user/profileService';
+
 export const createAnalysesSlice: StateCreator<AppState, [], [], Pick<AppState,
-  'analyses' | 'activeAnalysisId' | 'addAnalysis' | 'removeAnalysis' | 'setActiveAnalysisId'
->> = (set) => ({
+  'analyses' | 'activeAnalysisId' | 'addAnalysis' | 'removeAnalysis' | 'setActiveAnalysisId' | 'setAnalyses'
+>> = (set, get) => ({
   analyses: [],
   activeAnalysisId: null,
 
-  addAnalysis: (analysis: Analysis) => set(state => ({
-    analyses: [analysis, ...state.analyses.filter(a => a.id !== analysis.id)],
-    // Quando uma análise é adicionada torna-se automaticamente a activa
-    activeAnalysisId: analysis.id,
-  })),
+  setAnalyses: (analyses: Analysis[]) => set({ analyses }),
+
+  addAnalysis: (analysis: Analysis) => {
+    set(state => ({
+      analyses: [analysis, ...state.analyses.filter(a => a.id !== analysis.id)],
+      // Quando uma análise é adicionada torna-se automaticamente a activa
+      activeAnalysisId: analysis.id,
+    }));
+    
+    // Persistir se for uma análise real (não demo)
+    const state = get();
+    if (analysis.source !== 'demo' && state.sessionToken) {
+      ProfileService.updateActiveAnalysis(state.sessionToken, analysis.id);
+    }
+  },
 
   removeAnalysis: (id: string) => set(state => ({
     analyses: state.analyses.filter(a => a.id !== id),
@@ -21,5 +33,14 @@ export const createAnalysesSlice: StateCreator<AppState, [], [], Pick<AppState,
       : state.activeAnalysisId,
   })),
 
-  setActiveAnalysisId: (id: string | null) => set({ activeAnalysisId: id }),
+  setActiveAnalysisId: (id: string | null) => {
+    set({ activeAnalysisId: id });
+    
+    const state = get();
+    // Persistir apenas se a nova análise existir e não for demo
+    const analysis = state.analyses.find(a => a.id === id);
+    if (id && analysis?.source !== 'demo' && state.sessionToken) {
+      ProfileService.updateActiveAnalysis(state.sessionToken, id);
+    }
+  },
 });

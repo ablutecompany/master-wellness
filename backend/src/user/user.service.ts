@@ -34,17 +34,25 @@ export class UserService {
     });
   }
 
-  async findById(id: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
-      where: { id },
-      include: { profile: true, preferences: true },
+  async getProfile(userId: string) {
+    return this.prisma.userProfile.findUnique({
+      where: { id: userId },
     });
   }
 
   async updateProfile(userId: string, data: Prisma.UserProfileUpdateInput) {
     return this.prisma.userProfile.update({
-      where: { userId },
+      where: { id: userId },
       data,
+    });
+  }
+
+  async updateActiveAnalysis(userId: string, analysisId: string | null) {
+    return this.prisma.userProfile.update({
+      where: { id: userId },
+      data: {
+        activeAnalysisId: analysisId,
+      },
     });
   }
 }

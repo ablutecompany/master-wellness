@@ -43,6 +43,7 @@ export interface UserProfile {
   age?: number;
   weight?: number;
   height?: number;
+  activeAnalysisId?: string;
 }
 
 export interface Measurement {
@@ -105,6 +106,7 @@ export interface AppState {
   addMeasurement: (measurement: Measurement) => void;
   addAnalysis: (analysis: Analysis) => void;
   removeAnalysis: (id: string) => void;
+  setAnalyses: (analyses: Analysis[]) => void;
   setActiveAnalysisId: (id: string | null) => void;
   setNfcLoading: (loading: boolean) => void;
   setIsMeasuring: (measuring: boolean) => void;

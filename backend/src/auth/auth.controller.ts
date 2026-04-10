@@ -1,28 +1,25 @@
-import { Controller, Post, Body, Get, Headers, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, UseGuards, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   /**
-   * Endpoint de Login.
-   * Recebe credenciais governadas e devolve token de sessão persistente.
+   * Devolve o perfil do utilizador autenticado via Supabase.
+   * Rota: GET /auth/me
    */
-  @Post('login')
-  async login(@Body() body: { email: string; passwordHash: string }) {
-    return this.authService.login(body.email, body.passwordHash);
-  }
-
-  /**
-   * Endpoint de validação de sessão em tempo real.
-   */
+  @UseGuards(JwtAuthGuard)
   @Get('me')
-  async me(@Headers('authorization') authHeader: string) {
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Authorization header em falta ou inválido');
-    }
-    const token = authHeader.split(' ')[1];
-    return this.authService.validateSession(token);
+  async me(@Request() req: any) {
+    // req.user foi preenchido pelo JwtStrategy.validate()
+    const userId = req.user.userId;
+    const profile = await this.authService.getProfileByUid(userId);
+    
+    return {
+      ok: true,
+      profile
+    };
   }
 }

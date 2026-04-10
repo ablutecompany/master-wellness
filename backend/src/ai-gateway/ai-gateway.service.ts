@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import OpenAI from 'openai';
+import { OpenAI } from 'openai';
+import { PrismaService } from '../prisma/prisma.service';
 import { GenerateInsightsDto } from './dto/generate-insights.dto';
 
 /**
@@ -12,8 +13,12 @@ export class AiGatewayService {
   private readonly openai: OpenAI;
   private readonly model: string;
   private readonly logger = new Logger(AiGatewayService.name);
+  private readonly PROMPT_VERSION = '1.0.0-canonical';
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     if (!apiKey) {
       throw new Error('OPENAI_API_KEY não está definida');
@@ -52,14 +57,72 @@ export class AiGatewayService {
   async generateInsights(
     dto: GenerateInsightsDto,
   ): Promise<{ ok: true; provider: string; model: string; insight: any; meta: any }> {
+    // 1. VERIFICAÇÃO DE CACHE (PERSISTÊNCIA) — M5 Fatia 3
+    if (!dto.isDemo && dto.analysisId) {
+      const existing = await this.prisma.analysisInsight.findFirst({
+        where: { analysisId: dto.analysisId, status: 'ready' },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (existing) {
+        this.logger.log(`Insight reutilizado da DB para análise ${dto.analysisId}`);
+        return {
+          ok: true,
+          provider: existing.provider,
+          model: existing.model,
+          insight: existing.outputJson,
+          meta: {
+            cached: true,
+            persistedId: existing.id,
+            promptVersion: existing.promptVersion,
+            createdAt: existing.createdAt,
+          },
+        };
+      }
+    }
+
     const startMs = Date.now();
 
     const prompt = [
-      'Recebe o contexto da análise abaixo e gera um relatório estruturado em JSON.',
-      'Campos obrigatórios: headline, summary, domains (energia_disponibilidade, recuperacao_resiliencia, digestao_trato_intestinal, ritmo_renovacao), suggestions (lista de strings).',
-      'Utiliza linguagem neutra e natural em português de Portugal. Não te dirijas ao utilizador.',
-      '',
-      'Contexto da análise (JSON):',
+      `És um motor de interpretação de dados biológicos para a plataforma ablute_ wellness.`,
+      `Recebes dados de análises laboratoriais e fisiológicas de um utilizador e devolves uma leitura estruturada em JSON.`,
+      ``,
+      `REGRAS OBRIGATÓRIAS:`,
+      `- Escreve em português de Portugal, tom técnico e contido.`,
+      `- Usa a 3.ª pessoa ou construções impessoais. Nunca uses "você" ou "deves".`,
+      `- Não faças diagnósticos. Não uses frases do tipo "tens X condição" ou "sofres de Y".`,
+      `- Não faças prognósticos nem promessas de resultados.`,
+      `- Não uses linguagem alarmista. Valores fora dos parâmetros são referidos com precisão, sem dramatismo.`,
+      `- Não uses linguagem vaga: proibido "optimização", "biohacking", "potencial", "elevar".`,
+      `- Não contradijas os dados recebidos. Se um marcador vier como "negativo" ou "normal", não o interpretes como problemático.`,
+      `- Se os dados de um domínio forem insuficientes ou ausentes, afirma isso claramente: "Dados insuficientes para interpretação deste domínio."`,
+      `- Não menciones que os dados são uma demonstração ou simulação.`,
+      `- As sugestões devem ser práticas, curtas e não farmacológicas por defeito. Nunca recomandes medicamentos, suplementos ou intervenções clínicas.`,
+      `- Máximo de 4 sugestões. Só inclui mais de 2 se os dados justificarem claramente.`,
+      ``,
+      `CAMPOS OBRIGATÓRIOS:`,
+      `- headline: frase curta e forte (10-15 palavras), síntese de leitura global.`,
+      `- summary: 2-3 frases coerentes que lêem o conjunto de marcadores disponíveis.`,
+      `- domains.energia_disponibilidade: 1-2 frases sobre energia metabólica e disponibilidade funcional deduzida dos dados.`,
+      `- domains.recuperacao_resiliencia: 1-2 frases sobre capacidade de recuperação autonómica e resiliência fisiológica.`,
+      `- domains.digestao_trato_intestinal: 1-2 frases sobre padrões digestivos e integridade gastrointestinal deduzida.`,
+      `- domains.ritmo_renovacao: 1-2 frases sobre ciclos de regeneração, sono registado (se disponível) e renovação celular.`,
+      `- suggestions: lista de strings com sugestões práticas e não farmacológicas.`,
+      ``,
+      `FALLBACK SEMÂNTICO:`,
+      `- Sem dados de sono: escreve "Sem dados de sono disponíveis para avaliar ritmo de renovação."`,
+      `- Sem dados fisiológicos (ECG, PPG, temperatura): escreve "Dados fisiológicos não disponíveis para este domínio."`,
+      `- Sem medições urinárias: escreve "Análise urinária ausente — domínio digestivo com dados insuficientes."`,
+      `- Menos de 2 marcadores: o headline deve reflectir a escassez de dados sem criar uma leitura falsa.`,
+      ``,
+      `LIMITES — O QUE NÃO DEVES AFIRMAR:`,
+      `- Não afirmes que o utilizador está saudável ou doente.`,
+      `- Não uses "bom" ou "mau" sem referência ao contexto clínico específico.`,
+      `- Não atribuas causas aos valores (ex: "o pH baixo deve-se a...").`,
+      `- Não afirmes que uma tendência se vai manter ou inverter.`,
+      `- Não cries interpretações cruzadas entre domínios sem suporte nos dados.`,
+      ``,
+      `Contexto da análise (JSON):`,
       JSON.stringify(dto, null, 2),
     ].join('\n');
 
@@ -124,6 +187,26 @@ export class AiGatewayService {
         `Insight gerado [source=${source}] em ${execMillis}ms | model=${response.model || this.model} | tokens=${response.usage?.total_tokens ?? '?'}`
       );
 
+      // 3. PERSISTÊNCIA REAL — M5 Fatia 3
+      if (!dto.isDemo && dto.analysisId) {
+        try {
+          await this.prisma.analysisInsight.create({
+            data: {
+              analysisId: dto.analysisId,
+              provider: 'openai',
+              model: response.model || this.model,
+              promptVersion: this.PROMPT_VERSION,
+              outputJson: parsed as any,
+              summaryText: parsed.summary || null,
+            },
+          });
+          this.logger.log(`Insight persistido na DB para análise ${dto.analysisId}`);
+        } catch (dbErr) {
+          this.logger.error(`Falha ao persistir insight: ${dbErr.message}`);
+          // Não bloqueamos a resposta se a escrita falhar, mas logamos o erro.
+        }
+      }
+
       return {
         ok: true,
         provider: 'openai',
@@ -136,6 +219,7 @@ export class AiGatewayService {
           outputTokens: response.usage?.output_tokens ?? null,
           finishReason: response.status ?? null,
           parsingSource: source,
+          promptVersion: this.PROMPT_VERSION,
         },
       };
     } catch (err) {

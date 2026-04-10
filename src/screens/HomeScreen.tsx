@@ -32,10 +32,10 @@ import { MiniAppManifest } from '../miniapps/types';
 import { useStore } from '../store/useStore';
 import * as Selectors from '../store/selectors';
 import { getSemanticInsights, getSemanticStatus, getAiStatus } from '../services/insights';
-import { semanticOutputService } from '../services/semantic-output';
-import { createDemoAnalysis, DemoScenarioKey, DEMO_LABELS } from '../services/semantic-output/demo-scenarios';
-import { Analysis } from '../store/types';
 import { AiInsight } from '../services/semantic-output/types';
+import { ENV } from '../config/env';
+
+import { supabase } from '../services/supabase';
 
 
 // --- SLOT MACHINE ODOMETER COMPONENT ---
@@ -145,10 +145,69 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const isMeasuring = useStore(Selectors.selectIsMeasuring);
   const isNfcLoading = useStore(Selectors.selectIsNfcLoading);
 
+  const setUser = useStore(state => state.setUser);
+  const setSessionToken = useStore(state => state.setSessionToken);
+  const setAnalyses = useStore(state => state.setAnalyses);
+  const setActiveAnalysisId = useStore(state => state.setActiveAnalysisId);
+  useEffect(() => {
+    async function initAuth() {
+      // Obter sessão persistida (mecanismo normal do Supabase)
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        setSessionToken(session.access_token);
+        // O utilizador/perfil real virá do backend via GET /auth/me
+        const response = await fetch(`${ENV.BACKEND_URL}/auth/me`, {
+          headers: { 'Authorization': `Bearer ${session.access_token}` }
+        });
+        
+        if (response.ok) {
+          const userData = await response.json();
+          const profile = userData.profile;
+          setUser(profile);
+
+          // 2. CARREGAMENTO REAL DE ANÁLISES — M5 Fatia 2
+          const analysesRes = await fetch(`${ENV.BACKEND_URL}/analyses`, {
+            headers: { 'Authorization': `Bearer ${session.access_token}` }
+          });
+
+          if (analysesRes.ok) {
+            const realAnalyses = await analysesRes.json();
+            setAnalyses(realAnalyses);
+
+            // 3. RESOLUÇÃO DE ANÁLISE ACTIVA COM FALLBACK — M5 Fatia 2
+            const persistedId = profile?.activeAnalysisId;
+            const existsInReal = realAnalyses.some((a: any) => a.id === persistedId);
+
+            if (persistedId && existsInReal) {
+              setActiveAnalysisId(persistedId);
+            } else if (realAnalyses.length > 0) {
+              // Fallback para a mais recente (já vem ordenada do backend)
+              setActiveAnalysisId(realAnalyses[0].id);
+            } else {
+              setActiveAnalysisId(null);
+            }
+          }
+        }
+      }
+
+      // Escutar mudanças de auth
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setSessionToken(session?.access_token ?? null);
+      });
+
+      return () => subscription.unsubscribe();
+    }
+
+    initAuth();
+  }, [setUser, setSessionToken, setActiveAnalysisId]);
+
   // Garantir inicialização do serviço sem dependência circular
   useEffect(() => {
-    semanticOutputService.init('user_current_session_1');
-  }, []);
+    // Usar o ID real se disponível, fallback para legacy session para não quebrar M4
+    const uid = user?.id || 'user_current_session_1';
+    semanticOutputService.init(uid);
+  }, [user]);
 
   // Safe memoized facts query to avoid Zustand infinite render loop
   const rawEvents = useStore(state => state.appContributionEvents);
