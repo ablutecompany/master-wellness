@@ -10,45 +10,39 @@ export class HealthController {
   ) {}
 
   /**
-   * Health Check Simples (processo está vivo).
+   * Health Check Simples (M8 - Liveness).
+   * Resposta imediata, sem dependências externas.
    */
   @Get()
   check() {
     return {
-      status: 'ok',
+      ok: true,
       timestamp: new Date().toISOString(),
       service: 'ablute-wellness-backend',
     };
   }
 
   /**
-   * Readiness Check (dependências críticas estão operacionais).
-   * M6 Fatia 2
+   * Readiness Check (M8 - Readiness).
+   * Valida dependências críticas de forma assertiva.
    */
   @Get('ready')
   async readiness() {
     const checks = {
       db: false,
-      supabase: false,
-      openai: false,
+      supabase: !!this.config.get('SUPABASE_URL'),
+      openai: !!this.config.get('OPENAI_API_KEY'),
     };
 
     try {
-      // 1. Verificar Conectividade DB (Real)
-      await this.prisma.$queryRaw`SELECT 1`;
+      // Validação de Base de Dados com Timeout (5s)
+      await Promise.race([
+        this.prisma.$queryRaw`SELECT 1`,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('DB Timeout')), 5000))
+      ]);
       checks.db = true;
 
-      // 2. Verificar Config Supabase (Presença)
-      const supabaseUrl = this.config.get('SUPABASE_URL');
-      if (supabaseUrl) checks.supabase = true;
-
-      // 3. Verificar Config OpenAI (Presença/Config Only)
-      const openaiKey = this.config.get('OPENAI_API_KEY');
-      if (openaiKey) {
-        checks.openai = true;
-      }
-
-      const allOk = Object.values(checks).every(v => v === true);
+      const allOk = checks.db && checks.supabase && checks.openai;
 
       const response = {
         ok: allOk,
@@ -56,10 +50,7 @@ export class HealthController {
         checks: {
           db: checks.db ? 'connected' : 'failed',
           supabase: checks.supabase ? 'configured' : 'missing',
-          openai: {
-            configured: checks.openai,
-            checked: 'config_only'
-          }
+          openai: checks.openai ? 'configured' : 'missing',
         }
       };
 
