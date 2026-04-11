@@ -129,16 +129,20 @@ export default function App() {
   const setGuestMode = useStore(state => state.setGuestMode);
 
   useEffect(() => {
-    // Check initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        // If we have a session, we are NOT in guest mode
-        setUser(session.user as any);
-        setGuestMode(false);
-      }
-      setInitialized(true);
-    });
+    // Check initial session with safety catch
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setSession(session);
+        if (session?.user) {
+          setUser(session.user as any);
+          setGuestMode(false);
+        } else {
+          // T05 safety: Ensure no leftover authenticated user data
+          setUser(null);
+        }
+      })
+      .catch(err => console.error('[App] Auth init hanging/failed:', err))
+      .finally(() => setInitialized(true));
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -160,6 +164,22 @@ export default function App() {
 
     return () => subscription.unsubscribe();
   }, [setUser, setGuestMode]);
+
+  // Production Error Guard (Web)
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const handler = (event: ErrorEvent | PromiseRejectionEvent) => {
+        const error = 'reason' in event ? event.reason : event.error || (event as any).message;
+        console.error('[CRITICAL_RUN_FAIL]', error);
+      };
+      window.addEventListener('error', handler);
+      window.addEventListener('unhandledrejection', handler);
+      return () => {
+        window.removeEventListener('error', handler);
+        window.removeEventListener('unhandledrejection', handler);
+      };
+    }
+  }, []);
 
   if (!initialized) {
     return (

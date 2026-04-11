@@ -23,9 +23,13 @@ export interface ActiveAnalysisContext {
   demoScenarioKey: string | null;
 }
 
-export const semanticOutputService = SemanticOutputService;
-
-}
+/**
+ * SEMANTIC SERVICE INTERFACE (v1.2.2)
+ * Robust Singleton Alias using Proxy to prevent TDZ/ReferenceErrors in cyclic bundles.
+ */
+export const semanticOutputService = new Proxy({} as typeof SemanticOutputService, {
+  get: (_, prop) => (SemanticOutputService as any)[prop],
+});
 
 export class SemanticOutputService {
   private static isInitialized = false;
