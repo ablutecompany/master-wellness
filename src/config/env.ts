@@ -9,9 +9,11 @@ const getBackendUrl = () => {
   if (process.env.EXPO_PUBLIC_BACKEND_URL) {
     return process.env.EXPO_PUBLIC_BACKEND_URL;
   }
-  
+
   if (isProduction) {
-    throw new Error('[ENV FATAL] EXPO_PUBLIC_BACKEND_URL obrigatória em produção.');
+    // Warn but don't crash — allows Guest mode to work without backend
+    console.warn('[ENV] EXPO_PUBLIC_BACKEND_URL not set. Backend features will be unavailable.');
+    return '';
   }
 
   return 'http://localhost:3000';
@@ -24,7 +26,7 @@ export const ENV = {
   IS_DEV: !isProduction,
 };
 
-// Fail-fast no frontend
+// Warn but don't throw — allows app to boot even with missing config
 if (isProduction && (!ENV.SUPABASE_URL || !ENV.SUPABASE_ANON_KEY)) {
-  throw new Error('[ENV FATAL] Configuração do Supabase obrigatória em produção.');
+  console.warn('[ENV] Supabase config missing. Auth features will not work.');
 }
