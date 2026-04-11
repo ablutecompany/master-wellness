@@ -23,6 +23,8 @@ export interface ActiveAnalysisContext {
   demoScenarioKey: string | null;
 }
 
+export const semanticOutputService = SemanticOutputService;
+
 }
 
 export class SemanticOutputService {
@@ -407,5 +409,3 @@ export class SemanticOutputService {
     }
   }
 }
-
-export const semanticOutputService = SemanticOutputService;
