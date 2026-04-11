@@ -154,8 +154,7 @@ export default function App() {
       } 
       else if (event === 'SIGNED_OUT') {
         setUser(null);
-        // T05: Do NOT setGuestMode(false) here. 
-        // If the user was in Guest mode, let them stay in Guest mode.
+        setGuestMode(false); // Returning to Welcome as requested
       }
       else if (session?.user) {
         setUser(session.user as any);
@@ -164,6 +163,16 @@ export default function App() {
 
     return () => subscription.unsubscribe();
   }, [setUser, setGuestMode]);
+
+  // Production Observer (Minimal)
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      window.onerror = (msg, url, line) => {
+        console.warn(`[BOOT_OBSERVER] ${msg} at ${line}`);
+        return false;
+      };
+    }
+  }, []);
 
   // Production Error Guard (Web)
   useEffect(() => {

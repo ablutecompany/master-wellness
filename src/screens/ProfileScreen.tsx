@@ -57,10 +57,10 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         <Typography variant="caption" color={theme.colors.primary}>
           {userName} {isGuestMode && <Typography variant="caption">(Alterar Nome)</Typography>}
       </Typography>
-      {/* T05: Show goals from guest profile if in guest mode */}
-      {((isGuestMode ? useStore.getState().guestProfile : user)?.goals || []).length > 0 && (
+      {/* T05: Explicit Profile Identification */}
+      {user?.goals && user.goals.length > 0 && (
         <View style={{ marginTop: 8, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 4 }}>
-          {((isGuestMode ? useStore.getState().guestProfile : user)?.goals || []).map(g => (
+          {user.goals.map(g => (
             <View key={g} style={{ backgroundColor: 'rgba(115,188,255,0.1)', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
               <Typography variant="caption" style={{ fontSize: 10 }}>{g}</Typography>
             </View>

@@ -9,8 +9,11 @@ import { normalizeEvent, filterActiveFacts } from '../services/contributions-nor
 // ─────────────────────────────────────────────────────────────────────────────
 // A) Profile Selectors
 // ─────────────────────────────────────────────────────────────────────────────
-export const selectUser = (state: AppState) => state.user || state.guestProfile;
-export const selectUserName = (state: AppState) => state.user?.name || state.guestProfile?.name || 'Utilizadora';
+export const selectUser = (state: AppState) => state.isGuestMode ? state.guestProfile : state.user;
+export const selectUserName = (state: AppState) => {
+  if (state.isGuestMode) return state.guestProfile?.name || 'Convidada';
+  return state.user?.name || 'Utilizadora';
+};
 export const selectCredits = (state: AppState) => state.credits ?? 0;
 export const selectIsGuestMode = (state: AppState) => state.isGuestMode;
 
