@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npx expo export --platform web --clear",
+  "buildCommand": "npx expo export --platform web --clear && node scripts/patch-html.js",
   "outputDirectory": "dist",
   "framework": null,
   "rewrites": [
@@ -15,4 +15,3 @@
     }
   ]
 }
-
