@@ -4,6 +4,7 @@ import { Container, Typography } from '../components/Base';
 import { Button } from './OnboardingWelcome';
 import { theme } from '../theme';
 import { Check } from 'lucide-react-native';
+import { useStore } from '../store/useStore';
 
 const GOALS = [
   'Energia e Vitalidade',
@@ -14,7 +15,8 @@ const GOALS = [
 ];
 
 export const OnboardingGoals: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const [selected, setSelected] = useState<string[]>([]);
+  const guestProfile = useStore(state => state.guestProfile);
+  const [selected, setSelected] = useState<string[]>(guestProfile?.goals || []);
 
   const toggleGoal = (goal: string) => {
     if (selected.includes(goal)) {

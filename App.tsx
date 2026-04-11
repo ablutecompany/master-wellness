@@ -150,7 +150,8 @@ export default function App() {
       } 
       else if (event === 'SIGNED_OUT') {
         setUser(null);
-        setGuestMode(false); // Returning to public greeting
+        // T05: Do NOT setGuestMode(false) here. 
+        // If the user was in Guest mode, let them stay in Guest mode.
       }
       else if (session?.user) {
         setUser(session.user as any);

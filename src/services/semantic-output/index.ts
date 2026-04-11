@@ -23,7 +23,7 @@ export interface ActiveAnalysisContext {
   demoScenarioKey: string | null;
 }
 
-export const semanticOutputService: typeof SemanticOutputService = null as any;
+}
 
 export class SemanticOutputService {
   private static isInitialized = false;
@@ -408,5 +408,4 @@ export class SemanticOutputService {
   }
 }
 
-// @ts-ignore - initialization to avoid TDZ
-(semanticOutputService as any) = SemanticOutputService;
+export const semanticOutputService = SemanticOutputService;
