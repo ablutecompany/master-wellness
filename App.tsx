@@ -22,8 +22,13 @@ import {
   Brain, 
   Database, 
   LayoutGrid, 
-  User 
+  User as UserIcon 
 } from 'lucide-react-native';
+import { supabase } from './src/services/supabase';
+import { useStore } from './src/store/useStore';
+import { LoginScreen } from './src/screens/LoginScreen';
+import { Session } from '@supabase/supabase-js';
+
 
 
 
@@ -36,8 +41,15 @@ function MainTabs() {
       initialRouteName="Home"
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: {
-          display: 'none'
+        tabBarStyle: Platform.OS === 'web' ? {
+          height: 64,
+          backgroundColor: '#05070A',
+          borderTopColor: 'rgba(255,255,255,0.08)',
+          paddingBottom: 8,
+          paddingTop: 8,
+        } : {
+          backgroundColor: '#05070A',
+          borderTopColor: 'rgba(255,255,255,0.08)',
         },
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textMuted,
@@ -50,13 +62,35 @@ function MainTabs() {
         },
       })}
     >
-      <Tab.Screen name="Dados" component={AnalysesScreen} />
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Temas" component={ThemesScreen} />
+      <Tab.Screen name="Dados" component={AnalysesScreen} />
       <Tab.Screen name="Apps" component={AppsScreen} />
     </Tab.Navigator>
   );
 }
+
+const linking = {
+  prefixes: ['wellness://', 'https://ablute-wellness.onrender.com'],
+  config: {
+    screens: {
+      Welcome: 'welcome',
+      Login: 'login',
+      Main: {
+        path: '',
+        screens: {
+          Home: 'home',
+          Temas: 'temas',
+          Dados: 'dados',
+          Apps: 'apps',
+        }
+      },
+      Profile: 'profile',
+      GlobalDetail: 'detail/:id',
+    },
+  },
+};
+
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -88,35 +122,64 @@ class ErrorBoundary extends React.Component {
 import { View, Text } from 'react-native';
 
 export default function App() {
+  const [session, setSession] = React.useState<Session | null>(null);
+  const [initialized, setInitialized] = React.useState(false);
+  const setUser = useStore(state => state.setUser);
+
+  useEffect(() => {
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) setUser(session.user as any);
+      setInitialized(true);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session?.user) setUser(session.user as any);
+      else setUser(null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [setUser]);
+
+  if (!initialized) return null;
+
   return (
     <ErrorBoundary>
-      <NavigationContainer>
+      <NavigationContainer linking={linking}>
         <StatusBar style="light" />
-        <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Main">
-          <Stack.Screen name="Welcome" component={WelcomeScreen} />
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {!session ? (
+            <>
+              <Stack.Screen name="Welcome" component={WelcomeScreen} />
+              <Stack.Screen name="Login" component={LoginScreen} />
+            </>
+          ) : (
+            <>
+              <Stack.Screen name="Main" component={MainTabs} />
+              <Stack.Screen name="Profile" component={ProfileScreen} options={{ presentation: 'modal' }} />
+              <Stack.Screen name="GlobalDetail" component={GlobalDetailScreen} options={{ presentation: 'modal' }} />
+              <Stack.Screen
+                name="MiniApp"
+                options={{
+                  presentation: 'fullScreenModal',
+                  animation: 'slide_from_bottom',
+                }}
+              >
+                {({ route, navigation }: any) => (
+                  <MiniAppContainer app={(route.params as any).app} navigation={navigation} />
+                )}
+              </Stack.Screen>
+            </>
+          )}
           <Stack.Screen name="OnboardingGoals" component={OnboardingGoals} />
           <Stack.Screen name="OnboardingPermissions" component={OnboardingPermissions} />
           <Stack.Screen name="Pairing" component={PairingScreen} />
-          <Stack.Screen name="Main" component={MainTabs} />
-          <Stack.Screen name="GlobalDetail" component={GlobalDetailScreen} options={{ presentation: 'modal' }} />
-          <Stack.Screen 
-            name="Profile" 
-            component={ProfileScreen} 
-            options={{ presentation: 'modal' }} 
-          />
-          <Stack.Screen
-            name="MiniApp"
-            options={{
-              presentation: 'fullScreenModal',
-              animation: 'slide_from_bottom',
-            }}
-          >
-            {({ route, navigation }: any) => (
-              <MiniAppContainer app={(route.params as any).app} navigation={navigation} />
-            )}
-          </Stack.Screen>
         </Stack.Navigator>
       </NavigationContainer>
     </ErrorBoundary>
   );
 }
+

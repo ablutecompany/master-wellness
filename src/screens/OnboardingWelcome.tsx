@@ -35,82 +35,38 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const taglineOpacity = useRef(new Animated.Value(0)).current;
   const taglineY       = useRef(new Animated.Value(10)).current;
 
-  const goHome = () => navigation.replace('Main', { screen: 'Home' });
+  const goLogin = () => navigation.navigate('Login');
+  const goOnboarding = () => navigation.navigate('OnboardingGoals');
 
   useEffect(() => {
-    // On web, useNativeDriver animations break (opacity stays 0, callback never fires)
-    // Skip straight to Main on web
+    // Stop auto-redirect on web and allow manual navigation
     if (Platform.OS === 'web') {
-      goHome();
+      Animated.parallel([
+        Animated.timing(logoOpacity, { toValue: 1, duration: 1000, useNativeDriver: true }),
+        Animated.timing(logoScale, { toValue: 1, duration: 1000, useNativeDriver: true }),
+        Animated.timing(taglineOpacity, { toValue: 1, duration: 1000, useNativeDriver: true }),
+      ]).start();
       return;
     }
 
     Animated.sequence([
-      // 1 — Logo fades + scales in
       Animated.parallel([
-        Animated.timing(logoOpacity, {
-          toValue: 1,
-          duration: 1400,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoScale, {
-          toValue: 1,
-          duration: 1400,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
+        Animated.timing(logoOpacity, { toValue: 1, duration: 1400, useNativeDriver: true }),
+        Animated.timing(logoScale, { toValue: 1, duration: 1400, useNativeDriver: true }),
       ]),
-
-      // 2 — Brief pause, then tagline slides + fades up
       Animated.delay(200),
       Animated.parallel([
-        Animated.timing(taglineOpacity, {
-          toValue: 1,
-          duration: 900,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(taglineY, {
-          toValue: 0,
-          duration: 900,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
+        Animated.timing(taglineOpacity, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(taglineY, { toValue: 0, duration: 900, useNativeDriver: true }),
       ]),
-
-      // 3 — Hold for 3 seconds
-      Animated.delay(3000),
-
-      // 4 — Tagline fades out first
-      Animated.timing(taglineOpacity, {
-        toValue: 0,
-        duration: 700,
-        easing: Easing.in(Easing.quad),
-        useNativeDriver: true,
-      }),
-
-      // 5 — Then logo fades out
-      Animated.timing(logoOpacity, {
-        toValue: 0,
-        duration: 700,
-        easing: Easing.in(Easing.quad),
-        useNativeDriver: true,
-      }),
-
-      // 6 — Navigate after fade
-      Animated.delay(100),
-    ]).start(({ finished }) => {
-      if (finished) goHome();
-    });
+    ]).start();
   }, []);
 
-  // Web-safe glow: textShadow instead of shadow* (avoids box-shadow rectangle)
-  const logoGlow    = Platform.OS === 'web'
+  const logoGlow = Platform.OS === 'web'
     ? { textShadow: '0 0 18px rgba(255,255,255,0.38)' } as any
     : { shadowColor: '#fff', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 14 };
 
-  const underGlow   = Platform.OS === 'web'
+  const underGlow = Platform.OS === 'web'
     ? { textShadow: '0 0 22px rgba(115,188,255,0.75)' } as any
     : { shadowColor: '#73BCFF', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.85, shadowRadius: 18 };
 
@@ -119,11 +75,10 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     : {};
 
   return (
-    <TouchableOpacity style={styles.screen} activeOpacity={1} onPress={goHome}>
+    <View style={styles.screen}>
       <TextureOverlay />
 
       <View style={styles.centerWrap}>
-        {/* Logo */}
         <Animated.View style={{ opacity: logoOpacity, transform: [{ scale: logoScale }] }}>
           <Text style={[styles.logoText, logoGlow]}>
             {'ablute'}
@@ -131,7 +86,6 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           </Text>
         </Animated.View>
 
-        {/* Tagline */}
         <Animated.View
           style={{
             opacity: taglineOpacity,
@@ -143,8 +97,18 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             Sencing Your Wellbeing
           </Text>
         </Animated.View>
+
+        <Animated.View style={[styles.buttonContainer, { opacity: taglineOpacity }]}>
+          <TouchableOpacity style={styles.primaryButton} onPress={goOnboarding}>
+            <Text style={styles.primaryButtonText}>Começar Agora</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.secondaryButton} onPress={goLogin}>
+            <Text style={styles.secondaryButtonText}>Já tenho conta — Entrar</Text>
+          </TouchableOpacity>
+        </Animated.View>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 };
 
@@ -157,23 +121,63 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 40,
   },
   logoText: {
-    fontSize: 36,
-    fontWeight: '300',
-    color: 'rgba(255,255,255,0.90)',
-    letterSpacing: -1.5,
+    fontSize: 48,
+    fontWeight: '200',
+    color: 'rgba(255,255,255,0.95)',
+    letterSpacing: -2,
+    marginBottom: 4,
   },
   logoUnder: {
     color: '#73BCFF',
-    fontWeight: '600',
+    fontWeight: '400',
   },
   tagline: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '400',
-    color: 'rgba(115,188,255,0.55)',
-    letterSpacing: 3.5,
+    color: 'rgba(115,188,255,0.5)',
+    letterSpacing: 4,
     textTransform: 'uppercase',
     textAlign: 'center',
   },
+  buttonContainer: {
+    marginTop: 80,
+    width: '100%',
+    maxWidth: 320,
+    gap: 12,
+  },
+  primaryButton: {
+    height: 56,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#fff',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+  },
+  primaryButtonText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+  },
+  secondaryButton: {
+    height: 56,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  secondaryButtonText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 14,
+    fontWeight: '400',
+  },
 });
+
