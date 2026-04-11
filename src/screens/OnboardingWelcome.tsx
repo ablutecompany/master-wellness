@@ -36,7 +36,11 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const taglineY       = useRef(new Animated.Value(10)).current;
 
   const goLogin = () => navigation.navigate('Login');
-  const goOnboarding = () => navigation.navigate('OnboardingGoals');
+  const goOnboarding = () => {
+    // Activating Guest Mode triggers the persistent flag in the store
+    useStore.getState().setGuestMode(true);
+    navigation.navigate('OnboardingGoals');
+  };
 
   useEffect(() => {
     // Stop auto-redirect on web and allow manual navigation

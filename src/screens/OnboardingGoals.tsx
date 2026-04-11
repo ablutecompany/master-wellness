@@ -53,7 +53,10 @@ export const OnboardingGoals: React.FC<{ navigation: any }> = ({ navigation }) =
       <View style={styles.footer}>
         <Button 
           title="Salvar e Voltar" 
-          onPress={() => navigation.goBack()}
+          onPress={() => {
+            useStore.getState().updateGuestProfile({ goals: selected });
+            navigation.goBack();
+          }}
           variant="primary"
         />
       </View>

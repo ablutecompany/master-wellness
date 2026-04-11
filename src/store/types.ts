@@ -86,7 +86,9 @@ export interface Analysis {
 
 export interface AppState {
   // ── Core ──────────────────────────────────────────────────────────────────
-  user: UserProfile | null;
+  user: UserProfile | null;          // Perfil da conta Autenticada
+  guestProfile: UserProfile | null;   // Perfil do modo Guest (Persistido)
+  isGuestMode: boolean;               // Flag de navegação local (Persistida)
   measurements: Measurement[];       // medições raw do dispositivo (legado)
   analyses: Analysis[];              // análises estruturadas (fonte de verdade)
   activeAnalysisId: string | null;   // qual a análise activa no painel
@@ -102,7 +104,9 @@ export interface AppState {
   grantedPermissions: Record<string, Permission[]>;
 
   // ── Core Actions ──────────────────────────────────────────────────────────
-  setUser: (user: UserProfile) => void;
+  setUser: (user: UserProfile | null) => void;
+  setGuestMode: (isGuest: boolean) => void;
+  updateGuestProfile: (profile: Partial<UserProfile>) => void;
   addMeasurement: (measurement: Measurement) => void;
   addAnalysis: (analysis: Analysis) => void;
   removeAnalysis: (id: string) => void;

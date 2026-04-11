@@ -7,20 +7,57 @@ import { User, CreditCard, Settings, LogOut, ChevronRight, Globe, Activity } fro
 import { useStore } from '../store/useStore';
 import * as Selectors from '../store/selectors';
 
+import { Alert } from 'react-native';
+
 export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const userName = useStore(Selectors.selectUserName);
   const credits = useStore(Selectors.selectCredits);
   const user = useStore(Selectors.selectUser);
+  const isGuestMode = useStore(state => state.isGuestMode);
+  const updateGuestProfile = useStore(state => state.updateGuestProfile);
+
+  const handleEditName = () => {
+    if (!isGuestMode) {
+      Alert.alert('Funcionalidade em desenvolvimento', 'A edição de perfil para utilizadores autenticados será disponibilizada na próxima versão.');
+      return;
+    }
+
+    if (Platform.OS === 'web') {
+      const newName = window.prompt('Como gostarias de ser tratada?', userName !== 'Convidada' ? userName : '');
+      if (newName !== null && newName !== '') {
+        updateGuestProfile({ name: newName });
+      }
+      return;
+    }
+
+    Alert.prompt(
+      'Editar Nome (Guest)',
+      'Como gostarias de ser tratada?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { 
+          text: 'Salvar', 
+          onPress: (newName) => {
+            if (newName) updateGuestProfile({ name: newName });
+          } 
+        }
+      ],
+      'plain-text',
+      userName !== 'Convidada' ? userName : ''
+    );
+  };
 
   return (
     <Container safe style={styles.container}>
-      <View style={styles.header}>
+      <TouchableOpacity style={styles.header} onPress={handleEditName}>
         <View style={styles.avatar}>
           <Settings size={40} color={theme.colors.background} />
         </View>
         <Typography variant="h2">Configurações</Typography>
-        <Typography variant="caption">{userName}</Typography>
-      </View>
+        <Typography variant="caption" color={theme.colors.primary}>
+          {userName} {isGuestMode && <Typography variant="caption">(Alterar)</Typography>}
+        </Typography>
+      </TouchableOpacity>
 
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.creditsSection}>

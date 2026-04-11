@@ -124,34 +124,52 @@ import { View, Text } from 'react-native';
 export default function App() {
   const [session, setSession] = React.useState<Session | null>(null);
   const [initialized, setInitialized] = React.useState(false);
+  
   const setUser = useStore(state => state.setUser);
+  const isGuestMode = useStore(state => state.isGuestMode);
+  const setGuestMode = useStore(state => state.setGuestMode);
 
   useEffect(() => {
     // Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session?.user) setUser(session.user as any);
+      if (session?.user) {
+        // If we have a session, we are NOT in guest mode
+        setUser(session.user as any);
+        setGuestMode(false);
+      }
       setInitialized(true);
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
-      if (session?.user) setUser(session.user as any);
-      else setUser(null);
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        setUser(session.user as any);
+        setGuestMode(false); // Entering authenticated mode wipes guest mode flag
+      } 
+      else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setGuestMode(false); // Returning to public greeting
+      }
+      else if (session?.user) {
+        setUser(session.user as any);
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, [setUser]);
+  }, [setUser, setGuestMode]);
 
   if (!initialized) return null;
 
-  return (
+  // Segmented Auth Guard: Access Main if Authenticated OR if explicitly in Persistent Guest Mode
+  const showMain = !!session || isGuestMode;
     <ErrorBoundary>
       <NavigationContainer linking={linking}>
         <StatusBar style="light" />
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {!session ? (
+          {!showMain ? (
             <>
               <Stack.Screen name="Welcome" component={WelcomeScreen} />
               <Stack.Screen name="Login" component={LoginScreen} />
