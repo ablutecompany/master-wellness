@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import Svg, { Defs, Pattern, Rect, Circle } from 'react-native-svg';
+import { useStore } from '../store/useStore';
 
 // ── Subtle grain texture ──────────────────────────────────────────────────────
 const TextureOverlay: React.FC = () => {
