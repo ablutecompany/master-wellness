@@ -165,6 +165,8 @@ export default function App() {
 
   // Segmented Auth Guard: Access Main if Authenticated OR if explicitly in Persistent Guest Mode
   const showMain = !!session || isGuestMode;
+
+  return (
     <ErrorBoundary>
       <NavigationContainer linking={linking}>
         <StatusBar style="light" />
