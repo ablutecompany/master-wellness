@@ -213,7 +213,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const rawEvents = useStore(state => state.appContributionEvents);
   const analyses = useStore(state => state.analyses);
   const activeAnalysisId = useStore(state => state.activeAnalysisId);
-  const setActiveAnalysisId = useStore(state => state.setActiveAnalysisId);
 
   // --- UI & NAVIGATION STATE ---
   const [showDemoModal, setShowDemoModal] = useState(false);
