@@ -160,7 +160,13 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, [setUser, setGuestMode]);
 
-  if (!initialized) return null;
+  if (!initialized) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#010204', justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ color: '#fff', fontSize: 14, letterSpacing: 2 }}>CARREGANDO...</Text>
+      </View>
+    );
+  }
 
   // Segmented Auth Guard: Access Main if Authenticated OR if explicitly in Persistent Guest Mode
   const showMain = !!session || isGuestMode;

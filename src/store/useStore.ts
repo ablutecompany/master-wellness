@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { Platform } from 'react-native';
 import { AppState } from './types';
 import { createProfileSlice } from './slices/profile';
 import { createMeasurementsSlice } from './slices/measurements';
@@ -25,7 +26,7 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'ablute-wellness-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => (Platform.OS === 'web' ? window.localStorage as any : AsyncStorage)),
       // Only persist Guest and system-level metadata. 
       // Authenticated 'user' profile is NOT persisted to ensure security and cloud-sync on boot.
       partialize: (state) => ({
