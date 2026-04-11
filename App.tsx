@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Platform, View, Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
 import { NavigationContainer } from '@react-navigation/native';
@@ -119,7 +119,6 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-import { View, Text } from 'react-native';
 
 export default function App() {
   const [session, setSession] = React.useState<Session | null>(null);
