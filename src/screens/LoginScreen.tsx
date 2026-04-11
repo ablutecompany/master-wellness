@@ -198,7 +198,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
               <Lock size={20} color="rgba(255,255,255,0.4)" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder={isSignUp ? 'Palavra-passe (mín. 8 caracteres)' : 'Palavra-passe'}
+                placeholder={isSignUp ? 'Palavra-passe' : 'Palavra-passe'}
                 placeholderTextColor="rgba(255,255,255,0.3)"
                 value={password}
                 onChangeText={setPassword}
@@ -213,9 +213,16 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
               </TouchableOpacity>
             </View>
 
+            {/* Password hint */}
+            {isSignUp && (
+              <Typography variant="caption" style={styles.inputHint}>
+                A palavra-passe deve ter pelo menos 8 caracteres.
+              </Typography>
+            )}
+
             {/* Confirmar password — apenas no signup */}
             {isSignUp && (
-              <View style={styles.inputContainer}>
+              <View style={[styles.inputContainer, { marginTop: 12 }]}>
                 <Lock size={20} color="rgba(255,255,255,0.4)" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
@@ -348,6 +355,13 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
     paddingHorizontal: 0,
     minWidth: 0, // critical: allows flex child to shrink below its content width
+  },
+  inputHint: {
+    color: 'rgba(255,255,255,0.4)',
+    marginTop: -8,
+    marginBottom: 4,
+    marginLeft: 4,
+    fontSize: 12,
   },
   eyeButton: {
     padding: 4,
