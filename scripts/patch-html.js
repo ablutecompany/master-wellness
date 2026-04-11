@@ -20,12 +20,12 @@ if (!fs.existsSync(htmlPath)) {
 
 let html = fs.readFileSync(htmlPath, 'utf8');
 
-// Replace: <script src="/_expo/static/js/web/index-*.js" defer>
-// With:    <script type="module" src="/_expo/static/js/web/index-*.js">
+// Replace: <script src="/_expo/static/js/web/..." ...>
+// With:    <script type="module" src="/_expo/static/js/web/..." ...>
 const before = html;
 html = html.replace(
-  /(<script)\s+src="(\/_expo\/static\/js\/web\/[^"]+\.js)"\s+defer>/g,
-  '$1 type="module" src="$2">'
+  /<script([^>]*)src="(\/_expo\/static\/js\/web\/[^"]+\.js)"([^>]*)>/g,
+  '<script$1 type="module" src="$2"$3>'
 );
 
 if (html === before) {
