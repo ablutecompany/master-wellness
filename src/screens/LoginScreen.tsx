@@ -13,6 +13,7 @@ import {
 import { Container, Typography, GlassCard } from '../components/Base';
 import { supabase } from '../services/supabase';
 import { useStore } from '../store/useStore';
+import { ENV } from '../config/env';
 import { theme } from '../theme';
 import { LogIn, UserPlus, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react-native';
 
@@ -89,6 +90,9 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
+        options: {
+          emailRedirectTo: `${ENV.SITE_URL}/login`,
+        },
       });
       if (error) throw error;
 

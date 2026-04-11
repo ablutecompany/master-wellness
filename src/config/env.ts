@@ -23,6 +23,7 @@ export const ENV = {
   BACKEND_URL: getBackendUrl(),
   SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL || '',
   SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
+  SITE_URL: process.env.EXPO_PUBLIC_SITE_URL || (isProduction ? 'https://ablute-wellness-app.vercel.app' : 'http://localhost:8081'),
   IS_DEV: !isProduction,
 };
 
