@@ -154,6 +154,14 @@ export default function App() {
       } 
       else if (event === 'SIGNED_OUT') {
         setUser(null);
+        // T05 Purge: Limpar dados estruturais da conta que acabou de sair
+        useStore.getState().clearSensitiveState();
+        
+        // Limpar persistência de contribuições (dados clínicos de MiniApps)
+        const { installedAppIds, grantedPermissions, appEvents } = useStore.getState();
+        const { saveToStorage } = require('./src/store/persistence');
+        saveToStorage(installedAppIds, grantedPermissions, appEvents, []);
+        
         // Preservamos o Guest Mode se estiver definido, conforme T05
       }
       else if (session?.user) {

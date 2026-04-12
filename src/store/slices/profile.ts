@@ -12,6 +12,7 @@ export interface ProfileSlice {
   updateGuestProfile: (profile: Partial<UserProfile>) => void;
   setCredits: (credits: number) => void;
   setSessionToken: (token: string | null) => void;
+  clearSensitiveState: () => void;
 }
 
 export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = (set) => ({
@@ -30,4 +31,10 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
   })),
   setCredits: (credits) => set({ credits }),
   setSessionToken: (token) => set({ sessionToken: token }),
+  clearSensitiveState: () => set({
+    measurements: [],
+    analyses: [],
+    activeAnalysisId: null,
+    appContributionEvents: [],
+  }),
 });

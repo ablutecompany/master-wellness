@@ -126,4 +126,5 @@ export interface AppState {
   grantPermissions: (appId: string, perms: Permission[]) => void;
   isAppInstalled: (id: string) => boolean;
   hasGrantedPermissions: (id: string) => boolean;
+  clearSensitiveState: () => void;
 }
