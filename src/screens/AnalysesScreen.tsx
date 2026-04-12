@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { useStore } from '../store/useStore';
 import * as Selectors from '../store/selectors';
+import { GatingOverlay } from '../components/GatingOverlay';
 
 interface Exam {
   id: string;
@@ -35,6 +36,7 @@ const TYPE_MAP: Record<string, { name: string; unit: string; source: 'ablute' | 
 export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const measurements = useStore(Selectors.selectMeasurements);
+  const isGuestMode = useStore(state => state.isGuestMode);
 
   const exams: Exam[] = measurements.map((m) => {
     const config = TYPE_MAP[m.type] || { name: m.type, unit: '', source: 'health_kit' };
@@ -119,6 +121,14 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           </Typography>
         </View>
 
+        <GatingOverlay
+          isBlocked={isGuestMode}
+          message="Inicie sessão para guardar e consultar histórico"
+          actionLabel="Página Inicial"
+          onAction={() => navigation.navigate('Welcome')}
+        >
+          <View style={{ minHeight: 300 }}>
+
         {measurements.length === 0 ? (
           <View style={styles.emptyState}>
             <Typography style={styles.emptyText}>Ainda não existem medições disponíveis.</Typography>
@@ -139,6 +149,8 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                Estes dados são apenas para referência informativa e não substituem aconselhamento médico profissional.
             </Typography>
         </View>
+        </View>
+        </GatingOverlay>
         
       </ScrollView>
 

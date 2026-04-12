@@ -2,12 +2,13 @@ import React from 'react';
 import { StyleSheet, View, TouchableOpacity, ScrollView } from 'react-native';
 import { Container, Typography } from '../components/Base';
 import { theme } from '../theme';
-import { User, CreditCard, Settings, LogOut, ChevronRight, Globe, Activity } from 'lucide-react-native';
-
+import { User, CreditCard, Settings, LogOut, ChevronRight, Globe, Activity, Users, Utensils, ShieldAlert } from 'lucide-react-native';
+import { GatingOverlay } from '../components/GatingOverlay';
 import { useStore } from '../store/useStore';
 import * as Selectors from '../store/selectors';
 
 import { Alert } from 'react-native';
+import { supabase } from '../services/supabase';
 
 export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const userName = useStore(Selectors.selectUserName);
@@ -109,7 +110,41 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             <Typography style={styles.menuTitle}>Inputs e Fontes de Dados</Typography>
             <ChevronRight size={20} color={theme.colors.textMuted} />
           </TouchableOpacity>
+        </View>
 
+        {!isGuestMode && (
+          <View style={styles.section}>
+            <View style={{ marginBottom: 16 }}>
+              <Typography variant="caption" style={styles.sectionTitle}>MÓDULOS FAMILIARES</Typography>
+            </View>
+
+            <GatingOverlay
+              isBlocked={true} // Em implementação
+              message="Cria um agregado com sub-contas para desbloquear funcionalidades familiares."
+              actionLabel="Criar Agregado (Em Breve)"
+              onAction={() => {}}
+              style={{ marginHorizontal: -24, width: 'auto' }}
+            >
+              <TouchableOpacity style={styles.menuItem}>
+                <View style={styles.menuIcon}>
+                  <Users size={20} color={theme.colors.text} />
+                </View>
+                <Typography style={styles.menuTitle}>Gestão do Agregado Familiar</Typography>
+                <ChevronRight size={20} color={theme.colors.textMuted} />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem}>
+                <View style={styles.menuIcon}>
+                  <Utensils size={20} color={theme.colors.text} />
+                </View>
+                <Typography style={styles.menuTitle}>Meal Planner Partilhado</Typography>
+                <ChevronRight size={20} color={theme.colors.textMuted} />
+              </TouchableOpacity>
+            </GatingOverlay>
+          </View>
+        )}
+
+        <View style={styles.section}>
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuIcon}>
               <Settings size={20} color={theme.colors.text} />

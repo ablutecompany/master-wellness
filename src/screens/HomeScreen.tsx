@@ -9,6 +9,7 @@ import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, Us
 import Svg, { Path, Text as SvgText, TextPath, Defs, G } from 'react-native-svg';
 import { BiomechanicRelic } from '../components/BiomechanicRelic';
 import { SiderealBackground } from '../components/SiderealBackground';
+import { GatingOverlay } from '../components/GatingOverlay';
 // expo-linear-gradient and expo-blur: use require() guards to avoid web crash
 // v2.1 - web inline mini-app launch fix
 
@@ -143,6 +144,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const credits = useStore(Selectors.selectCredits);
   const measurements = useStore(Selectors.selectMeasurements);
   const installedAppIds = useStore(Selectors.selectInstalledAppIds);
+  const isGuestMode = useStore(state => state.isGuestMode);
   const isMeasuring = useStore(Selectors.selectIsMeasuring);
   const isNfcLoading = useStore(Selectors.selectIsNfcLoading);
 
@@ -1363,6 +1365,13 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                         };
 
                         return (
+                          <GatingOverlay
+                            isBlocked={isGuestMode}
+                            message="Inicie sessão para aceder à interpretação AI"
+                            actionLabel="Entrar ou Criar Conta"
+                            onAction={() => navigation.navigate('Welcome')}
+                            style={{ width: '100%' }}
+                          >
                           <View style={{ width: '100%' }}>
                             {/* ESTADO DE CARREGAMENTO / ERRO DA IA (M3) */}
                             {aiState.status === 'loading' && (
@@ -1497,6 +1506,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                               </View>
                             )}
                           </View>
+                        </GatingOverlay>
                         );
                       })()}
 
