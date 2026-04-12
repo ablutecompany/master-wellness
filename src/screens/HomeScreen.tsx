@@ -34,6 +34,7 @@ import * as Selectors from '../store/selectors';
 import { getSemanticInsights, getSemanticStatus, getAiStatus } from '../services/insights';
 import { AiInsight } from '../services/semantic-output/types';
 import { ENV } from '../config/env';
+import { semanticOutputService } from '../services/semantic-output';
 
 import { supabase } from '../services/supabase';
 
