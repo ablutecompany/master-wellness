@@ -1,6 +1,5 @@
 import { StateCreator } from 'zustand';
 import { AppState, Measurement } from '../types';
-import { semanticOutputService } from '../../services/semantic-output';
 
 export interface MeasurementsSlice {
   measurements: Measurement[];
@@ -14,6 +13,7 @@ export const createMeasurementsSlice: StateCreator<AppState, [], [], Measurement
     
     // Governed Invalidation v1.2.0: Resolução por Afinidade Determinística
     const userId = 'user_current_session_1'; 
+    const { semanticOutputService } = require('../../services/semantic-output');
     semanticOutputService.markDirtyFromMeasurement(userId, measurement.type);
   }
 });

@@ -154,7 +154,7 @@ export default function App() {
       } 
       else if (event === 'SIGNED_OUT') {
         setUser(null);
-        setGuestMode(false); // Returning to Welcome as requested
+        // Preservamos o Guest Mode se estiver definido, conforme T05
       }
       else if (session?.user) {
         setUser(session.user as any);
