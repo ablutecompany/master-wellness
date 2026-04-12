@@ -2,7 +2,6 @@ import { StateCreator } from 'zustand';
 import { AppState } from '../types';
 import { AppContributionEvent } from '../../miniapps/types';
 import { saveToStorage, loadFromStorage } from '../persistence';
-import { semanticOutputService } from '../../services/semantic-output';
 
 const persisted = loadFromStorage();
 
@@ -34,7 +33,12 @@ export const createContributionsSlice: StateCreator<AppState, [], [], Contributi
     
     // Governed Invalidation v1.2.0: Resolução por Afinidade Determinística
     const userId = 'user_current_session_1';
-    semanticOutputService.markDirtyFromContribution(userId, event.sourceAppId, event.eventType);
+    
+    import('../../services/semantic-output')
+      .then(({ semanticOutputService }) => {
+        semanticOutputService.markDirtyFromContribution(userId, event.sourceAppId, event.eventType);
+      })
+      .catch((err) => console.warn('[StrictCycleGuard] falha ao carregar semanticOutputService em contributions:', err));
     
     return { appContributionEvents: nextEvents };
   }),
