@@ -65,7 +65,7 @@ function buildRequestFromAnalysis(analysis: Analysis) {
 const AI_GATEWAY_BASE_URL =
   typeof window !== 'undefined' && (window as any).__AI_GATEWAY_URL
     ? (window as any).__AI_GATEWAY_URL
-    : 'http://localhost:3001';
+    : 'http://localhost:3000';
 
 // ── Client ─────────────────────────────────────────────────────────────────────
 
