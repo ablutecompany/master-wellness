@@ -35,6 +35,13 @@ export const useStore = create<AppState>()(
         credits: state.credits,
         installedAppIds: state.installedAppIds,
       }),
+      onRehydrateStorage: (state) => {
+        return (rehydratedState, error) => {
+          if (!error && rehydratedState) {
+            rehydratedState.setHasHydrated(true);
+          }
+        };
+      },
     }
   )
 );

@@ -127,6 +127,7 @@ export default function App() {
   const setUser = useStore(state => state.setUser);
   const isGuestMode = useStore(state => state.isGuestMode);
   const setGuestMode = useStore(state => state.setGuestMode);
+  const hasHydrated = useStore(state => state.hasHydrated);
 
   useEffect(() => {
     // Check initial session with safety catch
@@ -143,6 +144,7 @@ export default function App() {
       })
       .catch(err => console.error('[App] Auth init hanging/failed:', err))
       .finally(() => setInitialized(true));
+
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -198,13 +200,14 @@ export default function App() {
     }
   }, []);
 
-  if (!initialized) {
+  if (!initialized || !hasHydrated) {
     return (
       <View style={{ flex: 1, backgroundColor: '#010204', justifyContent: 'center', alignItems: 'center' }}>
         <Text style={{ color: '#fff', fontSize: 14, letterSpacing: 2 }}>CARREGANDO...</Text>
       </View>
     );
   }
+
 
   // Segmented Auth Guard: Access Main if Authenticated OR if explicitly in Persistent Guest Mode
   const showMain = !!session || isGuestMode;

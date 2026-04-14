@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { Container, Typography } from '../components/Base';
 import { theme } from '../theme';
 import { User, CreditCard, Settings, LogOut, ChevronRight, Globe, Activity, Users, Utensils } from 'lucide-react-native';

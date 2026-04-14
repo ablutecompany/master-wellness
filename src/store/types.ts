@@ -97,6 +97,7 @@ export interface AppState {
   credits: number;
   appEvents: MiniAppEvent[];
   appContributionEvents: AppContributionEvent[];
+  hasHydrated: boolean;
 
   // ── Mini-App Shell ────────────────────────────────────────────────────────
   installedAppIds: string[];
@@ -127,4 +128,5 @@ export interface AppState {
   isAppInstalled: (id: string) => boolean;
   hasGrantedPermissions: (id: string) => boolean;
   clearSensitiveState: () => void;
+  setHasHydrated: (val: boolean) => void;
 }
