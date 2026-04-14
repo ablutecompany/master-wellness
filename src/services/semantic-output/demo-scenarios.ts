@@ -1,203 +1,169 @@
-/**
- * DEMO SCENARIOS
- * Define os dados de biomarcadores para cada cenário demo.
- * O semanticBundle é CALCULADO pelo analysis-engine — nunca hardcoded aqui.
- */
+import { SemanticOutputState, SemanticDomainView } from './types';
 
-import { computeSemanticFromMeasurements } from './analysis-engine';
-import { SemanticOutputState } from './types';
-import { AnalysisMeasurement, AnalysisEvent, Analysis } from '../../store/types';
-
-export type DemoScenarioKey =
-  | 'balanced'
-  | 'low_energy'
-  | 'poor_recovery'
-  | 'irregular_digestion'
-  | 'unstable_rhythm'
+export type DemoScenarioKey = 
+  | 'balanced' 
+  | 'low_energy' 
+  | 'poor_recovery' 
+  | 'irregular_digestion' 
+  | 'unstable_rhythm' 
   | 'mixed';
 
-// DemoMeasurement e DemoEcosystemFact são agora aliases dos tipos unificados do store
-export type DemoMeasurement = AnalysisMeasurement;
-export type DemoEcosystemFact = AnalysisEvent;
+const baseBundle: Partial<SemanticOutputState> = {
+  version: '1.2.0',
+  generatedAt: Date.now(),
+  status: 'ready',
+  isLive: true,
+};
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-const TS = '2026-04-02T08:00:00.000Z';
-const FAR = 9999999999999;
-let _idx = 0;
-
-function u(marker: string, value: string, unit: string): AnalysisMeasurement {
-  return { id: `demo_m_${_idx++}`, type: 'urinalysis', marker, value, unit, recordedAt: TS };
-}
-function ph(type: 'ecg' | 'ppg' | 'temp' | 'weight', marker: string, value: string, unit: string): AnalysisMeasurement {
-  return { id: `demo_m_${_idx++}`, type, marker, value, unit, recordedAt: TS };
-}
-function fecal(marker: string, value: string): AnalysisMeasurement {
-  return { id: `demo_m_${_idx++}`, type: 'fecal', marker, value, unit: '', recordedAt: TS };
-}
-function eco(type: string, value: string, sourceAppId: string): AnalysisEvent {
+function buildDomain(
+  domain: string, 
+  score: number, 
+  statusLabel: string, 
+  band: 'optimal' | 'fair' | 'poor',
+  summary: string, 
+  description: string, 
+  recommendations: Array<{title: string, actionable: string}>
+): SemanticDomainView {
   return {
-    id: `demo_eco_${_idx++}`, type, value, sourceAppId,
-    recordedAt: TS,
+    domain,
+    label: domain,
+    score,
+    status: 'sufficient_data',
+    statusLabel,
+    band,
+    generatedAt: Date.now(),
+    lastComputedAt: Date.now(),
+    isStale: false,
+    version: '1.2.0',
+    mainInsight: {
+      id: `insight_${domain}`,
+      summary,
+      description,
+      tone: 'informative',
+      factors: []
+    },
+    recommendations: recommendations.map((r, i) => ({
+      id: `rec_${domain}_${i}`,
+      title: r.title || 'Ação Recomendada',
+      actionable: r.actionable,
+      impact: 'médio',
+      effort: 'baixo'
+    })) as any
   };
 }
 
-// ── 6 CENÁRIOS ────────────────────────────────────────────────────────────────
-
-const SCENARIOS_DATA: Record<DemoScenarioKey, { measurements: AnalysisMeasurement[]; ecosystemFacts: AnalysisEvent[] }> = {
-
+export const DEMO_SCENARIOS: Record<DemoScenarioKey, SemanticOutputState> = {
   balanced: {
-    measurements: [
-      u('Gravidade Específica', '1.020', 'sg'), u('pH Urinário', '6.8', 'pH'),
-      u('Proteínas', 'Negativo', ''), u('Glicose', 'Negativo', ''),
-      u('Corpos Cetónicos', 'Negativo', ''), u('Urobilinogénio', 'Normal', ''),
-      ph('ecg', 'Ritmo Cardíaco', '68', 'bpm'), ph('ppg', 'SpO2', '98', '%'),
-      ph('ppg', 'HRV Estimada', '52', 'ms'), ph('temp', 'Temperatura', '36.6', '°C'),
-      ph('weight', 'Peso', '72.0', 'kg'), fecal('Bristol', 'Tipo 4 — Ideal'),
-      fecal('Frequência', '1× por dia'),
-    ],
-    ecosystemFacts: [
-      eco('sleep_duration_logged', '7h 12m', 'deep_sleep'),
-      eco('hydration_goal_met', '2.1 L', '_hydra'),
-      eco('meal_plan_followed', 'Refeições equilibradas', 'nutri-menu'),
-    ],
-  },
+    ...baseBundle,
+    status: 'ready',
+    crossDomainSummary: {
+      summary: 'Ecossistema biográfico em perfeito alinhamento. Todos os vetores indicam estabilidade metabólica.',
+      coherenceFlags: ['homeostasis_achieved'],
+      prioritySignals: [],
+      deduplicatedRecommendations: [{ id: 'cd_1', title: 'Foco Geral', actionable: 'Mantenha o padrão de hidratação atual.', impact: 'alto', effort: 'baixo' }] as any
+    },
+    domains: {
+      sleep: buildDomain('sleep', 92, 'Restaurador', 'optimal', 'Ciclos consolidados', 'O descanso foi profundo e contínuo, cobrindo as necessidades basais do cérebro.', [{ title: 'Manter Janela', actionable: 'Mantenha a hora de deitar atual para ancorar o ritmo.' }]),
+      nutrition: buildDomain('nutrition', 88, 'Equilibrado', 'optimal', 'Aporte estável', 'Não há sinais de stress glicémico. A carga alimentar está perfeitamente faseada.', []),
+      general: buildDomain('general', 90, 'Ótimo', 'optimal', 'Homeostase', 'Biomarcadores gerais em linha com o seu padrão de excelência.', []),
+      energy: buildDomain('energy', 89, 'Elevada', 'optimal', 'Resiliência Alta', 'Dispõe de capacidade de resposta máxima a estímulos físicos.', []),
+      recovery: buildDomain('recovery', 95, 'Completa', 'optimal', 'Vagotomia ideal', 'A resposta parassimpática atuou a 100% durante a noite.', []),
+      performance: buildDomain('performance', 91, 'Pico', 'optimal', 'Prontidão Sistémica', 'Preparado para cargas anaeróbicas exigentes hoje.', [])
+    }
+  } as SemanticOutputState,
 
   low_energy: {
-    measurements: [
-      u('Gravidade Específica', '1.030', 'sg'), u('pH Urinário', '5.5', 'pH'),
-      u('Proteínas', 'Negativo', ''), u('Glicose', 'Negativo', ''),
-      u('Corpos Cetónicos', 'Positivo (+)', ''), u('Urobilinogénio', 'Elevado', ''),
-      u('Cortisol Urinário', 'Elevado', ''),
-      ph('ecg', 'Ritmo Cardíaco', '84', 'bpm'), ph('ppg', 'SpO2', '96', '%'),
-      ph('temp', 'Temperatura', '36.2', '°C'), ph('weight', 'Peso', '71.2', 'kg'),
-      fecal('Bristol', 'Tipo 6 — Mole'), fecal('Frequência', '2× por dia'),
-    ],
-    ecosystemFacts: [
-      eco('sleep_duration_logged', '5h 20m', 'deep_sleep'),
-      eco('caloric_deficit_logged', 'Défice calórico registado', 'nutri-menu'),
-    ],
-  },
+    ...baseBundle,
+    status: 'ready',
+    crossDomainSummary: {
+      summary: 'Detetada quebra substancial na disponibilidade energética global devido a um défice partilhado nos sinais.',
+      coherenceFlags: ['energy_depletion'],
+      prioritySignals: [],
+      deduplicatedRecommendations: [{ id: 'cd_2', title: 'Ritmo Diário', actionable: 'Pondere abrandar o ritmo cognitivo na segunda metade do dia.', impact: 'alto', effort: 'baixo' }] as any
+    },
+    domains: {
+      sleep: buildDomain('sleep', 65, 'Fragmentado', 'fair', 'Despertares noturnos', 'Houve micro-interrupções do sono que impediram a consolidação do repouso celular profundos.', [{ title: 'Reduzir Estimulantes', actionable: 'Evite cafeína 6h antes de deitar.' }]),
+      nutrition: buildDomain('nutrition', 60, 'Défice Calórico', 'fair', 'Reservas baixas', 'A refeição da noite anterior não preencheu o desgaste diário.', []),
+      general: buildDomain('general', 62, 'Fadiga Leve', 'fair', 'Inércia matinal', 'O corpo iniciou o dia com uma ligeira resistência autonómica.', []),
+      energy: buildDomain('energy', 45, 'Em Baixo', 'poor', 'Depleção Aguda', 'O tanque energético reflete a fadiga combinada da semana.', [{ title: 'Pausa Estratégica', actionable: 'Agende uma janela de 20 min sem ecrãs ao meio-dia.' }]),
+      recovery: buildDomain('recovery', 55, 'Lenta', 'poor', 'Ritmo cardíaco de repouso elevado', 'O seu organismo ainda tenta digerir os stresses residuais de ontem.', []),
+      performance: buildDomain('performance', 50, 'Limitada', 'fair', 'Capacidade Anaeróbica Fraca', 'Evite treinos de alta intolerância ao lactato nas próximas horas.', [])
+    }
+  } as SemanticOutputState,
 
   poor_recovery: {
-    measurements: [
-      u('Gravidade Específica', '1.025', 'sg'), u('pH Urinário', '5.8', 'pH'),
-      u('Proteínas', 'Traços (+/-)', ''), u('Glicose', 'Negativo', ''),
-      u('Corpos Cetónicos', 'Negativo', ''), u('Urobilinogénio', 'Normal', ''),
-      ph('ecg', 'Ritmo Cardíaco', '76', 'bpm'), ph('ppg', 'HRV Estimada', '28', 'ms'),
-      ph('ppg', 'SpO2', '97', '%'), ph('temp', 'Temperatura', '36.9', '°C'),
-      ph('weight', 'Peso', '75.3', 'kg'),
-      fecal('Bristol', 'Tipo 3 — Duro'), fecal('Frequência', '1× em 2 dias'),
-    ],
-    ecosystemFacts: [
-      eco('hrv_suppressed', 'HRV suprimida — 28ms', 'deep_sleep'),
-      eco('intense_training_logged', 'Treino intenso registado', '_motion'),
-      eco('sleep_duration_logged', '6h 10m', 'deep_sleep'),
-    ],
-  },
+    ...baseBundle,
+    status: 'ready',
+    crossDomainSummary: {
+      summary: 'O limiar de recuperação cruzou a barreira de fadiga acumulada. Treino ou stress agudo a dominar.',
+      coherenceFlags: ['sympathetic_dominance'],
+      prioritySignals: [],
+      deduplicatedRecommendations: [{ id: 'cd_3', title: 'Calma Interna', actionable: 'Priorize movimentos curtos e respiração diafragmática.', impact: 'alto', effort: 'baixo' }] as any
+    },
+    domains: {
+      sleep: buildDomain('sleep', 70, 'Regular', 'fair', 'Duração aceitável, profundidade fraca', 'Apesar de ter dormido horas suficientes, a taxa de variabilidade cardíaca (HRV) manteve-se suprimida.', []),
+      nutrition: buildDomain('nutrition', 75, 'Aceitável', 'fair', 'Esforço metabólico', 'Os macronutrientes estão equilibrados, mas a reparação tecidular exige mais proteína.', []),
+      general: buildDomain('general', 60, 'Sobrecarga', 'poor', 'Inflamação sistémica', 'A inflamação natural de treino ainda está em fase aguda.', []),
+      energy: buildDomain('energy', 65, 'Funcional', 'fair', 'Energia superficial', 'O sistema nervoso central está a compensar com adrenalina em vez de energia basal.', []),
+      recovery: buildDomain('recovery', 35, 'Insuficiente', 'poor', 'Dominância Simpática', 'O seu corpo permanece em modo de alerta luta-fuga mesmo após a noite.', [{ title: 'Sono Reparador', actionable: 'Hoje, aumente a duração da cama em pelo menos 1 hora.' }]),
+      performance: buildDomain('performance', 45, 'Baixa', 'poor', 'Prontidão Comprometida', 'Risco elevado de lesão ou fadiga extrema se houver esforço de pico.', [])
+    }
+  } as SemanticOutputState,
 
   irregular_digestion: {
-    measurements: [
-      u('Gravidade Específica', '1.018', 'sg'), u('pH Urinário', '7.2', 'pH'),
-      u('Proteínas', 'Negativo', ''), u('Glicose', 'Negativo', ''),
-      u('Urobilinogénio', 'Elevado', ''), u('Bilirrubina', 'Traços (+/-)', ''),
-      ph('ecg', 'Ritmo Cardíaco', '71', 'bpm'), ph('ppg', 'SpO2', '97', '%'),
-      ph('temp', 'Temperatura', '37.1', '°C'), ph('weight', 'Peso', '73.8', 'kg'),
-      fecal('Bristol', 'Tipo 5 — Mole'), fecal('Frequência', '3× por dia'),
-    ],
-    ecosystemFacts: [
-      eco('late_meal_logged', 'Refeição pesada às 23h00', 'nutri-menu'),
-      eco('fasting_cycle_broken', 'Ciclo de jejum interrompido', '_fasting'),
-    ],
-  },
+    ...baseBundle,
+    status: 'ready',
+    crossDomainSummary: {
+      summary: 'Assimetrias no sistema metabólico estão a drenar processos de recuperação noturna.',
+      coherenceFlags: ['metabolic_load'],
+      prioritySignals: [],
+      deduplicatedRecommendations: [{ id: 'cd_4', title: 'Equilíbrio Tardio', actionable: 'Alivie a carga glicémica do jantar hoje.', impact: 'alto', effort: 'baixo' }] as any
+    },
+    domains: {
+      sleep: buildDomain('sleep', 55, 'Agitado', 'poor', 'Picos de temperatura basal', 'Houve elevação térmica e motora coincidente com a janela pós-digestiva.', []),
+      nutrition: buildDomain('nutrition', 40, 'Sobrecarga Tardia', 'poor', 'Digestão noturna ativa', 'Detectado processamento metabólico prolongado durante o primeiro ciclo de sono.', [{ title: 'Jantar Precoce', actionable: 'Faça a última refeição pesada idealmente 3h antes do repouso.' }]),
+      general: buildDomain('general', 65, 'Tenso', 'fair', 'Reação gástrica', 'Desvio dos sinais de homeostase central no abdómen inferior.', []),
+      energy: buildDomain('energy', 70, 'Alternante', 'fair', 'Quebras Glicémicas', 'Picos agudos de energia seguidos de letargia.', []),
+      recovery: buildDomain('recovery', 60, 'Parcial', 'fair', 'Bloqueio parassimpático temporário', 'O sistema autónomo só estabilizou na segunda metade da madrugada.', []),
+      performance: buildDomain('performance', 75, 'Aceitável', 'fair', 'Potência preservada', 'A resistência pode vacilar em esforços de longa duração.', [])
+    }
+  } as SemanticOutputState,
 
   unstable_rhythm: {
-    measurements: [
-      u('Gravidade Específica', '1.022', 'sg'), u('pH Urinário', '6.2', 'pH'),
-      u('Proteínas', 'Negativo', ''), u('Glicose', 'Negativo', ''),
-      u('Cortisol Urinário', 'Elevado', ''), u('Urobilinogénio', 'Normal', ''),
-      ph('ecg', 'Ritmo Cardíaco', '79', 'bpm'), ph('ppg', 'HRV Estimada', '35', 'ms'),
-      ph('ppg', 'SpO2', '97', '%'), ph('temp', 'Temperatura', '36.4', '°C'),
-      ph('weight', 'Peso', '72.5', 'kg'),
-      fecal('Bristol', 'Tipo 4 — Ideal'), fecal('Frequência', '1× por dia'),
-    ],
-    ecosystemFacts: [
-      eco('late_bedtime_logged', 'Hora de deitar: 02h30', 'deep_sleep'),
-      eco('fasting_cycle_broken', 'Jejum com horários irregulares', '_fasting'),
-      eco('sleep_duration_logged', '6h 30m', 'deep_sleep'),
-    ],
-  },
+    ...baseBundle,
+    status: 'ready',
+    crossDomainSummary: {
+      summary: 'Inconsistência circadiana identificada. O corpo apresenta desincronização em relação ao último padrão de referência.',
+      coherenceFlags: ['circadian_drift'],
+      prioritySignals: [],
+      deduplicatedRecommendations: [{ id: 'cd_5', title: 'Sincronizar Relógio', actionable: 'Exponha-se a luz natural no pico da manhã para re-ancorar o relógio.', impact: 'alto', effort: 'baixo' }] as any
+    },
+    domains: {
+      sleep: buildDomain('sleep', 60, 'Desalojado', 'poor', 'Jetlag Social', 'A hora de adormecer desfasou mais de 90 minutos do seu eixo habitual.', [{ title: 'Recuo Progressivo', actionable: 'Deite-se 15m mais cedo a cada dia até repor o ponto zero.' }]),
+      nutrition: buildDomain('nutrition', 72, 'Descompassado', 'fair', 'Refeições fora do eixo', 'A sinalização de fome ocorreu em horários estranhos ao metabolismo basal.', []),
+      general: buildDomain('general', 68, 'Confuso', 'fair', 'Assincronia Térmica', 'A temperatura corporal não seguiu a curva natural de arrefecimento diário.', []),
+      energy: buildDomain('energy', 80, 'Forçada', 'fair', 'Combustível Adrenérgico', 'Cortisol tardio está a mascarar a sensação de cansaço real.', []),
+      recovery: buildDomain('recovery', 70, 'Modulada', 'fair', 'Adaptação forçada', 'A recuperação celular está a processar-se em horários não preferenciais.', []),
+      performance: buildDomain('performance', 65, 'Mediocre', 'fair', 'Reação de Reflexos Lenta', 'Haverá latência neurológica visível ao focar-se em tarefas complexas.', [])
+    }
+  } as SemanticOutputState,
 
   mixed: {
-    measurements: [
-      u('Gravidade Específica', '1.021', 'sg'), u('pH Urinário', '6.5', 'pH'),
-      u('Proteínas', 'Negativo', ''), u('Glicose', 'Negativo', ''),
-      u('Corpos Cetónicos', 'Negativo', ''), u('Urobilinogénio', 'Normal', ''),
-      ph('ecg', 'Ritmo Cardíaco', '66', 'bpm'), ph('ppg', 'SpO2', '97', '%'),
-      ph('ppg', 'HRV Estimada', '48', 'ms'), ph('temp', 'Temperatura', '36.7', '°C'),
-      ph('weight', 'Peso', '74.1', 'kg'),
-      fecal('Bristol', 'Tipo 4 — Ideal'), fecal('Frequência', '1× por dia'),
-    ],
-    ecosystemFacts: [
-      eco('cardio_session_logged', 'Cardio 35 min', '_cardio'),
-      eco('high_protein_intake', 'Proteína alta registada', 'nutri-menu'),
-      eco('sleep_duration_logged', '6h 48m', 'deep_sleep'),
-    ],
-  },
-};
-
-// ── API pública ────────────────────────────────────────────────────────────────
-
-export function getDemoMeasurements(key: DemoScenarioKey): AnalysisMeasurement[] {
-  return SCENARIOS_DATA[key].measurements;
-}
-
-export function getDemoEcosystemFacts(key: DemoScenarioKey): AnalysisEvent[] {
-  return SCENARIOS_DATA[key].ecosystemFacts;
-}
-
-/**
- * Cria um objecto Analysis completo para modo Demo.
- * source: 'demo' — nunca contaminará o histórico real.
- */
-export function createDemoAnalysis(key: DemoScenarioKey): Analysis {
-  const data = SCENARIOS_DATA[key];
-  return {
-    id: `demo_${key}_${Date.now()}`,
-    label: DEMO_LABELS[key],
-    analysisDate: '2026-04-02',
-    source: 'demo',
-    demoScenarioKey: key,
-    measurements: data.measurements,
-    ecosystemFacts: data.ecosystemFacts,
-    createdAt: new Date().toISOString(),
-  };
-}
-
-export const DEMO_LABELS: Record<DemoScenarioKey, string> = {
-  balanced:             'Equilíbrio Geral',
-  low_energy:           'Energia em Baixo',
-  poor_recovery:        'Recuperação Lenta',
-  irregular_digestion:  'Digestão Irregular',
-  unstable_rhythm:      'Ritmo Instável',
-  mixed:                'Perfil Misto',
-};
-
-/**
- * DEMO_SCENARIOS: compatibilidade retroactiva com updateTemporalContext.
- * Cada acesso computa o bundle via analysis-engine (não é preescrito).
- */
-export const DEMO_SCENARIOS: Record<DemoScenarioKey, SemanticOutputState> =
-  new Proxy({} as Record<DemoScenarioKey, SemanticOutputState>, {
-    get(_t, key: string) {
-      const data = SCENARIOS_DATA[key as DemoScenarioKey];
-      if (!data) return undefined;
-      return computeSemanticFromMeasurements(data.measurements, data.ecosystemFacts);
+    ...baseBundle,
+    status: 'ready',
+    crossDomainSummary: {
+      summary: 'Perfil comportamental misto com grande assimetria temporal. Alta potência matinal com fadiga crassa vespertina.',
+      coherenceFlags: ['asymmetrical_response'],
+      prioritySignals: [],
+      deduplicatedRecommendations: [{ id: 'cd_6', title: 'Atenção às Transições', actionable: 'Cuidado extra com as transições de ambiente (quente para o frio).', impact: 'alto', effort: 'baixo' }] as any
     },
-  });
-
-/** @deprecated Usar createDemoAnalysis + semanticOutputService.loadAnalysis */
-export function computeSemanticFromDemo(key: DemoScenarioKey): SemanticOutputState {
-  const data = SCENARIOS_DATA[key];
-  return computeSemanticFromMeasurements(data.measurements, data.ecosystemFacts);
-}
+    domains: {
+      sleep: buildDomain('sleep', 80, 'Bom', 'optimal', 'Eficiência moderada', 'O ciclo RAM esteve presente mas reduzido na proporção global de decanso.', []),
+      nutrition: buildDomain('nutrition', 85, 'Densa', 'optimal', 'Saciedade protetora', 'Ingestão de minerais e gorduras saudáveis alinhou o pico hormonal.', []),
+      general: buildDomain('general', 79, 'Controlado', 'optimal', 'Leituras variadas', 'Respostas divergentes em pulso e respiração balançam-se equitativamente.', []),
+      energy: buildDomain('energy', 55, 'Errática', 'poor', 'Depleção local', 'Quebras notórias na resposta energética do final do dia.', [{ title: 'Mudar Estímulo', actionable: 'Troque a ginástica tardia por leitura antes das 22h.' }]),
+      recovery: buildDomain('recovery', 88, 'Afinada', 'optimal', 'Eficiência metabólica na pausa', 'Processamento de resíduos e ácido lático decorreu sem atrito sistémico.', []),
+      performance: buildDomain('performance', 76, 'Aceitável', 'fair', 'Capacidade condicional', 'A força de pernas está preservada, as capacidades executivas cerebrais nem tanto.', [])
+    }
+  } as SemanticOutputState,
+};
