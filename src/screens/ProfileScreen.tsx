@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View, TouchableOpacity, ScrollView } from 'react-native';
 import { Container, Typography } from '../components/Base';
 import { theme } from '../theme';
-import { User, CreditCard, Settings, LogOut, ChevronRight, Globe, Activity, Users, Utensils, ShieldAlert } from 'lucide-react-native';
+import { User, CreditCard, Settings, LogOut, ChevronRight, Globe, Activity, Users, Utensils } from 'lucide-react-native';
 import { GatingOverlay } from '../components/GatingOverlay';
 import { useStore } from '../store/useStore';
 import * as Selectors from '../store/selectors';
