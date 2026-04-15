@@ -145,6 +145,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const measurements = useStore(Selectors.selectMeasurements);
   const installedAppIds = useStore(Selectors.selectInstalledAppIds);
   const isGuestMode = useStore(state => state.isGuestMode);
+  const guestProfile = useStore(state => state.guestProfile);
   const isMeasuring = useStore(Selectors.selectIsMeasuring);
   const isNfcLoading = useStore(Selectors.selectIsNfcLoading);
 
@@ -422,6 +423,25 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [profileWeight, setProfileWeight] = useState(user?.weight ? user.weight.toString() : '');
   const [profileHeight, setProfileHeight] = useState(user?.height ? user.height.toString() : '');
   const [profileGoal, setProfileGoal] = useState(user?.goals?.[0] || 'Performance');
+
+  // A. Corrigir sincronização local do Profile ao abrir o modal
+  useEffect(() => {
+    if (showProfile) {
+      if (isGuestMode) {
+        setProfileName(guestProfile?.name || 'Convidada');
+        setProfileAge(guestProfile?.age ? guestProfile.age.toString() : '');
+        setProfileWeight(guestProfile?.weight ? guestProfile.weight.toString() : '');
+        setProfileHeight(guestProfile?.height ? guestProfile.height.toString() : '');
+        setProfileGoal(guestProfile?.goals?.[0] || 'Performance');
+      } else {
+        setProfileName(user?.name || 'Utilizador');
+        setProfileAge(user?.age ? user.age.toString() : '');
+        setProfileWeight(user?.weight ? user.weight.toString() : '');
+        setProfileHeight(user?.height ? user.height.toString() : '');
+        setProfileGoal(user?.goals?.[0] || 'Performance');
+      }
+    }
+  }, [showProfile, isGuestMode, user, guestProfile]);
 
   // Odometer calculation (Factual)
   const diasSemExame = useStore(Selectors.selectDaysSinceLastMeasurement);
@@ -2036,13 +2056,22 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               </View>
 
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
-                <View style={styles.profileInfo}>
-                  <View style={styles.avatarMain}>
-                    <User size={40} color="#00F2FF" />
+                {/* A. Cabeçalho */}
+                <View style={[styles.profileInfo, { marginBottom: 24, flexDirection: 'column', alignItems: 'center' }]}>
+                  <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(0, 242, 255, 0.1)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#00F2FF', marginBottom: 12 }}>
+                    <Typography style={{ color: '#00F2FF', fontSize: 24, fontWeight: 'bold' }}>
+                      {user?.name ? user.name.charAt(0).toUpperCase() : (isGuestMode ? 'G' : 'U')}
+                    </Typography>
                   </View>
-                  <Typography variant="caption" style={styles.profilePlan}>{user?.goals?.[0] || 'Performance'}</Typography>
+                  <Typography variant="h3" style={{ color: '#fff' }}>{user?.name || guestProfile?.name || 'Utilizador'}</Typography>
+                  <View style={{ backgroundColor: isGuestMode ? 'rgba(255,255,255,0.1)' : 'rgba(0, 242, 255, 0.15)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, marginTop: 8 }}>
+                    <Typography variant="caption" style={{ color: isGuestMode ? '#aaa' : '#00F2FF', fontWeight: '600' }}>
+                      {isGuestMode ? 'Modo Guest' : 'Conta pessoal'}
+                    </Typography>
+                  </View>
                 </View>
 
+                {/* A.1. Nome de Utilizador Editável */}
                 <View style={styles.inputGroup}>
                   <Typography style={styles.inputLabel}>NOME DO UTILIZADOR</Typography>
                   <TextInput
@@ -2053,60 +2082,98 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   />
                 </View>
 
-                <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <View style={[styles.inputGroup, { flex: 1 }]}>
+                {/* B. Foco de bem-estar (Selector) */}
+                <View style={{ marginBottom: 24 }}>
+                  <Typography style={[styles.inputLabel, { marginBottom: 12 }]}>FOCO ATUAL</Typography>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                    {['Longevidade', 'Performance', 'Imunidade', 'Recuperação'].map(goal => {
+                      const isSelected = profileGoal === goal;
+                      return (
+                        <TouchableOpacity
+                          key={goal}
+                          onPress={() => setProfileGoal(goal)}
+                          style={{
+                            paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+                            backgroundColor: isSelected ? 'rgba(0, 242, 255, 0.2)' : 'rgba(255,255,255,0.05)',
+                            borderWidth: 1, borderColor: isSelected ? '#00F2FF' : 'transparent'
+                          }}
+                        >
+                          <Typography style={{ color: isSelected ? '#fff' : 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: isSelected ? '700' : '400' }}>{goal}</Typography>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                {/* C. Dados base */}
+                <View style={{ flexDirection: 'row', gap: 12, marginBottom: 24 }}>
+                  <View style={[styles.inputGroup, { flex: 1, marginBottom: 0 }]}>
                     <Typography style={styles.inputLabel}>IDADE (ANOS)</Typography>
-                    <TextInput
-                      style={styles.inputField}
-                      value={profileAge}
-                      onChangeText={setProfileAge}
-                      keyboardType="numeric"
-                      placeholder="Por definir"
-                      placeholderTextColor="rgba(255,255,255,0.3)"
-                    />
+                    <TextInput style={styles.inputField} value={profileAge} onChangeText={setProfileAge} keyboardType="numeric" placeholder="--" placeholderTextColor="rgba(255,255,255,0.3)" />
                   </View>
-                  <View style={[styles.inputGroup, { flex: 1 }]}>
+                  <View style={[styles.inputGroup, { flex: 1, marginBottom: 0 }]}>
                     <Typography style={styles.inputLabel}>PESO (KG)</Typography>
-                    <TextInput
-                      style={styles.inputField}
-                      value={profileWeight}
-                      onChangeText={setProfileWeight}
-                      keyboardType="numeric"
-                      placeholder="Por definir"
-                      placeholderTextColor="rgba(255,255,255,0.3)"
-                    />
+                    <TextInput style={styles.inputField} value={profileWeight} onChangeText={setProfileWeight} keyboardType="numeric" placeholder="--" placeholderTextColor="rgba(255,255,255,0.3)" />
                   </View>
-                </View>
-
-                <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <View style={[styles.inputGroup, { flex: 1 }]}>
+                  <View style={[styles.inputGroup, { flex: 1, marginBottom: 0 }]}>
                     <Typography style={styles.inputLabel}>ALTURA (CM)</Typography>
-                    <TextInput
-                      style={styles.inputField}
-                      value={profileHeight}
-                      onChangeText={setProfileHeight}
-                      keyboardType="numeric"
-                      placeholder="Por definir"
-                      placeholderTextColor="rgba(255,255,255,0.3)"
-                    />
+                    <TextInput style={styles.inputField} value={profileHeight} onChangeText={setProfileHeight} keyboardType="numeric" placeholder="--" placeholderTextColor="rgba(255,255,255,0.3)" />
                   </View>
                 </View>
 
-                <TouchableOpacity
-                  style={styles.saveBtn}
-                  onPress={() => {
-                    useStore.getState().setUser({
-                      ...user,
-                      name: profileName,
-                      age: profileAge ? parseInt(profileAge, 10) : undefined,
-                      weight: profileWeight ? parseFloat(profileWeight) : undefined,
-                      height: profileHeight ? parseFloat(profileHeight) : undefined
-                    });
-                    setShowProfile(false);
-                  }}
-                >
-                  <Typography style={styles.saveBtnText}>GRAVAR ALTERAÇÕES</Typography>
-                </TouchableOpacity>
+                {/* E. Gravar e Sessão */}
+                <View style={{ flexDirection: 'column', gap: 12 }}>
+                  <TouchableOpacity
+                    style={styles.saveBtn}
+                    onPress={() => {
+                      if (isGuestMode) {
+                        useStore.getState().updateGuestProfile({
+                          name: profileName || 'Convidada',
+                          age: profileAge ? parseInt(profileAge, 10) : undefined,
+                          weight: profileWeight ? parseFloat(profileWeight) : undefined,
+                          height: profileHeight ? parseFloat(profileHeight) : undefined,
+                          goals: [profileGoal]
+                        });
+                      } else {
+                        // NOTA TÉCNICA (HARDENING):
+                        // Atualmente não existe profileService.updateProfile() implementado no backend 
+                        // para efetuar o sync real desta mutação à db supabase.
+                        // O setUser(...) afeta unicamente o estado do store local desta sessão.
+                        useStore.getState().setUser({
+                          ...user!,
+                          name: profileName || user?.name || 'Utilizador',
+                          age: profileAge ? parseInt(profileAge, 10) : undefined,
+                          weight: profileWeight ? parseFloat(profileWeight) : undefined,
+                          height: profileHeight ? parseFloat(profileHeight) : undefined,
+                          goals: [profileGoal]
+                        });
+                      }
+                      setShowProfile(false);
+                    }}
+                  >
+                    <Typography style={styles.saveBtnText}>GRAVAR ALTERAÇÕES</Typography>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={{ alignItems: 'center', paddingVertical: 14 }}
+                    onPress={() => {
+                      if (isGuestMode) {
+                        // Resets Guest
+                        useStore.getState().setGuestMode(false);
+                        useStore.getState().clearSensitiveState();
+                      } else {
+                        useStore.getState().setUser(null);
+                        useStore.getState().setSessionToken(null);
+                        useStore.getState().clearSensitiveState();
+                      }
+                      setShowProfile(false);
+                    }}
+                  >
+                    <Typography style={{ color: '#FF3C3C', fontWeight: '600', fontSize: 13, letterSpacing: 0.5 }}>
+                      {isGuestMode ? 'SAIR DO MODO GUEST' : 'TERMINAR SESSÃO'}
+                    </Typography>
+                  </TouchableOpacity>
+                </View>
               </ScrollView>
             </BlurView>
           </TouchableOpacity>
