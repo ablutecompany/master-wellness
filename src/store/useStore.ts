@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Platform } from 'react-native';
-import { AppState } from './types';
+import { AppState } from './state-types';
 import { createProfileSlice } from './slices/profile';
 import { createMeasurementsSlice } from './slices/measurements';
 import { createAnalysesSlice } from './slices/analyses';
@@ -35,11 +35,15 @@ export const useStore = create<AppState>()(
         credits: state.credits,
         installedAppIds: state.installedAppIds,
       }),
-      onRehydrateStorage: (state) => {
+      onRehydrateStorage: () => {
         return (rehydratedState, error) => {
-          if (!error && rehydratedState) {
-            rehydratedState.setHasHydrated(true);
+          if (error) {
+            console.warn('[Store] Hydration error:', error);
           }
+          // Always mark hydrated — prevents infinite loading screen on first boot
+          // (rehydratedState can be null when localStorage is empty)
+          const store = rehydratedState ?? useStore.getState();
+          store?.setHasHydrated(true);
         };
       },
     }

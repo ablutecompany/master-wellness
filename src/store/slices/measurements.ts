@@ -1,5 +1,4 @@
-import { StateCreator } from 'zustand';
-import { AppState, Measurement } from '../types';
+import { AppState, Measurement } from '../state-types';
 
 export interface MeasurementsSlice {
   measurements: Measurement[];

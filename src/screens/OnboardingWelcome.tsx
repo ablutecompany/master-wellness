@@ -29,7 +29,28 @@ const TextureOverlay: React.FC = () => {
   );
 };
 
+// ── Reusable Premium Button ───────────────────────────────────────────────────
+export const Button: React.FC<{ 
+  title: string; 
+  onPress: () => void; 
+  variant?: 'primary' | 'secondary' 
+}> = ({ title, onPress, variant = 'primary' }) => {
+  const isPrimary = variant === 'primary';
+  return (
+    <TouchableOpacity 
+      style={isPrimary ? styles.primaryButton : styles.secondaryButton} 
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <Text style={isPrimary ? styles.primaryButtonText : styles.secondaryButtonText}>
+        {title}
+      </Text>
+    </TouchableOpacity>
+  );
+};
+
 // ── Welcome Screen ────────────────────────────────────────────────────────────
+
 export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const logoOpacity    = useRef(new Animated.Value(0)).current;
   const logoScale      = useRef(new Animated.Value(0.94)).current;
@@ -104,13 +125,8 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         </Animated.View>
 
         <Animated.View style={[styles.buttonContainer, { opacity: taglineOpacity }]}>
-          <TouchableOpacity style={styles.primaryButton} onPress={goOnboarding}>
-            <Text style={styles.primaryButtonText}>Começar Agora</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.secondaryButton} onPress={goLogin}>
-            <Text style={styles.secondaryButtonText}>Já tenho conta — Entrar</Text>
-          </TouchableOpacity>
+          <Button title="Começar Agora" onPress={goOnboarding} variant="primary" />
+          <Button title="Já tenho conta — Entrar" onPress={goLogin} variant="secondary" />
         </Animated.View>
       </View>
     </View>

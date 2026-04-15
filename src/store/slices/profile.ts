@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { AppState, UserProfile } from '../types';
+import { AppState, UserProfile } from '../state-types';
 
 export interface ProfileSlice {
   user: UserProfile | null;

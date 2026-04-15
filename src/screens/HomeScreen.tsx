@@ -1456,6 +1456,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                                 </Typography>
                               </View>
                             )}
+                            {highestPriority ? (
                               <TouchableOpacity
                                 style={{ marginBottom: 24, padding: 20, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
                                 activeOpacity={0.7}
