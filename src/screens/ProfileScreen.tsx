@@ -118,29 +118,19 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
               <Typography variant="caption" style={styles.sectionTitle}>MÓDULOS FAMILIARES</Typography>
             </View>
 
-            <GatingOverlay
-              isBlocked={true} // Em implementação
-              message="Cria um agregado com sub-contas para desbloquear funcionalidades familiares."
-              actionLabel="Criar Agregado (Em Breve)"
-              onAction={() => {}}
-              style={{ marginHorizontal: -24, width: 'auto' }}
+            <TouchableOpacity 
+              style={styles.menuItem} 
+              onPress={() => Alert.alert('Criar Agregado (Em Breve)', 'A criação e gestão central de agregados familiares será ativada na próxima versão através do ícone no ecrã principal.')}
             >
-              <TouchableOpacity style={styles.menuItem}>
-                <View style={styles.menuIcon}>
-                  <Users size={20} color={theme.colors.text} />
-                </View>
-                <Typography style={styles.menuTitle}>Gestão do Agregado Familiar</Typography>
-                <ChevronRight size={20} color={theme.colors.textMuted} />
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.menuItem}>
-                <View style={styles.menuIcon}>
-                  <Utensils size={20} color={theme.colors.text} />
-                </View>
-                <Typography style={styles.menuTitle}>Meal Planner Partilhado</Typography>
-                <ChevronRight size={20} color={theme.colors.textMuted} />
-              </TouchableOpacity>
-            </GatingOverlay>
+              <View style={styles.menuIcon}>
+                <Users size={20} color={theme.colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Typography style={styles.menuTitle}>Criar Agregado</Typography>
+                <Typography variant="caption" style={{ color: theme.colors.textMuted, fontSize: 11 }}>Partilhar com a família</Typography>
+              </View>
+              <ChevronRight size={20} color={theme.colors.primary} />
+            </TouchableOpacity>
           </View>
         )}
 
@@ -156,7 +146,9 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
         <TouchableOpacity style={styles.logoutBtn}>
           <LogOut size={20} color={theme.colors.error} />
-          <Typography style={[styles.menuTitle, { color: theme.colors.error }]}>Terminar Sessão</Typography>
+          <Typography style={[styles.menuTitle, { color: theme.colors.error, marginLeft: 12 }]}>
+            {isGuestMode ? 'Sair do modo Guest' : 'Terminar Sessão'}
+          </Typography>
         </TouchableOpacity>
       </ScrollView>
     </Container>

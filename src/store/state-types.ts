@@ -61,9 +61,11 @@ export interface AppState {
   installedAppIds: string[];
   activeApp: MiniAppManifest | null;
   grantedPermissions: Record<string, Permission[]>;
+  demoAnalysis: Analysis | null;
   setUser: (user: UserProfile | null) => void;
   setGuestMode: (isGuest: boolean) => void;
   updateGuestProfile: (profile: Partial<UserProfile>) => void;
+  setDemoAnalysis: (analysis: Analysis | null) => void;
   addMeasurement: (measurement: Measurement) => void;
   addAnalysis: (analysis: Analysis) => void;
   removeAnalysis: (id: string) => void;

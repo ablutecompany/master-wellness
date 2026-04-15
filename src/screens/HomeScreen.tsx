@@ -219,8 +219,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   // --- UI & NAVIGATION STATE ---
   const [showDemoModal, setShowDemoModal] = useState(false);
-  // Demo cria uma Analysis temporária em memória. NÃO contamina analyses[].
-  const [demoAnalysis, setDemoAnalysis] = useState<Analysis | null>(null);
+  // Demo uses the app-wide global demoAnalysis.
+  const demoAnalysis = useStore(state => state.demoAnalysis);
+  const setDemoAnalysis = useStore(state => state.setDemoAnalysis);
   const [showHistorico, setShowHistorico] = useState(false);
   const [bioTab, setBioTab] = useState(0);
   const [themesOpen, setThemesOpen] = useState(false);
@@ -964,20 +965,40 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       >
         {/* ── HEADER ──────────────────────────────────────────────────────── */}
         <View style={styles.header}>
-          <View style={{ position: 'relative' }}>
+          <View style={{ position: 'relative', flex: 1 }}>
             <BrandLogo size="medium" />
-            {/* Máscara invisível para absorver os toques e impedir seleção de texto do logotipo */}
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => {
                 if (Platform.OS !== 'web') Vibration.vibrate(10);
-                console.log('Logo pressed');
               }}
               style={[StyleSheet.absoluteFill, { zIndex: 10 }]}
             />
           </View>
-          <View style={styles.headerRight}>
+          
+          {demoAnalysis && (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              <TouchableOpacity 
+                activeOpacity={0.7}
+                style={{ backgroundColor: '#00F2FF20', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: '#00F2FF40' }}
+                onPress={() => Alert.alert('Modo Demo Ativo', 'Os resultados são gerados processualmente para demonstração e não representam amostras biológicas recolhidas pelo dispositivo doméstico.', [{text: 'Prosseguir'}, {text: 'Desativar Demo', onPress: handleExitDemo, style: 'destructive'}])}
+              >
+                <Typography style={{ color: '#00F2FF', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 }}>DEMO MODE</Typography>
+              </TouchableOpacity>
+            </View>
+          )}
+          {!demoAnalysis && <View style={{ flex: 1 }} />}
+
+          <View style={[styles.headerRight, { flex: 1 }]}>
             <View style={styles.topIconRow}>
+              <TouchableOpacity style={styles.iconCircle} onPress={() => setShowDemoModal(true)}>
+                <Sparkles size={20} color="#fff" />
+              </TouchableOpacity>
+              {!isGuestMode && (
+                <TouchableOpacity style={styles.iconCircle} onPress={() => Alert.alert('Área Familiar', 'A gestão central do agregado e sincronização de biometrias partilhadas será efetuada nesta tab no futuro.')}>
+                  <Users size={20} color="#fff" />
+                </TouchableOpacity>
+              )}
               <TouchableOpacity style={styles.iconCircle} onPress={() => setShowControl(true)}>
                 <SlidersHorizontal size={20} color="#fff" />
               </TouchableOpacity>
@@ -1202,8 +1223,13 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                 <Typography style={styles.themePanelTitle}>INTERPRETAÇÃO DAS ANÁLISES POR IA</Typography>
                 {demoAnalysis && (
-                  <View style={{ backgroundColor: '#00F2FF20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 8, borderWidth: 1, borderColor: '#00F2FF40' }}>
-                    <Typography style={{ color: '#00F2FF', fontSize: 9, fontWeight: 'bold' }}>MODO DEMO</Typography>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
+                    <View style={{ backgroundColor: '#00F2FF20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: '#00F2FF40' }}>
+                      <Typography style={{ color: '#00F2FF', fontSize: 9, fontWeight: 'bold' }}>MODO DEMO</Typography>
+                    </View>
+                    <TouchableOpacity onPress={handleExitDemo} style={{ marginLeft: 6, backgroundColor: 'rgba(255, 60, 60, 0.1)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: 'rgba(255, 60, 60, 0.3)' }}>
+                      <Typography style={{ color: '#FF3C3C', fontSize: 9, fontWeight: 'bold' }}>X SAIR</Typography>
+                    </TouchableOpacity>
                   </View>
                 )}
               </View>
@@ -1657,13 +1683,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   </View>
                 )}
 
-                <TouchableOpacity
-                  style={{ backgroundColor: 'rgba(0, 242, 255, 0.1)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, flexDirection: 'row', alignItems: 'center' }}
-                  onPress={() => setShowDemoModal(true)}
-                >
-                  <Sparkles size={16} color="#00F2FF" />
-                  <Typography style={{ color: '#00F2FF', fontSize: 13, fontWeight: 'bold', marginLeft: 8 }}>MODO DEMO</Typography>
-                </TouchableOpacity>
               </View>
 
               {/* ── Temporal Context Header ── */}
@@ -2004,6 +2023,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       {/* ── PROFILE MODAL ─────────────────────────────────────────────────── */}
       <Modal visible={showProfile} transparent animationType="fade" onRequestClose={() => setShowProfile(false)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowProfile(false)}>
+          <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFillObject} />
+          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.7)' }]} />
+          
           <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
             <BlurView intensity={70} tint="dark" style={[styles.modalContent, { maxHeight: height * 0.8 }]}>
               <View style={styles.modalHeader}>
@@ -2068,15 +2090,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       placeholderTextColor="rgba(255,255,255,0.3)"
                     />
                   </View>
-                  <View style={[styles.inputGroup, { flex: 1 }]}>
-                    <Typography style={styles.inputLabel}>FOCO ACTUAL</Typography>
-                    <TextInput
-                      style={styles.inputField}
-                      value={profileGoal}
-                      onChangeText={setProfileGoal}
-                      placeholderTextColor="rgba(255,255,255,0.3)"
-                    />
-                  </View>
                 </View>
 
                 <TouchableOpacity
@@ -2087,8 +2100,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       name: profileName,
                       age: profileAge ? parseInt(profileAge, 10) : undefined,
                       weight: profileWeight ? parseFloat(profileWeight) : undefined,
-                      height: profileHeight ? parseFloat(profileHeight) : undefined,
-                      goals: [profileGoal]
+                      height: profileHeight ? parseFloat(profileHeight) : undefined
                     });
                     setShowProfile(false);
                   }}

@@ -33,10 +33,16 @@ const TYPE_MAP: Record<string, { name: string; unit: string; source: 'ablute' | 
 
 export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
-  const measurements = useStore(Selectors.selectMeasurements);
+  const storeMeasurements = useStore(Selectors.selectMeasurements);
+  const demoAnalysis = useStore(state => state.demoAnalysis);
   const isGuestMode = useStore(state => state.isGuestMode);
 
-  const exams: Exam[] = measurements.map((m) => {
+  // Use the demo's mocked measurements preferentially if in sandbox mode
+  const rawMeasurements = demoAnalysis 
+    ? demoAnalysis.measurements.map(m => ({ id: m.id, type: m.type, sourceAppId: m.sourceAppId || 'demo', timestamp: m.recordedAt, value: { marker: m.marker, value: m.value, unit: m.unit } as any }))
+    : storeMeasurements;
+
+  const exams: Exam[] = rawMeasurements.map((m) => {
     const config = TYPE_MAP[m.type] || { name: m.type, unit: '', source: 'health_kit' };
     
     // Se o valor for um objeto com campo 'marker', usamos como nome

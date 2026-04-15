@@ -4,10 +4,13 @@ import { AppState, Analysis } from '../types';
 import { ProfileService } from '../../services/user/profileService';
 
 export const createAnalysesSlice: StateCreator<AppState, [], [], Pick<AppState,
-  'analyses' | 'activeAnalysisId' | 'addAnalysis' | 'removeAnalysis' | 'setActiveAnalysisId' | 'setAnalyses'
+  'analyses' | 'activeAnalysisId' | 'addAnalysis' | 'removeAnalysis' | 'setActiveAnalysisId' | 'setAnalyses' | 'demoAnalysis' | 'setDemoAnalysis'
 >> = (set, get) => ({
   analyses: [],
   activeAnalysisId: null,
+  demoAnalysis: null,
+
+  setDemoAnalysis: (demoAnalysis: Analysis | null) => set({ demoAnalysis }),
 
   setAnalyses: (analyses: Analysis[]) => set({ analyses }),
 
