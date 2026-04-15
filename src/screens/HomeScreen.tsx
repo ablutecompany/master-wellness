@@ -1007,8 +1007,19 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
           <View style={[styles.headerRight, { flex: 1 }]}>
             <View style={styles.topIconRow}>
-              <TouchableOpacity style={styles.iconCircle} onPress={() => setShowDemoModal(true)}>
-                <Sparkles size={20} color="#fff" />
+              <TouchableOpacity 
+                style={{ 
+                  backgroundColor: 'rgba(255,255,255,0.12)', 
+                  paddingHorizontal: 12, 
+                  paddingVertical: 6, 
+                  borderRadius: 12, 
+                  borderWidth: 1, 
+                  borderColor: 'rgba(255,255,255,0.2)',
+                  marginRight: 4
+                }} 
+                onPress={() => setShowDemoModal(true)}
+              >
+                <Typography style={{ color: '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 1 }}>DEMO</Typography>
               </TouchableOpacity>
               {!isGuestMode && (
                 <TouchableOpacity style={styles.iconCircle} onPress={() => Alert.alert('Área Familiar', 'A gestão central do agregado e sincronização de biometrias partilhadas será efetuada nesta tab no futuro.')}>
