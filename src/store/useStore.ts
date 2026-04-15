@@ -35,15 +35,17 @@ export const useStore = create<AppState>()(
         credits: state.credits,
         installedAppIds: state.installedAppIds,
       }),
-      onRehydrateStorage: () => {
+      onRehydrateStorage: (state) => {
         return (rehydratedState, error) => {
           if (error) {
             console.warn('[Store] Hydration error:', error);
           }
-          // Always mark hydrated — prevents infinite loading screen on first boot
-          // (rehydratedState can be null when localStorage is empty)
-          const store = rehydratedState ?? useStore.getState();
-          store?.setHasHydrated(true);
+          if (rehydratedState) {
+            rehydratedState.setHasHydrated(true);
+          } else if (state) {
+            // Secure access to store actions completely bypassing Temporal Dead Zone
+            state.setHasHydrated(true);
+          }
         };
       },
     }
