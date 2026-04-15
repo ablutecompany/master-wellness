@@ -8,8 +8,7 @@ import {
   useWindowDimensions,
   Platform,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { Typography } from './Base';
+import { Typography, BlurView } from './Base';
 import { X, ChevronRight, Calendar } from 'lucide-react-native';
 
 // O Modal agora foca-se exclusivamente na navegação temporal

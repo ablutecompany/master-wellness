@@ -7,10 +7,8 @@ import {
   ScrollView,
   Platform,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Typography, BlurView, LinearGradient } from '../components/Base';
 import { X } from 'lucide-react-native';
-import { Typography } from '../components/Base';
 import { MiniAppManifest, Permission, PERMISSION_LABELS } from './types';
 import { useStore } from '../store/useStore';
 import { useAnalytics } from './analytics';

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, Modal, ScrollView } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { Typography } from './Base';
+import { Typography, BlurView } from './Base';
 import { theme } from '../theme';
 import Svg, { Circle, Defs, LinearGradient, Stop, G } from 'react-native-svg';
 import { Activity, Zap, Target, Heart, Moon, Brain, User } from 'lucide-react-native';

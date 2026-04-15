@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, ScrollView, TouchableOpacity, Modal, Platform } from 'react-native';
-import { Container, Typography } from '../components/Base';
+import { Container, Typography, LinearGradient, BlurView } from '../components/Base';
 import { theme } from '../theme';
 import { 
   Database, 
@@ -10,8 +10,6 @@ import {
   Info,
   X
 } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { useStore } from '../store/useStore';
 import * as Selectors from '../store/selectors';
 import { GatingOverlay } from '../components/GatingOverlay';

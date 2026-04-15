@@ -1,8 +1,18 @@
 import React, { ReactNode } from 'react';
 import { StyleSheet, Text, TextStyle, View, ViewStyle, ScrollView, SafeAreaView, Platform, Dimensions } from 'react-native';
 import { theme } from '../theme';
-import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
+// Web-safe fallbacks for expo imports to prevent Minified React error #130 on Web
+export const LinearGradient = Platform.OS === 'web'
+  ? ({ style, colors, ...props }: any) => (
+    <View style={[style, { backgroundColor: colors?.[0] ?? 'rgba(0,0,0,0.8)' }]} {...props} />
+  )
+  : (() => { const { LinearGradient: LG } = require('expo-linear-gradient'); return LG; })();
+
+export const BlurView = Platform.OS === 'web'
+  ? ({ style, ...props }: any) => (
+    <View style={[style, { backgroundColor: 'rgba(0,0,0,0.6)' }]} {...props} />
+  )
+  : (() => { const { BlurView: BV } = require('expo-blur'); return BV; })();
 
 const { width, height } = Dimensions.get('window');
 
