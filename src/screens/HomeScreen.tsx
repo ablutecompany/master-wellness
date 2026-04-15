@@ -417,12 +417,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   };
 
   const [stableExpanded, setStableExpanded] = useState(false);
-  // Profile Form State (Connected to real state)
   const [profileName, setProfileName] = useState(user?.name || 'Utilizadora');
   const [profileAge, setProfileAge] = useState(user?.age ? user.age.toString() : '');
   const [profileWeight, setProfileWeight] = useState(user?.weight ? user.weight.toString() : '');
   const [profileHeight, setProfileHeight] = useState(user?.height ? user.height.toString() : '');
-  const [profileGoal, setProfileGoal] = useState(user?.goals?.[0] || 'Performance');
 
   // A. Corrigir sincronização local do Profile ao abrir o modal
   useEffect(() => {
@@ -432,13 +430,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         setProfileAge(guestProfile?.age ? guestProfile.age.toString() : '');
         setProfileWeight(guestProfile?.weight ? guestProfile.weight.toString() : '');
         setProfileHeight(guestProfile?.height ? guestProfile.height.toString() : '');
-        setProfileGoal(guestProfile?.goals?.[0] || 'Performance');
       } else {
         setProfileName(user?.name || 'Utilizador');
         setProfileAge(user?.age ? user.age.toString() : '');
         setProfileWeight(user?.weight ? user.weight.toString() : '');
         setProfileHeight(user?.height ? user.height.toString() : '');
-        setProfileGoal(user?.goals?.[0] || 'Performance');
       }
     }
   }, [showProfile, isGuestMode, user, guestProfile]);
@@ -2082,28 +2078,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   />
                 </View>
 
-                {/* B. Foco de bem-estar (Selector) */}
-                <View style={{ marginBottom: 24 }}>
-                  <Typography style={[styles.inputLabel, { marginBottom: 12 }]}>FOCO ATUAL</Typography>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                    {['Longevidade', 'Performance', 'Imunidade', 'Recuperação'].map(goal => {
-                      const isSelected = profileGoal === goal;
-                      return (
-                        <TouchableOpacity
-                          key={goal}
-                          onPress={() => setProfileGoal(goal)}
-                          style={{
-                            paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-                            backgroundColor: isSelected ? 'rgba(0, 242, 255, 0.2)' : 'rgba(255,255,255,0.05)',
-                            borderWidth: 1, borderColor: isSelected ? '#00F2FF' : 'transparent'
-                          }}
-                        >
-                          <Typography style={{ color: isSelected ? '#fff' : 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: isSelected ? '700' : '400' }}>{goal}</Typography>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </View>
+
 
                 {/* C. Dados base */}
                 <View style={{ flexDirection: 'row', gap: 12, marginBottom: 24 }}>
@@ -2131,8 +2106,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                           name: profileName || 'Convidada',
                           age: profileAge ? parseInt(profileAge, 10) : undefined,
                           weight: profileWeight ? parseFloat(profileWeight) : undefined,
-                          height: profileHeight ? parseFloat(profileHeight) : undefined,
-                          goals: [profileGoal]
+                          height: profileHeight ? parseFloat(profileHeight) : undefined
                         });
                       } else {
                         // NOTA TÉCNICA (HARDENING):
@@ -2144,8 +2118,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                           name: profileName || user?.name || 'Utilizador',
                           age: profileAge ? parseInt(profileAge, 10) : undefined,
                           weight: profileWeight ? parseFloat(profileWeight) : undefined,
-                          height: profileHeight ? parseFloat(profileHeight) : undefined,
-                          goals: [profileGoal]
+                          height: profileHeight ? parseFloat(profileHeight) : undefined
                         });
                       }
                       setShowProfile(false);

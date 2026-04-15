@@ -42,12 +42,14 @@ function MainTabs() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: Platform.OS === 'web' ? {
+          display: 'none',
           height: 64,
           backgroundColor: '#05070A',
           borderTopColor: 'rgba(255,255,255,0.08)',
           paddingBottom: 8,
           paddingTop: 8,
         } : {
+          display: 'none',
           backgroundColor: '#05070A',
           borderTopColor: 'rgba(255,255,255,0.08)',
         },
