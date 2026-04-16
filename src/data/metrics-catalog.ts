@@ -149,17 +149,13 @@ export const METRICS_CATALOG: Record<string, MetricDefinition> = {
     key: 'bristol', label: 'Bristol', category: 'fecal', unit: '', valueType: 'scale',
     supportedModes: ['demo', 'real'], visibleByDefault: true, visualOrder: 400
   },
-  'fecal_freq': {
-    key: 'fecal_freq', label: 'Frequência fecal', category: 'fecal', unit: 'n/semana', valueType: 'number',
-    supportedModes: ['demo', 'real'], visibleByDefault: true, visualOrder: 410
-  },
-  'fecal_area': {
-    key: 'fecal_area', label: 'Área fecal', category: 'fecal', unit: 'cm²', valueType: 'number',
-    supportedModes: ['demo', 'real'], visibleByDefault: false, visualOrder: 420
-  },
   'bowel_regularity': {
     key: 'bowel_regularity', label: 'Regularidade intestinal', category: 'fecal', unit: '', valueType: 'text',
-    supportedModes: ['demo', 'real'], visibleByDefault: true, visualOrder: 430
+    supportedModes: ['demo', 'real'], visibleByDefault: true, visualOrder: 410
+  },
+  'fecal_characterization': {
+    key: 'fecal_characterization', label: 'Caracterização', category: 'fecal', unit: '', valueType: 'text',
+    supportedModes: ['demo', 'real'], visibleByDefault: true, visualOrder: 420
   }
 };
 

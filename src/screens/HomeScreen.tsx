@@ -412,7 +412,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       { id: 'd_u3', type: 'urinalysis', marker: 'Oxidação (MDA)', value: 1.2, unit: 'µmol', recordedAt: Date.now() },
       { id: 'd_u4', type: 'urinalysis', marker: 'Leucócitos', value: 0, unit: 'cel/uL', recordedAt: Date.now() },
       { id: 'd_f1', type: 'fecal', marker: 'Bristol', value: 4, unit: 'Tipo', recordedAt: Date.now() },
-      { id: 'd_f2', type: 'fecal', marker: 'Microbioma', value: 85, unit: '%', recordedAt: Date.now() },
+      { id: 'd_f2', type: 'fecal', metricKey: 'bowel_regularity', marker: 'Regularidade intestinal', value: 'Regular', unit: '', recordedAt: Date.now() },
+      { id: 'd_f3', type: 'fecal', metricKey: 'fecal_characterization', marker: 'Caracterização', value: 'Sem anomalias visuais', unit: '', recordedAt: Date.now() },
       { id: 'd_ecg', type: 'ecg', marker: 'Ritmo Sinusal', value: 65, unit: 'bpm', recordedAt: Date.now() },
       { id: 'd_p1', type: 'ppg', marker: 'VFC (HRV)', value: 55, unit: 'ms', recordedAt: Date.now() },
       { id: 'd_t', type: 'temp', marker: 'Variação T. Basal', value: 0.1, unit: 'C', recordedAt: Date.now() },
@@ -443,7 +444,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     } else if (key === 'irregular_digestion') {
       demoMeasurements = demoMeasurements.map(m =>
         m.marker === 'Bristol' ? { ...m, value: 6 } :
-        m.marker === 'Microbioma' ? { ...m, value: 45 } :
+        m.marker === 'Regularidade intestinal' ? { ...m, value: 'Irregular' } :
+        m.marker === 'Caracterização' ? { ...m, value: 'Fezes desfeitas, margens irregulares' } :
         m.marker === 'pH' ? { ...m, value: 8.0 } : m
       );
     } else if (key === 'mixed' || key === 'mixed_profile') {
