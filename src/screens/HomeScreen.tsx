@@ -1059,18 +1059,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             />
           </View>
           
-          {demoAnalysis && (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-              <TouchableOpacity 
-                activeOpacity={0.7}
-                style={{ backgroundColor: '#00F2FF20', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: '#00F2FF40' }}
-                onPress={() => Alert.alert('Modo Demo Ativo', 'Os resultados são gerados processualmente para demonstração e não representam amostras biológicas recolhidas pelo dispositivo doméstico.', [{text: 'Prosseguir'}, {text: 'Desativar Demo', onPress: handleExitDemo, style: 'destructive'}])}
-              >
-                <Typography style={{ color: '#00F2FF', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 }}>DEMO MODE</Typography>
-              </TouchableOpacity>
-            </View>
-          )}
-          {!demoAnalysis && <View style={{ flex: 1 }} />}
+          {/* Espaçador central limpo para evitar a confusão visual de duplo selo DEMO */}
+          <View style={{ flex: 1 }} />
 
           <View style={[styles.headerRight, { flex: 1 }]}>
             <View style={styles.topIconRow}>
@@ -1085,16 +1075,17 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                     borderRadius: 12,
                     marginLeft: 0,
                     marginRight: 8,
-                    backgroundColor: 'rgba(255,255,255,0.12)'
+                    backgroundColor: demoAnalysis ? '#00F2FF20' : 'rgba(255,255,255,0.12)',
+                    borderColor: demoAnalysis ? '#00F2FF60' : 'transparent',
+                    borderWidth: demoAnalysis ? 1 : 0
                   }
                 ]} 
-                onPress={() => {
-                  console.log('Demo clicked'); // Debug local
-                  setShowDemoModal(true);
-                }}
+                onPress={() => setShowDemoModal(true)}
               >
                 <View pointerEvents="none" style={{ alignItems: 'center', justifyContent: 'center' }}>
-                  <Typography style={{ color: '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 1 }}>DEMO</Typography>
+                  <Typography style={{ color: demoAnalysis ? '#00F2FF' : '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 1 }}>
+                    {demoAnalysis ? 'DEMO ON' : 'DEMO'}
+                  </Typography>
                 </View>
               </TouchableOpacity>
               {!isGuestMode && (
@@ -2505,7 +2496,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               </TouchableOpacity>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 400 }}>
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 320 }}>
               {[
                 { key: 'balanced', label: 'Equilíbrio geral', color: '#00D4AA', colorBg: 'rgba(0, 212, 170, 0.1)' },
                 { key: 'low_energy', label: 'Energia em baixo', color: '#FFD700', colorBg: 'rgba(255, 215, 0, 0.1)' },
@@ -2532,12 +2523,13 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   <Typography style={{ color: 'white', fontWeight: '600' }}>{item.label}</Typography>
                 </TouchableOpacity>
               ))}
+            </ScrollView>
 
-              {/* Botão de limpeza - Reverter para Factual */}
+            {/* Botão de limpeza - Reverter para Factual, fixo no fundo da view */}
+            <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
               <TouchableOpacity
                 onPress={() => handleSelectDemo(null)}
                 style={{
-                  marginTop: 12,
                   padding: 16,
                   borderRadius: 16,
                   borderWidth: 1,
@@ -2550,7 +2542,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   Desativar Demo (Usar Factual Real)
                 </Typography>
               </TouchableOpacity>
-            </ScrollView>
+            </View>
           </View>
         </View>
       </Modal>

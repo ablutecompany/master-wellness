@@ -78,29 +78,30 @@ export const MetricCard: React.FC<MetricCardProps> = ({ definition, observation,
 
   return (
     <View style={styles.card} testID={testID}>
-      {/* 1. Label */}
-      <Typography style={styles.label}>
-        {definition.label}
-      </Typography>
-
-      <View style={styles.valueRow}>
-        {/* 2. Valor Principal */}
-        <Typography 
-          style={[styles.value, isNoValueState && styles.valueMuted]}
-          numberOfLines={1}
-        >
-          {displayValue}
+      <View style={styles.topRow}>
+        {/* 1. Label */}
+        <Typography style={styles.label} numberOfLines={1}>
+          {definition.label}
         </Typography>
 
-        {/* 3. Unidade (sempre da definição estática) */}
-        {showUnit && (
-          <Typography style={styles.unit}>
-            {definition.unit}
+        {/* 2. Valor Principal e Unidade */}
+        <View style={styles.valueRow}>
+          <Typography 
+            style={[styles.value, isNoValueState && styles.valueMuted]}
+            numberOfLines={1}
+          >
+            {displayValue}
           </Typography>
-        )}
+
+          {showUnit && (
+            <Typography style={styles.unit}>
+              {definition.unit}
+            </Typography>
+          )}
+        </View>
       </View>
 
-      {/* 4/5. Estado Textual e Demo Indication */}
+      {/* 3. Estado Textual e Demo Indication */}
       {!!stateText && (
         <Typography 
           style={[
@@ -126,19 +127,26 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.05)',
     marginBottom: 8,
   },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+  },
   label: {
     fontSize: 14,
     color: 'rgba(255,255,255,0.5)',
     fontWeight: '500',
-    marginBottom: 8,
+    flex: 1,
+    marginRight: 8,
   },
   valueRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: 4,
+    flexShrink: 0,
   },
   value: {
-    fontSize: 24,
+    fontSize: 18, // Ligeiramente reduzido para duas linhas compactas
     fontWeight: '700',
     color: '#ffffff',
     letterSpacing: -0.5,
@@ -147,7 +155,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.3)',
   },
   unit: {
-    fontSize: 14,
+    fontSize: 13,
     color: 'rgba(255,255,255,0.6)',
     fontWeight: '500',
   },
