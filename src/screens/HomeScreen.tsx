@@ -1717,17 +1717,41 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         // Carrega catálogo estático completo
         const allDefs = getAllMetricsDefinitions();
 
+        // ── Camada Fechada de Mapping Legacy -> Canonical ──
+        // Interceta labels antigas isoladamente sem poluir o pipeline visual.
+        const LEGACY_MAP: Record<string, string> = {
+          'Sódio': 'sodium',
+          'Hidratação': 'sodium', 
+          'Oxidação (MDA)': 'f2_isoprostanes',
+          'Leucócitos': 'nitrites', 
+          'VFC (HRV)': 'hrv',
+          'Ritmo Sinusal': 'ecg',
+          'Variação T. Basal': 'temp',
+          'Estabilidade': 'weight'
+        };
+
+        const getCanonicalKey = (m: any): string => {
+          if (m.metricKey) return m.metricKey;
+          if (m.id && allDefs.some(d => d.key === m.id)) return m.id;
+          if (m.marker && LEGACY_MAP[m.marker]) return LEGACY_MAP[m.marker];
+          const exactMatch = allDefs.find(d => d.label === m.marker);
+          return exactMatch ? exactMatch.key : '';
+        };
+
+        // Estabilização: Indexação O(1) precoce p/ a pipeline de render
+        const normalizedMeasurements = src.reduce((acc: Record<string, any>, m: any) => {
+          const k = getCanonicalKey(m);
+          if (k) acc[k] = m;
+          return acc;
+        }, {});
+
         const buildSection = (catFilter: MetricCategory[], label: string, color: string, id: string, shortLabel: string) => {
           // Filtra pelo que deve ser visível por omissão na categoria especificada
           const sectionDefs = allDefs.filter(d => catFilter.includes(d.category) && d.visibleByDefault);
+          
           const markers = sectionDefs.map(def => {
-            // Fallback progressivo de mapeamento para compatibilizar dados legacy
-            const found = src.find((m: any) => 
-               m.metricKey === def.key || 
-               m.id === def.key || 
-               m.marker === def.label ||
-               (def.key === 'sodium' && m.marker === 'Sódio')
-            );
+            // Consulta limpa sem array scans em loops render - lookup garantida
+            const found = normalizedMeasurements[def.key];
 
             const status: MetricObservationStatus = found 
               ? (isDemo ? 'demo_value' : 'available')
