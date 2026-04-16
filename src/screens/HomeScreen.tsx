@@ -5,7 +5,7 @@ import { theme } from '../theme';
 import { BrandLogo } from '../components/BrandLogo';
 import { ThemeCard } from '../components/ThemeCard';
 import { HistoricoModal } from '../components/HistoricoModal';
-import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, ChevronRight, ChevronDown, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, ChevronsDown, Sparkles, ArrowLeft, Calendar, History } from 'lucide-react-native';
+import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, Users, ChevronRight, ChevronDown, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, ChevronsDown, Sparkles, ArrowLeft, Calendar, History } from 'lucide-react-native';
 import Svg, { Path, Text as SvgText, TextPath, Defs, G } from 'react-native-svg';
 import { BiomechanicRelic } from '../components/BiomechanicRelic';
 import { SiderealBackground } from '../components/SiderealBackground';
@@ -31,11 +31,12 @@ import { MINI_APP_CATALOG } from '../miniapps/catalog';
 import { MiniAppContainer } from '../miniapps/MiniAppContainer';
 import { MiniAppManifest } from '../miniapps/types';
 import { useStore } from '../store/useStore';
-import * as Selectors from '../store/selectors';
-import { getSemanticInsights, getSemanticStatus, getAiStatus } from '../services/insights';
-import { AiInsight } from '../services/semantic-output/types';
-import { ENV } from '../config/env';
+import { Analysis } from '../store/store';
+import { aiInsightsService } from '../services/insights/ai-insights.service';
+import { aiGatewayService } from '../services/ai-gateway/client';
 import { semanticOutputService } from '../services/semantic-output';
+import { MetricCard } from '../components/MetricCard';
+import { getAllMetricsDefinitions, MetricObservation, MetricObservationStatus, MetricCategory } from '../data/metrics-catalog';
 
 import { supabase } from '../services/supabase';
 
@@ -400,16 +401,77 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     setDataOpen(false);
     Animated.spring(dataAnim, { toValue: width, bounciness: 0, useNativeDriver: false }).start(() => setDataInteractive(false));
 
-    // 2. Cria análise demo temporária (não vai para o store)
-    const demo = createDemoAnalysis(key as DemoScenarioKey);
+    // 2. Cria baseline factual DEMO e injeta no objecto análise temporária completa
+    let demoMeasurements = [
+      { id: 'd_u1', type: 'urinalysis', marker: 'Hidratação', value: 1.015, unit: 'SG', recordedAt: Date.now() },
+      { id: 'd_u2', type: 'urinalysis', marker: 'pH', value: 6.5, unit: '', recordedAt: Date.now() },
+      { id: 'd_u3', type: 'urinalysis', marker: 'Oxidação (MDA)', value: 1.2, unit: 'µmol', recordedAt: Date.now() },
+      { id: 'd_u4', type: 'urinalysis', marker: 'Leucócitos', value: 0, unit: 'cel/uL', recordedAt: Date.now() },
+      { id: 'd_f1', type: 'fecal', marker: 'Bristol', value: 4, unit: 'Tipo', recordedAt: Date.now() },
+      { id: 'd_f2', type: 'fecal', marker: 'Microbioma', value: 85, unit: '%', recordedAt: Date.now() },
+      { id: 'd_ecg', type: 'ecg', marker: 'Ritmo Sinusal', value: 65, unit: 'bpm', recordedAt: Date.now() },
+      { id: 'd_p1', type: 'ppg', marker: 'VFC (HRV)', value: 55, unit: 'ms', recordedAt: Date.now() },
+      { id: 'd_t', type: 'temp', marker: 'Variação T. Basal', value: 0.1, unit: 'C', recordedAt: Date.now() },
+      { id: 'd_w', type: 'weight', marker: 'Estabilidade', value: 72.0, unit: 'kg', recordedAt: Date.now() }
+    ];
+
+    let demoEcoFacts = [
+      { id: 'f_sleep', type: 'sono_profundo', value: '1h45', sourceAppId: 'sleep_ring', recordedAt: Date.now() },
+      { id: 'f_steps', type: 'passos_diarios', value: '8500', sourceAppId: 'health_os', recordedAt: Date.now() }
+    ];
+
+    // Overrides específicos por cenário DEMO
+    if (key === 'low_energy') {
+      demoMeasurements = demoMeasurements.map(m =>
+        m.marker === 'VFC (HRV)' ? { ...m, value: 32 } :
+        m.marker === 'Ritmo Sinusal' ? { ...m, value: 78 } :
+        m.marker === 'Hidratação' ? { ...m, value: 1.025 } :
+        m.marker === 'Oxidação (MDA)' ? { ...m, value: 3.8 } : m
+      );
+      demoEcoFacts = demoEcoFacts.map(f => f.type === 'sono_profundo' ? { ...f, value: '0h50' } : f);
+    } else if (key === 'poor_recovery') {
+      demoMeasurements = demoMeasurements.map(m =>
+        m.marker === 'VFC (HRV)' ? { ...m, value: 25 } :
+        m.marker === 'Variação T. Basal' ? { ...m, value: 0.6 } :
+        m.marker === 'Ritmo Sinusal' ? { ...m, value: 84 } : m
+      );
+      demoEcoFacts = demoEcoFacts.map(f => f.type === 'sono_profundo' ? { ...f, value: '0h35' } : f);
+    } else if (key === 'irregular_digestion') {
+      demoMeasurements = demoMeasurements.map(m =>
+        m.marker === 'Bristol' ? { ...m, value: 6 } :
+        m.marker === 'Microbioma' ? { ...m, value: 45 } :
+        m.marker === 'pH' ? { ...m, value: 8.0 } : m
+      );
+    } else if (key === 'mixed' || key === 'mixed_profile') {
+      demoMeasurements = demoMeasurements.map(m =>
+        m.marker === 'Bristol' ? { ...m, value: 2 } :
+        m.marker === 'VFC (HRV)' ? { ...m, value: 40 } :
+        m.marker === 'Hidratação' ? { ...m, value: 1.020 } : m
+      );
+    } // "balanced" não tem overrides porque a baseline já é equilibrada
+
+    const demo = {
+      id: `demo_${Date.now()}`,
+      source: 'demo',
+      demoScenarioKey: key,
+      analysisDate: new Date().toISOString().split('T')[0],
+      deviceSources: ['demo_system'],
+      ecosystemFacts: demoEcoFacts,
+      measurements: demoMeasurements
+    } as any;
     setDemoAnalysis(demo);
 
-    // 3. Abre painel Leitura AI com ligeiro atraso para o fecho visual do Resultados
-    setThemesInteractive(true);
-    setThemesOpen(true);
-    requestAnimationFrame(() => {
-      Animated.spring(themesAnim, { toValue: 0, useNativeDriver: false }).start();
-    });
+    // 3. Abre painel Leitura AI apenas para Users. Em Guest, fecha caso estivesse aberto, para não bloquear ecrã.
+    if (isGuestMode) {
+      setThemesOpen(false);
+      Animated.spring(themesAnim, { toValue: -width, bounciness: 0, useNativeDriver: false }).start(() => setThemesInteractive(false));
+    } else {
+      setThemesInteractive(true);
+      setThemesOpen(true);
+      requestAnimationFrame(() => {
+        Animated.spring(themesAnim, { toValue: 0, useNativeDriver: false }).start();
+      });
+    }
   };
 
   const handleExitDemo = () => {
@@ -565,6 +627,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   };
   const closeData = () => {
     setDataInteractive(false);
+    if (themesOpen) closeThemes();
     Animated.spring(dataAnim, {
       toValue: width,
       bounciness: 0,
@@ -1476,7 +1539,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                                       Foco Principal
                                     </Typography>
                                   </View>
-                                  {aiState.meta && (
+                                  {aiState.meta && aiState.meta.model && (
                                     <Typography style={{ color: 'rgba(0, 242, 255, 0.4)', fontSize: 9, fontWeight: '700' }}>
                                       {aiState.meta.model.split('/')[1]?.toUpperCase() || aiState.meta.model.toUpperCase()}
                                     </Typography>
@@ -1649,29 +1712,53 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       {(() => {
         // ── Painel Resultados — lê directamente de activeAnalysis ─────────────
         const src = activeAnalysis?.measurements ?? [];
+        const isDemo = activeAnalysis?.source === 'demo';
 
-        const urinalysisMarkers = src
-          .filter(m => m.type === 'urinalysis')
-          .map(m => ({ name: m.marker || 'Análise Urinária', value: m.value, unit: m.unit }));
+        // Carrega catálogo estático completo
+        const allDefs = getAllMetricsDefinitions();
 
-        const physiologyMarkers = src
-          .filter(m => ['ecg', 'ppg', 'temp', 'weight'].includes(m.type))
-          .map(m => ({ name: m.marker || m.type, value: m.value, unit: m.unit }));
+        const buildSection = (catFilter: MetricCategory[], label: string, color: string, id: string, shortLabel: string) => {
+          // Filtra pelo que deve ser visível por omissão na categoria especificada
+          const sectionDefs = allDefs.filter(d => catFilter.includes(d.category) && d.visibleByDefault);
+          const markers = sectionDefs.map(def => {
+            // Fallback progressivo de mapeamento para compatibilizar dados legacy
+            const found = src.find((m: any) => 
+               m.metricKey === def.key || 
+               m.id === def.key || 
+               m.marker === def.label ||
+               (def.key === 'sodium' && m.marker === 'Sódio')
+            );
 
-        const fecalMarkers = src
-          .filter(m => m.type === 'fecal')
-          .map(m => ({ name: m.marker || 'Marcador Fecal', value: m.value, unit: m.unit }));
+            const status: MetricObservationStatus = found 
+              ? (isDemo ? 'demo_value' : 'available')
+              : 'empty';
+
+            return {
+              isCanonical: true,
+              definition: def,
+              observation: {
+                metricKey: def.key,
+                status,
+                value: found?.value,
+                mode: isDemo ? 'demo' : 'real',
+              } as MetricObservation
+            };
+          });
+
+          return { label, color, markers, id, shortLabel };
+        };
 
         const factualBioCategories = [
-          { label: 'Análises de Urina', color: '#00F2FF', markers: urinalysisMarkers, id: 'U', shortLabel: 'Urina' },
-          { label: 'Monitorização Fisiológica', color: '#00D4AA', markers: physiologyMarkers, id: 'S', shortLabel: 'Fisiológica' },
-          { label: 'Avaliação Fecal', color: '#FFA500', markers: fecalMarkers, id: 'F', shortLabel: 'Fecal' },
+          buildSection(['urine'], 'Análises de Urina', '#00F2FF', 'U', 'Urina'),
+          buildSection(['vitals', 'signals'], 'Monitorização Fisiológica', '#00D4AA', 'S', 'Fisiológica'),
+          buildSection(['fecal'], 'Avaliação Fecal', '#FFA500', 'F', 'Fecal'),
           {
             label: 'Sinais do Ecossistema',
             color: '#FFD700',
             id: 'E',
             shortLabel: 'Ecossistema',
             markers: (activeAnalysis?.ecosystemFacts ?? []).map(f => ({
+              isLegacy: true,
               name: String(f.type).replace(/_/g, ' ').toUpperCase(),
               value: f.value,
               unit: f.sourceAppId,
@@ -1770,15 +1857,28 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.panelScroll}>
                 {factualBioCategories.length > 0 ? (
                   factualBioCategories[safeBioTab].markers.length > 0 ? (
-                    factualBioCategories[safeBioTab].markers.map((item: any, i: number) => (
-                      <View key={i} style={styles.bioRow}>
-                        <Typography style={styles.bioName}>{item.name}</Typography>
-                        <View style={styles.bioValueArea}>
-                          <Typography style={styles.bioVal}>{item.value}</Typography>
-                          {item.unit ? <Typography variant="caption" style={styles.bioUnit}>{item.unit}</Typography> : null}
+                    factualBioCategories[safeBioTab].markers.map((item: any, i: number) => {
+                      if (item.isLegacy) {
+                        return (
+                          <View key={i} style={styles.bioRow}>
+                            <Typography style={styles.bioName}>{item.name}</Typography>
+                            <View style={styles.bioValueArea}>
+                              <Typography style={styles.bioVal}>{item.value}</Typography>
+                              {item.unit ? <Typography variant="caption" style={styles.bioUnit}>{item.unit}</Typography> : null}
+                            </View>
+                          </View>
+                        );
+                      }
+
+                      return (
+                        <View key={item.definition.key} style={{ paddingHorizontal: 24, marginBottom: 8 }}>
+                          <MetricCard 
+                            definition={item.definition}
+                            observation={item.observation}
+                          />
                         </View>
-                      </View>
-                    ))
+                      );
+                    })
                   ) : (
                     <View style={{ alignItems: 'center', justifyContent: 'center', height: 200, paddingHorizontal: 20 }}>
                       <Typography style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', fontSize: 13 }}>
@@ -1796,66 +1896,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 )}
               </ScrollView>
 
-              {/* ── MODO DEMO PICKER MODAL ── */}
-              <Modal visible={showDemoModal} transparent animationType="fade">
-                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', padding: 24 }}>
-                  <View style={{ backgroundColor: '#1C1C22', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                      <Typography variant="h2" style={{ fontSize: 20, color: 'white' }}>Forçar Cenário Demo</Typography>
-                      <TouchableOpacity onPress={() => setShowDemoModal(false)} style={{ padding: 8 }}>
-                        <X size={20} color="rgba(255,255,255,0.5)" />
-                      </TouchableOpacity>
-                    </View>
 
-                    <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 400 }}>
-                      {[
-                        { key: 'balanced', label: 'Equilíbrio geral', color: '#00D4AA', colorBg: 'rgba(0, 212, 170, 0.1)' },
-                        { key: 'low_energy', label: 'Energia em baixo', color: '#FFD700', colorBg: 'rgba(255, 215, 0, 0.1)' },
-                        { key: 'poor_recovery', label: 'Recuperação insuficiente', color: '#FF4D4D', colorBg: 'rgba(255, 77, 77, 0.1)' },
-                        { key: 'irregular_digestion', label: 'Digestão irregular', color: '#FFA500', colorBg: 'rgba(255, 165, 0, 0.1)' },
-                        { key: 'unstable_rhythm', label: 'Ritmo instável', color: '#FF00FF', colorBg: 'rgba(255, 0, 255, 0.1)' },
-                        { key: 'mixed', label: 'Perfil misto plausível', color: '#00F2FF', colorBg: 'rgba(0, 242, 255, 0.1)' }
-                      ].map(item => (
-                        <TouchableOpacity
-                          key={item.key}
-                          onPress={() => handleSelectDemo(item.key)}
-                          style={{
-                            padding: 16,
-                            marginBottom: 12,
-                            borderRadius: 16,
-                            borderWidth: 1,
-                            borderColor: item.colorBg,
-                            backgroundColor: 'rgba(25,25,30,0.6)',
-                            flexDirection: 'row',
-                            alignItems: 'center'
-                          }}
-                        >
-                          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: item.color, marginRight: 12 }} />
-                          <Typography style={{ color: 'white', fontWeight: '600' }}>{item.label}</Typography>
-                        </TouchableOpacity>
-                      ))}
-
-                      {/* Botão de limpeza - Reverter para Factual */}
-                      <TouchableOpacity
-                        onPress={() => handleSelectDemo(null)}
-                        style={{
-                          marginTop: 12,
-                          padding: 16,
-                          borderRadius: 16,
-                          borderWidth: 1,
-                          borderColor: 'rgba(255,255,255,0.2)',
-                          alignItems: 'center',
-                          backgroundColor: 'rgba(255,255,255,0.05)'
-                        }}
-                      >
-                        <Typography style={{ color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>
-                          Desativar Demo (Usar Factual Real)
-                        </Typography>
-                      </TouchableOpacity>
-                    </ScrollView>
-                  </View>
-                </View>
-              </Modal>
 
             </BlurView>
           </Animated.View>
@@ -2412,7 +2453,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         </TouchableOpacity>
       </Modal>
 
-      <HistoricoModal
+    <HistoricoModal
         visible={showHistorico}
         onClose={() => setShowHistorico(false)}
         analyses={analyses.filter(a => a.source !== 'demo')}
@@ -2424,6 +2465,67 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           setBioTab(0);
         }}
       />
+
+      {/* ── MODO DEMO PICKER MODAL MOVIDA PARA A RAIZ DO FICHEIRO PARA EVITAR MONTAGENS CONDICIONAIS ── */}
+      <Modal visible={showDemoModal} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', padding: 24 }}>
+          <View style={{ backgroundColor: '#1C1C22', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <Typography variant="h2" style={{ fontSize: 20, color: 'white' }}>Forçar Cenário Demo</Typography>
+              <TouchableOpacity onPress={() => setShowDemoModal(false)} style={{ padding: 8 }}>
+                <X size={20} color="rgba(255,255,255,0.5)" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 400 }}>
+              {[
+                { key: 'balanced', label: 'Equilíbrio geral', color: '#00D4AA', colorBg: 'rgba(0, 212, 170, 0.1)' },
+                { key: 'low_energy', label: 'Energia em baixo', color: '#FFD700', colorBg: 'rgba(255, 215, 0, 0.1)' },
+                { key: 'poor_recovery', label: 'Recuperação insuficiente', color: '#FF4D4D', colorBg: 'rgba(255, 77, 77, 0.1)' },
+                { key: 'irregular_digestion', label: 'Digestão irregular', color: '#FFA500', colorBg: 'rgba(255, 165, 0, 0.1)' },
+                { key: 'unstable_rhythm', label: 'Ritmo instável', color: '#FF00FF', colorBg: 'rgba(255, 0, 255, 0.1)' },
+                { key: 'mixed', label: 'Perfil misto plausível', color: '#00F2FF', colorBg: 'rgba(0, 242, 255, 0.1)' }
+              ].map(item => (
+                <TouchableOpacity
+                  key={item.key}
+                  onPress={() => handleSelectDemo(item.key)}
+                  style={{
+                    padding: 16,
+                    marginBottom: 12,
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: item.colorBg,
+                    backgroundColor: 'rgba(25,25,30,0.6)',
+                    flexDirection: 'row',
+                    alignItems: 'center'
+                  }}
+                >
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: item.color, marginRight: 12 }} />
+                  <Typography style={{ color: 'white', fontWeight: '600' }}>{item.label}</Typography>
+                </TouchableOpacity>
+              ))}
+
+              {/* Botão de limpeza - Reverter para Factual */}
+              <TouchableOpacity
+                onPress={() => handleSelectDemo(null)}
+                style={{
+                  marginTop: 12,
+                  padding: 16,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: 'rgba(255,255,255,0.2)',
+                  alignItems: 'center',
+                  backgroundColor: 'rgba(255,255,255,0.05)'
+                }}
+              >
+                <Typography style={{ color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>
+                  Desativar Demo (Usar Factual Real)
+                </Typography>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
     </Container>
   );
