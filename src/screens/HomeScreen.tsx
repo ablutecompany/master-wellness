@@ -31,6 +31,10 @@ import { MINI_APP_CATALOG } from '../miniapps/catalog';
 import { MiniAppContainer } from '../miniapps/MiniAppContainer';
 import { MiniAppManifest } from '../miniapps/types';
 import { useStore } from '../store/useStore';
+import * as Selectors from '../store/selectors';
+import { getSemanticInsights, getSemanticStatus, getAiStatus } from '../services/insights';
+import { AiInsight } from '../services/semantic-output/types';
+import { ENV } from '../config/env';
 import { Analysis } from '../store/store';
 import { aiInsightsService } from '../services/insights/ai-insights.service';
 import { aiGatewayService } from '../services/ai-gateway/client';
@@ -2745,6 +2749,7 @@ const styles = StyleSheet.create({
   },
   panelScroll: {
     paddingHorizontal: 20,
+    paddingTop: 16,
     paddingBottom: 100,
   },
   // ── Themes Panel ──

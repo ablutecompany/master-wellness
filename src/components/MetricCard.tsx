@@ -118,12 +118,13 @@ export const MetricCard: React.FC<MetricCardProps> = ({ definition, observation,
 
 const styles = StyleSheet.create({
   card: {
-    padding: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: 16,
     backgroundColor: 'rgba(255, 255, 255, 0.03)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.05)',
-    marginVertical: 4,
+    marginBottom: 8,
   },
   label: {
     fontSize: 14,
