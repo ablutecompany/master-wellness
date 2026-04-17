@@ -159,7 +159,8 @@ export default function App() {
         } else {
           setProfileStatus('missing');
         }
-      } else if (response.status === 404) {
+      } else if (response.status === 404 || response.status === 401) {
+        // 404 = profile not found; 401 = backend JWT validation failed (but Supabase session is valid)
         setProfileStatus('missing');
       } else {
         setProfileStatus('error');
@@ -281,13 +282,32 @@ export default function App() {
           // Re-sync profile from /auth/me now that it exists
           await syncProfile(session);
         } else {
-          const body = await res.json().catch(() => ({}));
-          console.error('[App] initialize failed:', res.status, body);
-          setProfileStatus('error');
+          // Backend unreachable or JWT rejected — use Supabase user data directly
+          console.warn('[App] Backend initialize failed, using local profile fallback');
+          const fallbackProfile = {
+            id: session.user.id,
+            email: session.user.email,
+            name: session.user.email?.split('@')[0] || 'Utilizador',
+            height: 170,
+            baseWeight: 70,
+            mainGoal: 'general_wellness',
+          };
+          setUser(fallbackProfile as any);
+          setProfileStatus('loaded');
         }
       } catch (err) {
-        console.error('[App] initialize network error:', err);
-        setProfileStatus('error');
+        // Network error — also use fallback
+        console.warn('[App] Backend unreachable, using local profile fallback:', err);
+        const fallbackProfile = {
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.email?.split('@')[0] || 'Utilizador',
+          height: 170,
+          baseWeight: 70,
+          mainGoal: 'general_wellness',
+        };
+        setUser(fallbackProfile as any);
+        setProfileStatus('loaded');
       }
     };
 
