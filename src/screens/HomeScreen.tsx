@@ -2203,6 +2203,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                         useStore.getState().setGuestMode(false);
                         useStore.getState().clearSensitiveState();
                       } else {
+                        supabase.auth.signOut().catch(e => console.error("Logout erro:", e));
                         useStore.getState().setUser(null);
                         useStore.getState().setSessionToken(null);
                         useStore.getState().clearSensitiveState();

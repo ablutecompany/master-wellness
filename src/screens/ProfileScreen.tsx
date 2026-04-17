@@ -144,7 +144,24 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity style={styles.logoutBtn}>
+        <TouchableOpacity 
+          style={styles.logoutBtn}
+          onPress={async () => {
+            if (isGuestMode) {
+              useStore.getState().setGuestMode(false);
+              useStore.getState().clearSensitiveState();
+            } else {
+              try {
+                await supabase.auth.signOut();
+                useStore.getState().setUser(null);
+                useStore.getState().setSessionToken(null);
+                useStore.getState().clearSensitiveState();
+              } catch (e) {
+                console.error("[Logout] Erro a deslogar:", e);
+              }
+            }
+          }}
+        >
           <LogOut size={20} color={theme.colors.error} />
           <Typography style={[styles.menuTitle, { color: theme.colors.error, marginLeft: 12 }]}>
             {isGuestMode ? 'Sair do modo Guest' : 'Terminar Sessão'}

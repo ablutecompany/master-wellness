@@ -124,11 +124,12 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
             <Mail size={48} color={theme.colors.primary} style={styles.icon} />
             <Typography variant="h1" style={styles.title}>Verifica o teu email</Typography>
             <Typography variant="body" style={styles.subtitle}>
-              Enviámos um link de confirmação para{'\n'}
+              Se o endereço for válido e autorizado, enviámos um link de confirmação para{'\n'}
               <Typography variant="body" style={{ color: theme.colors.primary }}>
                 {email.trim()}
               </Typography>
-              {'\n\n'}Confirma a conta e volta para entrar.
+              {'\n\n'}Por favor verifica a caixa de entrada (e a pasta de SPAM). 
+              A entrega pode demorar alguns minutos. Confirma a conta e volta para entrar.
             </Typography>
           </View>
 
