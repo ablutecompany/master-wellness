@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Platform, View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { ENV } from './src/config/env';
 
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
