@@ -30,7 +30,7 @@ function getSleepHours(facts: AnalysisEvent[]): number {
   const f = facts.find(f => f.type === 'sleep_duration_logged' || f.type === 'sono_profundo');
   if (!f) return 0;
   const raw = String(f.value ?? '');
-  const match = raw.match(/(\d+)h\s*(\d+)?/);
+  const match = String(raw).match(/(\d+)h\s*(\d+)?/);
   if (!match) return 0;
   return parseInt(match[1]) + (parseInt(match[2] || '0') / 60);
 }
@@ -90,7 +90,7 @@ export function computeSemanticFromMeasurements(
   const hasKetones = cetones.includes('Positivo');
   const highUrobi = urobilinogenio.includes('Elevado');
   const highCortisol = cortisol.includes('Elevado');
-  const bristolNum = parseInt(bristol.match(/\d+/)?.[0] || '4');
+  const bristolNum = parseInt(String(bristol).match(/\d+/)?.[0] || '4');
   const goodBristol = bristolNum === 3 || bristolNum === 4 || bristolNum === 5;
   const badBristol = bristolNum <= 2 || bristolNum >= 6;
 

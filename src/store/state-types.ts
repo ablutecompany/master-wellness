@@ -10,6 +10,8 @@ export interface UserProfile {
   activeAnalysisId?: string;
 }
 
+export type ProfileStatus = 'idle' | 'loading' | 'loaded' | 'error' | 'missing';
+
 export interface Measurement {
   id: string;
   type: 'urinalysis' | 'ecg' | 'ppg' | 'weight' | 'temp';
@@ -47,6 +49,8 @@ export interface Analysis {
 
 export interface AppState {
   user: UserProfile | null;
+  authAccount: any | null;
+  profileStatus: ProfileStatus;
   guestProfile: UserProfile | null;
   isGuestMode: boolean;
   measurements: Measurement[];
@@ -63,6 +67,8 @@ export interface AppState {
   grantedPermissions: Record<string, Permission[]>;
   demoAnalysis: Analysis | null;
   setUser: (user: UserProfile | null) => void;
+  setAuthAccount: (account: any | null) => void;
+  setProfileStatus: (status: ProfileStatus) => void;
   setGuestMode: (isGuest: boolean) => void;
   updateGuestProfile: (profile: Partial<UserProfile>) => void;
   setDemoAnalysis: (analysis: Analysis | null) => void;

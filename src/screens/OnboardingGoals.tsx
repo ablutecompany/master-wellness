@@ -57,7 +57,11 @@ export const OnboardingGoals: React.FC<{ navigation: any }> = ({ navigation }) =
           title="Salvar e Voltar" 
           onPress={() => {
             useStore.getState().updateGuestProfile({ goals: selected });
-            navigation.goBack();
+            // Forçamos a entrada na aplicação
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Main' }],
+            });
           }}
           variant="primary"
         />

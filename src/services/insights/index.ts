@@ -132,11 +132,11 @@ export function getSemanticInsights(): UIInsight[] {
 
     if (aiInsight) {
       // Mapeamento explícito de domínios Backend -> Frontend
-      if (d === 'energy' && aiInsight.domains.energia_disponibilidade) {
+      if (d === 'energy' && aiInsight.domains?.energia_disponibilidade) {
         p2 = aiInsight.domains.energia_disponibilidade;
-      } else if (d === 'recovery' && aiInsight.domains.recuperacao_resiliencia) {
+      } else if (d === 'recovery' && aiInsight.domains?.recuperacao_resiliencia) {
         p2 = aiInsight.domains.recuperacao_resiliencia;
-      } else if (d === 'nutrition' && aiInsight.domains.digestao_trato_intestinal) {
+      } else if (d === 'nutrition' && aiInsight.domains?.digestao_trato_intestinal) {
         p2 = aiInsight.domains.digestao_trato_intestinal;
       } else if (d === 'general') {
         // FOCO PRINCIPAL: Usa headline + summary globais da IA

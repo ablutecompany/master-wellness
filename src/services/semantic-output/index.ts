@@ -184,6 +184,21 @@ export class SemanticOutputService {
       return;
     }
 
+    if (analysis.source === 'demo' && (analysis as any).demoScenarioKey) {
+      const { DEMO_SCENARIOS } = require('./demo-scenarios');
+      const bundle = DEMO_SCENARIOS[(analysis as any).demoScenarioKey];
+      if (bundle) {
+        SemanticOutputStore.updateState({
+          ...bundle,
+          aiStatus: 'ready',
+          aiInsight: bundle.domains?.general?.mainInsight,
+          aiError: undefined
+        } as any);
+        SemanticOutputStore.clearDirty();
+        return;
+      }
+    }
+
     // 2. Computação local instantânea + Iniciar Loading da IA
     const bundle = computeSemanticFromMeasurements(
       analysis.measurements,

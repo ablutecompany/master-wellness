@@ -72,7 +72,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
         password,
       });
       if (error) throw error;
-      if (data.user) setUser(data.user as any);
+      // setUser(data.user) REMOVED: App.tsx handles the session -> profile sync now.
     } catch (error: any) {
       Alert.alert('Falha na Autenticação', error.message || 'Ocorreu um erro inesperado.');
     } finally {

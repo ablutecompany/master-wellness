@@ -16,8 +16,8 @@ export const GatingOverlay: React.FC<{
 
   return (
     <View style={[{ position: 'relative', overflow: 'hidden' }, style]}>
-      <View style={{ opacity: 0.3, pointerEvents: 'none' }}>
-        {children}
+      <View style={{ opacity: 0.3, pointerEvents: 'none', minHeight: 150 }}>
+        {Platform.OS === 'web' ? <View style={{ height: 300, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 20 }} /> : children}
       </View>
       <View style={[StyleSheet.absoluteFill, styles.overlay]}>
         <Lock size={28} color={theme.colors.primary} style={{ marginBottom: 12 }} />
