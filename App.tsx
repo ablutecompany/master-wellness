@@ -329,6 +329,27 @@ export default function App() {
     );
   }
 
+  if (session && profileStatus === 'error') {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#010204', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+        <Text style={{ color: '#fff', fontSize: 16, marginBottom: 20, textAlign: 'center' }}>
+          Ocorreu um erro temporário a aceder ao teu perfil.
+        </Text>
+        <TouchableOpacity 
+          style={{ paddingVertical: 12, paddingHorizontal: 24, backgroundColor: theme.colors.primary, borderRadius: 8, marginBottom: 20 }}
+          onPress={() => syncProfile(session)}
+        >
+          <Text style={{ color: '#000', fontWeight: 'bold' }}>Tentar Novamente</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          onPress={() => supabase.auth.signOut()}
+        >
+          <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>Sair da conta segura</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <ErrorBoundary>
       <NavigationContainer linking={linking}>
