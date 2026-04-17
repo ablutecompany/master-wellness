@@ -22,13 +22,15 @@ function band(s: number): 'optimal' | 'fair' | 'poor' {
 // ── Extracção de valores dos biomarcadores ────────────────────────────────────
 
 function getMeasurement(ms: AnalysisMeasurement[], type: string, marker?: string): string {
-  return ms.find(m => m.type === type && (!marker || m.marker === marker))?.value ?? '';
+  const val = ms.find(m => m.type === type && (!marker || m.marker === marker))?.value;
+  return val !== undefined && val !== null ? String(val) : '';
 }
 
 function getSleepHours(facts: AnalysisEvent[]): number {
-  const f = facts.find(f => f.type === 'sleep_duration_logged');
+  const f = facts.find(f => f.type === 'sleep_duration_logged' || f.type === 'sono_profundo');
   if (!f) return 0;
-  const match = f.value.match(/(\d+)h\s*(\d+)?/);
+  const raw = String(f.value ?? '');
+  const match = raw.match(/(\d+)h\s*(\d+)?/);
   if (!match) return 0;
   return parseInt(match[1]) + (parseInt(match[2] || '0') / 60);
 }
