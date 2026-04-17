@@ -11,7 +11,7 @@ export class AuthService {
    */
   async getProfileByUid(uid: string) {
     return this.prisma.userProfile.findUnique({
-      where: { id: uid }
+      where: { userId: uid }
     });
   }
 
