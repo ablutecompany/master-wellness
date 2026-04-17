@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Platform, View, Text } from 'react-native';
+import { Platform, View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 
 import { NavigationContainer } from '@react-navigation/native';
@@ -127,50 +127,91 @@ export default function App() {
   const [initialized, setInitialized] = React.useState(false);
   
   const setUser = useStore(state => state.setUser);
+  const setAuthAccount = useStore(state => state.setAuthAccount);
+  const profileStatus = useStore(state => state.profileStatus);
+  const setProfileStatus = useStore(state => state.setProfileStatus);
+  const setSessionToken = useStore(state => state.setSessionToken);
+  
   const isGuestMode = useStore(state => state.isGuestMode);
   const setGuestMode = useStore(state => state.setGuestMode);
   const hasHydrated = useStore(state => state.hasHydrated);
 
+  const syncProfile = React.useCallback(async (session: Session | null) => {
+    if (!session?.user || !session.access_token) {
+      setUser(null);
+      setProfileStatus('idle');
+      return;
+    }
+
+    setProfileStatus('loading');
+    setSessionToken(session.access_token);
+    try {
+      const response = await fetch(`${ENV.BACKEND_URL}/auth/me`, {
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.ok && data.profile) {
+          setUser(data.profile);
+          setProfileStatus('loaded');
+        } else {
+          setProfileStatus('missing');
+        }
+      } else if (response.status === 404) {
+        setProfileStatus('missing');
+      } else {
+        setProfileStatus('error');
+      }
+    } catch (err) {
+      console.error('[App] Profile sync failed:', err);
+      setProfileStatus('error');
+    }
+  }, [setUser, setProfileStatus, setSessionToken]);
+
   useEffect(() => {
-    // Check initial session with safety catch
+    // Check initial session
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
         setSession(session);
-        if (session?.user) {
-          setUser(session.user as any);
+        setAuthAccount(session?.user ?? null);
+        if (session) {
           setGuestMode(false);
+          setSessionToken(session.access_token);
+          syncProfile(session);
         } else {
-          // T05 safety: Ensure no leftover authenticated user data
           setUser(null);
+          setSessionToken(null);
+          setProfileStatus('idle');
         }
       })
-      .catch(err => console.error('[App] Auth init hanging/failed:', err))
+      .catch(err => console.error('[App] Auth init failed:', err))
       .finally(() => setInitialized(true));
-
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
+      setAuthAccount(session?.user ?? null);
+      setSessionToken(session?.access_token ?? null);
       
-      if (event === 'SIGNED_IN' && session?.user) {
-        setUser(session.user as any);
-        setGuestMode(false); // Entering authenticated mode wipes guest mode flag
+      if (event === 'SIGNED_IN' && session) {
+        setGuestMode(false);
+        syncProfile(session);
       } 
       else if (event === 'SIGNED_OUT') {
         setUser(null);
-        // T05 Purge: Limpar dados estruturais da conta que acabou de sair
+        setSessionToken(null);
+        setProfileStatus('idle');
+        // T05 Purge
         useStore.getState().clearSensitiveState();
         
         // Limpar persistência de contribuições (dados clínicos de MiniApps)
         const { installedAppIds, grantedPermissions, appEvents } = useStore.getState();
         const { saveToStorage } = require('./src/store/persistence');
         saveToStorage(installedAppIds, grantedPermissions, appEvents, []);
-        
-        // Preservamos o Guest Mode se estiver definido, conforme T05
       }
-      else if (session?.user) {
-        setUser(session.user as any);
-      }
+      // Note: other events (TOKEN_REFRESHED, etc.) are handled by keeping auth state
+      // but NOT touching profileStatus unless it's SIGNED_IN/SIGNED_OUT
     });
 
     return () => subscription.unsubscribe();
@@ -210,9 +251,82 @@ export default function App() {
     );
   }
 
+  // Segmented Auth Guard: Access Main if Perfil is Loaded OR if explicitly in Persistent Guest Mode
+  const showMain = isGuestMode || (!!session && profileStatus === 'loaded');
 
-  // Segmented Auth Guard: Access Main if Authenticated OR if explicitly in Persistent Guest Mode
-  const showMain = !!session || isGuestMode;
+  // Intermediate Screens / Status Handling
+  if (session && profileStatus === 'loading') {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#010204', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator color={theme.colors.primary} size="large" />
+        <Text style={{ color: '#fff', fontSize: 12, letterSpacing: 2, marginTop: 20 }}>SINCRONIZANDO PERFIL...</Text>
+      </View>
+    );
+  }
+
+  if (session && profileStatus === 'missing') {
+    const handleInitialize = async () => {
+      if (!session?.access_token) return;
+      setProfileStatus('loading');
+      try {
+        const res = await fetch(`${ENV.BACKEND_URL}/auth/initialize`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (res.ok) {
+          // Re-sync profile from /auth/me now that it exists
+          await syncProfile(session);
+        } else {
+          const body = await res.json().catch(() => ({}));
+          console.error('[App] initialize failed:', res.status, body);
+          setProfileStatus('error');
+        }
+      } catch (err) {
+        console.error('[App] initialize network error:', err);
+        setProfileStatus('error');
+      }
+    };
+
+    return (
+      <View style={{ flex: 1, backgroundColor: '#05070A', justifyContent: 'center', alignItems: 'center', padding: 40 }}>
+        <View style={{ marginBottom: 40, alignItems: 'center' }}>
+          <UserIcon size={64} color={theme.colors.primary} />
+        </View>
+        <Text style={{ color: '#fff', fontSize: 28, fontWeight: '700', marginBottom: 16, textAlign: 'center' }}>
+          Inicializar Perfil
+        </Text>
+        <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16, textAlign: 'center', lineHeight: 24, marginBottom: 40 }}>
+          A tua conta foi autenticada com sucesso!{'\n'}
+          Agora falta apenas preparar o teu perfil personalizado para começares a monitorizar a tua saúde.
+        </Text>
+        
+        <TouchableOpacity 
+          style={{ 
+            backgroundColor: theme.colors.primary, 
+            height: 56, 
+            borderRadius: 16, 
+            width: '100%', 
+            maxWidth: 300, 
+            justifyContent: 'center', 
+            alignItems: 'center' 
+          }}
+          onPress={handleInitialize}
+        >
+          <Text style={{ color: '#000', fontWeight: '700', fontSize: 16 }}>Continuar</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={{ marginTop: 20 }}
+          onPress={() => supabase.auth.signOut()}
+        >
+          <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>Sair da conta</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <ErrorBoundary>

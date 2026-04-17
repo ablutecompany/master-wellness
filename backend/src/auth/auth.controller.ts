@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, UseGuards, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
@@ -13,10 +13,27 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async me(@Request() req: any) {
-    // req.user foi preenchido pelo JwtStrategy.validate()
     const userId = req.user.userId;
     const profile = await this.authService.getProfileByUid(userId);
     
+    return {
+      ok: true,
+      profile
+    };
+  }
+
+  /**
+   * Inicializa o perfil de negócio para utilizador Supabase sem perfil no backend.
+   * Cria User + UserProfile com valores base se ainda não existirem.
+   * Rota: POST /auth/initialize
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('initialize')
+  async initialize(@Request() req: any) {
+    const userId = req.user.userId;
+    const email = req.user.email;
+    const profile = await this.authService.initializeProfile(userId, email);
+
     return {
       ok: true,
       profile
