@@ -10,9 +10,14 @@ export class AuthService {
    * Obter perfil do utilizador diretamente da tabela "profiles" via UUID do Supabase.
    */
   async getProfileByUid(uid: string) {
-    return this.prisma.userProfile.findUnique({
-      where: { id: uid }
-    });
+    try {
+      return await this.prisma.userProfile.findUnique({
+        where: { id: uid }
+      });
+    } catch (err) {
+      console.warn(`[getProfileByUid] Validation or lookup error for ${uid}, treating as missing:`, err.message);
+      return null;
+    }
   }
 
   /**
