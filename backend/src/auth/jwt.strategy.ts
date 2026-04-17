@@ -11,7 +11,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       ignoreExpiration: false,
       audience: 'authenticated', // Padrao Supabase
       issuer: `${process.env.SUPABASE_URL}/auth/v1`,
-      algorithms: ['RS256'],
+      algorithms: ['ES256'],
       secretOrKeyProvider: passportJwtSecret({
         cache: true,
         rateLimit: true,
