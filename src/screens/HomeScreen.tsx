@@ -219,6 +219,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [dataOpen, setDataOpen] = useState(false);
   const [themesInteractive, setThemesInteractive] = useState(false);
   const [dataInteractive, setDataInteractive] = useState(false);
+  const [expandedAppId, setExpandedAppId] = useState<string | null>(null);
 
   // ── FONTE ÚNICA DE VERDADE ──────────────────────────────────────────────────────
   // activeAnalysis: se Demo activo usa a análise temporária (source:'demo').
@@ -701,7 +702,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     onStartShouldSetPanResponder: () => Platform.OS === 'web',
     onMoveShouldSetPanResponder: () => Platform.OS === 'web',
     onPanResponderRelease: (_, { dy, vy }) => {
-      if (dy < -40 || vy < -0.3) {
+      if (dy < -30 || vy < -0.3) {
         Animated.spring(drawerAnim, { toValue: 0, bounciness: 0, useNativeDriver: false })
           .start(() => { lastDrawerY.current = 0; });
       }
@@ -751,8 +752,16 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       onPanResponderRelease: (_, { dy, vy }) => {
         let finalY = lastDrawerY.current + dy;
         let toValue = DRAWER_DOWN;
-        if (vy < -0.5 || finalY < (DRAWER_DOWN + DRAWER_UP) / 2) toValue = DRAWER_UP;
-        else toValue = DRAWER_DOWN;
+        
+        if (vy < -0.3 || dy < -50 || (lastDrawerY.current === DRAWER_DOWN && dy < -30)) {
+          toValue = DRAWER_UP; // Fast swipe up or short deliberate swipe up
+        } else if (vy > 0.3 || dy > 50 || (lastDrawerY.current === DRAWER_UP && dy > 30)) {
+          toValue = DRAWER_DOWN; // Fast swipe down or short deliberate swipe down
+        } else if (finalY < (DRAWER_DOWN + DRAWER_UP) / 2) {
+          toValue = DRAWER_UP;
+        } else {
+          toValue = DRAWER_DOWN;
+        }
 
         Animated.spring(drawerAnim, {
           toValue,
@@ -2015,77 +2024,150 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               <Typography variant="h3" style={styles.sectionTitle}>Disponíveis para Download</Typography>
               <View style={styles.downloadList}>
                 {/* Todas as apps — install/uninstall dinâmico */}
-                {[
-                  { id: 'femmhealth', title: '_Fem sanctuary', desc: 'Saúde Feminina', icon: <View style={{ flexDirection: 'row', alignItems: 'center' }}><Typography style={{ color: '#FF6FBA', fontSize: 22, fontWeight: '800' }}>♀</Typography><Typography style={{ color: '#FF6FBA', fontSize: 16, fontWeight: '900', marginLeft: 2 }}>H</Typography></View> },
-                  { id: 'nutri-menu', title: '_Meal planner', desc: 'Nutrição Personalizada', icon: <Utensils size={22} color="#00D4AA" /> },
-                  { id: 'longevity-secrets', title: '_Healthspan', desc: 'Longevidade & Bem-estar', icon: <Sparkles size={22} color="#FFD700" /> },
-                  { id: 'sleep-deep', title: 'deep sleep', desc: 'Integração Profunda de Sono', icon: <Moon size={22} color="#00F2FF" /> },
-                  { id: '_hydra', title: 'HydraTrack', desc: 'Gestão de Água', icon: <Droplet size={22} color="#00F2FF" opacity={0.6} /> },
-                  { id: '_mind', title: 'Mind', desc: 'Foco e Meditação', icon: <Brain size={22} color="#00F2FF" opacity={0.6} /> },
-                  { id: '_fasting', title: 'Fasting', desc: 'Jejum Intermitente', icon: <Activity size={22} color="#00F2FF" opacity={0.6} /> },
-                  { id: '_cardio', title: 'CardioSync', desc: 'Saúde Cardiovascular', icon: <Heart size={22} color="#00F2FF" opacity={0.6} /> },
-                  { id: '_macro', title: 'MacroTrack', desc: 'Nutrição Detalhada', icon: <Target size={22} color="#00F2FF" opacity={0.6} /> },
-                ].map(({ id, title, desc, icon }) => {
-                  const isInstalled = installedAppIds.includes(id);
-                  const isReal = !id.startsWith('_'); // real apps have install/uninstall wired up
-                  return (
-                    <View key={id} style={styles.downloadRow}>
-                      <TouchableOpacity
-                        style={styles.rowIcon}
-                        activeOpacity={isInstalled && isReal ? 0.7 : 1}
-                        onPress={() => {
+                {/* PRIMEIRAS 4 APPS: Focus Módulos */}
+                {(() => {
+                  const apps = [
+                    { id: 'sleep-deep', title: 'deep sleep', desc: 'Integração Profunda de Sono', icon: <Moon size={22} color="#00F2FF" /> },
+                    { id: 'nutri-menu', title: '_Meal planner', desc: 'Nutrição Personalizada', icon: <Utensils size={22} color="#00D4AA" /> },
+                    { id: '_cardio', title: 'CardioSync', desc: 'Saúde Cardiovascular', icon: <Heart size={22} color="#00F2FF" opacity={0.6} /> },
+                    { id: '_mind', title: 'Mind', desc: 'Foco e Meditação', icon: <Brain size={22} color="#00F2FF" opacity={0.6} /> },
+                  ];
+
+                  return apps.map(({ id, title, desc, icon }) => {
+                    const isInstalled = installedAppIds.includes(id);
+                    const isReal = !id.startsWith('_');
+                    const isExpanded = expandedAppId === id;
+
+                    return (
+                      <View key={id} style={[styles.downloadRow, isExpanded && { backgroundColor: 'rgba(255,255,255,0.05)', paddingBottom: 16 }]}>
+                        {/* Wrapper Touchable que abre app se estiver instalada */}
+                        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }} activeOpacity={isInstalled && isReal ? 0.7 : 1} onPress={() => {
                           if (isInstalled && isReal) {
                             const manifest = MINI_APP_CATALOG.find((m: any) => m.id === id);
                             if (manifest) {
                               launchApp(manifest);
-                              if (Platform.OS === 'web') {
-                                setInlineApp(manifest);
-                              } else {
-                                navigation?.navigate('MiniApp', { app: manifest });
-                              }
+                              if (Platform.OS === 'web') setInlineApp(manifest);
+                              else navigation?.navigate('MiniApp', { app: manifest });
                             }
                           }
-                        }}
-                      >
-                        {icon}
-                      </TouchableOpacity>
-                      <View style={styles.rowInfo}>
-                        <Typography style={styles.rowTitle}>{title}</Typography>
-                        <Typography variant="caption" style={styles.rowDesc}>{desc}</Typography>
-                      </View>
-                      <View style={styles.rowActions}>
-                        <TouchableOpacity style={styles.actionBtn}>
-                          <Typography style={styles.actionText}>INFO</Typography>
+                        }}>
+                          <View style={styles.rowIcon}>{icon}</View>
+                          <View style={styles.rowInfo}>
+                            <Typography style={styles.rowTitle}>{title}</Typography>
+                            <Typography variant="caption" style={styles.rowDesc}>{desc}</Typography>
+                          </View>
                         </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.actionBtn, isInstalled ? styles.uninstallBtn : styles.installBtn, !isReal && { opacity: 0.4 }]}
-                          onPress={() => {
-                            if (!isReal) return;
-                            if (isInstalled) {
-                              uninstallApp(id);
-                            } else {
-                              useStore.getState().installApp(id);
 
-                              // Auto-launch on install to give clear feedback
-                              const manifest = MINI_APP_CATALOG.find((m: any) => m.id === id);
-                              if (manifest) {
-                                if (Platform.OS === 'web') {
-                                  setInlineApp(manifest);
-                                } else {
-                                  navigation?.navigate('MiniApp', { app: manifest });
-                                }
+                        <View style={styles.rowActions}>
+                          <TouchableOpacity style={styles.actionBtn} onPress={() => setExpandedAppId(isExpanded ? null : id)}>
+                            <Typography style={styles.actionText}>INFO</Typography>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.actionBtn, isInstalled ? styles.uninstallBtn : styles.installBtn, !isReal && { opacity: 0.4 }]}
+                            onPress={() => {
+                              if (!isReal) return;
+                              if (isInstalled) {
+                                uninstallApp(id);
+                              } else {
+                                useStore.getState().installApp(id);
+                                const manifest = MINI_APP_CATALOG.find((m: any) => m.id === id);
+                                if (manifest && Platform.OS === 'web') setInlineApp(manifest);
+                                else if (manifest) navigation?.navigate('MiniApp', { app: manifest });
                               }
-                            }
-                          }}
-                        >
-                          <Typography style={[styles.actionText, isInstalled ? styles.uninstallText : styles.installText]}>
-                            {isInstalled ? 'DESINSTALAR' : 'INSTALAR'}
-                          </Typography>
-                        </TouchableOpacity>
+                            }}
+                          >
+                            <Typography style={[styles.actionText, isInstalled ? styles.uninstallText : styles.installText]}>
+                              {isInstalled ? 'DESINSTALAR' : 'INSTALAR'}
+                            </Typography>
+                          </TouchableOpacity>
+                        </View>
+                        
+                        {/* Inline Expansion Area */}
+                        {isExpanded && (
+                          <View style={{ marginTop: 12, width: '100%', paddingLeft: 56, paddingRight: 16 }}>
+                            <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.6)', fontStyle: 'italic', marginBottom: 8, lineHeight: 18 }}>
+                              {isReal ? 'Módulo interativo integrado com a AI de predição do teu bem-estar. Permite cruzamento de dados biométricos em tempo real.' : 'Brevemente disponível. Subscrição M4 necessária.'}
+                            </Typography>
+                          </View>
+                        )}
                       </View>
-                    </View>
-                  );
-                })}
+                    );
+                  });
+                })()}
+
+                <Typography variant="h3" style={[styles.sectionTitle, { marginTop: 20, marginBottom: 8, fontSize: 13, color: 'rgba(255,255,255,0.5)' }]}>Outros Módulos</Typography>
+                
+                {/* RESTANTES APPS */}
+                {(() => {
+                  const otherApps = [
+                    { id: 'femmhealth', title: '_Fem sanctuary', desc: 'Saúde Feminina', icon: <View style={{ flexDirection: 'row', alignItems: 'center' }}><Typography style={{ color: '#FF6FBA', fontSize: 22, fontWeight: '800' }}>♀</Typography><Typography style={{ color: '#FF6FBA', fontSize: 16, fontWeight: '900', marginLeft: 2 }}>H</Typography></View> },
+                    { id: 'longevity-secrets', title: '_Healthspan', desc: 'Longevidade & Bem-estar', icon: <Sparkles size={22} color="#FFD700" /> },
+                    { id: '_hydra', title: 'HydraTrack', desc: 'Gestão de Água', icon: <Droplet size={22} color="#00F2FF" opacity={0.6} /> },
+                    { id: '_fasting', title: 'Fasting', desc: 'Jejum Intermitente', icon: <Activity size={22} color="#00F2FF" opacity={0.6} /> },
+                    { id: '_macro', title: 'MacroTrack', desc: 'Nutrição Detalhada', icon: <Target size={22} color="#00F2FF" opacity={0.6} /> },
+                  ];
+
+                  return otherApps.map(({ id, title, desc, icon }) => {
+                    const isInstalled = installedAppIds.includes(id);
+                    const isReal = !id.startsWith('_');
+                    const isExpanded = expandedAppId === id;
+
+                    return (
+                      <View key={id} style={[styles.downloadRow, isExpanded && { backgroundColor: 'rgba(255,255,255,0.05)', paddingBottom: 16 }]}>
+                        {/* Wrapper Touchable que abre app se estiver instalada */}
+                        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }} activeOpacity={isInstalled && isReal ? 0.7 : 1} onPress={() => {
+                          if (isInstalled && isReal) {
+                            const manifest = MINI_APP_CATALOG.find((m: any) => m.id === id);
+                            if (manifest) {
+                              launchApp(manifest);
+                              if (Platform.OS === 'web') setInlineApp(manifest);
+                              else navigation?.navigate('MiniApp', { app: manifest });
+                            }
+                          }
+                        }}>
+                          <View style={styles.rowIcon}>{icon}</View>
+                          <View style={styles.rowInfo}>
+                            <Typography style={styles.rowTitle}>{title}</Typography>
+                            <Typography variant="caption" style={styles.rowDesc}>{desc}</Typography>
+                          </View>
+                        </TouchableOpacity>
+
+                        <View style={styles.rowActions}>
+                          <TouchableOpacity style={styles.actionBtn} onPress={() => setExpandedAppId(isExpanded ? null : id)}>
+                            <Typography style={styles.actionText}>INFO</Typography>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.actionBtn, isInstalled ? styles.uninstallBtn : styles.installBtn, !isReal && { opacity: 0.4 }]}
+                            onPress={() => {
+                              if (!isReal) return;
+                              if (isInstalled) {
+                                uninstallApp(id);
+                              } else {
+                                useStore.getState().installApp(id);
+                                const manifest = MINI_APP_CATALOG.find((m: any) => m.id === id);
+                                if (manifest && Platform.OS === 'web') setInlineApp(manifest);
+                                else if (manifest) navigation?.navigate('MiniApp', { app: manifest });
+                              }
+                            }}
+                          >
+                            <Typography style={[styles.actionText, isInstalled ? styles.uninstallText : styles.installText]}>
+                              {isInstalled ? 'DESINSTALAR' : 'INSTALAR'}
+                            </Typography>
+                          </TouchableOpacity>
+                        </View>
+                        
+                        {/* Inline Expansion Area */}
+                        {isExpanded && (
+                          <View style={{ marginTop: 12, width: '100%', paddingLeft: 56, paddingRight: 16 }}>
+                            <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.6)', fontStyle: 'italic', marginBottom: 8, lineHeight: 18 }}>
+                              {isReal ? 'Módulo interativo integrado com a AI de predição do teu bem-estar. Permite cruzamento de dados biométricos em tempo real.' : 'Brevemente disponível. Subscrição M4 necessária.'}
+                            </Typography>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  });
+                })()}
               </View>
 
             </ScrollView>
