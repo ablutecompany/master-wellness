@@ -159,25 +159,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const setAnalyses = useStore(state => state.setAnalyses);
   const setActiveAnalysisId = useStore(state => state.setActiveAnalysisId);
   useEffect(() => {
-    async function initAuth() {
-      // Obter sessão persistida (mecanismo normal do Supabase)
-      const { data: { session } } = await supabase.auth.getSession();
+    async function loadData() {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
       
-      if (session) {
-        setSessionToken(session.access_token);
-        // O utilizador/perfil real virá do backend via GET /auth/me
-        const response = await fetch(`${ENV.BACKEND_URL}/auth/me`, {
-          headers: { 'Authorization': `Bearer ${session.access_token}` }
-        });
-        
-        if (response.ok) {
-          const userData = await response.json();
-          const profile = userData.profile;
-          setUser(profile);
-
+      if (user && token && !isGuestMode) {
+        try {
           // 2. CARREGAMENTO REAL DE ANÁLISES — M5 Fatia 2
           const analysesRes = await fetch(`${ENV.BACKEND_URL}/analyses`, {
-            headers: { 'Authorization': `Bearer ${session.access_token}` }
+            headers: { 'Authorization': `Bearer ${token}` }
           });
 
           if (analysesRes.ok) {
@@ -185,7 +175,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             setAnalyses(realAnalyses);
 
             // 3. RESOLUÇÃO DE ANÁLISE ACTIVA COM FALLBACK — M5 Fatia 2
-            const persistedId = profile?.activeAnalysisId;
+            const persistedId = user?.activeAnalysisId;
             const existsInReal = realAnalyses.some((a: any) => a.id === persistedId);
 
             if (persistedId && existsInReal) {
@@ -197,19 +187,14 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               setActiveAnalysisId(null);
             }
           }
+        } catch (err) {
+          console.error('[HomeScreen] Failed to load analyses:', err);
         }
       }
-
-      // Escutar mudanças de auth
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        setSessionToken(session?.access_token ?? null);
-      });
-
-      return () => subscription.unsubscribe();
     }
 
-    initAuth();
-  }, [setUser, setSessionToken, setActiveAnalysisId]);
+    loadData();
+  }, [user, isGuestMode, setAnalyses, setActiveAnalysisId]);
 
   // Garantir inicialização do serviço sem dependência circular
   useEffect(() => {
@@ -462,10 +447,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       demoScenarioKey: key,
       analysisDate: new Date().toISOString().split('T')[0],
       deviceSources: ['demo_system'],
-      ecosystemFacts: demoEcoFacts,
-      measurements: demoMeasurements
+      ecosystemFacts: demoEcoFacts.map((f: any) => ({ ...f, value: String(f.value ?? '') })),
+      measurements: demoMeasurements.map((m: any) => ({ ...m, value: String(m.value ?? '') }))
     } as any;
     setDemoAnalysis(demo);
+
 
     // 3. Abre painel Leitura AI apenas para Users. Em Guest, fecha caso estivesse aberto, para não bloquear ecrã.
     if (isGuestMode) {
