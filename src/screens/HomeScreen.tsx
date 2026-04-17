@@ -453,17 +453,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     setDemoAnalysis(demo);
 
 
-    // 3. Abre painel Leitura AI apenas para Users. Em Guest, fecha caso estivesse aberto, para não bloquear ecrã.
-    if (isGuestMode) {
-      setThemesOpen(false);
-      Animated.spring(themesAnim, { toValue: -width, bounciness: 0, useNativeDriver: false }).start(() => setThemesInteractive(false));
-    } else {
-      setThemesInteractive(true);
-      setThemesOpen(true);
-      requestAnimationFrame(() => {
-        Animated.spring(themesAnim, { toValue: 0, useNativeDriver: false }).start();
-      });
-    }
+    // 3. Forçar fecho do painel Leitura AI (Themes) para todos os utilizadores.
+    // Evita o bug de "ecrã lavado/branco" provocado pelo overlap de animações vs Modals na Web.
+    setThemesOpen(false);
+    Animated.spring(themesAnim, { toValue: -width, bounciness: 0, useNativeDriver: false }).start(() => setThemesInteractive(false));
   };
 
   const handleExitDemo = () => {
