@@ -292,7 +292,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
             >
               <Typography variant="caption" style={styles.switchText}>
                 {isSignUp
-                  ? 'Já tenho conta — Entrar'
+                  ? 'Entrar com conta'
                   : 'Ainda não tenho conta — Criar conta'
                 }
               </Typography>

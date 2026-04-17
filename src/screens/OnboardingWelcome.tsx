@@ -120,13 +120,13 @@ export const WelcomeScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           }}
         >
           <Text style={[styles.tagline, taglineGlow]}>
-            Sencing Your Wellbeing
+            Sensing Your Wellbeing
           </Text>
         </Animated.View>
 
         <Animated.View style={[styles.buttonContainer, { opacity: taglineOpacity }]}>
           <Button title="Começar Agora" onPress={goOnboarding} variant="primary" />
-          <Button title="Já tenho conta — Entrar" onPress={goLogin} variant="secondary" />
+          <Button title="Entrar com conta" onPress={goLogin} variant="secondary" />
         </Animated.View>
       </View>
     </View>
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   tagline: {
-    fontSize: 10,
+    fontSize: 14,
     fontWeight: '400',
     color: 'rgba(115,188,255,0.5)',
     letterSpacing: 4,
