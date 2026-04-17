@@ -1069,11 +1069,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   </Typography>
                 </View>
               </TouchableOpacity>
-              {!isGuestMode && (
-                <TouchableOpacity style={styles.iconCircle} onPress={() => Alert.alert('Área Familiar', 'A gestão central do agregado e sincronização de biometrias partilhadas será efetuada nesta tab no futuro.')}>
-                  <Users size={20} color="#fff" />
-                </TouchableOpacity>
-              )}
+
               <TouchableOpacity style={styles.iconCircle} onPress={() => setShowControl(true)}>
                 <SlidersHorizontal size={20} color="#fff" />
               </TouchableOpacity>
@@ -2100,8 +2096,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       {/* ── PROFILE MODAL ─────────────────────────────────────────────────── */}
       <Modal visible={showProfile} transparent animationType="fade" onRequestClose={() => setShowProfile(false)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowProfile(false)}>
-          <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFillObject} />
-          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.7)' }]} />
+          <BlurView intensity={120} tint="dark" style={StyleSheet.absoluteFillObject} />
+          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.85)' }]} />
           
           <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
             <BlurView intensity={70} tint="dark" style={[styles.modalContent, { maxHeight: height * 0.8 }]}>
@@ -2127,6 +2123,23 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                     </Typography>
                   </View>
                 </View>
+
+                {/* A.0 Entrada do Agregado Familiar (Apenas Users Registados) */}
+                {!isGuestMode && (
+                  <TouchableOpacity
+                    style={{ backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16, marginBottom: 24, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}
+                    onPress={() => Alert.alert('Área Familiar', 'A gestão central do agregado e sincronização de biometrias partilhadas será efetuada nesta secção no futuro.')}
+                  >
+                    <View style={{ backgroundColor: 'rgba(0, 242, 255, 0.1)', padding: 10, borderRadius: 10, marginRight: 16 }}>
+                      <Users size={24} color="#00F2FF" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Typography style={{ color: '#fff', fontSize: 14, fontWeight: 'bold', marginBottom: 2 }}>Agregado</Typography>
+                      <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>Gerir membros e perfis ligados</Typography>
+                    </View>
+                    <ChevronRight size={20} color="rgba(255,255,255,0.3)" />
+                  </TouchableOpacity>
+                )}
 
                 {/* A.1. Nome de Utilizador Editável */}
                 <View style={styles.inputGroup}>
