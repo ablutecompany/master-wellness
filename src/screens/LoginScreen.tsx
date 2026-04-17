@@ -31,6 +31,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [signUpDone, setSignUpDone] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const setUser = useStore((state) => state.setUser);
 
   const resetForm = () => {
@@ -40,6 +41,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
     setShowPassword(false);
     setShowConfirm(false);
     setSignUpDone(false);
+    setErrorMsg(null);
   };
 
   const switchMode = (next: Mode) => {
@@ -62,8 +64,9 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
 
   // ── LOGIN ────────────────────────────────────────────────
   const handleLogin = async () => {
+    setErrorMsg(null);
     const err = validate();
-    if (err) { Alert.alert('Atenção', err); return; }
+    if (err) { setErrorMsg(err); return; }
 
     setLoading(true);
     try {
@@ -74,7 +77,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
       if (error) throw error;
       // setUser(data.user) REMOVED: App.tsx handles the session -> profile sync now.
     } catch (error: any) {
-      Alert.alert('Falha na Autenticação', error.message || 'Ocorreu um erro inesperado.');
+      setErrorMsg(error.message || 'Ocorreu um erro inesperado.');
     } finally {
       setLoading(false);
     }
@@ -82,8 +85,9 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
 
   // ── SIGN UP ──────────────────────────────────────────────
   const handleSignUp = async () => {
+    setErrorMsg(null);
     const err = validate();
-    if (err) { Alert.alert('Atenção', err); return; }
+    if (err) { setErrorMsg(err); return; }
 
     setLoading(true);
     try {
@@ -105,7 +109,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
         setSignUpDone(true);
       }
     } catch (error: any) {
-      Alert.alert('Erro ao criar conta', error.message || 'Ocorreu um erro inesperado.');
+      setErrorMsg(error.message || 'Ocorreu um erro inesperado.');
     } finally {
       setLoading(false);
     }
@@ -246,6 +250,15 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
               </View>
             )}
 
+            {/* Erro visual explícito (Substitui Alert invisível na web) */}
+            {errorMsg ? (
+              <View style={{ backgroundColor: 'rgba(255,50,50,0.1)', padding: 12, borderRadius: 8, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,50,50,0.3)' }}>
+                <Typography variant="caption" style={{ color: '#ff6b6b', textAlign: 'center' }}>
+                  {errorMsg}
+                </Typography>
+              </View>
+            ) : null}
+
             {/* Botão principal */}
             <TouchableOpacity
               style={[styles.loginButton, loading && styles.disabledButton]}
@@ -286,7 +299,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
           </GlassCard>
 
           {/* Voltar */}
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Welcome')}>
             <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.5)' }}>
               Voltar atrás
             </Typography>
