@@ -58,10 +58,7 @@ export const OnboardingGoals: React.FC<{ navigation: any }> = ({ navigation }) =
           onPress={() => {
             useStore.getState().updateGuestProfile({ goals: selected });
             // Forçamos a entrada na aplicação
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Main' }],
-            });
+            navigation.navigate('Main');
           }}
           variant="primary"
         />
