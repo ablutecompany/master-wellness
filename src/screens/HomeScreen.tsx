@@ -358,6 +358,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const themesPanelHeight = height;
   const [showProfile, setShowProfile] = useState(false);
   const [showControl, setShowControl] = useState(false);
+  const [showTokens, setShowTokens] = useState(false);
   const [showNfcModal, setShowNfcModal] = useState(false);
   const [isNfcScanning, setIsNfcScanning] = useState(false);
   // ── Animation States ────────────────────────────────────────────────────
@@ -1080,10 +1081,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               <TouchableOpacity 
                 activeOpacity={0.7}
                 style={[styles.iconCircle, { paddingHorizontal: 0, justifyContent: 'center', alignItems: 'center' }]} 
-                onPress={() => {
-                  if (Platform.OS === 'web') alert("Gestão de tokens disponível em breve.");
-                  else Alert.alert("Tokens", "Gestão de tokens disponível em breve.");
-                }}
+                onPress={() => setShowTokens(true)}
               >
                 <Image source={require('../../assets/token abl.png')} style={{ width: 22, height: 22, resizeMode: 'contain', tintColor: '#e5e5e5' }} />
               </TouchableOpacity>
@@ -2274,14 +2272,36 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         </Animated.View>
       </Animated.View>
 
+      {/* ── TOKENS MODAL ─────────────────────────────────────────────────── */}
+      <Modal visible={showTokens} transparent animationType="fade" onRequestClose={() => setShowTokens(false)}>
+        <TouchableOpacity style={[styles.modalOverlay, { backgroundColor: 'transparent' }]} activeOpacity={1} onPress={() => setShowTokens(false)}>
+          <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFillObject} />
+          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(5, 10, 18, 0.75)' }]} />
+          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+            <BlurView intensity={80} tint="dark" style={[styles.modalContent, { alignItems: 'center', borderColor: 'rgba(255,255,255,0.15)' }]}>
+              <View style={[styles.modalHeader, { width: '100%', marginBottom: 16 }]}>
+                <Typography variant="h2" style={styles.modalTitle}>Gestão de Tokens</Typography>
+                <TouchableOpacity onPress={() => setShowTokens(false)}>
+                  <X size={24} color="#fff" />
+                </TouchableOpacity>
+              </View>
+              <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', padding: 24, borderRadius: 20, alignItems: 'center', width: '100%' }}>
+                <Image source={require('../../assets/token abl.png')} style={{ width: 48, height: 48, resizeMode: 'contain', tintColor: '#fff', marginBottom: 16, opacity: 0.5 }} />
+                <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, textAlign: 'center', lineHeight: 20 }}>A gestão autónoma de tokens estará disponível em atualizações futuras.</Typography>
+              </View>
+            </BlurView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
       {/* ── PROFILE MODAL ─────────────────────────────────────────────────── */}
       <Modal visible={showProfile} transparent animationType="fade" onRequestClose={() => setShowProfile(false)}>
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowProfile(false)}>
-          <BlurView intensity={120} tint="dark" style={StyleSheet.absoluteFillObject} />
-          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.85)' }]} />
+        <TouchableOpacity style={[styles.modalOverlay, { backgroundColor: 'transparent' }]} activeOpacity={1} onPress={() => setShowProfile(false)}>
+          <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFillObject} />
+          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(5, 10, 18, 0.75)' }]} />
           
           <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
-            <BlurView intensity={70} tint="dark" style={[styles.modalContent, { maxHeight: height * 0.8 }]}>
+            <BlurView intensity={80} tint="dark" style={[styles.modalContent, { maxHeight: height * 0.8, borderColor: 'rgba(255,255,255,0.15)', borderWidth: 1 }]}>
               <View style={styles.modalHeader}>
                 <Typography variant="h2" style={styles.modalTitle}>Editar Perfil</Typography>
                 <TouchableOpacity onPress={() => setShowProfile(false)}>
@@ -2411,9 +2431,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
       {/* ── CONTROL MODAL ─────────────────────────────────────────────────── */}
       <Modal visible={showControl} transparent animationType="fade" onRequestClose={() => setShowControl(false)}>
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowControl(false)}>
+        <TouchableOpacity style={[styles.modalOverlay, { backgroundColor: 'transparent' }]} activeOpacity={1} onPress={() => setShowControl(false)}>
+          <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFillObject} />
+          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(5, 10, 18, 0.75)' }]} />
           <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
-            <BlurView intensity={70} tint="dark" style={styles.modalContent}>
+            <BlurView intensity={80} tint="dark" style={[styles.modalContent, { borderColor: 'rgba(255,255,255,0.15)', borderWidth: 1 }]}>
               <View style={styles.modalHeader}>
                 <Typography variant="h2" style={styles.modalTitle}>Definições do Ecrã & IA</Typography>
                 <TouchableOpacity onPress={() => setShowControl(false)}>
