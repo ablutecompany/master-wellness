@@ -1339,7 +1339,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               <Calendar size={14} color="rgba(255,255,255,0.5)" style={{ marginRight: 8 }} />
               <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: '700', letterSpacing: 0.5 }}>
                 {(() => {
-                  if (!selectedDate) return 'Carregando...';
+                  if (!selectedDate) return 'Dados indisponíveis';
                   const d = new Date(selectedDate);
                   const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
                   return `${d.getDate().toString().padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
@@ -1787,15 +1787,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           <Animated.View style={[styles.sidePanel, styles.rightPanel, { transform: [{ translateX: dataAnim }], backgroundColor: '#020306' }]}>
             <View style={[StyleSheet.absoluteFill, { backgroundColor: '#020306' }]} />
             <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill}>
-              <View style={styles.panelHeader}>
+              <View style={[styles.panelHeader, { paddingBottom: 4, minHeight: 56, alignItems: 'center' }]}>
                 <TouchableOpacity
                   onPress={closeData}
-                  style={{ padding: 24 }}
-                  hitSlop={{ top: 24, bottom: 24, left: 24, right: 24 }}
+                  style={{ padding: 16 }}
+                  hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
                 >
-                  <X size={24} color="rgba(255,255,255,0.8)" />
+                  <X size={20} color="rgba(255,255,255,0.8)" />
                 </TouchableOpacity>
-                <Typography variant="h2" style={styles.panelTitle}>Bioanálise</Typography>
+                <Typography style={[styles.panelTitle, { fontSize: 18, fontWeight: '800', marginVertical: 0 }]}>Bioanálise</Typography>
 
                 {/* Script de limpeza para remover artefatos de debug (Getting DOM...) no browser */}
                 {Platform.OS === 'web' && (
@@ -1823,12 +1823,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               </View>
 
               {/* ── Temporal Context Header ── */}
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16, backgroundColor: 'rgba(255,255,255,0.03)', borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 10, backgroundColor: 'rgba(255,255,255,0.03)', borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Calendar size={14} color="rgba(255,255,255,0.5)" style={{ marginRight: 8 }} />
                   <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: '700', letterSpacing: 0.5 }}>
                     {(() => {
-                      if (!selectedDate) return 'Carregando...';
+                      if (!selectedDate) return 'Dados indisponíveis';
                       const d = new Date(selectedDate);
                       const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
                       return `${d.getDate().toString().padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
@@ -1846,7 +1846,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               </View>
 
               {/* ── Tab Bar ── */}
-              <View style={styles.bioTabBar}>
+              <View style={[styles.bioTabBar, { marginTop: 0, paddingVertical: 12 }]}>
                 {factualBioCategories.map((cat, i) => {
                   const isActive = safeBioTab === i;
                   return (
