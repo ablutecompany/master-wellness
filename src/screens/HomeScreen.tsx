@@ -1085,7 +1085,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   else Alert.alert("Tokens", "Gestão de tokens disponível em breve.");
                 }}
               >
-                <Image source={require('../../assets/token abl.png')} style={{ width: 22, height: 22, resizeMode: 'contain', tintColor: '#aaaaaa' }} />
+                <Image source={require('../../assets/token abl.png')} style={{ width: 22, height: 22, resizeMode: 'contain', tintColor: '#e5e5e5' }} />
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.iconCircle} onPress={() => setShowControl(true)}>
