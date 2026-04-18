@@ -2,7 +2,7 @@ services:
   - type: web
     name: ablute-wellness-backend
     runtime: node
-    repo: https://github.com/ablutecompany/app_wellnessVariation2.0
+    repo: https://github.com/ablutecompany/master-wellness
     branch: main
     rootDir: backend
     plan: free
