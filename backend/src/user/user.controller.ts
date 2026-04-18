@@ -16,11 +16,15 @@ export class UserController {
     @Request() req: any,
     @Body() body: { name?: string; goals?: string[] },
   ) {
-    const userId = req.user.userId;
-    // Update raw records in DB and return canonical shape
-    const updatedProfile = await this.userService.updateCombinedProfile(userId, body);
-    
-    return { ok: true, profile: updatedProfile };
+    try {
+      const userId = req.user.userId;
+      // Update raw records in DB and return canonical shape
+      const updatedProfile = await this.userService.updateCombinedProfile(userId, body);
+      
+      return { ok: true, profile: updatedProfile };
+    } catch (err) {
+      return { ok: false, ERROR_MARKER: 'RUNTIME_A_PROCESSAR', errorName: err.name, errorMessage: err.message, trace: err.stack };
+    }
   }
 
   /**
