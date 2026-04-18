@@ -15,12 +15,24 @@ async function bootstrap() {
     const originRegexString = configService.get<string>('CORS_ALLOWED_ORIGIN_REGEX');
     const originRegex = originRegexString ? new RegExp(originRegexString) : null;
 
+    // Hardcoded Dev Allowlist - Permite que as instâncias locais Expo/Web testem a DB de cloud
+    const localDevOrigins = [
+      'http://localhost:3000',
+      'http://localhost:8081',
+      'http://localhost:8082',
+      'http://localhost:8085',
+      'http://localhost:19006'
+    ];
+
     app.enableCors({
       origin: (origin, callback) => {
         if (!origin) return callback(null, true);
+        
         if (allowedOrigins.includes(origin)) return callback(null, true);
         if (originRegex && originRegex.test(origin)) return callback(null, true);
-        callback(new Error('Origin not allowed by CORS Policy'));
+        if (localDevOrigins.includes(origin)) return callback(null, true);
+
+        callback(new Error(`Origin ${origin} not allowed by CORS Policy`));
       },
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
       credentials: true,
