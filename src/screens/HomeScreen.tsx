@@ -2052,7 +2052,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       <View key={id} style={[styles.downloadRow, isExpanded && { flexDirection: 'column', alignItems: 'stretch', backgroundColor: 'rgba(30,35,45,0.7)', paddingBottom: 16, borderLeftWidth: 2, borderLeftColor: '#00F2FF', padding: 16 }]}>
                         
                         {/* BLOCO 1 — CABEÇALHO (Em linha) */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
+                        <View style={[{ flexDirection: 'row', alignItems: 'center' }, !isExpanded && { flex: 1 }]}>
                           <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }} activeOpacity={isInstalled && isReal ? 0.7 : 1} onPress={() => {
                             if (isInstalled && isReal) {
                               const manifest = MINI_APP_CATALOG.find((m: any) => m.id === id);
@@ -2175,7 +2175,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       <View key={id} style={[styles.downloadRow, isExpanded && { flexDirection: 'column', alignItems: 'stretch', backgroundColor: 'rgba(30,35,45,0.7)', paddingBottom: 16, borderLeftWidth: 2, borderLeftColor: '#00F2FF', padding: 16 }]}>
                         
                         {/* BLOCO 1 — CABEÇALHO (Em linha) */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
+                        <View style={[{ flexDirection: 'row', alignItems: 'center' }, !isExpanded && { flex: 1 }]}>
                           <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }} activeOpacity={isInstalled && isReal ? 0.7 : 1} onPress={() => {
                             if (isInstalled && isReal) {
                               const manifest = MINI_APP_CATALOG.find((m: any) => m.id === id);
