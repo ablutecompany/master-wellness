@@ -6,34 +6,26 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   private readonly logger = new Logger(PrismaService.name);
   private isConnected = false;
 
+  constructor() {
+    let dbUrl = process.env.DATABASE_URL;
+    if (dbUrl && dbUrl.includes('db.wyddxokuugxwwigzvoja.supabase.co')) {
+      dbUrl = dbUrl.replace('db.wyddxokuugxwwigzvoja.supabase.co:5432', 'aws-0-eu-central-1.pooler.supabase.com:6543');
+      if (!dbUrl.includes('postgres.wyddxokuugxwwigzvoja')) {
+        dbUrl = dbUrl.replace('postgres:', 'postgres.wyddxokuugxwwigzvoja:');
+      }
+      if (!dbUrl.includes('pgbouncer=true')) {
+        dbUrl += dbUrl.includes('?') ? '&pgbouncer=true' : '?pgbouncer=true';
+      }
+      process.env.DATABASE_URL = dbUrl; // Sync process env just in case
+    }
+    super(dbUrl ? { datasources: { db: { url: dbUrl } } } : undefined);
+  }
+
   async onModuleInit() {
     try {
-      let dbUrl = process.env.DATABASE_URL;
-      
-      if (!dbUrl) {
+      if (!process.env.DATABASE_URL) {
         this.logger.warn('DATABASE_URL ausente. Ligação Prisma ignorada.');
         return;
-      }
-
-      // Self-healing da Connection String para PGBouncer (Transaction Pooler) em ambientes limitados a IPv4 (Render)
-      if (dbUrl.includes('db.wyddxokuugxwwigzvoja.supabase.co')) {
-        this.logger.log('Detetado host Supabase Legacy/Direct. A ajustar automaticamente para o Transaction Pooler (IPv4)...');
-        
-        // Substituir Host
-        dbUrl = dbUrl.replace('db.wyddxokuugxwwigzvoja.supabase.co:5432', 'aws-0-eu-central-1.pooler.supabase.com:6543');
-        
-        // Adicionar project ID ao utilizador (postgresql://postgres: -> postgresql://postgres.wyddxokuugxwwigzvoja:)
-        if (!dbUrl.includes('postgres.wyddxokuugxwwigzvoja')) {
-          dbUrl = dbUrl.replace('postgres:', 'postgres.wyddxokuugxwwigzvoja:');
-        }
-        
-        // Assegurar pgbouncer
-        if (!dbUrl.includes('pgbouncer=true')) {
-          dbUrl += dbUrl.includes('?') ? '&pgbouncer=true' : '?pgbouncer=true';
-        }
-        
-        process.env.DATABASE_URL = dbUrl;
-        this.logger.log('Connection Pooler URL configurado em runtime.');
       }
 
       await this.$connect();
