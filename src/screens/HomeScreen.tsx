@@ -1307,10 +1307,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0, 0, 0, 0.4)', zIndex: -1 }]} />
 
           {/* ── Compact Header ── */}
-          <View style={styles.themePanelHeader}>
+          <View style={[styles.themePanelHeader, { minHeight: 56, paddingVertical: 8, paddingBottom: 4, alignItems: 'center' }]}>
             <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                <Typography style={styles.themePanelTitle}>INTERPRETAÇÃO DAS ANÁLISES POR IA</Typography>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Typography style={[styles.themePanelTitle, { fontSize: 13 }]}>INTERPRETAÇÃO AI</Typography>
                 {demoAnalysis && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
                     <View style={{ backgroundColor: '#00F2FF20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: '#00F2FF40' }}>
@@ -1322,24 +1322,24 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   </View>
                 )}
               </View>
-              <Typography style={styles.themePanelTagline}>O que o teu corpo está a dizer hoje.</Typography>
+              <Typography style={[styles.themePanelTagline, { fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }]}>Sinais em contexto.</Typography>
             </View>
             <TouchableOpacity
               onPress={closeThemes}
-              style={[styles.themePanelClose, { padding: 24 }]}
-              hitSlop={{ top: 24, bottom: 24, left: 24, right: 24 }}
+              style={[styles.themePanelClose, { padding: 16 }]}
+              hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
             >
-              <X size={24} color="rgba(255,255,255,0.8)" />
+              <X size={20} color="rgba(255,255,255,0.8)" />
             </TouchableOpacity>
           </View>
           
           {/* ── Temporal Context Header (Consistência com Dados) ── */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 16, backgroundColor: 'rgba(255,255,255,0.03)', borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 10, backgroundColor: 'rgba(255,255,255,0.03)', borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Calendar size={14} color="rgba(255,255,255,0.5)" style={{ marginRight: 8 }} />
               <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: '700', letterSpacing: 0.5 }}>
                 {(() => {
-                  if (!selectedDate) return 'Dados indisponíveis';
+                  if (!selectedDate) return 'Dados desatualizados';
                   const d = new Date(selectedDate);
                   const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
                   return `${d.getDate().toString().padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
@@ -1393,7 +1393,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       showsVerticalScrollIndicator={false}
                     >
                       {/* Top section: Status da Leitura (Indicação de Frescura) */}
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 32 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
                         <View style={{ height: 1, flex: 1, backgroundColor: 'rgba(255,255,255,0.05)' }} />
                         <Typography style={{ marginHorizontal: 16, color: 'rgba(255,255,255,0.25)', fontSize: 10, fontWeight: '800', letterSpacing: 2, textTransform: 'uppercase' }}>
                           Últimas Análises
