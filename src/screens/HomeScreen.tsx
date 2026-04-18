@@ -1083,7 +1083,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 style={[styles.iconCircle, { paddingHorizontal: 0, justifyContent: 'center', alignItems: 'center' }]} 
                 onPress={() => setShowTokens(true)}
               >
-                <Image source={require('../../assets/token abl.png')} style={{ width: 22, height: 22, resizeMode: 'contain', tintColor: '#e5e5e5' }} />
+                <Image source={require('../../assets/token abl.png')} style={{ width: 26, height: 26, resizeMode: 'contain', tintColor: '#e5e5e5' }} />
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.iconCircle} onPress={() => setShowControl(true)}>
