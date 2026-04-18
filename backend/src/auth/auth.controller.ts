@@ -6,6 +6,11 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @Get('debug-db')
+  getDebug() {
+    return { url: process.env.DATABASE_URL };
+  }
+
   /**
    * Devolve o perfil do utilizador autenticado via Supabase.
    * Rota: GET /auth/me
