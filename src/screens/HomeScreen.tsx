@@ -755,9 +755,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         let finalY = lastDrawerY.current + dy;
         let toValue = DRAWER_DOWN;
         
-        if (vy < -0.3 || dy < -50 || (lastDrawerY.current === DRAWER_DOWN && dy < -30)) {
+        if (vy < -0.2 || dy < -25 || (lastDrawerY.current === DRAWER_DOWN && dy < -15)) {
           toValue = DRAWER_UP; // Fast swipe up or short deliberate swipe up
-        } else if (vy > 0.3 || dy > 50 || (lastDrawerY.current === DRAWER_UP && dy > 30)) {
+        } else if (vy > 0.2 || dy > 25 || (lastDrawerY.current === DRAWER_UP && dy > 15)) {
           toValue = DRAWER_DOWN; // Fast swipe down or short deliberate swipe down
         } else if (finalY < (DRAWER_DOWN + DRAWER_UP) / 2) {
           toValue = DRAWER_UP;
@@ -844,9 +844,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
         // Vertical Swipe (Bottom Half) -> App Drawer
         if (y0 > 300 && Math.abs(dy) > Math.abs(dx)) {
-          if (dy < -60 || vy < -0.5) {
+          if (dy < -25 || vy < -0.2) {
             Animated.spring(drawerAnim, { toValue: DRAWER_UP, useNativeDriver: false }).start(() => lastDrawerY.current = DRAWER_UP);
-          } else if (dy > 60 || vy > 0.5) {
+          } else if (dy > 25 || vy > 0.2) {
             Animated.spring(drawerAnim, { toValue: DRAWER_DOWN, useNativeDriver: false }).start(() => lastDrawerY.current = DRAWER_DOWN);
           } else {
             // Revert
@@ -2074,14 +2074,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                             </View>
                           </TouchableOpacity>
 
-                          <View style={[styles.rowActions, isExpanded && { flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }]}>
-                            {!isExpanded && (
-                              <TouchableOpacity style={[styles.actionBtn, { width: 56, paddingHorizontal: 0 }]} onPress={() => setExpandedAppId(id)}>
-                                <Typography style={styles.actionText}>INFO</Typography>
-                              </TouchableOpacity>
-                            )}
+                          <View style={styles.rowActions}>
+                            <TouchableOpacity 
+                              style={[styles.actionBtn, { width: 56, paddingHorizontal: 0 }]} 
+                              onPress={() => isExpanded ? setExpandedAppId(null) : setExpandedAppId(id)}
+                            >
+                              <Typography style={styles.actionText}>{isExpanded ? 'VER −' : 'VER +'}</Typography>
+                            </TouchableOpacity>
                             <TouchableOpacity
-                              style={[styles.actionBtn, isInstalled ? styles.uninstallBtn : styles.installBtn, !isReal && { opacity: 0.4 }, isExpanded ? { marginTop: 0, paddingHorizontal: 16, backgroundColor: '#00D4AA', borderRadius: 20 } : { width: 88, paddingHorizontal: 0 }]}
+                              style={[styles.actionBtn, isInstalled ? styles.uninstallBtn : styles.installBtn, !isReal && { opacity: 0.4 }, { width: 88, paddingHorizontal: 0 }]}
                               onPress={() => {
                                 if (!isReal) return;
                                 if (isInstalled) {
@@ -2094,7 +2095,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                                 }
                               }}
                             >
-                              <Typography style={[styles.actionText, isInstalled ? styles.uninstallText : styles.installText, isExpanded && { color: '#000', fontWeight: '900' }]}>
+                              <Typography style={[styles.actionText, isInstalled ? styles.uninstallText : styles.installText]}>
                                 {isInstalled ? 'ABRIR' : 'INSTALAR'}
                               </Typography>
                             </TouchableOpacity>
@@ -2136,14 +2137,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                             <Typography variant="caption" numberOfLines={4} style={{ color: 'rgba(255,255,255,0.7)', lineHeight: 18, marginBottom: 12 }}>
                               Módulo interativo integrado com a IA de predição de bem-estar. Permite o cruzamento de dados biométricos em tempo real, fornecendo visualizações ricas e criação de parâmetros ajustados para alavancar a tua performance diária e qualidade de vida.
                             </Typography>
-                            
-                            {/* BLOCO 4 - FECHO */}
-                            <TouchableOpacity onPress={() => setExpandedAppId(null)} style={{ alignSelf: 'flex-start', paddingVertical: 8, paddingRight: 16 }}>
-                              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <ChevronUp size={14} color="#00D4AA" />
-                                <Typography style={{ color: '#00D4AA', fontSize: 12, marginLeft: 4, fontWeight: '800', textTransform: 'uppercase' }}>Ver menos</Typography>
-                              </View>
-                            </TouchableOpacity>
                           </View>
                         )}
                       </View>
@@ -2197,14 +2190,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                             </View>
                           </TouchableOpacity>
 
-                          <View style={[styles.rowActions, isExpanded && { flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }]}>
-                            {!isExpanded && (
-                              <TouchableOpacity style={[styles.actionBtn, { width: 56, paddingHorizontal: 0 }]} onPress={() => setExpandedAppId(id)}>
-                                <Typography style={styles.actionText}>INFO</Typography>
-                              </TouchableOpacity>
-                            )}
+                          <View style={styles.rowActions}>
+                            <TouchableOpacity 
+                              style={[styles.actionBtn, { width: 56, paddingHorizontal: 0 }]} 
+                              onPress={() => isExpanded ? setExpandedAppId(null) : setExpandedAppId(id)}
+                            >
+                              <Typography style={styles.actionText}>{isExpanded ? 'VER −' : 'VER +'}</Typography>
+                            </TouchableOpacity>
                             <TouchableOpacity
-                              style={[styles.actionBtn, isInstalled ? styles.uninstallBtn : styles.installBtn, !isReal && { opacity: 0.4 }, isExpanded ? { marginTop: 0, paddingHorizontal: 16, backgroundColor: '#00D4AA', borderRadius: 20 } : { width: 88, paddingHorizontal: 0 }]}
+                              style={[styles.actionBtn, isInstalled ? styles.uninstallBtn : styles.installBtn, !isReal && { opacity: 0.4 }, { width: 88, paddingHorizontal: 0 }]}
                               onPress={() => {
                                 if (!isReal) return;
                                 if (isInstalled) {
@@ -2217,7 +2211,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                                 }
                               }}
                             >
-                              <Typography style={[styles.actionText, isInstalled ? styles.uninstallText : styles.installText, isExpanded && { color: '#000', fontWeight: '900' }]}>
+                              <Typography style={[styles.actionText, isInstalled ? styles.uninstallText : styles.installText]}>
                                 {isInstalled ? 'ABRIR' : 'INSTALAR'}
                               </Typography>
                             </TouchableOpacity>
@@ -2248,14 +2242,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                             <Typography variant="caption" numberOfLines={4} style={{ color: 'rgba(255,255,255,0.7)', lineHeight: 18, marginBottom: 12 }}>
                               Módulo interativo integrado com a IA de predição de bem-estar. Permite o cruzamento de dados biométricos em tempo real, fornecendo visualizações ricas e criação de parâmetros ajustados para alavancar a tua performance diária e qualidade de vida.
                             </Typography>
-                            
-                            {/* BLOCO 4 - FECHO */}
-                            <TouchableOpacity onPress={() => setExpandedAppId(null)} style={{ alignSelf: 'flex-start', paddingVertical: 8, paddingRight: 16 }}>
-                              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                <ChevronUp size={14} color="#00D4AA" />
-                                <Typography style={{ color: '#00D4AA', fontSize: 12, marginLeft: 4, fontWeight: '800', textTransform: 'uppercase' }}>Ver menos</Typography>
-                              </View>
-                            </TouchableOpacity>
                           </View>
                         )}
                       </View>
@@ -3259,11 +3245,14 @@ const styles = StyleSheet.create({
   rowActions: {
     flexDirection: 'row',
     gap: 8,
+    alignItems: 'center',
+    justifyContent: 'flex-start'
   },
   actionBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.1)',
   },
   actionText: {
@@ -3271,6 +3260,8 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1,
+    textAlign: 'center',
+    lineHeight: 12,
   },
   installBtn: {
     backgroundColor: '#00F2FF',
