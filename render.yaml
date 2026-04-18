@@ -8,7 +8,7 @@ services:
     plan: free
     region: frankfurt
     buildCommand: npm install && npx prisma generate && npm run build
-    startCommand: npm run db:sync && npm run start:prod
+    startCommand: npm run start:prod
     envVars:
       - key: NODE_ENV
         value: production
