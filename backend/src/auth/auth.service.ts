@@ -9,19 +9,38 @@ export class AuthService {
   /**
    * Obter perfil do utilizador diretamente da tabela "profiles" via UUID do Supabase.
    */
+  /**
+   * Obter perfil do utilizador diretamente da tabela "profiles" via UUID do Supabase.
+   * Transforma em contrato canónico para o frontend.
+   */
   async getProfileByUid(uid: string) {
     try {
-      return await this.prisma.userProfile.findUnique({
-        where: { id: uid }
+      const user = await this.prisma.user.findUnique({
+        where: { id: uid },
+        include: { profile: true }
       });
+
+      if (!user) return null;
+
+      const p = user.profile;
+
+      return {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        // Canonical shape mapping
+        goals: p?.secondaryGoals || [],
+        height: p?.height || null,
+        baseWeight: p?.baseWeight || null,
+        mainGoal: p?.mainGoal || null,
+        activeAnalysisId: p?.activeAnalysisId,
+        // ... include any other fields needed by frontend
+      };
     } catch (err) {
       console.warn(`[getProfileByUid] Validation or lookup error for ${uid}, treating as missing:`, err.message);
       return null;
     }
   }
-
-  /**
-   * Inicializar perfil para utilizador autenticado via Supabase sem perfil no backend.
    * Cria o User e o UserProfile com valores base seguros.
    */
   async initializeProfile(uid: string, email: string, displayName?: string) {

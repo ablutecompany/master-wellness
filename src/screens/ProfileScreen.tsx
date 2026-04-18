@@ -18,33 +18,41 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const updateGuestProfile = useStore(state => state.updateGuestProfile);
 
   const handleEditName = () => {
-    if (!isGuestMode) {
-      Alert.alert('Funcionalidade em desenvolvimento', 'A edição de perfil para utilizadores autenticados será disponibilizada na próxima versão.');
-      return;
-    }
+    const defaultName = userName !== 'Convidada' ? userName : '';
+    const title = isGuestMode ? 'Editar Nome (Guest)' : 'Editar Nome';
 
     if (Platform.OS === 'web') {
-      const newName = window.prompt('Como gostarias de ser tratada?', userName !== 'Convidada' ? userName : '');
-      if (newName !== null && newName !== '') {
-        updateGuestProfile({ name: newName });
+      const newName = window.prompt('Como gostarias de ser tratada?', defaultName);
+      if (newName !== null && newName.trim() !== '') {
+        if (isGuestMode) {
+          useStore.getState().updateGuestProfile({ name: newName.trim() });
+        } else {
+          useStore.getState().updateAuthenticatedProfile({ name: newName.trim() });
+        }
       }
       return;
     }
 
     Alert.prompt(
-      'Editar Nome (Guest)',
+      title,
       'Como gostarias de ser tratada?',
       [
         { text: 'Cancelar', style: 'cancel' },
         { 
           text: 'Salvar', 
           onPress: (newName) => {
-            if (newName) updateGuestProfile({ name: newName });
+            if (newName && newName.trim() !== '') {
+              if (isGuestMode) {
+                useStore.getState().updateGuestProfile({ name: newName.trim() });
+              } else {
+                useStore.getState().updateAuthenticatedProfile({ name: newName.trim() });
+              }
+            }
           } 
         }
       ],
       'plain-text',
-      userName !== 'Convidada' ? userName : ''
+      defaultName
     );
   };
 

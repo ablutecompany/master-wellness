@@ -47,6 +47,28 @@ export class UserService {
     });
   }
 
+  async updateCombinedProfile(userId: string, updates: { name?: string, goals?: string[] }) {
+    const { name, goals } = updates;
+    
+    // Update name in User table
+    if (name !== undefined) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { name },
+      });
+    }
+
+    // Update secondaryGoals in UserProfile table
+    if (goals !== undefined) {
+      await this.prisma.userProfile.update({
+        where: { id: userId },
+        data: { secondaryGoals: goals },
+      });
+    }
+
+    return true;
+  }
+
   async updateActiveAnalysis(userId: string, analysisId: string | null) {
     return this.prisma.userProfile.update({
       where: { id: userId },

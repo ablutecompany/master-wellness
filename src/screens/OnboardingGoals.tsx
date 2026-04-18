@@ -15,8 +15,9 @@ const GOALS = [
 ];
 
 export const OnboardingGoals: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const guestProfile = useStore(state => state.guestProfile);
-  const [selected, setSelected] = useState<string[]>(guestProfile?.goals || []);
+  const isGuestMode = useStore(state => state.isGuestMode);
+  const user = useStore(state => isGuestMode ? state.guestProfile : state.user);
+  const [selected, setSelected] = useState<string[]>(user?.goals || []);
 
   const toggleGoal = (goal: string) => {
     if (selected.includes(goal)) {
@@ -56,7 +57,11 @@ export const OnboardingGoals: React.FC<{ navigation: any }> = ({ navigation }) =
         <Button 
           title="Salvar e Voltar" 
           onPress={() => {
-            useStore.getState().updateGuestProfile({ goals: selected });
+            if (isGuestMode) {
+              useStore.getState().updateGuestProfile({ goals: selected });
+            } else {
+              useStore.getState().updateAuthenticatedProfile({ goals: selected });
+            }
             // Forçamos a entrada na aplicação
             navigation.navigate('Main');
           }}

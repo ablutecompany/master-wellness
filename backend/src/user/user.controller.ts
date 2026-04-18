@@ -7,6 +7,25 @@ export class UserController {
   constructor(private userService: UserService) {}
 
   /**
+   * Actualiza dados do perfil (Nome, Objectivos, etc).
+   * Rota: PATCH /user/profile
+   */
+  @UseGuards(JwtAuthGuard)
+  @Patch('profile')
+  async updateProfile(
+    @Request() req: any,
+    @Body() body: { name?: string; goals?: string[] },
+  ) {
+    const userId = req.user.userId;
+    // Update raw records in DB
+    await this.userService.updateCombinedProfile(userId, body);
+    
+    // We expect the frontend to call GET /auth/me to rehydrate,
+    // but we can return ok: true.
+    return { ok: true };
+  }
+
+  /**
    * Actualiza a análise activa do utilizador.
    * Rota: PATCH /user/profile/active-analysis
    */
