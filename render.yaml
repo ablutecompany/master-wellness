@@ -7,8 +7,8 @@ services:
     rootDir: backend
     plan: free
     region: frankfurt
-    buildCommand: npm install && npm run db:sync && npx prisma generate && npm run build
-    startCommand: npm run start:prod
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm run db:sync && npm run start:prod
     envVars:
       - key: NODE_ENV
         value: production
