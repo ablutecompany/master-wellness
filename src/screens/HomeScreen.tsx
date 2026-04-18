@@ -2097,21 +2097,32 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                         {/* BLOCO 2, 3 e 4 — CONSTRUÇÃO DO CARD DE INFO */}
                         {isExpanded && (
                           <View style={{ marginTop: 20, width: '100%' }}>
-                            {/* BLOCO 2 - PREVIEWS MOCK */}
+                            {/* BLOCO 2 - PREVIEWS MOCK / REAL */}
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16, marginHorizontal: -4 }}>
-                              <View style={{ width: 140, height: 80, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 8, marginHorizontal: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
-                                <View style={{ position: 'absolute', top: 4, left: 4, right: 4, bottom: 4, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 4 }} />
-                                <Typography style={{ color: 'rgba(255,255,255,0.2)', fontSize: 10, fontWeight: '800' }}>PREVIEW 1</Typography>
-                              </View>
-                              <View style={{ width: 140, height: 80, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 8, marginHorizontal: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
-                                <View style={{ position: 'absolute', top: 4, left: 4, width: '60%', height: 40, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 4 }} />
-                                <View style={{ position: 'absolute', bottom: 4, right: 4, width: '30%', height: 20, backgroundColor: 'rgba(0,212,170,0.1)', borderRadius: 4 }} />
-                                <Typography style={{ color: 'rgba(255,255,255,0.2)', fontSize: 10, fontWeight: '800' }}>STAT OVERVIEW</Typography>
-                              </View>
-                              <View style={{ width: 140, height: 80, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 8, marginHorizontal: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
-                                <View style={{ position: 'absolute', top: '10%', bottom: '10%', left: '40%', right: '40%', backgroundColor: 'rgba(0,242,255,0.05)', borderRadius: 20 }} />
-                                <Typography style={{ color: 'rgba(255,255,255,0.2)', fontSize: 10, fontWeight: '800' }}>DATA SYNC</Typography>
-                              </View>
+                              {id === 'nutri-menu' ? (
+                                <>
+                                  <Image source={require('../../assets/meal_planner/plano.png')} style={{ width: 140, height: 200, borderRadius: 8, marginHorizontal: 4, resizeMode: 'cover' }} />
+                                  <Image source={require('../../assets/meal_planner/receitas.png')} style={{ width: 140, height: 200, borderRadius: 8, marginHorizontal: 4, resizeMode: 'cover' }} />
+                                  <Image source={require('../../assets/meal_planner/ingredientes.png')} style={{ width: 140, height: 200, borderRadius: 8, marginHorizontal: 4, resizeMode: 'cover' }} />
+                                  <Image source={require('../../assets/meal_planner/agregado.png')} style={{ width: 140, height: 200, borderRadius: 8, marginHorizontal: 4, resizeMode: 'cover' }} />
+                                </>
+                              ) : (
+                                <>
+                                  <View style={{ width: 140, height: 80, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 8, marginHorizontal: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
+                                    <View style={{ position: 'absolute', top: 4, left: 4, right: 4, bottom: 4, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 4 }} />
+                                    <Typography style={{ color: 'rgba(255,255,255,0.2)', fontSize: 10, fontWeight: '800' }}>PREVIEW 1</Typography>
+                                  </View>
+                                  <View style={{ width: 140, height: 80, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 8, marginHorizontal: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
+                                    <View style={{ position: 'absolute', top: 4, left: 4, width: '60%', height: 40, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 4 }} />
+                                    <View style={{ position: 'absolute', bottom: 4, right: 4, width: '30%', height: 20, backgroundColor: 'rgba(0,212,170,0.1)', borderRadius: 4 }} />
+                                    <Typography style={{ color: 'rgba(255,255,255,0.2)', fontSize: 10, fontWeight: '800' }}>STAT OVERVIEW</Typography>
+                                  </View>
+                                  <View style={{ width: 140, height: 80, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 8, marginHorizontal: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
+                                    <View style={{ position: 'absolute', top: '10%', bottom: '10%', left: '40%', right: '40%', backgroundColor: 'rgba(0,242,255,0.05)', borderRadius: 20 }} />
+                                    <Typography style={{ color: 'rgba(255,255,255,0.2)', fontSize: 10, fontWeight: '800' }}>DATA SYNC</Typography>
+                                  </View>
+                                </>
+                              )}
                             </ScrollView>
 
                             {/* BLOCO 3 - DESCRIÇÃO */}
