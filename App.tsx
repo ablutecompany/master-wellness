@@ -3,7 +3,7 @@ import { Platform, View, Text, ActivityIndicator, TouchableOpacity } from 'react
 import { StatusBar } from 'expo-status-bar';
 import { ENV } from './src/config/env';
 
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { theme } from './src/theme';
@@ -335,7 +335,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <NavigationContainer linking={linking}>
+      <NavigationContainer linking={linking} theme={DarkTheme}>
         <StatusBar style="light" />
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           {!showMain ? (
