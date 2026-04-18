@@ -60,13 +60,32 @@ export class UserService {
 
     // Update secondaryGoals in UserProfile table
     if (goals !== undefined) {
-      await this.prisma.userProfile.update({
+      await this.prisma.userProfile.upsert({
         where: { id: userId },
-        data: { secondaryGoals: goals },
+        update: { secondaryGoals: goals },
+        create: { id: userId, secondaryGoals: goals },
       });
     }
 
-    return true;
+    // Return the updated canonical profile
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true }
+    });
+
+    if (!user) throw new Error('User not found after update');
+
+    const p = user.profile;
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      goals: p?.secondaryGoals || [],
+      height: p?.height || null,
+      baseWeight: p?.baseWeight || null,
+      mainGoal: p?.mainGoal || null,
+      activeAnalysisId: p?.activeAnalysisId,
+    };
   }
 
   async updateActiveAnalysis(userId: string, analysisId: string | null) {

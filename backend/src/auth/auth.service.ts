@@ -41,6 +41,9 @@ export class AuthService {
       return null;
     }
   }
+
+  /**
+   * Inicializar perfil para utilizador autenticado via Supabase sem perfil no backend.
    * Cria o User e o UserProfile com valores base seguros.
    */
   async initializeProfile(uid: string, email: string, displayName?: string) {

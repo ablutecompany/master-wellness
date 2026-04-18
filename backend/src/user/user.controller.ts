@@ -17,12 +17,10 @@ export class UserController {
     @Body() body: { name?: string; goals?: string[] },
   ) {
     const userId = req.user.userId;
-    // Update raw records in DB
-    await this.userService.updateCombinedProfile(userId, body);
+    // Update raw records in DB and return canonical shape
+    const updatedProfile = await this.userService.updateCombinedProfile(userId, body);
     
-    // We expect the frontend to call GET /auth/me to rehydrate,
-    // but we can return ok: true.
-    return { ok: true };
+    return { ok: true, profile: updatedProfile };
   }
 
   /**

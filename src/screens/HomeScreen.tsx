@@ -2381,12 +2381,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                           height: profileHeight ? parseFloat(profileHeight) : undefined
                         });
                       } else {
-                        // NOTA TÉCNICA (HARDENING):
-                        // Atualmente não existe profileService.updateProfile() implementado no backend 
-                        // para efetuar o sync real desta mutação à db supabase.
-                        // O setUser(...) afeta unicamente o estado do store local desta sessão.
-                        useStore.getState().setUser({
-                          ...user!,
+                        // Fazemos update do perfil persistente e optimistic update
+                        useStore.getState().updateAuthenticatedProfile({
                           name: profileName || user?.name || 'Utilizador',
                           age: profileAge ? parseInt(profileAge, 10) : undefined,
                           weight: profileWeight ? parseFloat(profileWeight) : undefined,

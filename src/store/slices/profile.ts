@@ -44,30 +44,22 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
     const { sessionToken, user } = get();
     if (!sessionToken) return false;
     
-    // 1. Gravação no Backend
-    const success = await ProfileService.updateProfile(sessionToken, updates);
-    if (!success) return false;
-    
-    // 2. Refetch canónico direto do backend para a store
-    try {
-      const response = await fetch(`${ENV.BACKEND_URL}/auth/me`, {
-        headers: { 'Authorization': `Bearer ${sessionToken}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.ok && data.profile) {
-          set({ user: data.profile });
-          return true;
-        }
-      }
-    } catch(e) {
-      console.warn("Failed to refetch auth/me after patch", e);
-    }
-    
-    // 3. Fallback Optimista caso falhe a rehidratação imediata
+    // Optimista
+    const previousUser = user;
     set((state) => ({
       user: state.user ? { ...state.user, ...updates } : { name: 'Utilizador', goals: [], ...updates }
     }));
+    
+    // 1. Gravação no Backend // Retorna a versão canónica!
+    const result = await ProfileService.updateProfile(sessionToken, updates);
+    if (!result.ok || !result.profile) {
+      // Rollback
+      set({ user: previousUser });
+      return false;
+    }
+    
+    // 2. Reflete resposta consolidada devolvida
+    set({ user: result.profile });
     return true;
   },
   setCredits: (credits) => set({ credits }),
