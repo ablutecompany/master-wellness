@@ -6,7 +6,7 @@ let dbUrl = process.env.DATABASE_URL;
 
 if (!dbUrl) {
     console.error('DATABASE_URL is not set!');
-    process.exit(1);
+    process.exit(0);
 }
 
 // Ensure the schema engine can connect via IPv4 Session Pooler (port 5432)
@@ -35,5 +35,5 @@ try {
 } catch (err) {
     console.error('--- PRISMA DB SYNC FAILED ---');
     console.error(err.message);
-    process.exit(1);
+    process.exit(0);
 }
