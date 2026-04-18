@@ -1038,15 +1038,37 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       >
         {/* ── HEADER ──────────────────────────────────────────────────────── */}
         <View style={styles.header}>
-          <View style={{ position: 'relative', flex: 1 }}>
-            <BrandLogo size="medium" />
-            <TouchableOpacity
+          <View style={{ position: 'relative', flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+            <View>
+              <BrandLogo size="medium" />
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => {
+                  if (Platform.OS !== 'web') Vibration.vibrate(10);
+                }}
+                style={[StyleSheet.absoluteFill, { zIndex: 10 }]}
+              />
+            </View>
+            {/* NEW DEMO BUTTON REPOSITIONED */}
+            <TouchableOpacity 
               activeOpacity={0.7}
-              onPress={() => {
-                if (Platform.OS !== 'web') Vibration.vibrate(10);
+              onPress={() => setShowDemoModal(true)}
+              style={{
+                marginLeft: 16,
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                borderRadius: 6,
+                backgroundColor: demoAnalysis ? 'rgba(0, 242, 255, 0.1)' : 'transparent',
+                borderColor: demoAnalysis ? 'rgba(0, 242, 255, 0.3)' : 'rgba(255, 255, 255, 0.15)',
+                borderWidth: 1,
+                alignItems: 'center',
+                justifyContent: 'center'
               }}
-              style={[StyleSheet.absoluteFill, { zIndex: 10 }]}
-            />
+            >
+              <Typography style={{ color: demoAnalysis ? '#00F2FF' : 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '700', letterSpacing: 0.5 }}>
+                {demoAnalysis ? 'DEMO ON' : 'DEMO'}
+              </Typography>
+            </TouchableOpacity>
           </View>
           
           {/* Espaçador central limpo para evitar a confusão visual de duplo selo DEMO */}
@@ -1054,29 +1076,16 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
           <View style={[styles.headerRight, { flex: 1 }]}>
             <View style={styles.topIconRow}>
+              {/* NEW TOKENS BUTTON (Old DEMO slot) */}
               <TouchableOpacity 
                 activeOpacity={0.7}
-                style={[
-                  styles.iconCircle, 
-                  { 
-                    width: 'auto', 
-                    minWidth: 70,
-                    paddingHorizontal: 12, 
-                    borderRadius: 12,
-                    marginLeft: 0,
-                    marginRight: 8,
-                    backgroundColor: demoAnalysis ? '#00F2FF20' : 'rgba(255,255,255,0.12)',
-                    borderColor: demoAnalysis ? '#00F2FF60' : 'transparent',
-                    borderWidth: demoAnalysis ? 1 : 0
-                  }
-                ]} 
-                onPress={() => setShowDemoModal(true)}
+                style={[styles.iconCircle, { paddingHorizontal: 0, justifyContent: 'center', alignItems: 'center' }]} 
+                onPress={() => {
+                  if (Platform.OS === 'web') alert("Gestão de tokens disponível em breve.");
+                  else Alert.alert("Tokens", "Gestão de tokens disponível em breve.");
+                }}
               >
-                <View pointerEvents="none" style={{ alignItems: 'center', justifyContent: 'center' }}>
-                  <Typography style={{ color: demoAnalysis ? '#00F2FF' : '#fff', fontSize: 10, fontWeight: '900', letterSpacing: 1 }}>
-                    {demoAnalysis ? 'DEMO ON' : 'DEMO'}
-                  </Typography>
-                </View>
+                <Image source={require('../../assets/token abl.png')} style={{ width: 22, height: 22, resizeMode: 'contain' }} />
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.iconCircle} onPress={() => setShowControl(true)}>
