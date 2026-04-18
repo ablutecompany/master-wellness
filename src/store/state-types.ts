@@ -71,6 +71,7 @@ export interface AppState {
   setProfileStatus: (status: ProfileStatus) => void;
   setGuestMode: (isGuest: boolean) => void;
   updateGuestProfile: (profile: Partial<UserProfile>) => void;
+  updateAuthenticatedProfile: (updates: Partial<UserProfile>) => Promise<boolean>;
   setDemoAnalysis: (analysis: Analysis | null) => void;
   addMeasurement: (measurement: Measurement) => void;
   addAnalysis: (analysis: Analysis) => void;

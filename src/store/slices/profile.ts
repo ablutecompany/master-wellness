@@ -71,6 +71,7 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
     return true;
   },
   setCredits: (credits) => set({ credits }),
+  setSessionToken: (token) => set({ sessionToken: token }),
   clearSensitiveState: () => set({
     measurements: [],
     analyses: [],
