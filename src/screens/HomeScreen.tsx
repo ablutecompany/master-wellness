@@ -1788,15 +1788,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           <Animated.View style={[styles.sidePanel, styles.rightPanel, { transform: [{ translateX: dataAnim }], backgroundColor: '#020306' }]}>
             <View style={[StyleSheet.absoluteFill, { backgroundColor: '#020306' }]} />
             <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill}>
-              <View style={[styles.panelHeader, { paddingTop: 24, paddingBottom: 16, marginBottom: 0, minHeight: 48, alignItems: 'center' }]}>
+              <View style={[styles.panelHeader, { paddingTop: 16, paddingBottom: 8, marginBottom: 0, minHeight: 40, alignItems: 'center' }]}>
                 <TouchableOpacity
                   onPress={closeData}
-                  style={{ padding: 12 }}
+                  style={{ padding: 8 }}
                   hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
                 >
-                  <X size={20} color="rgba(255,255,255,0.8)" />
+                  <X size={18} color="rgba(255,255,255,0.8)" />
                 </TouchableOpacity>
-                <Typography style={[styles.panelTitle, { fontSize: 18, fontWeight: '800', marginVertical: 0 }]}>Bioanálise</Typography>
+                <Typography style={[styles.panelTitle, { fontSize: 13, fontWeight: '800', marginVertical: 0, textTransform: 'uppercase', letterSpacing: 1.5 }]}>Bioanálise</Typography>
 
                 {/* Script de limpeza para remover artefatos de debug (Getting DOM...) no browser */}
                 {Platform.OS === 'web' && (
@@ -1824,10 +1824,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               </View>
 
               {/* ── Temporal Context Header ── */}
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 10, backgroundColor: 'rgba(255,255,255,0.03)', borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 6, backgroundColor: 'rgba(255,255,255,0.03)', borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Calendar size={14} color="rgba(255,255,255,0.5)" style={{ marginRight: 8 }} />
-                  <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: '700', letterSpacing: 0.5 }}>
+                  <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 12, fontWeight: '700', letterSpacing: 0.5 }}>
                     {(() => {
                       if (!selectedDate) return 'Dados indisponíveis';
                       const d = new Date(selectedDate);
@@ -1839,15 +1839,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
                 <TouchableOpacity
                   onPress={() => setShowHistorico(true)}
-                  style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
+                  style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
                 >
-                  <History size={14} color="rgba(255,255,255,0.8)" style={{ marginRight: 6 }} />
-                  <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>HISTÓRICO</Typography>
+                  <History size={12} color="rgba(255,255,255,0.8)" style={{ marginRight: 6 }} />
+                  <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, fontWeight: '800', letterSpacing: 1 }}>HISTÓRICO</Typography>
                 </TouchableOpacity>
               </View>
 
               {/* ── Tab Bar ── */}
-              <View style={[styles.bioTabBar, { marginTop: 0, paddingVertical: 12 }]}>
+              <View style={[styles.bioTabBar, { marginTop: 0, paddingVertical: 4, marginBottom: 0 }]}>
                 {factualBioCategories.map((cat, i) => {
                   const isActive = safeBioTab === i;
                   return (
