@@ -35,13 +35,17 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('initialize')
   async initialize(@Request() req: any) {
-    const userId = req.user.userId;
-    const email = req.user.email;
-    const profile = await this.authService.initializeProfile(userId, email);
+    try {
+      const userId = req.user.userId;
+      const email = req.user.email;
+      const profile = await this.authService.initializeProfile(userId, email);
 
-    return {
-      ok: true,
-      profile
-    };
+      return {
+        ok: true,
+        profile
+      };
+    } catch (err) {
+      return { ok: false, error: err.message, stack: err.stack };
+    }
   }
 }
