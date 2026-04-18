@@ -5,7 +5,7 @@ import { theme } from '../theme';
 import { BrandLogo } from '../components/BrandLogo';
 import { ThemeCard } from '../components/ThemeCard';
 import { HistoricoModal } from '../components/HistoricoModal';
-import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, Users, ChevronRight, ChevronDown, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, ChevronsDown, Sparkles, ArrowLeft, Calendar, History, Star, ChevronUp } from 'lucide-react-native';
+import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, Users, ChevronRight, ChevronDown, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, ChevronsDown, Sparkles, ArrowLeft, Calendar, History, Star, ChevronUp, Share } from 'lucide-react-native';
 import Svg, { Path, Text as SvgText, TextPath, Defs, G } from 'react-native-svg';
 import { BiomechanicRelic } from '../components/BiomechanicRelic';
 import { SiderealBackground } from '../components/SiderealBackground';
@@ -214,6 +214,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const demoAnalysis = useStore(state => state.demoAnalysis);
   const setDemoAnalysis = useStore(state => state.setDemoAnalysis);
   const [showHistorico, setShowHistorico] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [bioTab, setBioTab] = useState(0);
   const [themesOpen, setThemesOpen] = useState(false);
   const [dataOpen, setDataOpen] = useState(false);
@@ -1788,15 +1789,17 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           <Animated.View style={[styles.sidePanel, styles.rightPanel, { transform: [{ translateX: dataAnim }], backgroundColor: '#020306' }]}>
             <View style={[StyleSheet.absoluteFill, { backgroundColor: '#020306' }]} />
             <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill}>
-              <View style={[styles.panelHeader, { paddingTop: 16, paddingBottom: 8, marginBottom: 0, minHeight: 40, alignItems: 'center' }]}>
+              {/* ── LINHA 1 — CABEÇALHO ── */}
+              <View style={[styles.panelHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, paddingBottom: 8, marginBottom: 0, minHeight: 40, paddingHorizontal: 24 }]}>
+                <Typography style={[styles.panelTitle, { fontSize: 13, fontWeight: '800', marginVertical: 0, textTransform: 'uppercase', letterSpacing: 1.5 }]}>Bioanálise</Typography>
+
                 <TouchableOpacity
                   onPress={closeData}
-                  style={{ padding: 8 }}
+                  style={{ padding: 8, marginRight: -8 }}
                   hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
                 >
                   <X size={18} color="rgba(255,255,255,0.8)" />
                 </TouchableOpacity>
-                <Typography style={[styles.panelTitle, { fontSize: 13, fontWeight: '800', marginVertical: 0, textTransform: 'uppercase', letterSpacing: 1.5 }]}>Bioanálise</Typography>
 
                 {/* Script de limpeza para remover artefatos de debug (Getting DOM...) no browser */}
                 {Platform.OS === 'web' && (
@@ -1804,7 +1807,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                     <ActivityIndicator
                       onLayout={() => {
                         if (typeof window !== 'undefined') {
-                          // Limpeza agressiva e recorrente de artefatos visuais de debug
                           const clean = () => {
                             const entries = document.querySelectorAll('*');
                             entries.forEach(el => {
@@ -1820,29 +1822,24 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                     />
                   </View>
                 )}
-
               </View>
 
-              {/* ── Temporal Context Header ── */}
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 6, backgroundColor: 'rgba(255,255,255,0.03)', borderTopWidth: 1, borderBottomWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Calendar size={14} color="rgba(255,255,255,0.5)" style={{ marginRight: 8 }} />
-                  <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 12, fontWeight: '700', letterSpacing: 0.5 }}>
-                    {(() => {
-                      if (!selectedDate) return 'Dados indisponíveis';
-                      const d = new Date(selectedDate);
-                      const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-                      return `${d.getDate().toString().padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
-                    })()}
-                  </Typography>
-                </View>
-
+              {/* ── LINHA 2 — BARRA DE AÇÕES ── */}
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 8, gap: 12 }}>
                 <TouchableOpacity
                   onPress={() => setShowHistorico(true)}
-                  style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
+                  style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
                 >
                   <History size={12} color="rgba(255,255,255,0.8)" style={{ marginRight: 6 }} />
                   <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, fontWeight: '800', letterSpacing: 1 }}>HISTÓRICO</Typography>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => setShowExportModal(true)}
+                  style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
+                >
+                  <Share size={12} color="rgba(255,255,255,0.8)" style={{ marginRight: 6 }} />
+                  <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, fontWeight: '800', letterSpacing: 1 }}>EXPORTAR</Typography>
                 </TouchableOpacity>
               </View>
 
@@ -2682,6 +2679,37 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           setBioTab(0);
         }}
       />
+
+      <Modal visible={showExportModal} transparent animationType="fade" onRequestClose={() => setShowExportModal(false)}>
+        <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', padding: 24 }} activeOpacity={1} onPress={() => setShowExportModal(false)}>
+          <TouchableOpacity activeOpacity={1} style={{ backgroundColor: '#1C1C22', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <Typography style={{ color: 'white', fontSize: 18, fontWeight: '700' }}>Exportar Dados</Typography>
+              <TouchableOpacity onPress={() => setShowExportModal(false)}>
+                <X size={24} color="rgba(255,255,255,0.5)" />
+              </TouchableOpacity>
+            </View>
+
+            <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 16 }}>1. Escolher Grupos</Typography>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+              {['Urina', 'Fisiológica', 'Fecal', 'Ecossistema'].map(g => (
+                <View key={g} style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+                  <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 12 }}>{g}</Typography>
+                </View>
+              ))}
+            </View>
+
+            <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 16 }}>2. Escolher Canal</Typography>
+            <View style={{ flexDirection: 'column', gap: 12 }}>
+              {['WhatsApp', 'Email', 'Imprimir'].map(c => (
+                <TouchableOpacity key={c} style={{ backgroundColor: 'rgba(255,255,255,0.05)', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center' }} onPress={() => { setShowExportModal(false); alert('Funcionalidade de exportar em breve.'); }}>
+                  <Typography style={{ color: 'white', fontSize: 14, fontWeight: '600' }}>Exportar via {c}</Typography>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
       {/* ── MODO DEMO PICKER MODAL MOVIDA PARA A RAIZ DO FICHEIRO PARA EVITAR MONTAGENS CONDICIONAIS ── */}
       <Modal visible={showDemoModal} transparent animationType="fade">
