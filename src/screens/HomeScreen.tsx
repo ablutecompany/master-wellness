@@ -1573,19 +1573,22 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                             )}
                             {highestPriority ? (
                               <TouchableOpacity
-                                style={{ marginBottom: 24, padding: 20, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
+                                style={{ marginBottom: 24, padding: 20, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', flexDirection: 'row', alignItems: 'center' }}
                                 activeOpacity={0.7}
                                 onPress={() => themesFlatListRef.current?.scrollToIndex({ index: highestPriority.originalIndex, animated: true })}
                               >
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                                  <Target size={18} color="rgba(255,255,255,0.8)" style={{ marginRight: 8 }} />
-                                  <Typography style={{ color: 'rgba(255,255,255,0.8)', fontWeight: '800', fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase' }}>Foco do Dia</Typography>
+                                <View style={{ flex: 1, paddingRight: 16 }}>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                                    <Target size={18} color="rgba(255,255,255,0.8)" style={{ marginRight: 8 }} />
+                                    <Typography style={{ color: 'rgba(255,255,255,0.8)', fontWeight: '800', fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase' }}>Foco do Dia</Typography>
+                                  </View>
+                                  <Typography style={{ color: '#fff', fontSize: 18, fontWeight: '700', marginBottom: 6 }}>{highestPriority.title}</Typography>
+                                  <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 }} numberOfLines={3}>{highestPriority.paragraph1}</Typography>
                                 </View>
-                                <Typography style={{ color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 8 }}>{highestPriority.title}</Typography>
-                                <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, lineHeight: 20, marginBottom: 16 }}>{highestPriority.paragraph1}</Typography>
 
-                                <View style={{ alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 }}>
-                                  <Typography style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>Ver Direção →</Typography>
+                                <View style={{ backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, justifyContent: 'center', alignItems: 'center' }}>
+                                  <Typography style={{ color: '#fff', fontSize: 11, fontWeight: '800', textAlign: 'center' }}>Direção</Typography>
+                                  <Typography style={{ color: '#fff', fontSize: 16, marginTop: -2 }}>→</Typography>
                                 </View>
                               </TouchableOpacity>
                             ) : null}
