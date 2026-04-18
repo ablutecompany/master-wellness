@@ -2021,7 +2021,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
               showsVerticalScrollIndicator={false}
             >
-              <Typography variant="h3" style={styles.sectionTitle}>Disponíveis para Download</Typography>
+              <Typography variant="h3" style={styles.sectionTitle}>Principais</Typography>
               <View style={styles.downloadList}>
                 {/* Todas as apps — install/uninstall dinâmico */}
                 {/* PRIMEIRAS 4 APPS: Focus Módulos */}
