@@ -2079,12 +2079,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
                           <View style={[styles.rowActions, isExpanded && { flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }]}>
                             {!isExpanded && (
-                              <TouchableOpacity style={styles.actionBtn} onPress={() => setExpandedAppId(id)}>
+                              <TouchableOpacity style={[styles.actionBtn, { width: 56, paddingHorizontal: 0 }]} onPress={() => setExpandedAppId(id)}>
                                 <Typography style={styles.actionText}>INFO</Typography>
                               </TouchableOpacity>
                             )}
                             <TouchableOpacity
-                              style={[styles.actionBtn, isInstalled ? styles.uninstallBtn : styles.installBtn, !isReal && { opacity: 0.4 }, isExpanded && { marginTop: 0, paddingHorizontal: 16, backgroundColor: '#00D4AA', borderRadius: 20 }]}
+                              style={[styles.actionBtn, isInstalled ? styles.uninstallBtn : styles.installBtn, !isReal && { opacity: 0.4 }, isExpanded ? { marginTop: 0, paddingHorizontal: 16, backgroundColor: '#00D4AA', borderRadius: 20 } : { width: 88, paddingHorizontal: 0 }]}
                               onPress={() => {
                                 if (!isReal) return;
                                 if (isInstalled) {
@@ -2202,12 +2202,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
                           <View style={[styles.rowActions, isExpanded && { flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }]}>
                             {!isExpanded && (
-                              <TouchableOpacity style={styles.actionBtn} onPress={() => setExpandedAppId(id)}>
+                              <TouchableOpacity style={[styles.actionBtn, { width: 56, paddingHorizontal: 0 }]} onPress={() => setExpandedAppId(id)}>
                                 <Typography style={styles.actionText}>INFO</Typography>
                               </TouchableOpacity>
                             )}
                             <TouchableOpacity
-                              style={[styles.actionBtn, isInstalled ? styles.uninstallBtn : styles.installBtn, !isReal && { opacity: 0.4 }, isExpanded && { marginTop: 0, paddingHorizontal: 16, backgroundColor: '#00D4AA', borderRadius: 20 }]}
+                              style={[styles.actionBtn, isInstalled ? styles.uninstallBtn : styles.installBtn, !isReal && { opacity: 0.4 }, isExpanded ? { marginTop: 0, paddingHorizontal: 16, backgroundColor: '#00D4AA', borderRadius: 20 } : { width: 88, paddingHorizontal: 0 }]}
                               onPress={() => {
                                 if (!isReal) return;
                                 if (isInstalled) {
