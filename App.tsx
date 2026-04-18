@@ -156,14 +156,59 @@ export default function App() {
         if (data.ok && data.profile) {
           setUser(data.profile);
           setProfileStatus('loaded');
-        } else {
-          setProfileStatus('missing');
+          return;
         }
-      } else if (response.status === 404 || response.status === 401) {
-        // 404 = profile not found; 401 = backend JWT validation failed (but Supabase session is valid)
-        setProfileStatus('missing');
-      } else {
-        setProfileStatus('error');
+      } 
+      
+      // If we reach here, profile is missing or fetch failed. Auto-initialize silently.
+      try {
+        const initRes = await fetch(`${ENV.BACKEND_URL}/auth/initialize`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (initRes.ok) {
+          // Re-fetch profile
+          const autoMeRes = await fetch(`${ENV.BACKEND_URL}/auth/me`, {
+            headers: { 'Authorization': `Bearer ${session.access_token}` }
+          });
+          if (autoMeRes.ok) {
+            const autoData = await autoMeRes.json();
+            if (autoData.ok && autoData.profile) {
+              setUser(autoData.profile);
+              setProfileStatus('loaded');
+              return;
+            }
+          }
+        }
+        
+        // Fallback robusto se a inicialização falhar
+        console.warn('[App] Auto-initialize backend failed, using local profile fallback');
+        const fallbackProfile = {
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.email?.split('@')[0] || 'Utilizador',
+          height: 170,
+          baseWeight: 70,
+          mainGoal: 'general_wellness',
+        };
+        setUser(fallbackProfile as any);
+        setProfileStatus('loaded');
+      } catch (initErr) {
+        console.warn('[App] Network failed during auto-initialize, fallback applied:', initErr);
+        const fallbackProfile = {
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.email?.split('@')[0] || 'Utilizador',
+          height: 170,
+          baseWeight: 70,
+          mainGoal: 'general_wellness',
+        };
+        setUser(fallbackProfile as any);
+        setProfileStatus('loaded');
       }
     } catch (err) {
       console.error('[App] Profile sync failed:', err);
@@ -266,88 +311,6 @@ export default function App() {
     );
   }
 
-  if (session && profileStatus === 'missing') {
-    const handleInitialize = async () => {
-      if (!session?.access_token) return;
-      setProfileStatus('loading');
-      try {
-        const res = await fetch(`${ENV.BACKEND_URL}/auth/initialize`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        if (res.ok) {
-          // Re-sync profile from /auth/me now that it exists
-          await syncProfile(session);
-        } else {
-          // Backend unreachable or JWT rejected — use Supabase user data directly
-          console.warn('[App] Backend initialize failed, using local profile fallback');
-          const fallbackProfile = {
-            id: session.user.id,
-            email: session.user.email,
-            name: session.user.email?.split('@')[0] || 'Utilizador',
-            height: 170,
-            baseWeight: 70,
-            mainGoal: 'general_wellness',
-          };
-          setUser(fallbackProfile as any);
-          setProfileStatus('loaded');
-        }
-      } catch (err) {
-        // Network error — also use fallback
-        console.warn('[App] Backend unreachable, using local profile fallback:', err);
-        const fallbackProfile = {
-          id: session.user.id,
-          email: session.user.email,
-          name: session.user.email?.split('@')[0] || 'Utilizador',
-          height: 170,
-          baseWeight: 70,
-          mainGoal: 'general_wellness',
-        };
-        setUser(fallbackProfile as any);
-        setProfileStatus('loaded');
-      }
-    };
-
-    return (
-      <View style={{ flex: 1, backgroundColor: '#05070A', justifyContent: 'center', alignItems: 'center', padding: 40 }}>
-        <View style={{ marginBottom: 40, alignItems: 'center' }}>
-          <UserIcon size={64} color={theme.colors.primary} />
-        </View>
-        <Text style={{ color: '#fff', fontSize: 28, fontWeight: '700', marginBottom: 16, textAlign: 'center' }}>
-          Inicializar Perfil
-        </Text>
-        <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 16, textAlign: 'center', lineHeight: 24, marginBottom: 40 }}>
-          A tua conta foi autenticada com sucesso!{'\n'}
-          Agora falta apenas preparar o teu perfil personalizado para começares a monitorizar a tua saúde.
-        </Text>
-        
-        <TouchableOpacity 
-          style={{ 
-            backgroundColor: theme.colors.primary, 
-            height: 56, 
-            borderRadius: 16, 
-            width: '100%', 
-            maxWidth: 300, 
-            justifyContent: 'center', 
-            alignItems: 'center' 
-          }}
-          onPress={handleInitialize}
-        >
-          <Text style={{ color: '#000', fontWeight: '700', fontSize: 16 }}>Continuar</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={{ marginTop: 20 }}
-          onPress={() => supabase.auth.signOut()}
-        >
-          <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>Sair da conta</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
 
   if (session && profileStatus === 'error') {
     return (
