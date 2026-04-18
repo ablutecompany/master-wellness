@@ -63,7 +63,14 @@ export class UserService {
       await this.prisma.userProfile.upsert({
         where: { id: userId },
         update: { secondaryGoals: goals },
-        create: { id: userId, secondaryGoals: goals },
+        create: { 
+          id: userId, 
+          secondaryGoals: goals,
+          height: 0,
+          baseWeight: 0,
+          mainGoal: 'Manutenção',
+          activityLevel: 'Moderado'
+        },
       });
     }
 
