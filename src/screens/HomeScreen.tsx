@@ -1787,10 +1787,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           <Animated.View style={[styles.sidePanel, styles.rightPanel, { transform: [{ translateX: dataAnim }], backgroundColor: '#020306' }]}>
             <View style={[StyleSheet.absoluteFill, { backgroundColor: '#020306' }]} />
             <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill}>
-              <View style={[styles.panelHeader, { paddingBottom: 4, minHeight: 56, alignItems: 'center' }]}>
+              <View style={[styles.panelHeader, { paddingTop: 24, paddingBottom: 16, marginBottom: 0, minHeight: 48, alignItems: 'center' }]}>
                 <TouchableOpacity
                   onPress={closeData}
-                  style={{ padding: 16 }}
+                  style={{ padding: 12 }}
                   hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
                 >
                   <X size={20} color="rgba(255,255,255,0.8)" />
