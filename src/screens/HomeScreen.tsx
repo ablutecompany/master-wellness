@@ -2027,10 +2027,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 {/* PRIMEIRAS 4 APPS: Focus Módulos */}
                 {(() => {
                   const apps = [
-                    { id: 'sleep-deep', title: 'deep sleep', desc: 'Integração Profunda de Sono', icon: <Moon size={22} color="#00F2FF" /> },
+                    { id: 'sleep-deep', title: '_deep sleep', desc: 'Integração Profunda de Sono', icon: <Moon size={22} color="#00F2FF" /> },
                     { id: 'nutri-menu', title: '_Meal planner', desc: 'Nutrição Personalizada', icon: <Utensils size={22} color="#00D4AA" /> },
-                    { id: '_cardio', title: 'CardioSync', desc: 'Saúde Cardiovascular', icon: <Heart size={22} color="#00F2FF" opacity={0.6} /> },
-                    { id: '_mind', title: 'Mind', desc: 'Foco e Meditação', icon: <Brain size={22} color="#00F2FF" opacity={0.6} /> },
+                    { id: '_cardio', title: '_motion', desc: 'Saúde Cardiovascular Ativa', icon: <Heart size={22} color="#00F2FF" opacity={0.6} /> },
+                    { id: '_mind', title: '_introspect', desc: 'Foco e Meditação Profunda', icon: <Brain size={22} color="#00F2FF" opacity={0.6} /> },
                   ];
 
                   return apps.map(({ id, title, desc, icon }) => {
@@ -2095,7 +2095,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   });
                 })()}
 
-                <Typography variant="h3" style={[styles.sectionTitle, { marginTop: 20, marginBottom: 8, fontSize: 13, color: 'rgba(255,255,255,0.5)' }]}>Outros Módulos</Typography>
+                <Typography variant="h3" style={[styles.sectionTitle, { marginTop: 20, marginBottom: 8, fontSize: 13, color: 'rgba(255,255,255,0.5)' }]}>Mais apps</Typography>
                 
                 {/* RESTANTES APPS */}
                 {(() => {
