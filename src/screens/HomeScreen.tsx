@@ -5,7 +5,7 @@ import { theme } from '../theme';
 import { BrandLogo } from '../components/BrandLogo';
 import { ThemeCard } from '../components/ThemeCard';
 import { HistoricoModal } from '../components/HistoricoModal';
-import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, Users, ChevronRight, ChevronDown, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, ChevronsDown, Sparkles, ArrowLeft, Calendar, History } from 'lucide-react-native';
+import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, Users, ChevronRight, ChevronDown, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, ChevronsDown, Sparkles, ArrowLeft, Calendar, History, Star, ChevronUp } from 'lucide-react-native';
 import Svg, { Path, Text as SvgText, TextPath, Defs, G } from 'react-native-svg';
 import { BiomechanicRelic } from '../components/BiomechanicRelic';
 import { SiderealBackground } from '../components/SiderealBackground';
@@ -2039,55 +2039,93 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                     const isExpanded = expandedAppId === id;
 
                     return (
-                      <View key={id} style={[styles.downloadRow, isExpanded && { backgroundColor: 'rgba(255,255,255,0.05)', paddingBottom: 16 }]}>
-                        {/* Wrapper Touchable que abre app se estiver instalada */}
-                        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }} activeOpacity={isInstalled && isReal ? 0.7 : 1} onPress={() => {
-                          if (isInstalled && isReal) {
-                            const manifest = MINI_APP_CATALOG.find((m: any) => m.id === id);
-                            if (manifest) {
-                              launchApp(manifest);
-                              if (Platform.OS === 'web') setInlineApp(manifest);
-                              else navigation?.navigate('MiniApp', { app: manifest });
-                            }
-                          }
-                        }}>
-                          <View style={styles.rowIcon}>{icon}</View>
-                          <View style={styles.rowInfo}>
-                            <Typography style={styles.rowTitle}>{title}</Typography>
-                            <Typography variant="caption" style={styles.rowDesc}>{desc}</Typography>
-                          </View>
-                        </TouchableOpacity>
-
-                        <View style={styles.rowActions}>
-                          <TouchableOpacity style={styles.actionBtn} onPress={() => setExpandedAppId(isExpanded ? null : id)}>
-                            <Typography style={styles.actionText}>INFO</Typography>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.actionBtn, isInstalled ? styles.uninstallBtn : styles.installBtn, !isReal && { opacity: 0.4 }]}
-                            onPress={() => {
-                              if (!isReal) return;
-                              if (isInstalled) {
-                                uninstallApp(id);
-                              } else {
-                                useStore.getState().installApp(id);
-                                const manifest = MINI_APP_CATALOG.find((m: any) => m.id === id);
-                                if (manifest && Platform.OS === 'web') setInlineApp(manifest);
-                                else if (manifest) navigation?.navigate('MiniApp', { app: manifest });
+                      <View key={id} style={[styles.downloadRow, isExpanded && { flexDirection: 'column', alignItems: 'stretch', backgroundColor: 'rgba(30,35,45,0.7)', paddingBottom: 16, borderLeftWidth: 2, borderLeftColor: '#00F2FF', padding: 16 }]}>
+                        
+                        {/* BLOCO 1 — CABEÇALHO (Em linha) */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }} activeOpacity={isInstalled && isReal ? 0.7 : 1} onPress={() => {
+                            if (isInstalled && isReal) {
+                              const manifest = MINI_APP_CATALOG.find((m: any) => m.id === id);
+                              if (manifest) {
+                                launchApp(manifest);
+                                if (Platform.OS === 'web') setInlineApp(manifest);
+                                else navigation?.navigate('MiniApp', { app: manifest });
                               }
-                            }}
-                          >
-                            <Typography style={[styles.actionText, isInstalled ? styles.uninstallText : styles.installText]}>
-                              {isInstalled ? 'DESINSTALAR' : 'INSTALAR'}
-                            </Typography>
+                            }
+                          }}>
+                            <View style={[styles.rowIcon, isExpanded && { backgroundColor: 'rgba(0,0,0,0.4)', width: 48, height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center' }]}>{icon}</View>
+                            <View style={[styles.rowInfo, isExpanded && { marginLeft: 16 }]}>
+                              <Typography style={[styles.rowTitle, isExpanded && { fontSize: 16, fontWeight: '900', color: '#fff' }]}>{title}</Typography>
+                              <Typography variant="caption" style={[styles.rowDesc, isExpanded && { fontSize: 10, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginTop: 2 }]}>{desc}</Typography>
+                              {isExpanded && (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, opacity: 0.9 }}>
+                                  {[1,2,3,4,5].map(i => <Star key={i} size={10} color="#FFD700" fill={i === 5 ? "transparent" : "#FFD700"} style={{ marginRight: 2 }} />)}
+                                  <Typography style={{ color: '#FFD700', fontSize: 11, marginLeft: 4, fontWeight: 'bold' }}>4.8</Typography>
+                                  <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginLeft: 8 }}>ablute_</Typography>
+                                </View>
+                              )}
+                            </View>
                           </TouchableOpacity>
+
+                          <View style={[styles.rowActions, isExpanded && { flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }]}>
+                            {!isExpanded && (
+                              <TouchableOpacity style={styles.actionBtn} onPress={() => setExpandedAppId(id)}>
+                                <Typography style={styles.actionText}>INFO</Typography>
+                              </TouchableOpacity>
+                            )}
+                            <TouchableOpacity
+                              style={[styles.actionBtn, isInstalled ? styles.uninstallBtn : styles.installBtn, !isReal && { opacity: 0.4 }, isExpanded && { marginTop: 0, paddingHorizontal: 16, backgroundColor: '#00D4AA', borderRadius: 20 }]}
+                              onPress={() => {
+                                if (!isReal) return;
+                                if (isInstalled) {
+                                  uninstallApp(id);
+                                } else {
+                                  useStore.getState().installApp(id);
+                                  const manifest = MINI_APP_CATALOG.find((m: any) => m.id === id);
+                                  if (manifest && Platform.OS === 'web') setInlineApp(manifest);
+                                  else if (manifest) navigation?.navigate('MiniApp', { app: manifest });
+                                }
+                              }}
+                            >
+                              <Typography style={[styles.actionText, isInstalled ? styles.uninstallText : styles.installText, isExpanded && { color: '#000', fontWeight: '900' }]}>
+                                {isInstalled ? 'ABRIR' : 'INSTALAR'}
+                              </Typography>
+                            </TouchableOpacity>
+                          </View>
                         </View>
                         
-                        {/* Inline Expansion Area */}
+                        {/* BLOCO 2, 3 e 4 — CONSTRUÇÃO DO CARD DE INFO */}
                         {isExpanded && (
-                          <View style={{ marginTop: 12, width: '100%', paddingLeft: 56, paddingRight: 16 }}>
-                            <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.6)', fontStyle: 'italic', marginBottom: 8, lineHeight: 18 }}>
-                              {isReal ? 'Módulo interativo integrado com a AI de predição do teu bem-estar. Permite cruzamento de dados biométricos em tempo real.' : 'Brevemente disponível. Subscrição M4 necessária.'}
+                          <View style={{ marginTop: 20, width: '100%' }}>
+                            {/* BLOCO 2 - PREVIEWS MOCK */}
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16, marginHorizontal: -4 }}>
+                              <View style={{ width: 140, height: 80, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 8, marginHorizontal: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
+                                <View style={{ position: 'absolute', top: 4, left: 4, right: 4, bottom: 4, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 4 }} />
+                                <Typography style={{ color: 'rgba(255,255,255,0.2)', fontSize: 10, fontWeight: '800' }}>PREVIEW 1</Typography>
+                              </View>
+                              <View style={{ width: 140, height: 80, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 8, marginHorizontal: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
+                                <View style={{ position: 'absolute', top: 4, left: 4, width: '60%', height: 40, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 4 }} />
+                                <View style={{ position: 'absolute', bottom: 4, right: 4, width: '30%', height: 20, backgroundColor: 'rgba(0,212,170,0.1)', borderRadius: 4 }} />
+                                <Typography style={{ color: 'rgba(255,255,255,0.2)', fontSize: 10, fontWeight: '800' }}>STAT OVERVIEW</Typography>
+                              </View>
+                              <View style={{ width: 140, height: 80, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 8, marginHorizontal: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
+                                <View style={{ position: 'absolute', top: '10%', bottom: '10%', left: '40%', right: '40%', backgroundColor: 'rgba(0,242,255,0.05)', borderRadius: 20 }} />
+                                <Typography style={{ color: 'rgba(255,255,255,0.2)', fontSize: 10, fontWeight: '800' }}>DATA SYNC</Typography>
+                              </View>
+                            </ScrollView>
+
+                            {/* BLOCO 3 - DESCRIÇÃO */}
+                            <Typography variant="caption" numberOfLines={4} style={{ color: 'rgba(255,255,255,0.7)', lineHeight: 18, marginBottom: 12 }}>
+                              Módulo interativo integrado com a IA de predição de bem-estar. Permite o cruzamento de dados biométricos em tempo real, fornecendo visualizações ricas e criação de parâmetros ajustados para alavancar a tua performance diária e qualidade de vida.
                             </Typography>
+                            
+                            {/* BLOCO 4 - FECHO */}
+                            <TouchableOpacity onPress={() => setExpandedAppId(null)} style={{ alignSelf: 'flex-start', paddingVertical: 8, paddingRight: 16 }}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <ChevronUp size={14} color="#00D4AA" />
+                                <Typography style={{ color: '#00D4AA', fontSize: 12, marginLeft: 4, fontWeight: '800', textTransform: 'uppercase' }}>Ver menos</Typography>
+                              </View>
+                            </TouchableOpacity>
                           </View>
                         )}
                       </View>
@@ -2113,55 +2151,93 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                     const isExpanded = expandedAppId === id;
 
                     return (
-                      <View key={id} style={[styles.downloadRow, isExpanded && { backgroundColor: 'rgba(255,255,255,0.05)', paddingBottom: 16 }]}>
-                        {/* Wrapper Touchable que abre app se estiver instalada */}
-                        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }} activeOpacity={isInstalled && isReal ? 0.7 : 1} onPress={() => {
-                          if (isInstalled && isReal) {
-                            const manifest = MINI_APP_CATALOG.find((m: any) => m.id === id);
-                            if (manifest) {
-                              launchApp(manifest);
-                              if (Platform.OS === 'web') setInlineApp(manifest);
-                              else navigation?.navigate('MiniApp', { app: manifest });
-                            }
-                          }
-                        }}>
-                          <View style={styles.rowIcon}>{icon}</View>
-                          <View style={styles.rowInfo}>
-                            <Typography style={styles.rowTitle}>{title}</Typography>
-                            <Typography variant="caption" style={styles.rowDesc}>{desc}</Typography>
-                          </View>
-                        </TouchableOpacity>
-
-                        <View style={styles.rowActions}>
-                          <TouchableOpacity style={styles.actionBtn} onPress={() => setExpandedAppId(isExpanded ? null : id)}>
-                            <Typography style={styles.actionText}>INFO</Typography>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.actionBtn, isInstalled ? styles.uninstallBtn : styles.installBtn, !isReal && { opacity: 0.4 }]}
-                            onPress={() => {
-                              if (!isReal) return;
-                              if (isInstalled) {
-                                uninstallApp(id);
-                              } else {
-                                useStore.getState().installApp(id);
-                                const manifest = MINI_APP_CATALOG.find((m: any) => m.id === id);
-                                if (manifest && Platform.OS === 'web') setInlineApp(manifest);
-                                else if (manifest) navigation?.navigate('MiniApp', { app: manifest });
+                      <View key={id} style={[styles.downloadRow, isExpanded && { flexDirection: 'column', alignItems: 'stretch', backgroundColor: 'rgba(30,35,45,0.7)', paddingBottom: 16, borderLeftWidth: 2, borderLeftColor: '#00F2FF', padding: 16 }]}>
+                        
+                        {/* BLOCO 1 — CABEÇALHO (Em linha) */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }} activeOpacity={isInstalled && isReal ? 0.7 : 1} onPress={() => {
+                            if (isInstalled && isReal) {
+                              const manifest = MINI_APP_CATALOG.find((m: any) => m.id === id);
+                              if (manifest) {
+                                launchApp(manifest);
+                                if (Platform.OS === 'web') setInlineApp(manifest);
+                                else navigation?.navigate('MiniApp', { app: manifest });
                               }
-                            }}
-                          >
-                            <Typography style={[styles.actionText, isInstalled ? styles.uninstallText : styles.installText]}>
-                              {isInstalled ? 'DESINSTALAR' : 'INSTALAR'}
-                            </Typography>
+                            }
+                          }}>
+                            <View style={[styles.rowIcon, isExpanded && { backgroundColor: 'rgba(0,0,0,0.4)', width: 48, height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center' }]}>{icon}</View>
+                            <View style={[styles.rowInfo, isExpanded && { marginLeft: 16 }]}>
+                              <Typography style={[styles.rowTitle, isExpanded && { fontSize: 16, fontWeight: '900', color: '#fff' }]}>{title}</Typography>
+                              <Typography variant="caption" style={[styles.rowDesc, isExpanded && { fontSize: 10, textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginTop: 2 }]}>{desc}</Typography>
+                              {isExpanded && (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, opacity: 0.9 }}>
+                                  {[1,2,3,4,5].map(i => <Star key={i} size={10} color="#FFD700" fill={i === 5 ? "transparent" : "#FFD700"} style={{ marginRight: 2 }} />)}
+                                  <Typography style={{ color: '#FFD700', fontSize: 11, marginLeft: 4, fontWeight: 'bold' }}>4.8</Typography>
+                                  <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginLeft: 8 }}>ablute_</Typography>
+                                </View>
+                              )}
+                            </View>
                           </TouchableOpacity>
+
+                          <View style={[styles.rowActions, isExpanded && { flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }]}>
+                            {!isExpanded && (
+                              <TouchableOpacity style={styles.actionBtn} onPress={() => setExpandedAppId(id)}>
+                                <Typography style={styles.actionText}>INFO</Typography>
+                              </TouchableOpacity>
+                            )}
+                            <TouchableOpacity
+                              style={[styles.actionBtn, isInstalled ? styles.uninstallBtn : styles.installBtn, !isReal && { opacity: 0.4 }, isExpanded && { marginTop: 0, paddingHorizontal: 16, backgroundColor: '#00D4AA', borderRadius: 20 }]}
+                              onPress={() => {
+                                if (!isReal) return;
+                                if (isInstalled) {
+                                  uninstallApp(id);
+                                } else {
+                                  useStore.getState().installApp(id);
+                                  const manifest = MINI_APP_CATALOG.find((m: any) => m.id === id);
+                                  if (manifest && Platform.OS === 'web') setInlineApp(manifest);
+                                  else if (manifest) navigation?.navigate('MiniApp', { app: manifest });
+                                }
+                              }}
+                            >
+                              <Typography style={[styles.actionText, isInstalled ? styles.uninstallText : styles.installText, isExpanded && { color: '#000', fontWeight: '900' }]}>
+                                {isInstalled ? 'ABRIR' : 'INSTALAR'}
+                              </Typography>
+                            </TouchableOpacity>
+                          </View>
                         </View>
                         
-                        {/* Inline Expansion Area */}
+                        {/* BLOCO 2, 3 e 4 — CONSTRUÇÃO DO CARD DE INFO */}
                         {isExpanded && (
-                          <View style={{ marginTop: 12, width: '100%', paddingLeft: 56, paddingRight: 16 }}>
-                            <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.6)', fontStyle: 'italic', marginBottom: 8, lineHeight: 18 }}>
-                              {isReal ? 'Módulo interativo integrado com a AI de predição do teu bem-estar. Permite cruzamento de dados biométricos em tempo real.' : 'Brevemente disponível. Subscrição M4 necessária.'}
+                          <View style={{ marginTop: 20, width: '100%' }}>
+                            {/* BLOCO 2 - PREVIEWS MOCK */}
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16, marginHorizontal: -4 }}>
+                              <View style={{ width: 140, height: 80, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 8, marginHorizontal: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
+                                <View style={{ position: 'absolute', top: 4, left: 4, right: 4, bottom: 4, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 4 }} />
+                                <Typography style={{ color: 'rgba(255,255,255,0.2)', fontSize: 10, fontWeight: '800' }}>PREVIEW 1</Typography>
+                              </View>
+                              <View style={{ width: 140, height: 80, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 8, marginHorizontal: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
+                                <View style={{ position: 'absolute', top: 4, left: 4, width: '60%', height: 40, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 4 }} />
+                                <View style={{ position: 'absolute', bottom: 4, right: 4, width: '30%', height: 20, backgroundColor: 'rgba(0,212,170,0.1)', borderRadius: 4 }} />
+                                <Typography style={{ color: 'rgba(255,255,255,0.2)', fontSize: 10, fontWeight: '800' }}>STAT OVERVIEW</Typography>
+                              </View>
+                              <View style={{ width: 140, height: 80, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 8, marginHorizontal: 4, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
+                                <View style={{ position: 'absolute', top: '10%', bottom: '10%', left: '40%', right: '40%', backgroundColor: 'rgba(0,242,255,0.05)', borderRadius: 20 }} />
+                                <Typography style={{ color: 'rgba(255,255,255,0.2)', fontSize: 10, fontWeight: '800' }}>DATA SYNC</Typography>
+                              </View>
+                            </ScrollView>
+
+                            {/* BLOCO 3 - DESCRIÇÃO */}
+                            <Typography variant="caption" numberOfLines={4} style={{ color: 'rgba(255,255,255,0.7)', lineHeight: 18, marginBottom: 12 }}>
+                              Módulo interativo integrado com a IA de predição de bem-estar. Permite o cruzamento de dados biométricos em tempo real, fornecendo visualizações ricas e criação de parâmetros ajustados para alavancar a tua performance diária e qualidade de vida.
                             </Typography>
+                            
+                            {/* BLOCO 4 - FECHO */}
+                            <TouchableOpacity onPress={() => setExpandedAppId(null)} style={{ alignSelf: 'flex-start', paddingVertical: 8, paddingRight: 16 }}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <ChevronUp size={14} color="#00D4AA" />
+                                <Typography style={{ color: '#00D4AA', fontSize: 12, marginLeft: 4, fontWeight: '800', textTransform: 'uppercase' }}>Ver menos</Typography>
+                              </View>
+                            </TouchableOpacity>
                           </View>
                         )}
                       </View>
