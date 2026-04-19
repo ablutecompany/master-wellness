@@ -62,8 +62,8 @@ export const OnboardingGoals: React.FC<{ navigation: any }> = ({ navigation }) =
             } else {
               useStore.getState().updateAuthenticatedProfile({ goals: selected });
             }
-            // Forçamos a entrada na aplicação
-            navigation.navigate('Main');
+            // Forçamos a entrada na aplicação limpando o histórico para não haver rollback
+            navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
           }}
           variant="primary"
         />

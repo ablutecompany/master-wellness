@@ -85,5 +85,6 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
     analyses: [],
     activeAnalysisId: null,
     appContributionEvents: [],
+    guestProfile: { name: 'Convidada', goals: [] },
   }),
 });
