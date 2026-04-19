@@ -40,6 +40,7 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
   authAccount: null,
   profileStatus: 'idle',
   guestProfile: {
+    id: 'guest',
     name: 'Convidada',
   },
   isGuestMode: false,
@@ -52,7 +53,7 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
   setProfileStatus: (profileStatus) => set({ profileStatus }),
   setGuestMode: (isGuestMode) => set({ isGuestMode }),
   updateGuestProfile: (updates) => set((state) => ({ 
-    guestProfile: state.guestProfile ? { ...state.guestProfile, ...updates } : { name: 'Convidada', ...updates }
+    guestProfile: state.guestProfile ? { ...state.guestProfile, ...updates } : { id: 'guest_stub', name: 'Convidada', ...updates }
   })),
   updateAuthenticatedProfile: async (updates) => {
     let { sessionToken, user } = get();
@@ -74,7 +75,7 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
     // Optimista
     const previousUser = user;
     set((state) => {
-      const nextUser = state.user ? { ...state.user, ...updates } : { name: 'Utilizador', ...updates };
+      const nextUser = state.user ? { ...state.user, ...updates } : { id: 'auth_stub', name: 'Utilizador', ...updates };
       return { user: nextUser };
     });
     
@@ -98,7 +99,7 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
     analyses: [],
     activeAnalysisId: null,
     appContributionEvents: [],
-    guestProfile: { name: 'Convidada' },
+    guestProfile: { id: 'guest', name: 'Convidada' },
     exportedContexts: [],
   }),
   setExportedContext: (context) => set((state) => {

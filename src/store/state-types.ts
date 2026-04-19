@@ -95,7 +95,8 @@ export interface HouseholdMember {
 
 export interface Household {
   id: string;
-  name: string;
+  rootMemberId: string;
+  invitations?: any[];
   members: HouseholdMember[];
   createdAt: string;
 }
@@ -106,6 +107,7 @@ export interface AppState {
   profileStatus: ProfileStatus;
   guestProfile: UserProfile | null;
   isGuestMode: boolean;
+  sessionToken?: string | null;
   
   // Household boundary
   household: Household | null;

@@ -614,13 +614,13 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                                     {weightMark && (
                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                           <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, marginRight: 4 }}>PESO</Typography>
-                                          <Typography style={{ color: '#00F2FF', fontSize: 11, fontWeight: '800' }}>{typeof weightMark.value === 'object' ? weightMark.value.value : weightMark.value} {weightMark.value?.unit || 'kg'}</Typography>
+                                          <Typography style={{ color: '#00F2FF', fontSize: 11, fontWeight: '800' }}>{typeof weightMark.value === 'object' ? (weightMark.value as any).value : weightMark.value} {weightMark.value?.unit || 'kg'}</Typography>
                                        </View>
                                     )}
                                     {hrMark && (
                                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                                           <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, marginRight: 4 }}>BPM</Typography>
-                                          <Typography style={{ color: '#00D4AA', fontSize: 11, fontWeight: '800' }}>{typeof hrMark.value === 'object' ? hrMark.value.value : hrMark.value}</Typography>
+                                          <Typography style={{ color: '#00D4AA', fontSize: 11, fontWeight: '800' }}>{typeof hrMark.value === 'object' ? (hrMark.value as any).value : hrMark.value}</Typography>
                                        </View>
                                     )}
                                     {(!weightMark && !hrMark) && memDbg[0] && (
@@ -816,7 +816,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                      <View style={{ alignItems: 'flex-end', marginTop: 15 }}>
                        <View style={{ backgroundColor: 'white', padding: 5, borderRadius: 12, marginBottom: 10 }}>
                          <Image 
-                           source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=0&data=${encodeURIComponent(household.invitations.find(i => i.memberId === activeMemberId && i.status === 'pending')?.id!)}` }}
+                           source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=0&data=${encodeURIComponent(((household?.invitations || []).find(i => i.memberId === activeMemberId && i.status === 'pending') || {id: ''}).id)}` }}
                            style={{ width: 120, height: 120 }}
                          />
                        </View>
@@ -829,12 +829,12 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                        <TouchableOpacity onPress={() => {
                           if (Platform.OS === 'web') {
                             if (window.confirm('Queres cancelar este convite pendente?')) {
-                              useStore.getState().cancelHouseholdInvite(household.invitations!.find(i => i.memberId === activeMemberId && i.status === 'pending')!.id);
+                              useStore.getState().cancelHouseholdInvite((((household?.invitations || []).find(i => i.memberId === activeMemberId && i.status === 'pending') || {id: ''}).id));
                             }
                           } else {
                             Alert.alert('Cancelar Convite', 'Cancelar convite pendente?', [
                               { text: 'Não', style: 'cancel' },
-                              { text: 'Sim', onPress: () => useStore.getState().cancelHouseholdInvite(household.invitations!.find(i => i.memberId === activeMemberId && i.status === 'pending')!.id) }
+                              { text: 'Sim', onPress: () => useStore.getState().cancelHouseholdInvite((((household?.invitations || []).find(i => i.memberId === activeMemberId && i.status === 'pending') || {id: ''}).id)) }
                             ]);
                           }
                        }} style={{ padding: 8, backgroundColor: theme.colors.cardBorder, borderRadius: 8 }}>

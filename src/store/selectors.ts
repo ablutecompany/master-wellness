@@ -270,11 +270,13 @@ export interface AiConfidenceBundle {
   };
 }
 
+/*
 export const selectPriorityChange = (state: AppState): number => {
   const analyses = (state.analyses || []).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   if (analyses.length < 2) return 0;
   return (analyses[0].priorityScore || 0) - (analyses[1].priorityScore || 0);
 };
+*/
 
 export const selectAiConfidence = (state: AppState, forcedMemberId?: string): AiConfidenceBundle => {
   const targetId = forcedMemberId || state.activeMemberId || (state.user ? state.user.id : null);

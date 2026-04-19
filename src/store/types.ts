@@ -1,3 +1,4 @@
+import { ContributionEventType } from '../miniapps/types';
 export * from './state-types';
 
 export interface DomainPackage {
