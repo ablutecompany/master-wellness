@@ -1,6 +1,7 @@
 import { StateCreator } from 'zustand';
 import { AppState, UserProfile } from '../state-types';
 import { ProfileService } from '../../services/user/profileService';
+import { supabase } from '../../services/supabase';
 import { ENV } from '../../config/env';
 
 export interface ProfileSlice {
@@ -41,14 +42,28 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
     guestProfile: state.guestProfile ? { ...state.guestProfile, ...updates } : { name: 'Convidada', goals: [], ...updates }
   })),
   updateAuthenticatedProfile: async (updates) => {
-    const { sessionToken, user } = get();
-    if (!sessionToken) return false;
+    let { sessionToken, user } = get();
+    
+    // Dynamic token fetch if missing in global state
+    if (!sessionToken) {
+      const { data } = await supabase.auth.getSession();
+      sessionToken = data?.session?.access_token || null;
+      if (sessionToken) {
+        set({ sessionToken });
+      }
+    }
+
+    if (!sessionToken) {
+      console.warn('[ProfileSlice] Aborting save: No auth token active.');
+      return false;
+    }
     
     // Optimista
     const previousUser = user;
-    set((state) => ({
-      user: state.user ? { ...state.user, ...updates } : { name: 'Utilizador', goals: [], ...updates }
-    }));
+    set((state) => {
+      const nextUser = state.user ? { ...state.user, ...updates } : { name: 'Utilizador', goals: [], ...updates };
+      return { user: nextUser };
+    });
     
     // 1. Gravação no Backend // Retorna a versão canónica!
     const result = await ProfileService.updateProfile(sessionToken, updates);
@@ -59,6 +74,7 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
     }
     
     // 2. Reflete resposta consolidada devolvida
+    console.warn(`[DEV NAME 5] store user after save:`, JSON.stringify(result.profile));
     set({ user: result.profile });
     return true;
   },

@@ -50,12 +50,13 @@ export class UserService {
   async updateCombinedProfile(userId: string, updates: { name?: string, goals?: string[] }) {
     const { name, goals } = updates;
     
-    // Update name in User table
+    // Update name directly in public.profiles since public.User doesn't exist
     if (name !== undefined) {
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { name },
-      });
+      await this.prisma.$executeRaw`
+        UPDATE public.profiles 
+        SET name = ${name}, updated_at = now()
+        WHERE id = ${userId}::uuid
+      `;
     }
 
     // Update secondaryGoals in UserProfile table
@@ -74,24 +75,32 @@ export class UserService {
       });
     }
 
-    // Return the updated canonical profile
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: { profile: true }
-    });
+    // Fetch the updated profile using raw query to avoid Prisma map crashes
+    const profiles = await this.prisma.$queryRaw<any[]>`
+      SELECT id, email, name, active_analysis_id as "activeAnalysisId"
+      FROM public.profiles 
+      WHERE id = ${userId}::uuid
+    `;
 
-    if (!user) throw new Error('User not found after update');
+    if (!profiles || profiles.length === 0) throw new Error('Profile not found after update in public.profiles');
+    
+    const p = profiles[0];
 
-    const p = user.profile;
+    // Try to gently fetch UserProfile (for goals/height) ignoring if it crashes due to missing DB columns
+    let pPrisma: any = null;
+    try {
+       pPrisma = await this.prisma.userProfile.findUnique({ where: { id: userId } });
+    } catch(e) {}
+
     return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      goals: p?.secondaryGoals || [],
-      height: p?.height || null,
-      baseWeight: p?.baseWeight || null,
-      mainGoal: p?.mainGoal || null,
-      activeAnalysisId: p?.activeAnalysisId,
+      id: p.id,
+      email: p.email,
+      name: p.name,
+      goals: pPrisma?.secondaryGoals || [],
+      height: pPrisma?.height || null,
+      baseWeight: pPrisma?.baseWeight || null,
+      mainGoal: pPrisma?.mainGoal || null,
+      activeAnalysisId: p.activeAnalysisId,
     };
   }
 

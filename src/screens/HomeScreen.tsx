@@ -481,7 +481,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         setProfileWeight(guestProfile?.weight ? guestProfile.weight.toString() : '');
         setProfileHeight(guestProfile?.height ? guestProfile.height.toString() : '');
       } else {
-        setProfileName(user?.name || 'Utilizador');
+        const newVal = user?.name || 'Utilizador';
+        if ((window as any) && (window as any)._lastSavedName && newVal !== (window as any)._lastSavedName) {
+           console.warn(`[DEV NAME 6] rehydration overwrite detected: saved "${(window as any)._lastSavedName}" but store injected "${newVal}"`);
+        }
+        setProfileName(newVal);
         setProfileAge(user?.age ? user.age.toString() : '');
         setProfileWeight(user?.weight ? user.weight.toString() : '');
         setProfileHeight(user?.height ? user.height.toString() : '');
@@ -2358,7 +2362,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 <View style={{ flexDirection: 'column', gap: 12 }}>
                   <TouchableOpacity
                     style={styles.saveBtn}
-                    onPress={() => {
+                    onPress={async () => {
+                      console.warn(`[DEV NAME 1] local before save: "${profileName}"`);
                       if (isGuestMode) {
                         useStore.getState().updateGuestProfile({
                           name: profileName || 'Convidada',
@@ -2366,16 +2371,33 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                           weight: profileWeight ? parseFloat(profileWeight) : undefined,
                           height: profileHeight ? parseFloat(profileHeight) : undefined
                         });
+                        setShowProfile(false);
                       } else {
                         // Fazemos update do perfil persistente e optimistic update
-                        useStore.getState().updateAuthenticatedProfile({
+                        const payloadToSend = {
                           name: profileName || user?.name || 'Utilizador',
                           age: profileAge ? parseInt(profileAge, 10) : undefined,
                           weight: profileWeight ? parseFloat(profileWeight) : undefined,
                           height: profileHeight ? parseFloat(profileHeight) : undefined
-                        });
+                        };
+                        console.warn(`[DEV NAME 2] payload to slice:`, JSON.stringify(payloadToSend));
+                        try {
+                          // Tracker para detetar overwrite
+                          if ((window as any)) (window as any)._lastSavedName = payloadToSend.name;
+                          
+                          const success = await useStore.getState().updateAuthenticatedProfile(payloadToSend);
+                          
+                          if (success) {
+                            setShowProfile(false);
+                          } else {
+                            console.error('[DEV NAME] success=false, abortando fecho de modal.');
+                            Alert.alert('Erro', 'Não foi possível gravar as alterações no servidor.');
+                          }
+                        } catch (err) {
+                          console.error('[DEV NAME] EXCEPTION:', err);
+                          Alert.alert('Erro', 'Ocorreu um erro interno na aplicação.');
+                        }
                       }
-                      setShowProfile(false);
                     }}
                   >
                     <Typography style={styles.saveBtnText}>GRAVAR ALTERAÇÕES</Typography>

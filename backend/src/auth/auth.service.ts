@@ -1,10 +1,10 @@
-import { Injectable, UnauthorizedException, ConflictException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserRole } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Obter perfil do utilizador diretamente da tabela "profiles" via UUID do Supabase.
@@ -15,33 +15,37 @@ export class AuthService {
    */
   async getProfileByUid(uid: string) {
     try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: uid },
-        include: { profile: true }
-      });
-
-      if (!user) return null;
-
-      const p = user.profile;
+      const profiles = await this.prisma.$queryRaw<any[]>`
+        SELECT id, email, name, active_analysis_id as "activeAnalysisId"
+        FROM public.profiles 
+        WHERE id = ${uid}::uuid
+      `;
+      
+      if (!profiles || profiles.length === 0) return null;
+      
+      const p = profiles[0];
+      
+      let pPrisma: any = null;
+      try {
+         // Silently safely attempt to read the rest from UserProfile
+         pPrisma = await this.prisma.userProfile.findUnique({ where: { id: uid } });
+      } catch (e) {}
 
       return {
-        id: user.id,
-        email: user.email,
-        name: user.name,
+        id: p.id,
+        email: p.email,
+        name: p.name,
         // Canonical shape mapping
-        goals: p?.secondaryGoals || [],
-        height: p?.height || null,
-        baseWeight: p?.baseWeight || null,
-        mainGoal: p?.mainGoal || null,
-        activeAnalysisId: p?.activeAnalysisId,
+        goals: pPrisma?.secondaryGoals || [],
+        height: pPrisma?.height || null,
+        baseWeight: pPrisma?.baseWeight || null,
+        mainGoal: pPrisma?.mainGoal || null,
+        activeAnalysisId: p.activeAnalysisId,
         // ... include any other fields needed by frontend
       };
     } catch (err) {
-      if (err.code === 'P2025' || err.name === 'NotFoundError') {
-        return null;
-      }
-      console.error(`[getProfileByUid] Erro interno crítico ao ligar à Base de Dados:`, err.message);
-      throw new InternalServerErrorException('Falha estrutural de ligação à Base de Dados (Prisma)');
+      console.warn(`[getProfileByUid] Validation or lookup error for ${uid}, treating as missing:`, err.message);
+      return null;
     }
   }
 

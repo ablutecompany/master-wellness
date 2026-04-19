@@ -47,7 +47,7 @@ export class HealthController {
       const response = {
         ok: allOk,
         timestamp: new Date().toISOString(),
-        BUILD_ACTIVE: 'NOVA_FRENTE',
+        BUILD_ACTIVE: 'FIX_BACKEND_NOME',
         checks: {
           db: checks.db ? 'connected' : 'failed',
           supabase: checks.supabase ? 'configured' : 'missing',
