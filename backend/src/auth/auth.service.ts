@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserRole } from '@prisma/client';
 
@@ -37,8 +37,11 @@ export class AuthService {
         // ... include any other fields needed by frontend
       };
     } catch (err) {
-      console.warn(`[getProfileByUid] Validation or lookup error for ${uid}, treating as missing:`, err.message);
-      return null;
+      if (err.code === 'P2025' || err.name === 'NotFoundError') {
+        return null;
+      }
+      console.error(`[getProfileByUid] Erro interno crítico ao ligar à Base de Dados:`, err.message);
+      throw new InternalServerErrorException('Falha estrutural de ligação à Base de Dados (Prisma)');
     }
   }
 

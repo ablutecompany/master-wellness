@@ -5,7 +5,7 @@ import { theme } from '../theme';
 import { BrandLogo } from '../components/BrandLogo';
 import { ThemeCard } from '../components/ThemeCard';
 import { HistoricoModal } from '../components/HistoricoModal';
-import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, Users, ChevronRight, ChevronDown, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, ChevronsDown, Sparkles, ArrowLeft, Calendar, History, Star, ChevronUp, Share } from 'lucide-react-native';
+import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, Users, ChevronRight, ChevronDown, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, ChevronsDown, Sparkles, ArrowLeft, Calendar, History, Star, ChevronUp, Share, Dumbbell, Footprints } from 'lucide-react-native';
 import Svg, { Path, Text as SvgText, TextPath, Defs, G } from 'react-native-svg';
 import { BiomechanicRelic } from '../components/BiomechanicRelic';
 import { SiderealBackground } from '../components/SiderealBackground';
@@ -2036,7 +2036,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   const apps = [
                     { id: 'sleep-deep', title: '_deep sleep', desc: 'Integração Profunda de Sono', icon: <Moon size={22} color="#00F2FF" /> },
                     { id: 'nutri-menu', title: '_Meal planner', desc: 'Nutrição Personalizada', icon: <Utensils size={22} color="#00D4AA" /> },
-                    { id: '_cardio', title: '_motion', desc: 'Saúde Cardiovascular Ativa', icon: <Heart size={22} color="#00F2FF" opacity={0.6} /> },
+                    { id: '_cardio', title: '_motion', desc: 'Saúde Cardiovascular Ativa', icon: <Dumbbell size={22} color="#00F2FF" opacity={0.6} /> },
                     { id: '_mind', title: '_introspect', desc: 'Foco e Meditação Profunda', icon: <Brain size={22} color="#00F2FF" opacity={0.6} /> },
                   ];
 
