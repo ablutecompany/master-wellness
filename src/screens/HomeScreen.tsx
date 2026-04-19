@@ -5,6 +5,7 @@ import { theme } from '../theme';
 import { BrandLogo } from '../components/BrandLogo';
 import { ThemeCard } from '../components/ThemeCard';
 import { HistoricoModal } from '../components/HistoricoModal';
+import { SynthesisActionCard, StateSurface } from '../components/ShellStateSurfaces';
 import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, Users, ChevronRight, ChevronDown, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, ChevronsDown, Sparkles, ArrowLeft, Calendar, History, Star, ChevronUp, Share, Dumbbell, Footprints } from 'lucide-react-native';
 import Svg, { Path, Text as SvgText, TextPath, Defs, G } from 'react-native-svg';
 import { BiomechanicRelic } from '../components/BiomechanicRelic';
@@ -33,6 +34,7 @@ import { MiniAppManifest } from '../miniapps/types';
 import { useStore } from '../store/useStore';
 import * as Selectors from '../store/selectors';
 import { getSemanticInsights, getSemanticStatus, getAiStatus } from '../services/insights';
+import { computeSemanticFromMeasurements } from '../services/semantic-output/analysis-engine';
 import { AiInsight } from '../services/semantic-output/types';
 import { ENV } from '../config/env';
 import { Analysis } from '../store/store';
@@ -266,6 +268,51 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       ]
     };
   }, [demoAnalysis, activeAnalysisId, analyses, exportedContexts]);
+
+  // ── PREV ANALYSIS PARA TENDÊNCIAS ───────────────────────────────────────────────
+  const prevAnalysis = React.useMemo(() => {
+    const isDemo = activeAnalysis?.source === 'demo';
+    if (isDemo || !activeMemberId || !activeAnalysis) return null;
+    return analyses.find(a => 
+      a.memberId === activeMemberId && 
+      a.source !== 'demo' && 
+      a.id !== activeAnalysis.id && 
+      new Date(a.createdAt).getTime() < new Date(activeAnalysis.createdAt).getTime()
+    ) || null;
+  }, [activeAnalysis, activeMemberId, analyses]);
+
+  const prevSemanticState = React.useMemo(() => {
+    if (!prevAnalysis || prevAnalysis.measurements.length === 0) return null;
+    return computeSemanticFromMeasurements(prevAnalysis.measurements, prevAnalysis.ecosystemFacts || []);
+  }, [prevAnalysis]);
+
+  const getAugmentedSemanticInsights = React.useCallback(() => {
+    let base = getSemanticInsights();
+    if (!prevSemanticState) {
+       return base.map(t => ({ ...t, trend: 'no_base' as const }));
+    }
+    return base.map(theme => {
+       const oldDomain = prevSemanticState.domains[theme.domain];
+       let trendVal: 'improving' | 'worsening' | 'stable' | 'no_base' = 'no_base';
+       let priorityVal: 'noise' | 'discrete' | 'relevant' | 'critical' = 'noise';
+
+       if (oldDomain && typeof theme.score === 'number' && typeof oldDomain.score === 'number') {
+          const diff = theme.score - oldDomain.score;
+          const absDiff = Math.abs(diff);
+
+          if (absDiff < 2) {
+             trendVal = 'stable';
+             priorityVal = 'noise';
+          } else {
+             trendVal = diff > 0 ? 'improving' : 'worsening';
+             if (absDiff < 5) priorityVal = 'discrete';
+             else if (absDiff < 15) priorityVal = 'relevant';
+             else priorityVal = 'critical';
+          }
+       }
+       return { ...theme, trend: trendVal, priority: priorityVal };
+    });
+  }, [prevSemanticState]);
 
   // Leitura dos biomarcadores da análise activa (formaáto normalizado)
   const filteredMeasurements = React.useMemo(() => {
@@ -715,6 +762,21 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   // Keep edge gesture callbacks up to date every render
   openThemesRef.current = openThemes;
   openDataRef.current = openData;
+
+  const handleSynthesisAction = (intent: string) => {
+    if (intent === 'sync_now' || intent === 're_sync') {
+      closeData(); closeThemes();
+      setTimeout(() => executeSyncReal(), 400);
+    } else if (intent === 'manage_permissions' || intent === 'complete_profile') {
+      closeData(); closeThemes(); setShowProfile(true);
+    } else if (intent === 'explore_analysis') {
+      closeData(); openThemes();
+    } else if (intent === 'open_timeline') {
+      closeData(); closeThemes(); setShowHistorico(true);
+    } else if (intent === 'open_context') {
+      alert('Aceda ao App Place na shell principal para autorizar integrações.');
+    }
+  };
 
   // ── Switch Setup ──────────────────────────────────────────────────────────
   const switchAnim = useRef(new Animated.Value(0)).current; // 0 = UP, 160 = DOWN
@@ -1389,31 +1451,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           </View>
         )}
 
-        {/* ── CONTEXTUAL ACTION (Ação sugerida pelo DataFreshness) ── */}
-        <View style={{ position: 'absolute', bottom: 50, left: 0, right: 0, alignItems: 'center', pointerEvents: 'box-none' }}>
-           <TouchableOpacity 
-              disabled={dataFreshness.actionIntent === 'wait'}
-              onPress={() => {
-                if (dataFreshness.actionIntent === 'manage_permissions') {
-                   setShowProfile(true);
-                } else if (dataFreshness.actionIntent === 'sync_now' || dataFreshness.actionIntent === 're_sync') {
-                   executeSyncReal();
-                } else if (dataFreshness.actionIntent === 'analyze') {
-                   openThemes();
-                }
-              }}
-              style={{
-                paddingHorizontal: 24, paddingVertical: 12, borderRadius: 30, 
-                backgroundColor: dataFreshness.actionIntent === 'analyze' ? 'rgba(0,212,170,0.15)' : 'rgba(255,255,255,0.05)', 
-                borderWidth: 1, 
-                borderColor: dataFreshness.actionIntent === 'analyze' ? 'rgba(0,212,170,0.3)' : 'rgba(255,255,255,0.1)'
-              }}
-           >
-              <Typography style={{ color: dataFreshness.actionIntent === 'analyze' ? '#00D4AA' : 'rgba(255,255,255,0.9)', fontSize: 11, fontWeight: '800', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-                {dataFreshness.actionLabel}
-              </Typography>
-           </TouchableOpacity>
-        </View>
+        {/* ── DAILY SYNTHESIS (Briefing Operacional) ── */}
+        <SynthesisActionCard 
+           synthesis={dailySynthesis} 
+           onAction={handleSynthesisAction} 
+           style={{ position: 'absolute', bottom: 40, left: 24, right: 24 }} 
+        />
 
         {/* ── LEFT EDGE HANDLE: THEMES ──────────────────────────────────────── */}
         <TouchableOpacity
@@ -1514,26 +1557,16 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
           {/* ── Paginated FlatList ── */}
           {aiConfidence.level === 'insuficiente' ? (
-             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 }}>
-                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: `${aiConfidence.color}15`, justifyContent: 'center', alignItems: 'center', marginBottom: 16, borderWidth: 1, borderColor: `${aiConfidence.color}30` }}>
-                   <Typography style={{ fontSize: 20 }}>{dataFreshness.status === 'no_access' ? '🔒' : '⚠️'}</Typography>
-                </View>
-                <Typography style={{ color: aiConfidence.color, fontSize: 13, fontWeight: '800', marginBottom: 8, letterSpacing: 1, textTransform: 'uppercase' }}>{aiConfidence.label}</Typography>
-                <Typography style={{ color: 'rgba(255,255,255,0.6)', textAlign: 'center', fontSize: 13, lineHeight: 18, marginBottom: 24 }}>{aiConfidence.rationale}</Typography>
-
-                <TouchableOpacity 
-                   onPress={() => {
-                     if (aiConfidence.recommendedAction.intent === 'sync_now') {
-                       useStore.getState().setIsMeasuring(true); closeThemes();
-                     } else if (aiConfidence.recommendedAction.intent === 'manage_permissions' || aiConfidence.recommendedAction.intent === 'complete_profile') {
-                       closeThemes(); setShowProfile(true);
-                     }
-                   }} 
-                   style={{ backgroundColor: `${aiConfidence.color}15`, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: `${aiConfidence.color}30` }}
-                >
-                   <Typography style={{ color: aiConfidence.color, fontSize: 11, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' }}>{aiConfidence.recommendedAction.label}</Typography>
-                </TouchableOpacity>
-             </View>
+             <StateSurface 
+                type={dataFreshness.status === 'no_access' ? 'restricted' : 'insufficient'}
+                title={aiConfidence.label}
+                description={aiConfidence.rationale}
+                actionLabel={dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.label : undefined}
+                actionIntent={dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.intent : undefined}
+                onAction={handleSynthesisAction}
+                color={aiConfidence.color}
+                style={{ flex: 1, marginHorizontal: 24, marginVertical: 30 }}
+             />
           ) : (
             <View style={{ flex: 1 }}>
               {/* ── AI Confidence Readiness Banner ── */}
@@ -1977,6 +2010,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           return acc;
         }, {});
 
+        const prevMeasurements = (prevAnalysis?.measurements || []).reduce((acc: Record<string, any>, m: any) => {
+          const k = getCanonicalKey(m);
+          if (k) acc[k] = m;
+          return acc;
+        }, {});
+
         const buildSection = (catFilter: MetricCategory[], label: string, color: string, id: string, shortLabel: string) => {
           // Filtra pelo que deve ser visível por omissão na categoria especificada
           const sectionDefs = allDefs.filter(d => catFilter.includes(d.category) && d.visibleByDefault);
@@ -1989,6 +2028,36 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               ? (isDemo ? 'demo_value' : 'available')
               : 'empty';
 
+            let trend = undefined;
+            const prev = prevMeasurements[def.key];
+            
+            if (found && prev && typeof found.value !== 'undefined' && typeof prev.value !== 'undefined' && def.valueType === 'number') {
+               const curV = Number(found.value);
+               const prevV = Number(prev.value);
+               if (!isNaN(curV) && !isNaN(prevV)) {
+                  const diff = curV - prevV;
+                  const absDiff = Math.abs(diff);
+                  let priority: 'noise' | 'discrete' | 'relevant' | 'critical' = 'noise';
+                  
+                  if (absDiff < 0.001) {
+                     priority = 'noise';
+                  } else {
+                     const pct = prevV !== 0 ? (absDiff / Math.abs(prevV)) * 100 : 100;
+                     if (pct < 2) priority = 'discrete';
+                     else if (pct < 10) priority = 'relevant';
+                     else priority = 'critical';
+                  }
+
+                  if (absDiff < 0.001) {
+                     trend = { direction: 'stable', diffLabel: 'Estável', priority };
+                  } else if (diff > 0) {
+                     trend = { direction: 'up', diffLabel: 'Subiu face à última leitura', priority };
+                  } else {
+                     trend = { direction: 'down', diffLabel: 'Desceu face à última leitura', priority };
+                  }
+               }
+            }
+
             return {
               isCanonical: true,
               definition: def,
@@ -1997,6 +2066,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 status,
                 value: found?.value,
                 mode: isDemo ? 'demo' : 'real',
+                measuredAt: found?.recordedAt ? new Date(found.recordedAt).getTime() : undefined,
+                source: found?.source || activeAnalysis?.source || 'device',
+                trend
               } as MetricObservation
             };
           });
@@ -2124,20 +2196,16 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               {/* ── Active Tab Content ── */}
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.panelScroll}>
                 {!hasResultsAccess ? (
-                  <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 60, paddingHorizontal: 30, backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 16, margin: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
-                    <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
-                       <Typography style={{ fontSize: 20 }}>🔒</Typography>
-                    </View>
-                    <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: '800', marginBottom: 8, letterSpacing: 1, textTransform: 'uppercase' }}>Acesso Restrito</Typography>
-                    <Typography style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', fontSize: 12, lineHeight: 18 }}>Os resultados e painel vitúrgico não foram explicitamente partilhados consigo.</Typography>
-
-                    <TouchableOpacity 
-                      onPress={() => { closeData(); setShowProfile(true); }}
-                      style={{ marginTop: 20, backgroundColor: 'rgba(255,96,96,0.1)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,96,96,0.3)' }}
-                    >
-                      <Typography style={{ color: '#FF6060', fontSize: 11, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' }}>{dataFreshness.actionLabel || 'Gerir Permissões'}</Typography>
-                    </TouchableOpacity>
-                  </View>
+                   <StateSurface 
+                      type="restricted"
+                      title="Acesso Restrito"
+                      description="Os resultados e painel vitúrgico não foram explicitamente partilhados consigo."
+                      actionLabel={dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.label : undefined}
+                      actionIntent={dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.intent : undefined}
+                      onAction={handleSynthesisAction}
+                      color="#FF6060"
+                      style={{ margin: 20 }}
+                   />
                 ) : factualBioCategories.length > 0 ? (
                   factualBioCategories[safeBioTab].markers.length > 0 ? (
                     factualBioCategories[safeBioTab].markers.map((item: any, i: number) => {
@@ -2158,47 +2226,34 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                           <MetricCard 
                             definition={item.definition}
                             observation={item.observation}
+                            onExploreSemantics={() => { closeData(); openThemes(); }}
                           />
                         </View>
                       );
                     })
                   ) : (
-                    <View style={{ alignItems: 'center', justifyContent: 'center', height: 200, paddingHorizontal: 20 }}>
-                      <Typography style={{ color: dataFreshness.color, textAlign: 'center', fontSize: 13, fontWeight: '800', letterSpacing: 1 }}>
-                        {dataFreshness.label.toUpperCase()}
-                      </Typography>
-                      <Typography style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', fontSize: 13, marginTop: 8 }}>
-                        {dataFreshness.status === 'syncing' ? 'Por favor aguarde enquanto processamos a leitura.' : 'Não existem leituras válidas para esta categoria nesta janela local.'}
-                      </Typography>
-                      {dataFreshness.status !== 'syncing' && (
-                        <TouchableOpacity 
-                          onPress={() => { closeData(); setTimeout(() => executeSyncReal(), 400); }}
-                          style={{ marginTop: 20, backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
-                        >
-                          <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 11, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' }}>{dataFreshness.actionLabel}</Typography>
-                        </TouchableOpacity>
-                      )}
-                    </View>
+                    <StateSurface 
+                       type={dataFreshness.status === 'syncing' ? 'no_data' : 'insufficient'}
+                       title={dataFreshness.label.toUpperCase()}
+                       description={dataFreshness.status === 'syncing' ? 'Por favor aguarde enquanto processamos a leitura.' : 'Não existem leituras válidas para esta categoria nesta janela local.'}
+                       actionLabel={dataFreshness.status !== 'syncing' && dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.label : undefined}
+                       actionIntent={dataFreshness.status !== 'syncing' && dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.intent : undefined}
+                       onAction={handleSynthesisAction}
+                       color={dataFreshness.color}
+                       style={{ margin: 20 }}
+                    />
                   )
                 ) : (
-                  <View style={{ alignItems: 'center', justifyContent: 'center', height: 200, paddingHorizontal: 20 }}>
-                    <Database size={32} color={dataFreshness.status === 'no_data' || dataFreshness.status === 'very_stale' ? '#FF6060' : 'rgba(255,255,255,0.2)'} style={{ marginBottom: 16 }} />
-                    <Typography style={{ color: dataFreshness.color, textAlign: 'center', fontSize: 14, fontWeight: '800', letterSpacing: 1, marginBottom: 8 }}>
-                      {dataFreshness.label.toUpperCase()}
-                    </Typography>
-                    <Typography style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', fontSize: 13, lineHeight: 20 }}>
-                      Ao contrário do painel visual, aguardamos fluxo fisiológico limpo.
-                    </Typography>
-                    
-                    {dataFreshness.status !== 'syncing' && (
-                      <TouchableOpacity 
-                        onPress={() => { closeData(); setTimeout(() => executeSyncReal(), 400); }}
-                        style={{ marginTop: 20, backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
-                      >
-                        <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 11, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' }}>{dataFreshness.actionLabel}</Typography>
-                      </TouchableOpacity>
-                    )}
-                  </View>
+                  <StateSurface 
+                     type="no_data"
+                     title={dataFreshness.label.toUpperCase()}
+                     description="Ao contrário do painel visual, aguardamos fluxo fisiológico limpo."
+                     actionLabel={dataFreshness.status !== 'syncing' && dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.label : undefined}
+                     actionIntent={dataFreshness.status !== 'syncing' && dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.intent : undefined}
+                     onAction={handleSynthesisAction}
+                     color={dataFreshness.status === 'no_data' || dataFreshness.status === 'very_stale' ? '#FF6060' : 'rgba(255,255,255,0.2)'}
+                     style={{ margin: 20 }}
+                  />
                 )}
               </ScrollView>
 

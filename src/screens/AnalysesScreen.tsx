@@ -13,6 +13,7 @@ import {
 import { useStore } from '../store/useStore';
 import * as Selectors from '../store/selectors';
 import { GatingOverlay } from '../components/GatingOverlay';
+import { StateSurface } from '../components/ShellStateSurfaces';
 
 interface Exam {
   id: string;
@@ -38,6 +39,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   const isGuestMode = useStore(state => state.isGuestMode);
   const hasResultsAccess = useStore(Selectors.selectHasResultsAccess);
   const user = useStore(Selectors.selectUser);
+  const dailySynthesis = useStore(state => Selectors.selectDailySynthesis(state));
 
   // Use the demo's mocked measurements preferentially if in sandbox mode
   const rawMeasurements = demoAnalysis 
@@ -147,22 +149,31 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           <View style={{ minHeight: 300 }}>
 
         {!hasResultsAccess ? (
-          <View style={[styles.emptyState, { backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 24, paddingVertical: 60, marginHorizontal: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }]}>
-            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
-               <Typography style={{ fontSize: 24 }}>🔒</Typography>
-            </View>
-            <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 16, fontWeight: '800', marginBottom: 8, letterSpacing: 1, textTransform: 'uppercase' }}>Acesso Restrito</Typography>
-            <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', lineHeight: 22, paddingHorizontal: 30 }}>
-               Este membro optou por manter o seu histórico biográfico privado. Solicita a partilha de permissões para visionares esta lista orgânica.
-            </Typography>
-          </View>
+           <StateSurface 
+              type="restricted"
+              title="Acesso Restrito"
+              description="Este membro optou por manter o seu histórico biográfico privado. Solicita a partilha de permissões para visionares esta lista orgânica."
+              actionLabel={dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.label : undefined}
+              actionIntent={dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.intent : undefined}
+              onAction={(intent) => {
+                 if (intent === 'sync_now') useStore.getState().setIsMeasuring(true);
+                 navigation.navigate('Home');
+              }}
+              color="#FF6060"
+           />
         ) : measurements.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Typography style={styles.emptyText}>Ainda não existem medições disponíveis.</Typography>
-            <Typography variant="caption" style={styles.emptySubtext}>
-               As tuas leituras sincronizadas aparecerão aqui assim que forem capturadas.
-            </Typography>
-          </View>
+           <StateSurface 
+              type="no_data"
+              title="NENHUMA MEDIÇÃO"
+              description="As tuas leituras sincronizadas aparecerão aqui assim que forem capturadas."
+              actionLabel={dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.label : undefined}
+              actionIntent={dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.intent : undefined}
+              onAction={(intent) => {
+                 if (intent === 'sync_now') useStore.getState().setIsMeasuring(true);
+                 navigation.navigate('Home');
+              }}
+              color="#00F2FF"
+           />
         ) : (
           <>
             {renderSection('METABOLISMO & DADOS CORE', coreExams)}

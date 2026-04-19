@@ -46,6 +46,11 @@ export interface MetricObservation {
   source?: string;
   mode: 'demo' | 'real';
   isSimulated?: boolean;
+  trend?: {
+    direction: 'up' | 'down' | 'stable';
+    diffLabel: string;
+    priority: 'noise' | 'discrete' | 'relevant' | 'critical';
+  };
 }
 
 // 4. Catálogo Canónico Inicial

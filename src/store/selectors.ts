@@ -270,6 +270,12 @@ export interface AiConfidenceBundle {
   };
 }
 
+export const selectPriorityChange = (state: AppState): number => {
+  const analyses = (state.analyses || []).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  if (analyses.length < 2) return 0;
+  return (analyses[0].priorityScore || 0) - (analyses[1].priorityScore || 0);
+};
+
 export const selectAiConfidence = (state: AppState, forcedMemberId?: string): AiConfidenceBundle => {
   const targetId = forcedMemberId || state.activeMemberId || (state.user ? state.user.id : null);
   
@@ -395,4 +401,336 @@ export const selectAiConfidence = (state: AppState, forcedMemberId?: string): Ai
       factors: { positive, negative },
       recommendedAction: { label: 'Sincronizar Cargas', intent: 'sync_now' }
   };
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// J) UNIFIED CHRONO FEED SELECTOR (System Log / Timeline)
+// ─────────────────────────────────────────────────────────────────────────────
+export type ChronoEventType = 'sync_success' | 'sync_failed' | 'measurement_received' | 'analysis_updated' | 'context_updated' | 'invite_sent' | 'invite_accepted' | 'permission_changed';
+
+export interface ChronoEvent {
+   id: string; 
+   timestamp: number;
+   type: ChronoEventType;
+   memberId: string | null;
+   label: string;
+   payload: string; 
+   color?: string; // Optional hex for UI grouping
+}
+
+export const selectUnifiedTimeline = (state: AppState): ChronoEvent[] => {
+   const events: ChronoEvent[] = [];
+   const rootId = state.user?.id || 'root-guest';
+   const activeId = state.activeMemberId || rootId;
+
+   const canView = (targetId: string, domain: 'results' | 'context') => {
+      return canViewTargetData(state, targetId, domain);
+   };
+
+   // 1. Measurements (measurement_received)
+   if (state.measurements) {
+      state.measurements.forEach((m: any) => {
+          const owner = m.memberId || rootId;
+          if (activeId !== rootId && owner !== activeId) return; 
+          if (!canView(owner, 'results')) return;
+
+          events.push({
+             id: `meas_${m.id}`,
+             timestamp: m.timestamp || Date.now(),
+             type: 'measurement_received',
+             memberId: owner,
+             label: 'Recolha Geométrica',
+             payload: `Recebido sinal vital novo`,
+             color: '#00F2FF'
+          });
+      });
+   }
+
+   // 2. Analyses (sync_success)
+   if (state.analyses) {
+      state.analyses.forEach((a: any) => {
+          const owner = a.memberId || rootId;
+          if (activeId !== rootId && owner !== activeId) return;
+          if (!canView(owner, 'results')) return;
+
+          const ts = new Date(a.createdAt).getTime();
+          events.push({
+             id: `ana_${a.id}`,
+             timestamp: !isNaN(ts) ? ts : Date.now(),
+             type: 'sync_success',
+             memberId: owner,
+             label: 'Sincronização Integrada',
+             payload: `Carga paramétrica estabilizada com biometria total`,
+             color: '#00D4AA'
+          });
+      });
+   }
+
+   // 3. Exported Contexts (context_updated)
+   if (state.exportedContexts) {
+      state.exportedContexts.forEach((c: any) => {
+         const owner = c.memberId || rootId;
+         if (activeId !== rootId && owner !== activeId) return;
+         if (!canView(owner, 'context')) return;
+
+         const ts = new Date(c.updatedAt || Date.now()).getTime();
+         events.push({
+             id: `ctx_${c.id}`,
+             timestamp: !isNaN(ts) ? ts : Date.now(),
+             type: 'context_updated',
+             memberId: owner,
+             label: 'Contexto Interligado',
+             payload: `Motor comportamental externo inferiu dados`,
+             color: '#A020F0'
+          });
+      });
+   }
+
+   // 4. Household Events
+   if (state.household && state.household.members) {
+      if (activeId === rootId) {
+         state.household.members.forEach((m: any) => {
+            const hasJoined = !!m.userId;
+            const ts = new Date(hasJoined ? m.updatedAt : m.createdAt).getTime();
+
+            events.push({
+                id: `mem_${m.id}_state`,
+                timestamp: !isNaN(ts) ? ts : Date.now(),
+                type: hasJoined ? 'invite_accepted' : 'invite_sent',
+                memberId: m.id,
+                label: hasJoined ? 'Membro Conectado' : 'Convite Emitido',
+                payload: hasJoined ? `Acesso digital confirmado e emparelhado` : `Aguardando aceitação de dispositivo seguro`,
+                color: hasJoined ? '#00D4AA' : '#FFA500'
+            });
+
+            if (m.updatedAt && m.createdAt && m.updatedAt !== m.createdAt && hasJoined) {
+                const ts2 = new Date(m.updatedAt).getTime();
+                events.push({
+                   id: `mem_${m.id}_perm`,
+                   timestamp: !isNaN(ts2) ? ts2 : Date.now(),
+                   type: 'permission_changed',
+                   memberId: m.id,
+                   label: 'Privacidade Atualizada',
+                   payload: `Esquema permissivo partilhado foi modificado`,
+                   color: '#FF6060'
+                });
+            }
+         });
+      } else {
+         const self = state.household.members.find(m => m.id === activeId);
+         if (self && self.updatedAt !== self.createdAt) {
+                const ts2 = new Date(self.updatedAt).getTime();
+                events.push({
+                   id: `mem_${self.id}_perm`,
+                   timestamp: !isNaN(ts2) ? ts2 : Date.now(),
+                   type: 'permission_changed',
+                   memberId: self.id,
+                   label: 'Privacidade Atualizada',
+                   payload: `Restrição canónica do próprio membro aplicada`,
+                   color: '#FF6060'
+                });
+         }
+      }
+   }
+
+   // Merge matching timestamps explicitly? No, direct sort descending
+   return events.sort((a, b) => b.timestamp - a.timestamp).slice(0, 50); // Keep it useful size
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// K) DAILY SYNTHESIS (Briefing Operacional)
+// ─────────────────────────────────────────────────────────────────────────────
+export interface DailySynthesis {
+  status: 'excellent' | 'good' | 'needs_attention' | 'critical' | 'restricted';
+  title: string;
+  positiveHighlight: string | null;
+  negativeHighlight: string | null;
+  action: {
+    label: string;
+    intent: 'sync_now' | 'manage_permissions' | 'complete_profile' | 'explore_analysis' | 'open_context' | 'open_timeline' | 'wait';
+  };
+}
+
+export const selectDailySynthesis = (state: AppState, forcedMemberId?: string): DailySynthesis => {
+   const aiConfidence = selectAiConfidence(state, forcedMemberId);
+   const freshness = selectDataFreshness(state, forcedMemberId);
+   
+   if (aiConfidence.level === 'insuficiente' && freshness.status === 'no_access') {
+       return {
+           status: 'restricted',
+           title: 'Acesso Fechado',
+           positiveHighlight: null,
+           negativeHighlight: 'O membro ocultou os seus biomarcadores base.',
+           action: { label: 'Gerir Permissões', intent: 'manage_permissions' }
+       };
+   }
+
+   if (freshness.status === 'no_data' || aiConfidence.level === 'insuficiente') {
+       return {
+           status: 'critical',
+           title: 'Sinais Inexistentes',
+           positiveHighlight: aiConfidence.factors.positive[0] || null,
+           negativeHighlight: aiConfidence.factors.negative[0] || 'Sem dados gravados na pool ativa.',
+           action: { label: 'Iniciar Recolha', intent: 'sync_now' }
+       };
+   }
+
+   if (freshness.status === 'very_stale' || aiConfidence.level === 'limitada') {
+       return {
+           status: 'needs_attention',
+           title: 'Atenção Fisiológica',
+           positiveHighlight: aiConfidence.factors.positive[0] || null,
+           negativeHighlight: aiConfidence.factors.negative[0] || 'Base degradada precisa de cuidado orgânico.',
+           action: { label: 'Re-Sincronizar', intent: 'sync_now' }
+       };
+   }
+
+   if (aiConfidence.level === 'contextual') {
+       return {
+           status: 'good',
+           title: 'Estabilidade Assistida',
+           positiveHighlight: aiConfidence.factors.positive[0] || 'Atividade orgânica saudável assente no contexto.',
+           negativeHighlight: aiConfidence.factors.negative[0] || null,
+           action: { label: 'Avaliar Período', intent: 'open_timeline' }
+       };
+   }
+
+   return {
+       status: 'excellent',
+       title: 'Ecossistema Maduro',
+       positiveHighlight: aiConfidence.factors.positive[0] || 'Base está atualizada e altamente robusta.',
+       negativeHighlight: null,
+       action: { label: 'Abrir Resumo', intent: 'open_timeline' }
+   };
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// L) SHELL PRIORITY CHANGE (Tendência Principal Útil)
+// ─────────────────────────────────────────────────────────────────────────────
+export interface PriorityChange {
+   domainLabel: string;
+   priority: 'discrete' | 'relevant' | 'critical';
+   direction: 'improving' | 'worsening';
+   shortLabel: string;
+}
+
+export const selectPriorityChange = (state: AppState, forcedMemberId?: string): PriorityChange | null => {
+    const targetId = forcedMemberId || state.activeProfileId;
+    if (!targetId || !state.analyses) return null;
+
+    // Apenas analisa leituras com base legível e não demo
+    const memberAnalyses = state.analyses.filter(a => a.memberId === targetId && a.source !== 'demo')
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    if (memberAnalyses.length < 2) return null;
+
+    const latest = memberAnalyses[0];
+    const prev = memberAnalyses[1];
+
+    if (!latest.measurements || !prev.measurements) return null;
+
+    const latestState = computeSemanticFromMeasurements(latest.measurements, latest.ecosystemFacts || []);
+    const prevState = computeSemanticFromMeasurements(prev.measurements, prev.ecosystemFacts || []);
+
+    let topChange: PriorityChange | null = null;
+    let maxDiff = 0;
+
+    const labels: Record<string, string> = {
+        sleep: 'Qualidade do Sono',
+        nutrition: 'Equilíbrio Metabólico',
+        general: 'Ablute Wellness',
+        energy: 'Energia Biológica',
+        recovery: 'Capacidade de Recuperação',
+        performance: 'Capacidade de Desempenho'
+    };
+
+    Object.keys(latestState.domains).forEach(domKey => {
+        const currentScore = latestState.domains[domKey].score;
+        const prevScore = prevState.domains[domKey]?.score;
+
+        if (typeof currentScore === 'number' && typeof prevScore === 'number') {
+            const diff = currentScore - prevScore;
+            const absDiff = Math.abs(diff);
+
+            if (absDiff >= 2 && absDiff > maxDiff) {
+                maxDiff = absDiff;
+                const priority = absDiff >= 15 ? 'critical' : (absDiff >= 5 ? 'relevant' : 'discrete');
+                const direction = diff > 0 ? 'improving' : 'worsening';
+                
+                topChange = {
+                    domainLabel: labels[domKey] || domKey,
+                    priority,
+                    direction,
+                    shortLabel: direction === 'improving' ? 'Melhoria Relevante' : 'Atenção Focada'
+                };
+            }
+        }
+    });
+
+    return topChange;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// M) WEEKLY BRIEFING (Resumo Longitudinal Curto)
+// ─────────────────────────────────────────────────────────────────────────────
+export interface WeeklyBriefing {
+  status: 'empty' | 'insufficient' | 'good' | 'excellent';
+  stabilityLabel: string;
+  changeLabel: string | null;
+  gapLabel: string | null;
+  action: {
+    label: string;
+    intent: 'sync_now' | 'manage_permissions' | 'explore_analysis' | 'open_context';
+  };
+}
+
+export const selectWeeklyBriefing = (state: AppState, forcedMemberId?: string): WeeklyBriefing | null => {
+    const targetId = forcedMemberId || state.activeProfileId;
+    if (!targetId || !state.analyses) return null;
+
+    const freshness = selectDataFreshness(state, targetId);
+    if (freshness.status === 'no_access') {
+       return {
+         status: 'empty',
+         stabilityLabel: 'Sem acesso a dados biográficos',
+         changeLabel: null,
+         gapLabel: 'O membro tem a partilha fechada ou oculta.',
+         action: { label: 'Gerir Permissões', intent: 'manage_permissions' }
+       };
+    }
+
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const memberAnalyses = state.analyses.filter(a => a.memberId === targetId && a.source !== 'demo')
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    const recentAnalyses = memberAnalyses.filter(a => new Date(a.createdAt).getTime() > sevenDaysAgo);
+
+    if (recentAnalyses.length === 0) {
+       return {
+         status: 'insufficient',
+         stabilityLabel: 'Ciclo biográfico inativo',
+         changeLabel: null,
+         gapLabel: 'Nenhum registo consolidado nos últimos 7 dias.',
+         action: { label: 'Iniciar Sincronização', intent: 'sync_now' }
+       };
+    }
+
+    const priorityChange = selectPriorityChange(state, targetId);
+    let changeText = 'Sem variações críticas registadas.';
+    if (priorityChange) {
+        changeText = priorityChange.direction === 'improving' 
+          ? `Evolução consolidada: ${priorityChange.domainLabel}.` 
+          : `Foco sugerido na ${priorityChange.domainLabel}.`;
+    }
+
+    const aiConfidence = selectAiConfidence(state, targetId);
+    const gapText = aiConfidence.factors.negative[0] || 'Base de correlações estável e contínua.';
+
+    return {
+       status: priorityChange && priorityChange.priority === 'critical' ? 'good' : 'excellent',
+       stabilityLabel: `${recentAnalyses.length} registo(s) ativo(s) na janela de 7 dias.`,
+       changeLabel: changeText,
+       gapLabel: gapText,
+       action: { label: 'Avaliar Detalhe', intent: 'explore_analysis' }
+    };
 };

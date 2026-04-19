@@ -9,7 +9,8 @@ import {
   Platform,
 } from 'react-native';
 import { Typography, BlurView } from './Base';
-import { X, ChevronRight, Calendar } from 'lucide-react-native';
+import { StateSurface, SynthesisActionCard, WeeklyBriefingCard } from './ShellStateSurfaces';
+import { X, ChevronRight, Calendar, Users, Activity, Share2, ShieldAlert } from 'lucide-react-native';
 
 // O Modal agora foca-se exclusivamente na navegação temporal
 
@@ -19,19 +20,33 @@ import { Analysis } from '../store/types';
 interface Props {
   visible: boolean;
   onClose: () => void;
-  analyses?: Analysis[];
   activeAnalysisId?: string | null;
   onSelectAnalysis?: (id: string) => void;
+  onGlobalAction?: (intent: string) => void;
 }
 
-export const HistoricoModal: React.FC<Props> = ({ visible, onClose, analyses = [], activeAnalysisId, onSelectAnalysis }) => {
+import { useStore } from '../store/useStore';
+import * as Selectors from '../store/selectors';
+
+export const HistoricoModal: React.FC<Props> = ({ visible, onClose, activeAnalysisId, onSelectAnalysis, onGlobalAction }) => {
   const { width } = useWindowDimensions();
   const cardW = Math.min(width - 32, 460);
-  const chartW = cardW - 48;
+  const timeline = useStore(Selectors.selectUnifiedTimeline);
+  const dailySynthesis = useStore(state => Selectors.selectDailySynthesis(state));
+  const weeklyBriefing = useStore(state => Selectors.selectWeeklyBriefing(state));
 
   const overlayExtras = Platform.OS === 'web'
     ? { backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' } as any
     : {};
+
+  const renderIcon = (type: string, color: string) => {
+     if (type === 'measurement_received') return <Activity size={16} color={color} />;
+     if (type === 'sync_success') return <Calendar size={16} color={color} />;
+     if (type === 'context_updated') return <Share2 size={16} color={color} />;
+     if (type === 'invite_sent' || type === 'invite_accepted') return <Users size={16} color={color} />;
+     if (type === 'permission_changed') return <ShieldAlert size={16} color={color} />;
+     return <Activity size={16} color={color} />;
+  };
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -41,8 +56,8 @@ export const HistoricoModal: React.FC<Props> = ({ visible, onClose, analyses = [
         <View style={[styles.card, { width: cardW }]}>
           <View style={styles.header}>
             <View>
-              <Typography style={styles.headerTitle}>HISTÓRICO</Typography>
-              <Typography style={styles.headerSub}>Selecione a análise para visualizar os detalhes</Typography>
+              <Typography style={styles.headerTitle}>FEED CRONOLÓGICO</Typography>
+              <Typography style={styles.headerSub}>Visão integrada de atividade do membro</Typography>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <X size={20} color="rgba(255,255,255,0.5)" />
@@ -52,54 +67,82 @@ export const HistoricoModal: React.FC<Props> = ({ visible, onClose, analyses = [
           <View style={styles.divider} />
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            {/* O Modal foca-se agora exclusivamente na navegação temporal */}
-
-            <View style={styles.divider} />
             
+            {weeklyBriefing && weeklyBriefing.status !== 'empty' && (
+               <View style={{ padding: 16 }}>
+                  <WeeklyBriefingCard 
+                     briefing={weeklyBriefing} 
+                     onAction={(intent) => {
+                        onGlobalAction?.(intent);
+                        onClose();
+                     }} 
+                  />
+               </View>
+            )}
+
             <View style={{ paddingVertical: 8 }}>
-              <Typography style={[styles.headerTitle, { color: 'rgba(255,255,255,0.4)', marginBottom: 16 }]}>SELECIONAR ANÁLISE</Typography>
-              
-              {analyses.length > 0 ? (
-                analyses.map((analysis, idx) => {
-                  const isSelected = analysis.id === activeAnalysisId;
-                  const isLatest = idx === 0;
-                  const dateObj = new Date(analysis.analysisDate);
+              {timeline.length > 0 ? (
+                timeline.map((event, idx) => {
+                  const isAnalysis = event.type === 'sync_success' && event.id.startsWith('ana_');
+                  const actualAnalysisId = isAnalysis ? event.id.replace('ana_', '') : null;
+                  const isSelected = activeAnalysisId === actualAnalysisId;
+                  
+                  const dateObj = new Date(event.timestamp);
                   const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-                  const displayDate = `${dateObj.getDate().toString().padStart(2, '0')} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+                  const displayDate = `${dateObj.getDate().toString().padStart(2, '0')} ${months[dateObj.getMonth()]} às ${dateObj.getHours().toString().padStart(2,'0')}:${dateObj.getMinutes().toString().padStart(2,'0')}`;
 
                   return (
                     <TouchableOpacity
-                      key={analysis.id}
-                      onPress={() => onSelectAnalysis?.(analysis.id)}
+                      key={event.id}
+                      disabled={!isAnalysis}
+                      onPress={() => isAnalysis && actualAnalysisId && onSelectAnalysis?.(actualAnalysisId)}
                       style={[
                         styles.dateRow,
-                        isSelected && { borderColor: '#00F2FF', backgroundColor: 'rgba(0, 242, 255, 0.05)' }
+                        isSelected && { borderColor: '#00F2FF', backgroundColor: 'rgba(0, 242, 255, 0.05)' },
+                        !isAnalysis && { backgroundColor: 'transparent', borderWidth: 0, borderBottomWidth: 1, paddingVertical: 12, borderRadius: 0, paddingHorizontal: 0 }
                       ]}
                     >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                        <Calendar size={16} color={isSelected ? '#00F2FF' : 'rgba(255,255,255,0.3)'} />
-                        <View style={{ marginLeft: 12 }}>
-                          <Typography style={[styles.dateText, isSelected && styles.selectedDateText]}>
-                            {displayDate}
+                      <View style={{ flexDirection: 'row', alignItems: 'flex-start', flex: 1 }}>
+                        <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: `${event.color || '#ccc'}15`, justifyContent: 'center', alignItems: 'center' }}>
+                           {renderIcon(event.type, event.color || '#ccc')}
+                        </View>
+                        <View style={{ marginLeft: 12, flex: 1 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                             <Typography style={{ color: event.color || '#fff', fontSize: 13, fontWeight: '700' }}>
+                               {event.label}
+                             </Typography>
+                             <Typography style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10 }}>
+                               {displayDate}
+                             </Typography>
+                          </View>
+                          <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, lineHeight: 18 }}>
+                             {event.payload}
                           </Typography>
-                          {isLatest && (
+                          {isSelected && (
                             <View style={styles.latestBadge}>
-                              <Typography style={styles.latestText}>ÚLTIMA ANÁLISE</Typography>
+                              <Typography style={styles.latestText}>ANÁLISE EM VISTA</Typography>
                             </View>
                           )}
                         </View>
                       </View>
-                      <ChevronRight size={18} color={isSelected ? '#00F2FF' : 'rgba(255,255,255,0.2)'} />
+                      {isAnalysis && (
+                         <ChevronRight size={18} color={isSelected ? '#00F2FF' : 'rgba(255,255,255,0.2)'} style={{ marginLeft: 16, alignSelf: 'center' }} />
+                      )}
                     </TouchableOpacity>
                   );
                 })
               ) : (
-                <Typography style={{ color: 'rgba(255,255,255,0.2)', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>
-                  Nenhuma análise anterior encontrada.
-                </Typography>
+                <StateSurface 
+                   type="no_data" 
+                   title="SEM EVENTOS REGISTADOS"
+                   description="O feed cronológico é alimentado de forma autónoma através de capturas biográficas e contexto partilhado."
+                   style={{ paddingVertical: 40 }}
+                />
               )}
             </View>
           </ScrollView>
+
+
         </View>
       </BlurView>
     </Modal>
