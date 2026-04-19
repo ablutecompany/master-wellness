@@ -7,6 +7,13 @@ import { Activity, Zap, Target, Heart, Moon, Brain, User } from 'lucide-react-na
 
 const IconMap = { Activity, Zap, Target, Heart, Moon, Brain, User };
 
+export interface ThemeActionContract {
+  intent: 'sync_now' | 'view_trend' | 'explore_detail' | 'open_context' | 'complete_base' | 'none';
+  label: string;
+  reason: string;
+  isAvailable: boolean;
+}
+
 interface ThemeProps {
   title: string;
   paragraph1: string;
@@ -16,11 +23,11 @@ interface ThemeProps {
   score?: number;
   iconName?: keyof typeof IconMap;
   textValue?: string;
-  suggestions?: { title: string, desc: string }[];
+  suggestedAction?: ThemeActionContract;
   domain?: string;
   status?: string;
   isStale?: boolean;
-  onCtaPress?: () => void;
+  onCtaPress?: (intent: string) => void;
   trend?: 'improving' | 'worsening' | 'stable' | 'no_base';
   priority?: 'noise' | 'discrete' | 'relevant' | 'critical';
 }
@@ -99,7 +106,7 @@ export const ThemeCard: React.FC<ThemeProps> = ({
   score,
   iconName,
   textValue,
-  suggestions,
+  suggestedAction,
   domain,
   status,
   isStale,
@@ -159,49 +166,26 @@ export const ThemeCard: React.FC<ThemeProps> = ({
             >
               <Typography variant="caption" style={styles.refText}>REFERÊNCIAS</Typography>
             </TouchableOpacity>
-
-            {suggestions && suggestions.length > 0 && (
-              <TouchableOpacity 
-                style={[styles.refButton, styles.sugButton]} 
-                onPress={() => {
-                  setShowSugs(true);
-                  if (domain) {
-                     const { semanticOutputService } = require('../services/semantic-output');
-                     semanticOutputService.trackConsumption(domain, 'tapped');
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Typography variant="caption" style={styles.sugText}>AÇÕES SUGERIDAS</Typography>
-              </TouchableOpacity>
-            )}
           </View>
         )}
-        
-        <View style={styles.divider} />
 
-        <Typography style={styles.paragraph1}>{paragraph1}</Typography>
-        
-        <Typography variant="caption" style={styles.paragraph2}>
-          {paragraph2}
-        </Typography>
-
-        {(status === 'stale' || status === 'unavailable' || status === 'insufficient_data' || status === 'error') && (
-           <View style={{ marginTop: 24, backgroundColor: 'rgba(255,255,255,0.02)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
-             <TouchableOpacity 
-               activeOpacity={0.7} 
-               onPress={onCtaPress}
-               style={{ backgroundColor: 'rgba(0, 242, 255, 0.1)', borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.3)', paddingVertical: 12, borderRadius: 12, alignItems: 'center' }}
-             >
-                <Typography style={{ color: '#00F2FF', fontWeight: '700', fontSize: 12, letterSpacing: 1 }}>
-                  {status === 'error' ? 'TENTAR NOVAMENTE' :
-                   status === 'stale' ? 'ATUALIZAR AGORA' :
-                   status === 'unavailable' ? 'COMEÇAR REGISTO' :
-                   'ADICIONAR MAIS REGISTOS'}
-                </Typography>
-             </TouchableOpacity>
-           </View>
-        )}
+         {suggestedAction && suggestedAction.isAvailable && suggestedAction.intent !== 'none' && (
+            <View style={{ marginTop: 24, backgroundColor: 'rgba(255,255,255,0.02)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+              <View style={{ marginBottom: 12, flexDirection: 'row', alignItems: 'center' }}>
+                <Zap size={14} color="#00F2FF" style={{ marginRight: 8 }} />
+                <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>{suggestedAction.reason}</Typography>
+              </View>
+              <TouchableOpacity 
+                activeOpacity={0.7} 
+                onPress={() => onCtaPress && onCtaPress(suggestedAction.intent)}
+                style={{ backgroundColor: 'rgba(0, 242, 255, 0.1)', borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.3)', paddingVertical: 12, borderRadius: 12, alignItems: 'center' }}
+              >
+                 <Typography style={{ color: '#00F2FF', fontWeight: '700', fontSize: 12, letterSpacing: 1, textTransform: 'uppercase' }}>
+                   {suggestedAction.label}
+                 </Typography>
+              </TouchableOpacity>
+            </View>
+         )}
       </BlurView>
 
       {/* REFS MODAL */}

@@ -21,7 +21,7 @@ export interface UIInsight {
   refText1: string;
   refText2: string;
   suggestions?: { title: string; desc: string }[];
-  domain: 'sleep' | 'nutrition' | 'general' | 'performance' | 'energy' | 'recovery';
+  domain: string;
 }
 
 /**
@@ -48,9 +48,9 @@ export function getAiStatus() {
  * Ponto único de verdade para a UI com suporte a Stale e Enriquecimento IA.
  */
 export function getSemanticInsights(): UIInsight[] {
-  const bundle = semanticOutputService.getBundle();
   const state = semanticOutputService.getState();
-  const activeDomains = ['sleep', 'nutrition', 'general', 'energy', 'recovery', 'performance'];
+  const bundle = semanticOutputService.getBundle();
+  const activeDomains = Object.keys(bundle?.domains || {});
   
   const aiInsight = state.aiStatus === 'ready' ? state.aiInsight : null;
 

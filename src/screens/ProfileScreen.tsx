@@ -80,11 +80,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
          if (user?.country === undefined) updates.country = countryCode;
 
          if (Object.keys(updates).length > 0) {
-            if (useStore.getState().isGuestMode) {
-               applyProfileUpdates();
-            } else {
-               useStore.getState().updateAuthenticatedProfile(updates);
-            }
+            if (useStore.getState().isGuestMode) { useStore.getState().updateGuestProfile(updates); } else { useStore.getState().updateAuthenticatedProfile(updates); }
          }
        };
 
@@ -102,8 +98,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                    // Assign code even if empty, to halt loop
                    if (user?.country === undefined) updates.country = code;
                    if (Object.keys(updates).length > 0) {
-                      if (useStore.getState().isGuestMode) applyProfileUpdates();
-                      else useStore.getState().updateAuthenticatedProfile(updates);
+                      if (useStore.getState().isGuestMode) useStore.getState().updateGuestProfile(updates); else useStore.getState().updateAuthenticatedProfile(updates);
                    }
                  } catch { fetchCountryAndSave(tz || ''); }
                },
@@ -128,11 +123,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     if (Platform.OS === 'web') {
       const newName = window.prompt('Como gostarias de ser tratada?', defaultName);
       if (newName !== null && newName.trim() !== '') {
-        if (isGuestMode) {
-          applyProfileUpdates() });
-        } else {
-          useStore.getState().updateAuthenticatedProfile({ name: newName.trim() });
-        }
+        if (isGuestMode) { useStore.getState().updateGuestProfile({ name: newName.trim() }); } else { useStore.getState().updateAuthenticatedProfile({ name: newName.trim() }); }
       }
       return;
     }
@@ -146,11 +137,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           text: 'Salvar', 
           onPress: (newName) => {
             if (newName && newName.trim() !== '') {
-              if (isGuestMode) {
-                applyProfileUpdates() });
-              } else {
-                useStore.getState().updateAuthenticatedProfile({ name: newName.trim() });
-              }
+              if (isGuestMode) { useStore.getState().updateGuestProfile({ name: newName.trim() }); } else { useStore.getState().updateAuthenticatedProfile({ name: newName.trim() }); }
             }
           } 
         }
@@ -172,11 +159,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           alert('Formato inválido. Usa AAAA-MM-DD.');
           return;
         }
-        if (isGuestMode) {
-          applyProfileUpdates() });
-        } else {
-          useStore.getState().updateAuthenticatedProfile({ dateOfBirth: val.trim() });
-        }
+        if (isGuestMode) { useStore.getState().updateGuestProfile({ dateOfBirth: val.trim() }); } else { useStore.getState().updateAuthenticatedProfile({ dateOfBirth: val.trim() }); }
       }
       return;
     }
@@ -189,11 +172,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             Alert.alert('Erro', 'Formato inválido. Usa AAAA-MM-DD.');
             return;
           }
-          if (isGuestMode) {
-             applyProfileUpdates() });
-          } else {
-             useStore.getState().updateAuthenticatedProfile({ dateOfBirth: val.trim() });
-          }
+          if (isGuestMode) { useStore.getState().updateGuestProfile({ dateOfBirth: val.trim() }); } else { useStore.getState().updateAuthenticatedProfile({ dateOfBirth: val.trim() }); }
         }
       }}
     ], 'plain-text', current);
@@ -212,11 +191,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           alert('Altura inválida. Usa um número em cm (ex: 170).');
           return;
         }
-        if (isGuestMode) {
-          applyProfileUpdates();
-        } else {
-          useStore.getState().updateAuthenticatedProfile({ height: num });
-        }
+        if (isGuestMode) { useStore.getState().updateGuestProfile({ height: num }); } else { useStore.getState().updateAuthenticatedProfile({ height: num }); }
       }
       return;
     }
@@ -230,11 +205,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             Alert.alert('Erro', 'Altura inválida em cm.');
             return;
           }
-          if (isGuestMode) {
-             applyProfileUpdates();
-          } else {
-             useStore.getState().updateAuthenticatedProfile({ height: num });
-          }
+          if (isGuestMode) { useStore.getState().updateGuestProfile({ height: num }); } else { useStore.getState().updateAuthenticatedProfile({ height: num }); }
         }
       }}
     ], 'plain-text', current, 'numeric');
@@ -254,11 +225,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           return;
         }
         const newSex = cleanVal || null;
-        if (isGuestMode) {
-          applyProfileUpdates();
-        } else {
-          useStore.getState().updateAuthenticatedProfile({ sex: newSex as 'M' | 'F' | undefined });
-        }
+        if (isGuestMode) { useStore.getState().updateGuestProfile({ sex: newSex as 'M' | 'F' | undefined }); } else { useStore.getState().updateAuthenticatedProfile({ sex: newSex as 'M' | 'F' | undefined }); }
       }
       return;
     }
@@ -273,11 +240,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             return;
           }
           const newSex = cleanVal || null;
-          if (isGuestMode) {
-             applyProfileUpdates();
-          } else {
-             useStore.getState().updateAuthenticatedProfile({ sex: newSex as 'M' | 'F' | undefined });
-          }
+          if (isGuestMode) { useStore.getState().updateGuestProfile({ sex: newSex as 'M' | 'F' | undefined }); } else { useStore.getState().updateAuthenticatedProfile({ sex: newSex as 'M' | 'F' | undefined }); }
         }
       }}
     ], 'plain-text', current);
@@ -300,8 +263,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             measuredValue: measured,
             isDiscrepant: false
           };
-          if (isGuestMode) applyProfileUpdates();
-          else useStore.getState().updateAuthenticatedProfile({ weight: newWeightObj });
+          if (isGuestMode) useStore.getState().updateGuestProfile({ weight: newWeightObj }); else useStore.getState().updateAuthenticatedProfile({ weight: newWeightObj });
           return;
         }
         const num = parseFloat(val.trim().replace(',', '.'));
@@ -320,11 +282,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           isDiscrepant: discrepant
         };
 
-        if (isGuestMode) {
-          applyProfileUpdates();
-        } else {
-          useStore.getState().updateAuthenticatedProfile({ weight: newWeightObj });
-        }
+        if (isGuestMode) { useStore.getState().updateGuestProfile({ weight: newWeightObj }); } else { useStore.getState().updateAuthenticatedProfile({ weight: newWeightObj }); }
       }
       return;
     }
@@ -342,8 +300,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                measuredValue: measured,
                isDiscrepant: false
              };
-             if (isGuestMode) applyProfileUpdates();
-             else useStore.getState().updateAuthenticatedProfile({ weight: newWeightObj });
+             if (isGuestMode) useStore.getState().updateGuestProfile({ weight: newWeightObj }); else useStore.getState().updateAuthenticatedProfile({ weight: newWeightObj });
              return;
           }
           const num = parseFloat(val.trim().replace(',', '.'));
@@ -362,11 +319,9 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             isDiscrepant: discrepant
           };
 
-          if (isGuestMode) {
-             applyProfileUpdates();
-          } else {
-             useStore.getState().updateAuthenticatedProfile({ weight: newWeightObj });
-          }
+          if (isGuestMode) { useStore.getState().updateGuestProfile({ weight: newWeightObj }); } else { useStore.getState().updateAuthenticatedProfile({ weight: newWeightObj }); }
+        }
+      }}
     ], 'plain-text', current, 'numeric');
   };
 
@@ -406,8 +361,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         if (h && !isNaN(Number(h))) {
           const dob = window.prompt("A sua data de nascimento (YYYY-MM-DD):");
           if (dob) {
-            if (isGuestMode) applyProfileUpdates();
-            else useStore.getState().updateAuthenticatedProfile({ height: Number(h), dateOfBirth: dob });
+            if (isGuestMode) useStore.getState().updateGuestProfile({ height: Number(h), dateOfBirth: dob }); else useStore.getState().updateAuthenticatedProfile({ height: Number(h), dateOfBirth: dob });
           }
         }
       }
@@ -465,8 +419,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         <Typography variant="h2">Configurações</Typography>
         <Typography variant="caption" color={theme.colors.primary}>
           {userName} {isGuestMode && <Typography variant="caption">(Alterar Nome)</Typography>}
-      </Typography>
-
+        </Typography>
       </TouchableOpacity>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -1262,8 +1215,9 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           <View style={{ padding: 30, alignItems: 'center' }}>
              <Typography style={{ color: 'white', textAlign: 'center' }}>Aponta o quadrado central para o QR code no telemóvel do Dono do Agregado.</Typography>
           </View>
-        </SafeAreaView>
+                </SafeAreaView>
       </Modal>
+      </ScrollView>
     </Container>
   );
 };

@@ -1909,6 +1909,22 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
               // ── THEME CARD PAGE ──
               const { theme: t, idx } = item;
+              
+              let tAction = { intent: 'none', label: '', reason: '', isAvailable: false };
+              if (dataFreshness.status === 'no_access') {
+                 tAction = { intent: 'none', label: 'Gerir Permissões', reason: 'Acesso restrito à pool de biomarcadores', isAvailable: false };
+              } else if (t.status === 'insufficient_data' || dataFreshness.status === 'no_data') {
+                 tAction = { intent: 'sync_now', label: 'Sincronizar Recolha', reason: 'A IA carece de mais eventos para tradução limpa', isAvailable: true };
+              } else if (t.status === 'stale') {
+                 tAction = { intent: 'sync_now', label: 'Atualizar Biomarcadores', reason: 'Contexto em modo estático/degradado', isAvailable: true };
+              } else if (t.trend && (t.trend === 'improving' || t.trend === 'worsening')) {
+                 tAction = { intent: 'view_trend', label: 'Analisar Desvio Factual', reason: 'O sistema sinaliza uma variação orgânica latente', isAvailable: true };
+              } else if (t.domain && exportedContexts.some((c: any) => c.key && t.domain && String(c.key).toLowerCase().includes(String(t.domain).toLowerCase()))) {
+                 tAction = { intent: 'open_context', label: 'Recorrer a Contexto de Integração', reason: 'Esta área possui uma fonte externa subscrita com metadados', isAvailable: true };
+              } else {
+                 tAction = { intent: 'explore_detail', label: 'Rever Fisiologia Crua', reason: 'Monitorização estagnada no baseline orgânico esperado', isAvailable: true };
+              }
+
               return (
                 <View style={[styles.themePage, { height: panelH }]}>
                   <View style={styles.themeCardPageInner}>
@@ -1940,25 +1956,27 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       <ThemeCard
                         {...t}
                         iconName={t.iconName as any}
-                        onCtaPress={() => {
-                          const routeMap: Record<string, string> = {
-                            sleep: 'sleep-deep',
-                            nutrition: 'nutri-menu'
-                          };
-                          const appId = t.domain ? routeMap[t.domain] : null;
-                          if (appId) {
-                            const { MINI_APP_CATALOG } = require('../miniapps/catalog');
-                            const app = MINI_APP_CATALOG.find((a: any) => a.id === appId);
-                            if (app) {
-                              launchApp(app);
-                              if (Platform.OS === 'web') {
-                                setInlineApp(app);
-                              } else {
-                                navigation?.navigate('MiniApp', { app });
-                              }
+                        suggestedAction={tAction as any}
+                        onCtaPress={(intent: string) => {
+                          if (intent === 'sync_now') {
+                             closeThemes();
+                             setTimeout(() => handleSynthesisAction('sync_now'), 300);
+                          } else if (intent === 'explore_detail' || intent === 'view_trend') {
+                             setDataOpen(true);
+                          } else if (intent === 'open_context') {
+                            const routeMap: Record<string, string> = { sleep: 'sleep-deep', nutrition: 'nutri-menu' };
+                            const appId = t.domain ? routeMap[t.domain] : null;
+                            if (appId) {
+                               const { MINI_APP_CATALOG } = require('../miniapps/catalog');
+                               const app = MINI_APP_CATALOG.find((a: any) => a.id === appId);
+                               if (app) {
+                                 launchApp(app);
+                                 if (Platform.OS === 'web') setInlineApp(app);
+                                 else navigation?.navigate('MiniApp', { app });
+                               }
+                            } else {
+                               setDataOpen(true);
                             }
-                          } else {
-                            setDataOpen(true);
                           }
                         }}
                       />
