@@ -36,11 +36,15 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   const storeMeasurements = useStore(Selectors.selectMeasurements);
   const demoAnalysis = useStore(state => state.demoAnalysis);
   const isGuestMode = useStore(state => state.isGuestMode);
+  const hasResultsAccess = useStore(Selectors.selectHasResultsAccess);
+  const user = useStore(Selectors.selectUser);
 
   // Use the demo's mocked measurements preferentially if in sandbox mode
   const rawMeasurements = demoAnalysis 
     ? demoAnalysis.measurements.map(m => ({ id: m.id, type: m.type, sourceAppId: m.sourceAppId || 'demo', timestamp: m.recordedAt, value: { marker: m.marker, value: m.value, unit: m.unit } as any }))
     : storeMeasurements;
+
+  const measurements = rawMeasurements;
 
   const exams: Exam[] = rawMeasurements.map((m) => {
     const config = TYPE_MAP[m.type] || { name: m.type, unit: '', source: 'health_kit' };
@@ -119,9 +123,18 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.backButton}>
             <Typography style={styles.backText}>{'< Voltar'}</Typography>
           </TouchableOpacity>
-          <Typography variant="h2" style={styles.title}>Exames</Typography>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
+            <Typography variant="h2" style={[styles.title, { marginBottom: 0 }]}>Bioanálise</Typography>
+            {user?.name && (
+              <View style={{ backgroundColor: 'rgba(0,242,255,0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginLeft: 12 }}>
+                <Typography style={{ color: '#00F2FF', fontWeight: '800', fontSize: 13, letterSpacing: 1, textTransform: 'uppercase' }}>
+                  {user.name.split(' ')[0]}
+                </Typography>
+              </View>
+            )}
+          </View>
           <Typography style={styles.subtitle}>
-            Leitura em tempo real da sua infraestrutura biológica.
+            Leitura em tempo real da {user?.name ? `infraestrutura biológica selecionada.` : `sua infraestrutura biológica.`}
           </Typography>
         </View>
 
@@ -133,7 +146,17 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
         >
           <View style={{ minHeight: 300 }}>
 
-        {measurements.length === 0 ? (
+        {!hasResultsAccess ? (
+          <View style={[styles.emptyState, { backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 24, paddingVertical: 60, marginHorizontal: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }]}>
+            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+               <Typography style={{ fontSize: 24 }}>🔒</Typography>
+            </View>
+            <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 16, fontWeight: '800', marginBottom: 8, letterSpacing: 1, textTransform: 'uppercase' }}>Acesso Restrito</Typography>
+            <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', lineHeight: 22, paddingHorizontal: 30 }}>
+               Este membro optou por manter o seu histórico biográfico privado. Solicita a partilha de permissões para visionares esta lista orgânica.
+            </Typography>
+          </View>
+        ) : measurements.length === 0 ? (
           <View style={styles.emptyState}>
             <Typography style={styles.emptyText}>Ainda não existem medições disponíveis.</Typography>
             <Typography variant="caption" style={styles.emptySubtext}>

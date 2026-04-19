@@ -132,6 +132,7 @@ export default function App() {
   const profileStatus = useStore(state => state.profileStatus);
   const setProfileStatus = useStore(state => state.setProfileStatus);
   const setSessionToken = useStore(state => state.setSessionToken);
+  const setHousehold = useStore(state => state.setHousehold);
   
   const isGuestMode = useStore(state => state.isGuestMode);
   const setGuestMode = useStore(state => state.setGuestMode);
@@ -155,6 +156,9 @@ export default function App() {
         const data = await response.json();
         if (data.ok && data.profile) {
           setUser(data.profile);
+          if (data.profile.household) {
+            setHousehold(data.profile.household);
+          }
           setProfileStatus('loaded');
           return;
         }
@@ -179,6 +183,9 @@ export default function App() {
             const autoData = await autoMeRes.json();
             if (autoData.ok && autoData.profile) {
               setUser(autoData.profile);
+              if (autoData.profile.household) {
+                setHousehold(autoData.profile.household);
+              }
               setProfileStatus('loaded');
               return;
             }
@@ -248,6 +255,7 @@ export default function App() {
       else if (event === 'SIGNED_OUT') {
         setUser(null);
         setSessionToken(null);
+        setHousehold(null);
         setProfileStatus('idle');
         // T05 Purge
         useStore.getState().clearSensitiveState();
