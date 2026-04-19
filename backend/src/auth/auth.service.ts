@@ -37,11 +37,8 @@ export class AuthService {
         // ... include any other fields needed by frontend
       };
     } catch (err) {
-      if (err.code === 'P2025' || err.name === 'NotFoundError') {
-        return null;
-      }
-      console.error(`[getProfileByUid] Erro interno crítico ao ligar à Base de Dados:`, err.message);
-      throw new \nestjs\common\InternalServerErrorException('Falha estrutural de ligação à Base de Dados (Prisma)');
+      console.warn(`[getProfileByUid] Validation or lookup error for ${uid}, treating as missing:`, err.message);
+      return null;
     }
   }
 
