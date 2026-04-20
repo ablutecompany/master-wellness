@@ -214,6 +214,9 @@ export class UserService {
         create: {
           id: userId,
           height: height,
+          baseWeight: 0,
+          mainGoal: 'none',
+          activityLevel: 'sedentary'
         },
       });
     }
@@ -251,7 +254,7 @@ export class UserService {
 
     const parsedManualWeight = p.manualWeight !== null ? Number(p.manualWeight) : null;
     let weightSource: 'measured' | 'manual' | 'missing' = 'missing';
-    let currentWeightValue = null;
+    let currentWeightValue: number | null = null;
     
     if (parsedManualWeight !== null) {
       weightSource = 'manual';

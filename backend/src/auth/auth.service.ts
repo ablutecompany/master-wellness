@@ -49,7 +49,7 @@ export class AuthService {
 
       const parsedManualWeight = p.manualWeight !== null ? Number(p.manualWeight) : null;
       let weightSource: 'measured' | 'manual' | 'missing' = 'missing';
-      let currentWeightValue = null;
+      let currentWeightValue: number | null = null;
       
       if (parsedManualWeight !== null) {
         weightSource = 'manual';
