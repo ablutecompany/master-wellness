@@ -30,6 +30,7 @@ interface ThemeProps {
   onCtaPress?: (intent: string) => void;
   trend?: 'improving' | 'worsening' | 'stable' | 'no_base';
   priority?: 'noise' | 'discrete' | 'relevant' | 'critical';
+  suggestions?: Array<{ title: string; desc: string }>;
 }
 
 const ScoreGauge = ({ score, iconName, label }: { score: number, iconName?: keyof typeof IconMap, label?: string }) => {
@@ -112,7 +113,8 @@ export const ThemeCard: React.FC<ThemeProps> = ({
   isStale,
   onCtaPress,
   trend,
-  priority
+  priority,
+  suggestions,
 }) => {
   const [showRefs, setShowRefs] = useState(false);
   const [showSugs, setShowSugs] = useState(false);
