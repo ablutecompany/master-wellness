@@ -12,7 +12,7 @@ export class AuthController {
    */
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  async me(@Request() req: any) {
+  async me(@Request() req: any): Promise<any> {
     const userId = req.user.userId;
     const profile = await this.authService.getProfileByUid(userId);
     
@@ -29,7 +29,7 @@ export class AuthController {
    */
   @UseGuards(JwtAuthGuard)
   @Post('initialize')
-  async initialize(@Request() req: any) {
+  async initialize(@Request() req: any): Promise<any> {
     try {
       const userId = req.user.userId;
       const email = req.user.email;
