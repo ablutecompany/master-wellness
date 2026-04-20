@@ -1103,7 +1103,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   return (
     <Container safe style={styles.container}>
       <View style={{ backgroundColor: 'red', padding: 8, zIndex: 9999, alignItems: 'center' }}>
-        <Typography style={{ color: 'white', fontWeight: 'bold' }}>!! BUILD SAFE MODE (AI OFF) !!</Typography>
+        <Typography style={{ color: 'white', fontWeight: 'bold' }}>SAFE MODE RUNTIME STEP 3</Typography>
       </View>
       {/* ── FULL SCREEN BACKGROUND ESTÁTICO NEGRO ───────────────────────────────── */}
       <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#020306' }]} pointerEvents="none">
