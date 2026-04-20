@@ -11,6 +11,7 @@ import {
   X
 } from 'lucide-react-native';
 import { useStore } from '../store/useStore';
+import { useShallow } from 'zustand/react/shallow';
 import * as Selectors from '../store/selectors';
 import { GatingOverlay } from '../components/GatingOverlay';
 import { StateSurface } from '../components/ShellStateSurfaces';
@@ -39,7 +40,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   const isGuestMode = useStore(state => state.isGuestMode);
   const hasResultsAccess = useStore(Selectors.selectHasResultsAccess);
   const user = useStore(Selectors.selectUser);
-  const dailySynthesis = useStore(state => Selectors.selectDailySynthesis(state));
+  const dailySynthesis = useStore(useShallow(state => Selectors.selectDailySynthesis(state)));
 
   // Use the demo's mocked measurements preferentially if in sandbox mode
   const rawMeasurements = demoAnalysis 

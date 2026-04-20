@@ -36,6 +36,7 @@ import * as Selectors from '../store/selectors';
 import { getSemanticInsights, getSemanticStatus, getAiStatus } from '../services/insights';
 import { computeSemanticFromMeasurements } from '../services/semantic-output/analysis-engine';
 import { AiInsight } from '../services/semantic-output/types';
+import { useShallow } from 'zustand/react/shallow';
 import { ENV } from '../config/env';
 import { Analysis } from '../store/store';
 import { aiInsightsService } from '../services/insights/ai-insights.service';
@@ -151,15 +152,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const activeMemberId = useStore(Selectors.selectActiveMemberId);
   const credits = useStore(Selectors.selectCredits);
   const measurements = useStore(Selectors.selectMeasurements);
-  const exportedContexts = useStore(Selectors.selectExportedContexts);
+  const exportedContexts = useStore(useShallow(Selectors.selectExportedContexts));
   const installedAppIds = useStore(Selectors.selectInstalledAppIds);
   const isGuestMode = useStore(state => state.isGuestMode);
   const guestProfile = useStore(state => state.guestProfile);
   const isMeasuring = useStore(Selectors.selectIsMeasuring);
   const isNfcLoading = useStore(Selectors.selectIsNfcLoading);
   const hasResultsAccess = useStore(Selectors.selectHasResultsAccess);
-  const aiConfidence = useStore(state => Selectors.selectAiConfidence(state));
-  const dailySynthesis = useStore(state => Selectors.selectDailySynthesis(state));
+  const aiConfidence = useStore(useShallow(state => Selectors.selectAiConfidence(state)));
+  const dailySynthesis = useStore(useShallow(state => Selectors.selectDailySynthesis(state)));
 
   const setUser = useStore(state => state.setUser);
   const setSessionToken = useStore(state => state.setSessionToken);

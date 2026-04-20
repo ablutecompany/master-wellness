@@ -11,6 +11,7 @@ import {
 import { Typography, BlurView } from './Base';
 import { StateSurface, SynthesisActionCard, WeeklyBriefingCard } from './ShellStateSurfaces';
 import { X, ChevronRight, Calendar, Users, Activity, Share2, ShieldAlert } from 'lucide-react-native';
+import { useShallow } from 'zustand/react/shallow';
 
 // O Modal agora foca-se exclusivamente na navegação temporal
 
@@ -31,9 +32,9 @@ import * as Selectors from '../store/selectors';
 export const HistoricoModal: React.FC<Props> = ({ visible, onClose, activeAnalysisId, onSelectAnalysis, onGlobalAction }) => {
   const { width } = useWindowDimensions();
   const cardW = Math.min(width - 32, 460);
-  const timeline = useStore(Selectors.selectUnifiedTimeline);
-  const dailySynthesis = useStore(state => Selectors.selectDailySynthesis(state));
-  const weeklyBriefing = useStore(state => Selectors.selectWeeklyBriefing(state));
+  const timeline = useStore(useShallow(Selectors.selectUnifiedTimeline));
+  const dailySynthesis = useStore(useShallow(state => Selectors.selectDailySynthesis(state)));
+  const weeklyBriefing = useStore(useShallow(state => Selectors.selectWeeklyBriefing(state)));
 
   const overlayExtras = Platform.OS === 'web'
     ? { backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' } as any
