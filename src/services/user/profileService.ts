@@ -6,9 +6,11 @@ export class ProfileService {
    */
   static async updateProfile(token: string, updates: { name?: string; goals?: string[]; [key: string]: any }): Promise<{ ok: boolean, profile?: any }> {
     try {
+      const allowedKeys = ['name', 'goals', 'dateOfBirth', 'height', 'sex', 'timezone', 'country', 'weight'];
       const payload: any = {};
-      if ('name' in updates) payload.name = updates.name;
-      if ('goals' in updates) payload.goals = updates.goals;
+      for (const k of allowedKeys) {
+        if (k in updates) payload[k] = updates[k];
+      }
 
       console.warn(`[DEV NAME 3] payload to backend:`, JSON.stringify(payload));
 
