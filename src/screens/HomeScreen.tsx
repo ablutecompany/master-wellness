@@ -159,6 +159,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const isNfcLoading = useStore(Selectors.selectIsNfcLoading);
   const hasResultsAccess = useStore(Selectors.selectHasResultsAccess);
   const aiConfidence = useStore(state => Selectors.selectAiConfidence(state));
+  const dailySynthesis = useStore(state => Selectors.selectDailySynthesis(state));
 
   const setUser = useStore(state => state.setUser);
   const setSessionToken = useStore(state => state.setSessionToken);
