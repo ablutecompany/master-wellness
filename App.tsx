@@ -124,22 +124,6 @@ class ErrorBoundary extends React.Component {
 
 
 export default function App() {
-  
-  // ==========================================
-  // MARCADOR INEQUÍVOCO ROOT (SAFE BUILD)
-  // Instalado temporariamente para provar Vercel cache bypass.
-  // ==========================================
-  return (
-    <View style={{ flex: 1, backgroundColor: 'red', justifyContent: 'center', alignItems: 'center', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999999 }}>
-      <Text style={{ color: 'white', fontSize: 40, fontWeight: '900', textAlign: 'center', marginBottom: 20 }}>
-        SAFE BUILD
-      </Text>
-      <Text style={{ color: 'white', fontSize: 24, fontWeight: '700', textAlign: 'center' }}>
-        HASH: live_marker
-      </Text>
-    </View>
-  );
-
   const [session, setSession] = React.useState<Session | null>(null);
   const [initialized, setInitialized] = React.useState(false);
   
@@ -358,19 +342,7 @@ export default function App() {
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'red', zIndex: 9999999, elevation: 9999, justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ color: 'white', fontSize: 42, fontWeight: '900', textAlign: 'center', marginBottom: 20 }}>
-          SAFE BUILD a92f4c
-        </Text>
-        <Text style={{ color: 'white', fontSize: 24, fontWeight: '700', textAlign: 'center', marginBottom: 40 }}>
-          CACHE BYPASSED
-        </Text>
-        <TouchableOpacity style={{ backgroundColor: 'black', padding: 20, borderRadius: 10 }} onPress={() => window.location.reload(true)}>
-          <Text style={{ color: 'white', fontWeight: 'bold' }}>HARD REFRESH</Text>
-        </TouchableOpacity>
-      </View>
-      <ErrorBoundary>
+    <ErrorBoundary>
       <NavigationContainer linking={linking} theme={DarkTheme}>
         <StatusBar style="light" />
         <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -403,7 +375,6 @@ export default function App() {
         </Stack.Navigator>
       </NavigationContainer>
     </ErrorBoundary>
-    </View>
   );
 }
 
