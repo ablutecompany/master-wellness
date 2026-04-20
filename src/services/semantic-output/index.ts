@@ -344,7 +344,7 @@ export class SemanticOutputService {
 
   private static adaptBundle(raw: any): Record<string, SemanticDomainView> {
     const adapted: Record<string, SemanticDomainView> = {};
-    const domainsToMap = ['sleep', 'nutrition', 'general', 'energy', 'recovery', 'performance'];
+    const domainsToMap = Object.keys(raw?.domains || {});
 
     for (const d of domainsToMap) {
       const source = raw.domains?.[d];

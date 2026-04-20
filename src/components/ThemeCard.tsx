@@ -7,6 +7,13 @@ import { Activity, Zap, Target, Heart, Moon, Brain, User } from 'lucide-react-na
 
 const IconMap = { Activity, Zap, Target, Heart, Moon, Brain, User };
 
+export interface ThemeActionContract {
+  intent: 'sync_now' | 'view_trend' | 'explore_detail' | 'open_context' | 'complete_base' | 'none';
+  label: string;
+  reason: string;
+  isAvailable: boolean;
+}
+
 interface ThemeProps {
   title: string;
   paragraph1: string;
@@ -16,11 +23,13 @@ interface ThemeProps {
   score?: number;
   iconName?: keyof typeof IconMap;
   textValue?: string;
-  suggestions?: { title: string, desc: string }[];
+  suggestedAction?: ThemeActionContract;
   domain?: string;
   status?: string;
   isStale?: boolean;
-  onCtaPress?: () => void;
+  onCtaPress?: (intent: string) => void;
+  trend?: 'improving' | 'worsening' | 'stable' | 'no_base';
+  priority?: 'noise' | 'discrete' | 'relevant' | 'critical';
 }
 
 const ScoreGauge = ({ score, iconName, label }: { score: number, iconName?: keyof typeof IconMap, label?: string }) => {
@@ -97,11 +106,13 @@ export const ThemeCard: React.FC<ThemeProps> = ({
   score,
   iconName,
   textValue,
-  suggestions,
+  suggestedAction,
   domain,
   status,
   isStale,
-  onCtaPress
+  onCtaPress,
+  trend,
+  priority
 }) => {
   const [showRefs, setShowRefs] = useState(false);
   const [showSugs, setShowSugs] = useState(false);
@@ -119,6 +130,21 @@ export const ThemeCard: React.FC<ThemeProps> = ({
         <View style={styles.headerRow}>
           <View style={styles.headerText}>
             <Typography variant="h3" style={styles.title}>{title}</Typography>
+            {!(status === 'stale' || status === 'unavailable' || status === 'insufficient_data' || status === 'error') && trend && (
+               <Typography style={{ 
+                 color: priority === 'critical' ? '#FF3366' : priority === 'relevant' ? '#FFA500' : 'rgba(255,255,255,0.4)', 
+                 fontSize: 13, 
+                 marginTop: 4, 
+                 fontStyle: 'italic',
+                 fontWeight: priority === 'critical' || priority === 'relevant' ? '700' : '400'
+               }}>
+                 {priority === 'critical' || priority === 'relevant' ? 'Mudança Principal: ' : ''}
+                 {trend === 'improving' ? 'Melhoria face à última leitura' :
+                  trend === 'worsening' ? 'Agravamento face à última leitura' :
+                  trend === 'stable' ? 'Estável' :
+                  'Sem base comparável'}
+               </Typography>
+            )}
           </View>
           {score !== undefined && (
             <ScoreGauge score={score} iconName={iconName} label={title} />
@@ -140,49 +166,26 @@ export const ThemeCard: React.FC<ThemeProps> = ({
             >
               <Typography variant="caption" style={styles.refText}>REFERÊNCIAS</Typography>
             </TouchableOpacity>
-
-            {suggestions && suggestions.length > 0 && (
-              <TouchableOpacity 
-                style={[styles.refButton, styles.sugButton]} 
-                onPress={() => {
-                  setShowSugs(true);
-                  if (domain) {
-                     const { semanticOutputService } = require('../services/semantic-output');
-                     semanticOutputService.trackConsumption(domain, 'tapped');
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <Typography variant="caption" style={styles.sugText}>AÇÕES SUGERIDAS</Typography>
-              </TouchableOpacity>
-            )}
           </View>
         )}
-        
-        <View style={styles.divider} />
 
-        <Typography style={styles.paragraph1}>{paragraph1}</Typography>
-        
-        <Typography variant="caption" style={styles.paragraph2}>
-          {paragraph2}
-        </Typography>
-
-        {(status === 'stale' || status === 'unavailable' || status === 'insufficient_data' || status === 'error') && (
-           <View style={{ marginTop: 24, backgroundColor: 'rgba(255,255,255,0.02)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
-             <TouchableOpacity 
-               activeOpacity={0.7} 
-               onPress={onCtaPress}
-               style={{ backgroundColor: 'rgba(0, 242, 255, 0.1)', borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.3)', paddingVertical: 12, borderRadius: 12, alignItems: 'center' }}
-             >
-                <Typography style={{ color: '#00F2FF', fontWeight: '700', fontSize: 12, letterSpacing: 1 }}>
-                  {status === 'error' ? 'TENTAR NOVAMENTE' :
-                   status === 'stale' ? 'ATUALIZAR AGORA' :
-                   status === 'unavailable' ? 'COMEÇAR REGISTO' :
-                   'ADICIONAR MAIS REGISTOS'}
-                </Typography>
-             </TouchableOpacity>
-           </View>
-        )}
+         {suggestedAction && suggestedAction.isAvailable && suggestedAction.intent !== 'none' && (
+            <View style={{ marginTop: 24, backgroundColor: 'rgba(255,255,255,0.02)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}>
+              <View style={{ marginBottom: 12, flexDirection: 'row', alignItems: 'center' }}>
+                <Zap size={14} color="#00F2FF" style={{ marginRight: 8 }} />
+                <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>{suggestedAction.reason}</Typography>
+              </View>
+              <TouchableOpacity 
+                activeOpacity={0.7} 
+                onPress={() => onCtaPress && onCtaPress(suggestedAction.intent)}
+                style={{ backgroundColor: 'rgba(0, 242, 255, 0.1)', borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.3)', paddingVertical: 12, borderRadius: 12, alignItems: 'center' }}
+              >
+                 <Typography style={{ color: '#00F2FF', fontWeight: '700', fontSize: 12, letterSpacing: 1, textTransform: 'uppercase' }}>
+                   {suggestedAction.label}
+                 </Typography>
+              </TouchableOpacity>
+            </View>
+         )}
       </BlurView>
 
       {/* REFS MODAL */}
@@ -197,17 +200,17 @@ export const ThemeCard: React.FC<ThemeProps> = ({
             <View style={styles.refModal}>
               <View style={{ marginBottom: 20 }}>
                  <Typography style={{ color: '#00F2FF', fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>1. Como chegámos aqui</Typography>
-                 <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 20 }}>Cruzámos o seu histórico recente de sinais biográficos com a baseline estabelecida para si, em vez de compararmos com médias populacionais genéricas.</Typography>
+                 <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 20 }}>{refText1 || 'Avaliação baseada no contexto global recolhido.'}</Typography>
               </View>
 
               <View style={{ marginBottom: 20 }}>
                  <Typography style={{ color: '#00F2FF', fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>2. Sinais que mais pesaram</Typography>
-                 <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 20 }}>Esta interpretação valorizou primariamente a estabilidade cronológica face ao dia anterior e as assimetrias detetadas nos seus tempos de pausa e resposta metabólica.</Typography>
+                 <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 20 }}>{refText2 || 'As leituras contínuas do sistema biográfico e a estabilidade cronológica.'}</Typography>
               </View>
 
               <View style={{ marginBottom: 24 }}>
                  <Typography style={{ color: '#00F2FF', fontSize: 13, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>3. Limites desta leitura</Typography>
-                 <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 20 }}>Uma leitura contextual não substitui avaliação técnica. Variáveis isoladas imprevisíveis (como stress súbito) não têm representação mecânica absoluta.</Typography>
+                 <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 20 }}>Uma leitura contextual não substitui avaliação técnica independente. Variáveis isoladas imprevisíveis (como stress súbito ambiental) não têm representação mecânica absoluta na timeline clínica.</Typography>
               </View>
 
               <TouchableOpacity 

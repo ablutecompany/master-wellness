@@ -1,10 +1,10 @@
-import { Injectable, UnauthorizedException, ConflictException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserRole } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Obter perfil do utilizador diretamente da tabela "profiles" via UUID do Supabase.
@@ -15,33 +15,79 @@ export class AuthService {
    */
   async getProfileByUid(uid: string) {
     try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: uid },
-        include: { profile: true }
-      });
+      try { await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS household_data JSONB`); } catch (e) {}
+      const profiles = await this.prisma.$queryRaw<any[]>`
+        SELECT id, email, name, TO_CHAR(date_of_birth, 'YYYY-MM-DD') as "dateOfBirth", sex, timezone, country, height as "heightCm", weight as "manualWeight", active_analysis_id as "activeAnalysisId", household_data as "householdData"
+        FROM public.profiles 
+        WHERE id = ${uid}::uuid
+      `;
+      
+      if (!profiles || profiles.length === 0) return null;
+      
+      const p = profiles[0];
+      
+      let pPrisma: any = null;
+      try {
+         // Silently safely attempt to read the rest from UserProfile
+         pPrisma = await this.prisma.userProfile.findUnique({ where: { id: uid } });
+      } catch (e) {}
 
-      if (!user) return null;
+      let latestMeasuredWeight: number | null = null;
+      try {
+        const measurements = await this.prisma.$queryRaw<any[]>`
+          SELECT m.value
+          FROM public.analysis_measurements m
+          JOIN public.analyses a ON m.analysis_id = a.id
+          WHERE a.owner_id = ${uid}::uuid AND m.type = 'weight'
+          ORDER BY m.measured_at DESC, m.created_at DESC
+          LIMIT 1
+        `;
+        if (measurements && measurements.length > 0 && measurements[0].value) {
+          latestMeasuredWeight = Number(measurements[0].value);
+        }
+      } catch (e) {}
 
-      const p = user.profile;
+      const parsedManualWeight = p.manualWeight !== null ? Number(p.manualWeight) : null;
+      let weightSource: 'measured' | 'manual' | 'missing' = 'missing';
+      let currentWeightValue = null;
+      
+      if (parsedManualWeight !== null) {
+        weightSource = 'manual';
+        currentWeightValue = parsedManualWeight;
+      } else if (latestMeasuredWeight !== null) {
+        weightSource = 'measured';
+        currentWeightValue = latestMeasuredWeight;
+      }
+
+      const isDiscrepant = parsedManualWeight !== null && latestMeasuredWeight !== null && Math.abs(parsedManualWeight - latestMeasuredWeight) >= 2.5;
+
+      const weightObj = {
+        value: currentWeightValue,
+        source: weightSource,
+        manualValue: parsedManualWeight,
+        measuredValue: latestMeasuredWeight,
+        isDiscrepant
+      };
 
       return {
-        id: user.id,
-        email: user.email,
-        name: user.name,
+        id: p.id,
+        email: p.email,
+        name: p.name,
         // Canonical shape mapping
-        goals: p?.secondaryGoals || [],
-        height: p?.height || null,
-        baseWeight: p?.baseWeight || null,
-        mainGoal: p?.mainGoal || null,
-        activeAnalysisId: p?.activeAnalysisId,
-        // ... include any other fields needed by frontend
+        height: p.heightCm !== null ? Number(p.heightCm) : (pPrisma?.height || null),
+        dateOfBirth: p.dateOfBirth || null,
+        sex: p.sex || null,
+        timezone: p.timezone || null,
+        country: p.country || null,
+        weight: weightObj,
+        baseWeight: pPrisma?.baseWeight || null,
+        mainGoal: pPrisma?.mainGoal || null,
+        activeAnalysisId: p.activeAnalysisId,
+        household: p.householdData || null
       };
     } catch (err) {
-      if (err.code === 'P2025' || err.name === 'NotFoundError') {
-        return null;
-      }
-      console.error(`[getProfileByUid] Erro interno crítico ao ligar à Base de Dados:`, err.message);
-      throw new InternalServerErrorException('Falha estrutural de ligação à Base de Dados (Prisma)');
+      console.warn(`[getProfileByUid] Validation or lookup error for ${uid}, treating as missing:`, err.message);
+      return null;
     }
   }
 

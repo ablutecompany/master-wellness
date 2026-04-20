@@ -1,19 +1,45 @@
 import { MiniAppManifest, Permission, MiniAppEvent, AppContributionEvent, ContributionEventType } from '../miniapps/types';
 
 export interface UserProfile {
+  id: string; // The canonical ID of this specific profile
   name: string;
-  goals: string[];
   habits?: string[];
   age?: number;
-  weight?: number;
+  weight?: SourcedMetric<number>;
   height?: number;
+  dateOfBirth?: string;
+  sex?: 'M' | 'F';
+  timezone?: string;
+  country?: string;
   activeAnalysisId?: string;
 }
 
+export interface SourcedMetric<T = number> {
+  value: T | null;
+  source: 'measured' | 'manual' | 'derived' | 'missing';
+  manualValue: T | null;
+  measuredValue: T | null;
+  isDiscrepant: boolean;
+}
 export type ProfileStatus = 'idle' | 'loading' | 'loaded' | 'error' | 'missing';
+
+export type ContextCategory = 'domain_goals' | 'physiological' | 'behavioral' | 'temporary_session' | 'persistent_preference';
+
+export interface AppExportedContext {
+  id: string;             // unique identifier (e.g. miniappId_domain_key)
+  memberId: string;       // Strict boundary: context belongs to a specific member
+  appId: string;          // the source mini-app that generated it
+  category: ContextCategory;
+  key: string;            // unique key for the app space (e.g. "cycle_phase")
+  value: any;             // serialized context payload 
+  isPersistent: boolean;  // false -> memory only for session; true -> saved to DB/LocalStorage
+  updatedAt: string;
+  expiresAt?: string;     // optional expiration timestamp for ephemeral states
+}
 
 export interface Measurement {
   id: string;
+  memberId: string; // Ownership
   type: 'urinalysis' | 'ecg' | 'ppg' | 'weight' | 'temp';
   value: any;
   timestamp: number;
@@ -21,6 +47,7 @@ export interface Measurement {
 
 export interface AnalysisMeasurement {
   id: string;
+  memberId?: string; // Strict ownership mapping
   type: 'urinalysis' | 'ecg' | 'ppg' | 'temp' | 'weight' | 'fecal';
   marker?: string;
   value: string;
@@ -38,6 +65,7 @@ export interface AnalysisEvent {
 
 export interface Analysis {
   id: string;
+  memberId: string; // Strict ownership
   label?: string;
   analysisDate: string;
   source: 'device' | 'manual' | 'demo';
@@ -47,12 +75,45 @@ export interface Analysis {
   createdAt: string;
 }
 
+export type HouseholdRole = 'owner' | 'admin' | 'member' | 'dependent';
+export type VisibilityLevel = 'private' | 'shared_household' | 'shared_selective';
+
+export interface MemberPermissions {
+  results: VisibilityLevel;
+  context: VisibilityLevel;
+}
+
+export interface HouseholdMember {
+  id: string;
+  userId?: string; // if a registered user
+  role: HouseholdRole;
+  profile: UserProfile; 
+  permissions: MemberPermissions;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Household {
+  id: string;
+  rootMemberId: string;
+  invitations?: any[];
+  members: HouseholdMember[];
+  createdAt: string;
+}
+
 export interface AppState {
   user: UserProfile | null;
   authAccount: any | null;
   profileStatus: ProfileStatus;
   guestProfile: UserProfile | null;
   isGuestMode: boolean;
+  sessionToken?: string | null;
+  
+  // Household boundary
+  household: Household | null;
+  activeMemberId: string | null;  // Defines whose context/measurements are being shown
+
+  exportedContexts: AppExportedContext[];
   measurements: Measurement[];
   analyses: Analysis[];
   activeAnalysisId: string | null;
@@ -72,6 +133,12 @@ export interface AppState {
   setGuestMode: (isGuest: boolean) => void;
   updateGuestProfile: (profile: Partial<UserProfile>) => void;
   updateAuthenticatedProfile: (updates: Partial<UserProfile>) => Promise<boolean>;
+
+  setHousehold: (household: Household | null) => void;
+  setActiveMember: (memberId: string | null) => void;
+
+  setExportedContext: (context: AppExportedContext) => void;
+  clearExportedContext: (id: string) => void;
   setDemoAnalysis: (analysis: Analysis | null) => void;
   addMeasurement: (measurement: Measurement) => void;
   addAnalysis: (analysis: Analysis) => void;

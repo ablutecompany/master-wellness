@@ -32,6 +32,7 @@
     "expo": "~55.0.8",
     "expo-av": "^16.0.8",
     "expo-blur": "^55.0.10",
+    "expo-camera": "~55.0.15",
     "expo-font": "~55.0.4",
     "expo-linear-gradient": "^55.0.9",
     "expo-nfc": "^0.0.0",

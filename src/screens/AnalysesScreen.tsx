@@ -13,6 +13,7 @@ import {
 import { useStore } from '../store/useStore';
 import * as Selectors from '../store/selectors';
 import { GatingOverlay } from '../components/GatingOverlay';
+import { StateSurface } from '../components/ShellStateSurfaces';
 
 interface Exam {
   id: string;
@@ -36,11 +37,16 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   const storeMeasurements = useStore(Selectors.selectMeasurements);
   const demoAnalysis = useStore(state => state.demoAnalysis);
   const isGuestMode = useStore(state => state.isGuestMode);
+  const hasResultsAccess = useStore(Selectors.selectHasResultsAccess);
+  const user = useStore(Selectors.selectUser);
+  const dailySynthesis = useStore(state => Selectors.selectDailySynthesis(state));
 
   // Use the demo's mocked measurements preferentially if in sandbox mode
   const rawMeasurements = demoAnalysis 
     ? demoAnalysis.measurements.map(m => ({ id: m.id, type: m.type, sourceAppId: m.sourceAppId || 'demo', timestamp: m.recordedAt, value: { marker: m.marker, value: m.value, unit: m.unit } as any }))
     : storeMeasurements;
+
+  const measurements = rawMeasurements;
 
   const exams: Exam[] = rawMeasurements.map((m) => {
     const config = TYPE_MAP[m.type] || { name: m.type, unit: '', source: 'health_kit' };
@@ -119,9 +125,18 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.backButton}>
             <Typography style={styles.backText}>{'< Voltar'}</Typography>
           </TouchableOpacity>
-          <Typography variant="h2" style={styles.title}>Exames</Typography>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap' }}>
+            <Typography variant="h2" style={[styles.title, { marginBottom: 0 }]}>Bioanálise</Typography>
+            {user?.name && (
+              <View style={{ backgroundColor: 'rgba(0,242,255,0.1)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginLeft: 12 }}>
+                <Typography style={{ color: '#00F2FF', fontWeight: '800', fontSize: 13, letterSpacing: 1, textTransform: 'uppercase' }}>
+                  {user.name.split(' ')[0]}
+                </Typography>
+              </View>
+            )}
+          </View>
           <Typography style={styles.subtitle}>
-            Leitura em tempo real da sua infraestrutura biológica.
+            Leitura em tempo real da {user?.name ? `infraestrutura biológica selecionada.` : `sua infraestrutura biológica.`}
           </Typography>
         </View>
 
@@ -133,13 +148,32 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
         >
           <View style={{ minHeight: 300 }}>
 
-        {measurements.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Typography style={styles.emptyText}>Ainda não existem medições disponíveis.</Typography>
-            <Typography variant="caption" style={styles.emptySubtext}>
-               As tuas leituras sincronizadas aparecerão aqui assim que forem capturadas.
-            </Typography>
-          </View>
+        {!hasResultsAccess ? (
+           <StateSurface 
+              type="restricted"
+              title="Acesso Restrito"
+              description="Este membro optou por manter o seu histórico biográfico privado. Solicita a partilha de permissões para visionares esta lista orgânica."
+              actionLabel={dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.label : undefined}
+              actionIntent={dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.intent : undefined}
+              onAction={(intent) => {
+                 if (intent === 'sync_now') useStore.getState().setIsMeasuring(true);
+                 navigation.navigate('Home');
+              }}
+              color="#FF6060"
+           />
+        ) : measurements.length === 0 ? (
+           <StateSurface 
+              type="no_data"
+              title="NENHUMA MEDIÇÃO"
+              description="As tuas leituras sincronizadas aparecerão aqui assim que forem capturadas."
+              actionLabel={dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.label : undefined}
+              actionIntent={dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.intent : undefined}
+              onAction={(intent) => {
+                 if (intent === 'sync_now') useStore.getState().setIsMeasuring(true);
+                 navigation.navigate('Home');
+              }}
+              color="#00F2FF"
+           />
         ) : (
           <>
             {renderSection('METABOLISMO & DADOS CORE', coreExams)}

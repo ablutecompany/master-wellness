@@ -1,4 +1,4 @@
-import { Controller, Patch, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Patch, Get, Body, UseGuards, Request } from '@nestjs/common';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -14,7 +14,7 @@ export class UserController {
   @Patch('profile')
   async updateProfile(
     @Request() req: any,
-    @Body() body: { name?: string; goals?: string[] },
+    @Body() body: { name?: string; dateOfBirth?: string; height?: number; sex?: string; timezone?: string; country?: string; weight?: { manualValue?: number | null } },
   ) {
     try {
       const userId = req.user.userId;
@@ -40,5 +40,45 @@ export class UserController {
     // O userId é extraído do token JWT pelo JwtAuthGuard (validado no JwtStrategy)
     const userId = req.user.userId;
     return this.userService.updateActiveAnalysis(userId, body.analysisId);
+  }
+
+  /**
+   * Obtém o Household (Agregado) do utilizador.
+   * Rota: GET /user/household
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('household')
+  async getHousehold(@Request() req: any) {
+    const userId = req.user.userId;
+    const household = await this.userService.getHousehold(userId);
+    return { ok: true, household };
+  }
+
+  /**
+   * Substitui/actualiza o Household (Agregado) do utilizador.
+   * Rota: PATCH /user/household
+   */
+  @UseGuards(JwtAuthGuard)
+  @Patch('household')
+  async patchHousehold(@Request() req: any, @Body() body: any) {
+    const userId = req.user.userId;
+    const household = await this.userService.patchHousehold(userId, body);
+    return { ok: true, household };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('household/invite')
+  async createInvite(@Request() req: any, @Body() body: { memberId: string, email: string }) {
+    const userId = req.user.userId;
+    const household = await this.userService.createInvite(userId, body.memberId, body.email);
+    return { ok: true, household };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('household/accept-invite')
+  async acceptInvite(@Request() req: any, @Body() body: { inviteId: string }) {
+    const userId = req.user.userId;
+    const household = await this.userService.acceptInvite(userId, body.inviteId);
+    return { ok: true, household };
   }
 }

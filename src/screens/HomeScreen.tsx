@@ -5,6 +5,7 @@ import { theme } from '../theme';
 import { BrandLogo } from '../components/BrandLogo';
 import { ThemeCard } from '../components/ThemeCard';
 import { HistoricoModal } from '../components/HistoricoModal';
+import { SynthesisActionCard, StateSurface } from '../components/ShellStateSurfaces';
 import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, Users, ChevronRight, ChevronDown, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, ChevronsDown, Sparkles, ArrowLeft, Calendar, History, Star, ChevronUp, Share, Dumbbell, Footprints } from 'lucide-react-native';
 import Svg, { Path, Text as SvgText, TextPath, Defs, G } from 'react-native-svg';
 import { BiomechanicRelic } from '../components/BiomechanicRelic';
@@ -33,6 +34,7 @@ import { MiniAppManifest } from '../miniapps/types';
 import { useStore } from '../store/useStore';
 import * as Selectors from '../store/selectors';
 import { getSemanticInsights, getSemanticStatus, getAiStatus } from '../services/insights';
+import { computeSemanticFromMeasurements } from '../services/semantic-output/analysis-engine';
 import { AiInsight } from '../services/semantic-output/types';
 import { ENV } from '../config/env';
 import { Analysis } from '../store/store';
@@ -148,11 +150,14 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const user = useStore(Selectors.selectUser);
   const credits = useStore(Selectors.selectCredits);
   const measurements = useStore(Selectors.selectMeasurements);
+  const exportedContexts = useStore(Selectors.selectExportedContexts);
   const installedAppIds = useStore(Selectors.selectInstalledAppIds);
   const isGuestMode = useStore(state => state.isGuestMode);
   const guestProfile = useStore(state => state.guestProfile);
   const isMeasuring = useStore(Selectors.selectIsMeasuring);
   const isNfcLoading = useStore(Selectors.selectIsNfcLoading);
+  const hasResultsAccess = useStore(Selectors.selectHasResultsAccess);
+  const aiConfidence = useStore(state => Selectors.selectAiConfidence(state));
 
   const setUser = useStore(state => state.setUser);
   const setSessionToken = useStore(state => state.setSessionToken);
@@ -228,10 +233,86 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   // Resultados + Leitura AI leem EXCLUSIVAMENTE daqui.
   const activeAnalysis = React.useMemo<Analysis | null>(() => {
     if (demoAnalysis) return demoAnalysis;
-    if (activeAnalysisId) return analyses.find(a => a.id === activeAnalysisId) ?? null;
-    // Sem nada seleccionado — fallback para a última análise real
-    return analyses[0] ?? null;
-  }, [demoAnalysis, activeAnalysisId, analyses]);
+    
+    let baseAnalysis = null;
+    if (activeAnalysisId) {
+      baseAnalysis = analyses.find(a => a.id === activeAnalysisId) ?? null;
+    }
+    if (!baseAnalysis) {
+      baseAnalysis = analyses[0] ?? null;
+    }
+
+    if (!baseAnalysis) return null;
+
+    // ── INJECT EXPORTED CONTEXTS AS ECOSYSTEM FACTS ──
+    const mappedContexts = exportedContexts.map(ctx => {
+      let valStr = String(ctx.value);
+      if (typeof ctx.value === 'object' && ctx.value !== null) {
+        valStr = ctx.value.label || ctx.value.status || JSON.stringify(ctx.value);
+      }
+      return {
+        id: ctx.id,
+        type: `${ctx.category} | ${ctx.key.toUpperCase()}`,
+        sourceAppId: ctx.appId,
+        value: valStr,
+        timestamp: new Date(ctx.updatedAt).getTime(),
+        memberId: ctx.memberId
+      } as any;
+    });
+
+    return {
+      ...baseAnalysis,
+      ecosystemFacts: [
+        ...(baseAnalysis.ecosystemFacts || []),
+        ...mappedContexts
+      ]
+    };
+  }, [demoAnalysis, activeAnalysisId, analyses, exportedContexts]);
+
+  // ── PREV ANALYSIS PARA TENDÊNCIAS ───────────────────────────────────────────────
+  const prevAnalysis = React.useMemo(() => {
+    const isDemo = activeAnalysis?.source === 'demo';
+    if (isDemo || !activeMemberId || !activeAnalysis) return null;
+    return analyses.find(a => 
+      a.memberId === activeMemberId && 
+      a.source !== 'demo' && 
+      a.id !== activeAnalysis.id && 
+      new Date(a.createdAt).getTime() < new Date(activeAnalysis.createdAt).getTime()
+    ) || null;
+  }, [activeAnalysis, activeMemberId, analyses]);
+
+  const prevSemanticState = React.useMemo(() => {
+    if (!prevAnalysis || prevAnalysis.measurements.length === 0) return null;
+    return computeSemanticFromMeasurements(prevAnalysis.measurements, prevAnalysis.ecosystemFacts || []);
+  }, [prevAnalysis]);
+
+  const getAugmentedSemanticInsights = React.useCallback(() => {
+    let base = getSemanticInsights();
+    if (!prevSemanticState) {
+       return base.map(t => ({ ...t, trend: 'no_base' as const }));
+    }
+    return base.map(theme => {
+       const oldDomain = prevSemanticState.domains[theme.domain];
+       let trendVal: 'improving' | 'worsening' | 'stable' | 'no_base' = 'no_base';
+       let priorityVal: 'noise' | 'discrete' | 'relevant' | 'critical' = 'noise';
+
+       if (oldDomain && typeof theme.score === 'number' && typeof oldDomain.score === 'number') {
+          const diff = theme.score - oldDomain.score;
+          const absDiff = Math.abs(diff);
+
+          if (absDiff < 2) {
+             trendVal = 'stable';
+             priorityVal = 'noise';
+          } else {
+             trendVal = diff > 0 ? 'improving' : 'worsening';
+             if (absDiff < 5) priorityVal = 'discrete';
+             else if (absDiff < 15) priorityVal = 'relevant';
+             else priorityVal = 'critical';
+          }
+       }
+       return { ...theme, trend: trendVal, priority: priorityVal };
+    });
+  }, [prevSemanticState]);
 
   // Leitura dos biomarcadores da análise activa (formaáto normalizado)
   const filteredMeasurements = React.useMemo(() => {
@@ -481,7 +562,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         setProfileWeight(guestProfile?.weight ? guestProfile.weight.toString() : '');
         setProfileHeight(guestProfile?.height ? guestProfile.height.toString() : '');
       } else {
-        setProfileName(user?.name || 'Utilizador');
+        const newVal = user?.name || 'Utilizador';
+        if ((window as any) && (window as any)._lastSavedName && newVal !== (window as any)._lastSavedName) {
+           console.warn(`[DEV NAME 6] rehydration overwrite detected: saved "${(window as any)._lastSavedName}" but store injected "${newVal}"`);
+        }
+        setProfileName(newVal);
         setProfileAge(user?.age ? user.age.toString() : '');
         setProfileWeight(user?.weight ? user.weight.toString() : '');
         setProfileHeight(user?.height ? user.height.toString() : '');
@@ -490,9 +575,57 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   }, [showProfile, isGuestMode, user, guestProfile]);
 
   // Odometer calculation (Factual)
-  const diasSemExame = useStore(Selectors.selectDaysSinceLastMeasurement);
+  // Remove selectDaysSinceLastMeasurement locally, rely on freshness slice later
+  const dataFreshness = useStore(state => Selectors.selectDataFreshness(state));
+  const diasSemExame = dataFreshness.daysSince ?? 0;
 
   // Settings Form State (Modo de Análise)
+  const [syncFlowState, setSyncFlowState] = useState<'idle'|'searching'|'connected'|'syncing'|'success'|'failed'>('idle');
+
+  const executeSyncReal = () => {
+     setSyncFlowState('searching');
+     // Anúncio global de sync para bloquear outras gavetas se necessário
+     useStore.getState().setIsMeasuring(true);
+     
+     // 1. Procurar
+     setTimeout(() => {
+        setSyncFlowState('connected');
+        // 2. Conectado
+        setTimeout(() => {
+           setSyncFlowState('syncing');
+           // 3. Recolha Mútua
+           setTimeout(() => {
+               // SUCCESS - injetar mock measurement na camada canonica
+               useStore.getState().setIsMeasuring(false);
+               setSyncFlowState('success');
+               
+               const storeRef = useStore.getState();
+               // Resgate tatico: se foi barrado por restricao antes mas acionamos o sync forçado pela view pessoal?
+               // Wait, activeMemberId always tells who we're focusing on.
+               const targetId = storeRef.activeMemberId || storeRef.user?.id;
+               
+               const payloadArray = [
+                 { id: 'scan_' + Date.now(), type: 'vitals', source: 'nfc_scanner', timestamp: new Date().toISOString(), memberId: targetId, value: { marker: 'Energia Base', value: 94 } },
+                 { id: 'scan_c_' + Date.now(), type: 'vitals', source: 'nfc_scanner', timestamp: new Date().toISOString(), memberId: targetId, value: { marker: 'Cardio Físico', value: 68 } }
+               ];
+
+               useStore.setState({ measurements: [...payloadArray, ...(storeRef.measurements || [])] });
+
+               setTimeout(() => {
+                   setSyncFlowState('idle');
+               }, 3000);
+           }, 2500);
+        }, 1600);
+     }, 1800);
+  };
+
+  // Escuta ativa de pedidos de Sincronização vindos do Agregado ou outras tabs
+  useEffect(() => {
+     if (isMeasuring && syncFlowState === 'idle') {
+        executeSyncReal();
+     }
+  }, [isMeasuring, syncFlowState]);
+
   const [analysisMode, setAnalysisMode] = useState<'manual' | 'automatico'>('automatico');
   const [autoTimes, setAutoTimes] = useState(1);
   const [autoDays, setAutoDays] = useState(1);
@@ -629,6 +762,21 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   // Keep edge gesture callbacks up to date every render
   openThemesRef.current = openThemes;
   openDataRef.current = openData;
+
+  const handleSynthesisAction = (intent: string) => {
+    if (intent === 'sync_now' || intent === 're_sync') {
+      closeData(); closeThemes();
+      setTimeout(() => executeSyncReal(), 400);
+    } else if (intent === 'manage_permissions' || intent === 'complete_profile') {
+      closeData(); closeThemes(); setShowProfile(true);
+    } else if (intent === 'explore_analysis') {
+      closeData(); openThemes();
+    } else if (intent === 'open_timeline') {
+      closeData(); closeThemes(); setShowHistorico(true);
+    } else if (intent === 'open_context') {
+      alert('Aceda ao App Place na shell principal para autorizar integrações.');
+    }
+  };
 
   // ── Switch Setup ──────────────────────────────────────────────────────────
   const switchAnim = useRef(new Animated.Value(0)).current; // 0 = UP, 160 = DOWN
@@ -1232,13 +1380,24 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                             </Defs>
                             <SvgText fill="rgba(255,255,255,0.7)" fontSize="13" fontWeight="800" letterSpacing="3">
                               <TextPath href="#circleRoda" startOffset="50%" textAnchor="middle">
-                                ÚLTIMA AVALIAÇÃO HÁ
+                                {dataFreshness.status === 'no_access' ? 'Privacidade Ativa' : dataFreshness.status === 'no_data' ? '' : dataFreshness.status === 'syncing' ? '' : 'ÚLTIMA AVALIAÇÃO HÁ'}
                               </TextPath>
                             </SvgText>
                           </Svg>
 
-                          {/* Odometer agora centralizado no eixo absoluto do ecrã sem margins */}
-                          <SlotMachineOdometer targetNumber={diasSemExame} />
+                          {dataFreshness.status === 'no_access' ? (
+                            <Typography style={{ color: '#FF6060', fontSize: 13, fontWeight: '800', letterSpacing: 2 }}>{dataFreshness.label.toUpperCase()}</Typography>
+                          ) : dataFreshness.status === 'no_data' || dataFreshness.status === 'syncing' ? (
+                            <Typography style={{ color: dataFreshness.color, fontSize: 13, fontWeight: '800', letterSpacing: 2 }}>{dataFreshness.label.toUpperCase()}</Typography>
+                          ) : (
+                            <SlotMachineOdometer targetNumber={dataFreshness.daysSince ?? 0} />
+                          )}
+
+                          <View style={{ position: 'absolute', bottom: 36, alignItems: 'center' }}>
+                            <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' }}>
+                               {dataFreshness.temporalLabel}
+                            </Typography>
+                          </View>
                         </View>
 
                         {/* Old Green Overlay Was Removed */}
@@ -1262,6 +1421,42 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             </Animated.View>
           );
         })()}
+
+        {/* ── CONTEXTO EXPORTADO (Zona Discreta Premium) ── */}
+        {exportedContexts.length > 0 && (
+          <View style={{ position: 'absolute', bottom: 100, left: 0, right: 0, alignItems: 'center', pointerEvents: 'box-none' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+              <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '800', letterSpacing: 1, marginRight: 8, textTransform: 'uppercase' }}>CONTEXTO</Typography>
+              <View style={{ flexDirection: 'row', gap: 6 }}>
+                {exportedContexts.slice(0, 3).map((ctx) => {
+                  let displayStr = String(ctx.value);
+                  if (typeof ctx.value === 'object' && ctx.value !== null) {
+                    displayStr = ctx.value.label || ctx.value.status || ctx.key;
+                  }
+                  return (
+                    <View key={ctx.id} style={{ backgroundColor: 'rgba(0,242,255,0.1)', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: 'rgba(0,242,255,0.2)' }}>
+                      <Typography style={{ color: '#00F2FF', fontSize: 10, fontWeight: '700' }}>
+                        {displayStr}
+                      </Typography>
+                    </View>
+                  );
+                })}
+                {exportedContexts.length > 3 && (
+                   <View style={{ justifyContent: 'center', paddingHorizontal: 4 }}>
+                      <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: '700' }}>+{exportedContexts.length - 3}</Typography>
+                   </View>
+                )}
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* ── DAILY SYNTHESIS (Briefing Operacional) ── */}
+        <SynthesisActionCard 
+           synthesis={dailySynthesis} 
+           onAction={handleSynthesisAction} 
+           style={{ position: 'absolute', bottom: 40, left: 24, right: 24 }} 
+        />
 
         {/* ── LEFT EDGE HANDLE: THEMES ──────────────────────────────────────── */}
         <TouchableOpacity
@@ -1309,7 +1504,16 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           <View style={[styles.themePanelHeader, { minHeight: 56, paddingVertical: 8, paddingBottom: 4, alignItems: 'center' }]}>
             <View style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Typography style={[styles.themePanelTitle, { fontSize: 13 }]}>INTERPRETAÇÃO AI</Typography>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Typography style={[styles.themePanelTitle, { fontSize: 13, marginBottom: 0 }]}>INTERPRETAÇÃO AI</Typography>
+                  {user?.name && (
+                    <View style={{ backgroundColor: 'rgba(0,242,255,0.1)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, marginLeft: 8 }}>
+                      <Typography style={{ color: '#00F2FF', fontWeight: '800', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase' }}>
+                        {user.name.split(' ')[0]}
+                      </Typography>
+                    </View>
+                  )}
+                </View>
                 {demoAnalysis && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
                     <View style={{ backgroundColor: '#00F2FF20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, borderWidth: 1, borderColor: '#00F2FF40' }}>
@@ -1337,12 +1541,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Calendar size={14} color="rgba(255,255,255,0.5)" style={{ marginRight: 8 }} />
               <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: '700', letterSpacing: 0.5 }}>
-                {(() => {
-                  if (!selectedDate) return 'Dados desatualizados';
-                  const d = new Date(selectedDate);
-                  const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-                  return `${d.getDate().toString().padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
-                })()}
+                {dataFreshness.temporalLabel}
               </Typography>
             </View>
 
@@ -1357,8 +1556,69 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
 
           {/* ── Paginated FlatList ── */}
-          <FlatList
-            ref={themesFlatListRef}
+          {aiConfidence.level === 'insuficiente' ? (
+             <StateSurface 
+                type={dataFreshness.status === 'no_access' ? 'restricted' : 'insufficient'}
+                title={aiConfidence.label}
+                description={aiConfidence.rationale}
+                actionLabel={dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.label : undefined}
+                actionIntent={dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.intent : undefined}
+                onAction={handleSynthesisAction}
+                color={aiConfidence.color}
+                style={{ flex: 1, marginHorizontal: 24, marginVertical: 30 }}
+             />
+          ) : (
+            <View style={{ flex: 1 }}>
+              {/* ── AI Confidence Readiness Banner ── */}
+              <View style={{ paddingHorizontal: 24, paddingVertical: 16, backgroundColor: `${aiConfidence.color}08`, borderBottomWidth: 1, borderColor: `${aiConfidence.color}20` }}>
+                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                     <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: aiConfidence.color, marginRight: 8, opacity: 0.8 }} />
+                     <Typography style={{ color: aiConfidence.color, fontSize: 11, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', opacity: 0.9 }}>
+                        {aiConfidence.label}
+                     </Typography>
+                 </View>
+                 <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, lineHeight: 18, marginBottom: 12 }}>
+                     {aiConfidence.rationale}
+                 </Typography>
+
+                 {/* Rendering Factors */}
+                 <View style={{ gap: 4, marginBottom: 16 }}>
+                    {aiConfidence.factors.positive.map((fp: string, i: number) => (
+                       <View key={`pos-${i}`} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                         <Typography style={{ color: '#00D4AA', fontSize: 11, fontWeight: '800', marginRight: 6 }}>✓</Typography>
+                         <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>{fp}</Typography>
+                       </View>
+                    ))}
+                    {aiConfidence.factors.negative.map((fn: string, i: number) => (
+                       <View key={`neg-${i}`} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                         <Typography style={{ color: '#FFA500', fontSize: 10, fontWeight: '800', marginRight: 6 }}>✕</Typography>
+                         <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>{fn}</Typography>
+                       </View>
+                    ))}
+                 </View>
+
+                 {/* Action CTA */}
+                 <TouchableOpacity 
+                   onPress={() => {
+                     const intent = aiConfidence.recommendedAction.intent;
+                     if (intent === 'sync_now') {
+                       useStore.getState().setIsMeasuring(true); closeThemes();
+                     } else if (intent === 'open_context') {
+                       alert('Aceda ao App Place na shell principal para autorizar contexto contínuo.');
+                     } else if (intent === 'complete_profile') {
+                       closeThemes(); setShowProfile(true);
+                     } else if (intent === 'explore_analysis') {
+                       themesFlatListRef.current?.scrollToIndex({ index: 1, animated: true });
+                     }
+                   }} 
+                   style={{ alignSelf: 'flex-start', backgroundColor: `${aiConfidence.color}15`, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: `${aiConfidence.color}30` }}
+                 >
+                    <Typography style={{ color: aiConfidence.color, fontSize: 10, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase' }}>{aiConfidence.recommendedAction.label}</Typography>
+                 </TouchableOpacity>
+              </View>
+
+              <FlatList
+                ref={themesFlatListRef}
             data={[
               { type: 'index' as const },
               ...semanticThemes.map((t: any, i: number) => ({ type: 'card' as const, theme: t, idx: i })),
@@ -1518,8 +1778,19 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                               </View>
                             )}
 
+                            {/* BLOCO DE RESTRIÇÃO PRIVACIDADE */}
+                            {!hasResultsAccess && (
+                              <View style={{ marginBottom: 24, padding: 24, backgroundColor: 'rgba(255, 255, 255, 0.03)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)', alignItems: 'center' }}>
+                                <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', marginBottom: 16 }}>
+                                  <Typography style={{ fontSize: 20 }}>🔒</Typography>
+                                </View>
+                                <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 14, fontWeight: '800', marginBottom: 8, letterSpacing: 1, textTransform: 'uppercase' }}>Privacidade Ativa</Typography>
+                                <Typography style={{ color: 'rgba(255,255,255,0.5)', textAlign: 'center', fontSize: 12, lineHeight: 18 }}>Este membro configurou os seus dados fisiológicos e leitura contextual como visíveis apenas para Perfis autorizados.</Typography>
+                              </View>
+                            )}
+
                             {/* BLOCO A: Principal (FOCO PRINCIPAL M3) */}
-                            {aiState.status === 'ready' && aiState.status !== 'loading' && (
+                            {hasResultsAccess && aiState.status === 'ready' && aiState.status !== 'loading' && (
                               <View style={{ marginBottom: 24, padding: 24, backgroundColor: 'rgba(0, 242, 255, 0.05)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.3)' }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -1557,7 +1828,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                             )}
 
                             {/* Caso a IA ainda esteja em IDLE e não haja CrossDomain (Fallback) */}
-                            {aiState.status === 'idle' && hasCrossDomain && (
+                            {hasResultsAccess && aiState.status === 'idle' && hasCrossDomain && (
                               <View style={{ marginBottom: 24, padding: 20, backgroundColor: 'rgba(0, 242, 255, 0.05)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.3)' }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
                                   <Zap size={18} color="#00F2FF" style={{ marginRight: 8 }} />
@@ -1570,7 +1841,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                                 </Typography>
                               </View>
                             )}
-                            {highestPriority ? (
+                            {hasResultsAccess && highestPriority ? (
                               <TouchableOpacity
                                 style={{ marginBottom: 24, padding: 20, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', flexDirection: 'row', alignItems: 'center' }}
                                 activeOpacity={0.7}
@@ -1593,7 +1864,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                             ) : null}
 
                             {/* BLOCO B: Necessitam Atenção / Ação */}
-                            {urgentOrActionable.length > 0 && (
+                            {hasResultsAccess && urgentOrActionable.length > 0 && (
                               <View style={{ marginBottom: 24 }}>
                                 <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12, marginLeft: 4 }}>
                                   Requerem Atenção
@@ -1605,7 +1876,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                             )}
 
                             {/* BLOCO C: Estáveis (Recolhidos) */}
-                            {stable.length > 0 && (
+                            {hasResultsAccess && stable.length > 0 && (
                               <View style={{ marginTop: 8, marginBottom: 24 }}>
                                 <TouchableOpacity
                                   activeOpacity={0.7}
@@ -1638,6 +1909,22 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
               // ── THEME CARD PAGE ──
               const { theme: t, idx } = item;
+              
+              let tAction = { intent: 'none', label: '', reason: '', isAvailable: false };
+              if (dataFreshness.status === 'no_access') {
+                 tAction = { intent: 'none', label: 'Gerir Permissões', reason: 'Acesso restrito à pool de biomarcadores', isAvailable: false };
+              } else if (t.status === 'insufficient_data' || dataFreshness.status === 'no_data') {
+                 tAction = { intent: 'sync_now', label: 'Sincronizar Recolha', reason: 'A IA carece de mais eventos para tradução limpa', isAvailable: true };
+              } else if (t.status === 'stale') {
+                 tAction = { intent: 'sync_now', label: 'Atualizar Biomarcadores', reason: 'Contexto em modo estático/degradado', isAvailable: true };
+              } else if (t.trend && (t.trend === 'improving' || t.trend === 'worsening')) {
+                 tAction = { intent: 'view_trend', label: 'Analisar Desvio Factual', reason: 'O sistema sinaliza uma variação orgânica latente', isAvailable: true };
+              } else if (t.domain && exportedContexts.some((c: any) => c.key && t.domain && String(c.key).toLowerCase().includes(String(t.domain).toLowerCase()))) {
+                 tAction = { intent: 'open_context', label: 'Recorrer a Contexto de Integração', reason: 'Esta área possui uma fonte externa subscrita com metadados', isAvailable: true };
+              } else {
+                 tAction = { intent: 'explore_detail', label: 'Rever Fisiologia Crua', reason: 'Monitorização estagnada no baseline orgânico esperado', isAvailable: true };
+              }
+
               return (
                 <View style={[styles.themePage, { height: panelH }]}>
                   <View style={styles.themeCardPageInner}>
@@ -1669,25 +1956,27 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       <ThemeCard
                         {...t}
                         iconName={t.iconName as any}
-                        onCtaPress={() => {
-                          const routeMap: Record<string, string> = {
-                            sleep: 'sleep-deep',
-                            nutrition: 'nutri-menu'
-                          };
-                          const appId = t.domain ? routeMap[t.domain] : null;
-                          if (appId) {
-                            const { MINI_APP_CATALOG } = require('../miniapps/catalog');
-                            const app = MINI_APP_CATALOG.find((a: any) => a.id === appId);
-                            if (app) {
-                              launchApp(app);
-                              if (Platform.OS === 'web') {
-                                setInlineApp(app);
-                              } else {
-                                navigation?.navigate('MiniApp', { app });
-                              }
+                        suggestedAction={tAction as any}
+                        onCtaPress={(intent: string) => {
+                          if (intent === 'sync_now') {
+                             closeThemes();
+                             setTimeout(() => handleSynthesisAction('sync_now'), 300);
+                          } else if (intent === 'explore_detail' || intent === 'view_trend') {
+                             setDataOpen(true);
+                          } else if (intent === 'open_context') {
+                            const routeMap: Record<string, string> = { sleep: 'sleep-deep', nutrition: 'nutri-menu' };
+                            const appId = t.domain ? routeMap[t.domain] : null;
+                            if (appId) {
+                               const { MINI_APP_CATALOG } = require('../miniapps/catalog');
+                               const app = MINI_APP_CATALOG.find((a: any) => a.id === appId);
+                               if (app) {
+                                 launchApp(app);
+                                 if (Platform.OS === 'web') setInlineApp(app);
+                                 else navigation?.navigate('MiniApp', { app });
+                               }
+                            } else {
+                               setDataOpen(true);
                             }
-                          } else {
-                            setDataOpen(true);
                           }
                         }}
                       />
@@ -1697,6 +1986,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               );
             }}
           />
+            </View>
+          )}
         </BlurView>
       </Animated.View>
 
@@ -1737,6 +2028,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           return acc;
         }, {});
 
+        const prevMeasurements = (prevAnalysis?.measurements || []).reduce((acc: Record<string, any>, m: any) => {
+          const k = getCanonicalKey(m);
+          if (k) acc[k] = m;
+          return acc;
+        }, {});
+
         const buildSection = (catFilter: MetricCategory[], label: string, color: string, id: string, shortLabel: string) => {
           // Filtra pelo que deve ser visível por omissão na categoria especificada
           const sectionDefs = allDefs.filter(d => catFilter.includes(d.category) && d.visibleByDefault);
@@ -1749,6 +2046,36 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               ? (isDemo ? 'demo_value' : 'available')
               : 'empty';
 
+            let trend = undefined;
+            const prev = prevMeasurements[def.key];
+            
+            if (found && prev && typeof found.value !== 'undefined' && typeof prev.value !== 'undefined' && def.valueType === 'number') {
+               const curV = Number(found.value);
+               const prevV = Number(prev.value);
+               if (!isNaN(curV) && !isNaN(prevV)) {
+                  const diff = curV - prevV;
+                  const absDiff = Math.abs(diff);
+                  let priority: 'noise' | 'discrete' | 'relevant' | 'critical' = 'noise';
+                  
+                  if (absDiff < 0.001) {
+                     priority = 'noise';
+                  } else {
+                     const pct = prevV !== 0 ? (absDiff / Math.abs(prevV)) * 100 : 100;
+                     if (pct < 2) priority = 'discrete';
+                     else if (pct < 10) priority = 'relevant';
+                     else priority = 'critical';
+                  }
+
+                  if (absDiff < 0.001) {
+                     trend = { direction: 'stable', diffLabel: 'Estável', priority };
+                  } else if (diff > 0) {
+                     trend = { direction: 'up', diffLabel: 'Subiu face à última leitura', priority };
+                  } else {
+                     trend = { direction: 'down', diffLabel: 'Desceu face à última leitura', priority };
+                  }
+               }
+            }
+
             return {
               isCanonical: true,
               definition: def,
@@ -1757,6 +2084,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 status,
                 value: found?.value,
                 mode: isDemo ? 'demo' : 'real',
+                measuredAt: found?.recordedAt ? new Date(found.recordedAt).getTime() : undefined,
+                source: found?.source || activeAnalysis?.source || 'device',
+                trend
               } as MetricObservation
             };
           });
@@ -1791,7 +2121,16 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             <BlurView intensity={100} tint="dark" style={StyleSheet.absoluteFill}>
               {/* ── LINHA 1 — CABEÇALHO ── */}
               <View style={[styles.panelHeader, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, paddingBottom: 8, marginBottom: 0, minHeight: 40, paddingHorizontal: 24 }]}>
-                <Typography style={[styles.panelTitle, { fontSize: 13, fontWeight: '800', marginVertical: 0, textTransform: 'uppercase', letterSpacing: 1.5 }]}>Bioanálise</Typography>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Typography style={[styles.panelTitle, { fontSize: 13, fontWeight: '800', marginVertical: 0, textTransform: 'uppercase', letterSpacing: 1.5 }]}>Resultados</Typography>
+                  {user?.name && (
+                    <View style={{ backgroundColor: 'rgba(0,242,255,0.1)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, marginLeft: 8 }}>
+                      <Typography style={{ color: '#00F2FF', fontWeight: '800', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase' }}>
+                        {user.name.split(' ')[0]}
+                      </Typography>
+                    </View>
+                  )}
+                </View>
 
                 <TouchableOpacity
                   onPress={closeData}
@@ -1825,22 +2164,29 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               </View>
 
               {/* ── LINHA 2 — BARRA DE AÇÕES ── */}
-              <View style={{ flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 8, gap: 12 }}>
-                <TouchableOpacity
-                  onPress={() => setShowHistorico(true)}
-                  style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
-                >
-                  <History size={12} color="rgba(255,255,255,0.8)" style={{ marginRight: 6 }} />
-                  <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, fontWeight: '800', letterSpacing: 1 }}>HISTÓRICO</Typography>
-                </TouchableOpacity>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 8 }}>
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <TouchableOpacity
+                    onPress={() => setShowHistorico(true)}
+                    style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
+                  >
+                    <History size={12} color="rgba(255,255,255,0.8)" style={{ marginRight: 6 }} />
+                    <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, fontWeight: '800', letterSpacing: 1 }}>HISTÓRICO</Typography>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  onPress={() => setShowExportModal(true)}
-                  style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
-                >
-                  <Share size={12} color="rgba(255,255,255,0.8)" style={{ marginRight: 6 }} />
-                  <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, fontWeight: '800', letterSpacing: 1 }}>EXPORTAR</Typography>
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setShowExportModal(true)}
+                    style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }}
+                  >
+                    <Share size={12} color="rgba(255,255,255,0.8)" style={{ marginRight: 6 }} />
+                    <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 10, fontWeight: '800', letterSpacing: 1 }}>EXPORTAR</Typography>
+                  </TouchableOpacity>
+                </View>
+
+                {/* TEMPORAL LABEL METADATA  */}
+                <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase', textAlign: 'right', flexShrink: 1, marginLeft: 8 }}>
+                  {dataFreshness.temporalLabel}
+                </Typography>
               </View>
 
               {/* ── Tab Bar ── */}
@@ -1867,7 +2213,18 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
               {/* ── Active Tab Content ── */}
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.panelScroll}>
-                {factualBioCategories.length > 0 ? (
+                {!hasResultsAccess ? (
+                   <StateSurface 
+                      type="restricted"
+                      title="Acesso Restrito"
+                      description="Os resultados e painel vitúrgico não foram explicitamente partilhados consigo."
+                      actionLabel={dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.label : undefined}
+                      actionIntent={dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.intent : undefined}
+                      onAction={handleSynthesisAction}
+                      color="#FF6060"
+                      style={{ margin: 20 }}
+                   />
+                ) : factualBioCategories.length > 0 ? (
                   factualBioCategories[safeBioTab].markers.length > 0 ? (
                     factualBioCategories[safeBioTab].markers.map((item: any, i: number) => {
                       if (item.isLegacy) {
@@ -1887,24 +2244,34 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                           <MetricCard 
                             definition={item.definition}
                             observation={item.observation}
+                            onExploreSemantics={() => { closeData(); openThemes(); }}
                           />
                         </View>
                       );
                     })
                   ) : (
-                    <View style={{ alignItems: 'center', justifyContent: 'center', height: 200, paddingHorizontal: 20 }}>
-                      <Typography style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', fontSize: 13 }}>
-                        Ainda não existem dados para esta categoria.
-                      </Typography>
-                    </View>
+                    <StateSurface 
+                       type={dataFreshness.status === 'syncing' ? 'no_data' : 'insufficient'}
+                       title={dataFreshness.label.toUpperCase()}
+                       description={dataFreshness.status === 'syncing' ? 'Por favor aguarde enquanto processamos a leitura.' : 'Não existem leituras válidas para esta categoria nesta janela local.'}
+                       actionLabel={dataFreshness.status !== 'syncing' && dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.label : undefined}
+                       actionIntent={dataFreshness.status !== 'syncing' && dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.intent : undefined}
+                       onAction={handleSynthesisAction}
+                       color={dataFreshness.color}
+                       style={{ margin: 20 }}
+                    />
                   )
                 ) : (
-                  <View style={{ alignItems: 'center', justifyContent: 'center', height: 200, paddingHorizontal: 20 }}>
-                    <Database size={32} color="rgba(255,255,255,0.2)" style={{ marginBottom: 16 }} />
-                    <Typography style={{ color: 'rgba(255,255,255,0.4)', textAlign: 'center', fontSize: 13, lineHeight: 20 }}>
-                      Nenhum grupo de monitorização biológica ativado no Perfil.
-                    </Typography>
-                  </View>
+                  <StateSurface 
+                     type="no_data"
+                     title={dataFreshness.label.toUpperCase()}
+                     description="Ao contrário do painel visual, aguardamos fluxo fisiológico limpo."
+                     actionLabel={dataFreshness.status !== 'syncing' && dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.label : undefined}
+                     actionIntent={dataFreshness.status !== 'syncing' && dailySynthesis.action.intent !== 'wait' ? dailySynthesis.action.intent : undefined}
+                     onAction={handleSynthesisAction}
+                     color={dataFreshness.status === 'no_data' || dataFreshness.status === 'very_stale' ? '#FF6060' : 'rgba(255,255,255,0.2)'}
+                     style={{ margin: 20 }}
+                  />
                 )}
               </ScrollView>
 
@@ -2358,7 +2725,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 <View style={{ flexDirection: 'column', gap: 12 }}>
                   <TouchableOpacity
                     style={styles.saveBtn}
-                    onPress={() => {
+                    onPress={async () => {
+                      console.warn(`[DEV NAME 1] local before save: "${profileName}"`);
                       if (isGuestMode) {
                         useStore.getState().updateGuestProfile({
                           name: profileName || 'Convidada',
@@ -2366,16 +2734,33 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                           weight: profileWeight ? parseFloat(profileWeight) : undefined,
                           height: profileHeight ? parseFloat(profileHeight) : undefined
                         });
+                        setShowProfile(false);
                       } else {
                         // Fazemos update do perfil persistente e optimistic update
-                        useStore.getState().updateAuthenticatedProfile({
+                        const payloadToSend = {
                           name: profileName || user?.name || 'Utilizador',
                           age: profileAge ? parseInt(profileAge, 10) : undefined,
                           weight: profileWeight ? parseFloat(profileWeight) : undefined,
                           height: profileHeight ? parseFloat(profileHeight) : undefined
-                        });
+                        };
+                        console.warn(`[DEV NAME 2] payload to slice:`, JSON.stringify(payloadToSend));
+                        try {
+                          // Tracker para detetar overwrite
+                          if ((window as any)) (window as any)._lastSavedName = payloadToSend.name;
+                          
+                          const success = await useStore.getState().updateAuthenticatedProfile(payloadToSend);
+                          
+                          if (success) {
+                            setShowProfile(false);
+                          } else {
+                            console.error('[DEV NAME] success=false, abortando fecho de modal.');
+                            Alert.alert('Erro', 'Não foi possível gravar as alterações no servidor.');
+                          }
+                        } catch (err) {
+                          console.error('[DEV NAME] EXCEPTION:', err);
+                          Alert.alert('Erro', 'Ocorreu um erro interno na aplicação.');
+                        }
                       }
-                      setShowProfile(false);
                     }}
                   >
                     <Typography style={styles.saveBtnText}>GRAVAR ALTERAÇÕES</Typography>
@@ -2754,6 +3139,32 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           </View>
         </View>
       </Modal>
+
+      {/* ── SYNC HUB UI OVERLAY ── */}
+      {syncFlowState !== 'idle' && (
+        <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(5,10,18,0.95)', zIndex: 9999, alignItems: 'center', justifyContent: 'center' }}>
+           <View style={{ width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(0,242,255,0.05)', borderWidth: 2, borderColor: syncFlowState === 'success' ? '#00D4AA' : 'rgba(0,242,255,0.3)', alignItems: 'center', justifyContent: 'center', marginBottom: 30 }}>
+              {syncFlowState === 'searching' && <ActivityIndicator color="#00F2FF" size="large" />}
+              {syncFlowState === 'connected' && <Typography style={{ fontSize: 40 }}>📱</Typography>}
+              {syncFlowState === 'syncing' && <ActivityIndicator color="#00F2FF" size="large" />}
+              {syncFlowState === 'success' && <Typography style={{ fontSize: 40 }}>✅</Typography>}
+           </View>
+           
+           <Typography style={{ color: 'white', fontSize: 18, fontWeight: '800', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>
+              {syncFlowState === 'searching' && 'A Procurar Equipamento...'}
+              {syncFlowState === 'connected' && 'Equipamento Conectado'}
+              {syncFlowState === 'syncing' && 'A Sincronizar Sinais vitais...'}
+              {syncFlowState === 'success' && 'Sincronização Concluída'}
+           </Typography>
+           
+           <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, textAlign: 'center', paddingHorizontal: 40 }}>
+              {syncFlowState === 'searching' && 'Certifique-se que os dispositivos Bluetooth estão ligados e próximos do telemóvel.'}
+              {syncFlowState === 'connected' && 'A estabelecer canal seguro bidirecional.'}
+              {syncFlowState === 'syncing' && 'A transferir contexto métrico assinado para a janela atual.'}
+              {syncFlowState === 'success' && 'A sua cronologia foi atualizada com sucesso.'}
+           </Typography>
+        </View>
+      )}
 
     </Container>
   );
