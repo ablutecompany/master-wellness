@@ -223,8 +223,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   }, [user]);
 
   // Safe memoized facts query to avoid Zustand infinite render loop
-  const rawEvents = useStore(state => state.appContributionEvents);
-  const analyses = useStore(state => state.analyses);
+  const rawEvents = useStore(useShallow((state) => state.appContributionEvents));
+  const analyses = useStore(useShallow((state) => state.analyses));
   const activeAnalysisId = useStore(state => state.activeAnalysisId);
 
   // --- UI & NAVIGATION STATE ---
@@ -611,9 +611,16 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   };
 
   // Escuta ativa de pedidos de Sincronização vindos do Agregado ou outras tabs
+  // SAFE BUILD: guard prevents re-entry loop — executeSyncReal calls setIsMeasuring(true)
+  // which would re-fire this effect without the guard.
+  const isMeasuringRef = useRef(false);
   useEffect(() => {
-     if (isMeasuring && syncFlowState === 'idle') {
+     if (isMeasuring && syncFlowState === 'idle' && !isMeasuringRef.current) {
+        isMeasuringRef.current = true;
         executeSyncReal();
+     }
+     if (!isMeasuring) {
+        isMeasuringRef.current = false;
      }
   }, [isMeasuring, syncFlowState]);
 
@@ -1103,7 +1110,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   return (
     <Container safe style={styles.container}>
       <View style={{ backgroundColor: 'red', padding: 8, zIndex: 9999, alignItems: 'center' }}>
-        <Typography style={{ color: 'white', fontWeight: 'bold' }}>SAFE MODE RUNTIME STEP 5</Typography>
+        <Typography style={{ color: 'white', fontWeight: 'bold' }}>SAFE MODE RUNTIME STEP 6</Typography>
       </View>
       {/* ── FULL SCREEN BACKGROUND ESTÁTICO NEGRO ───────────────────────────────── */}
       <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#020306' }]} pointerEvents="none">
