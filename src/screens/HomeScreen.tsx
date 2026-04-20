@@ -162,7 +162,14 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const isNfcLoading = useStore(Selectors.selectIsNfcLoading);
   const hasResultsAccess = useStore(Selectors.selectHasResultsAccess);
   // const aiConfidence = useStore(useShallow(state => Selectors.selectAiConfidence(state)));
-  const aiConfidence = { level: 'limitada' as any, score: 0, factors: { positive: [], negative: [], info: [] } };
+  const aiConfidence = { 
+    level: 'limitada' as any, 
+    score: 0, 
+    factors: { positive: [], negative: [], info: [] },
+    label: 'SAFE MODE',
+    color: '#888',
+    recommendedAction: { label: 'Aguardar', intent: 'wait' }
+  };
   // const dailySynthesis = useStore(useShallow(state => Selectors.selectDailySynthesis(state)));
   const dailySynthesis = { status: 'needs_attention' as any, title: 'SAFE MODE', negativeHighlight: null, positiveHighlight: null, action: { label: 'Em Mitigação', intent: 'wait' as any } };
 
