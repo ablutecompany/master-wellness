@@ -151,7 +151,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const user = useStore(Selectors.selectUser);
   const activeMemberId = useStore(Selectors.selectActiveMemberId);
   const credits = useStore(Selectors.selectCredits);
-  const measurements = useStore(Selectors.selectMeasurements);
+  const measurements = useStore(useShallow(Selectors.selectMeasurements));
   // [SAFE BUILD 1] Selectors dependentes de alocação de objetos instáveis desligados para diagnóstico de loop
   // const exportedContexts = useStore(useShallow(Selectors.selectExportedContexts));
   const exportedContexts: any[] = [];
@@ -567,7 +567,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   // Odometer calculation (Factual)
   // Remove selectDaysSinceLastMeasurement locally, rely on freshness slice later
-  const dataFreshness = useStore(state => Selectors.selectDataFreshness(state));
+  const dataFreshness = useStore(useShallow(state => Selectors.selectDataFreshness(state)));
   const diasSemExame = dataFreshness.daysSince ?? 0;
 
   // Settings Form State (Modo de Análise)
@@ -1103,7 +1103,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   return (
     <Container safe style={styles.container}>
       <View style={{ backgroundColor: 'red', padding: 8, zIndex: 9999, alignItems: 'center' }}>
-        <Typography style={{ color: 'white', fontWeight: 'bold' }}>SAFE MODE RUNTIME STEP 3</Typography>
+        <Typography style={{ color: 'white', fontWeight: 'bold' }}>SAFE MODE RUNTIME STEP 4</Typography>
       </View>
       {/* ── FULL SCREEN BACKGROUND ESTÁTICO NEGRO ───────────────────────────────── */}
       <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#020306' }]} pointerEvents="none">
