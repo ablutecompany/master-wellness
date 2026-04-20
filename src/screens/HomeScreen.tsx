@@ -152,15 +152,19 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const activeMemberId = useStore(Selectors.selectActiveMemberId);
   const credits = useStore(Selectors.selectCredits);
   const measurements = useStore(Selectors.selectMeasurements);
-  const exportedContexts = useStore(useShallow(Selectors.selectExportedContexts));
+  // [SAFE BUILD 1] Selectors dependentes de alocação de objetos instáveis desligados para diagnóstico de loop
+  // const exportedContexts = useStore(useShallow(Selectors.selectExportedContexts));
+  const exportedContexts: any[] = [];
   const installedAppIds = useStore(Selectors.selectInstalledAppIds);
   const isGuestMode = useStore(state => state.isGuestMode);
   const guestProfile = useStore(state => state.guestProfile);
   const isMeasuring = useStore(Selectors.selectIsMeasuring);
   const isNfcLoading = useStore(Selectors.selectIsNfcLoading);
   const hasResultsAccess = useStore(Selectors.selectHasResultsAccess);
-  const aiConfidence = useStore(useShallow(state => Selectors.selectAiConfidence(state)));
-  const dailySynthesis = useStore(useShallow(state => Selectors.selectDailySynthesis(state)));
+  // const aiConfidence = useStore(useShallow(state => Selectors.selectAiConfidence(state)));
+  const aiConfidence = { level: 'limitada' as any, score: 0, factors: { positive: [], negative: [], info: [] } };
+  // const dailySynthesis = useStore(useShallow(state => Selectors.selectDailySynthesis(state)));
+  const dailySynthesis = { status: 'needs_attention' as any, title: 'SAFE MODE', negativeHighlight: null, positiveHighlight: null, action: { label: 'Em Mitigação', intent: 'wait' as any } };
 
   const setUser = useStore(state => state.setUser);
   const setSessionToken = useStore(state => state.setSessionToken);
@@ -399,45 +403,22 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   // activeAnalysis muda → loadAnalysis injeta bundle calculado → SemanticOutputStore
   // notifica subscritores → setSemanticThemes/setSemanticStatus actualiza a UI.
   // Resultados e Leitura AI leem do mesmo objecto — zero fontes paralelas.
+  // [SAFE BUILD 2] Desativada a cadeia reativa de Semantic Engine que provocava re-renders circulares
+  /*
   useEffect(() => {
     semanticOutputService.loadAnalysis(activeAnalysis);
   }, [activeAnalysis]);
 
   useEffect(() => {
-    // Escuta alterações no bundle global e actualiza a UI da Shell
     const unsubscribe = semanticOutputService.subscribe(() => {
       setSemanticThemes(getSemanticInsights());
       setSemanticStatus(getSemanticStatus());
       setAiState(getAiStatus());
       setCrossDomainSummary(semanticOutputService.getCrossDomainSummary());
-
-      // Telemetria: Rastro de visualização de domínios na Home
-      const bundle = semanticOutputService.getBundle();
-      if (!bundle || bundle.status !== 'ready') return;
-
-      const insights = getSemanticInsights();
-      insights.forEach(insight => {
-        const output = bundle.domains[insight.domain];
-        if (!output) return;
-
-        const { semanticTelemetry } = require('../services/semantic-output/telemetry/engine');
-        semanticTelemetry.record({
-          eventType: output.status === 'sufficient_data' ? 'insight_displayed' :
-            (output.status === 'insufficient_data' ? 'insufficient_data_state_displayed' : 'unavailable_state_displayed'),
-          domain: insight.domain,
-          bundleVersion: bundle.version,
-          semanticVersion: '1.2.0',
-          screen: 'home',
-          status: output.status,
-          insightIds: output.mainInsight ? [output.mainInsight.id] : [],
-          recommendationIds: output.recommendations.map((r: any) => r.id),
-          evidenceRefIds: [],
-          source: 'shell'
-        });
-      });
     });
     return unsubscribe;
   }, []);
+  */
 
   const themesFlatListRef = useRef<FlatList>(null);
   const themesPanelHeight = height;
@@ -1114,6 +1095,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   return (
     <Container safe style={styles.container}>
+      <View style={{ backgroundColor: 'red', padding: 8, zIndex: 9999, alignItems: 'center' }}>
+        <Typography style={{ color: 'white', fontWeight: 'bold' }}>!! BUILD SAFE MODE (AI OFF) !!</Typography>
+      </View>
       {/* ── FULL SCREEN BACKGROUND ESTÁTICO NEGRO ───────────────────────────────── */}
       <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#020306' }]} pointerEvents="none">
 
