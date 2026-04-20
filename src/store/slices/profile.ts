@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { AppState, UserProfile } from '../state-types';
+import { AppState, UserProfile, ProfileStatus } from '../state-types';
 import { ProfileService } from '../../services/user/profileService';
 import { supabase } from '../../services/supabase';
 import { ENV } from '../../config/env';
@@ -12,6 +12,9 @@ export interface ProfileSlice {
   isGuestMode: boolean;
   credits: number;
   sessionToken: string | null;
+  household: any | null;
+  activeMemberId: string | null;
+  exportedContexts: any[];
   setUser: (user: UserProfile | null) => void;
   setAuthAccount: (account: any | null) => void;
   setProfileStatus: (status: ProfileStatus) => void;
@@ -39,6 +42,8 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
   user: null,
   authAccount: null,
   profileStatus: 'idle',
+  household: null,
+  activeMemberId: null,
   guestProfile: {
     id: 'guest',
     name: 'Convidada',
