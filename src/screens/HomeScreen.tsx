@@ -148,6 +148,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const { width, height } = useWindowDimensions();
   // Subscrição seletiva por domínio
   const user = useStore(Selectors.selectUser);
+  const activeMemberId = useStore(Selectors.selectActiveMemberId);
   const credits = useStore(Selectors.selectCredits);
   const measurements = useStore(Selectors.selectMeasurements);
   const exportedContexts = useStore(Selectors.selectExportedContexts);
