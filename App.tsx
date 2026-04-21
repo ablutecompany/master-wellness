@@ -28,6 +28,7 @@ import { supabase } from './src/services/supabase';
 import { useStore } from './src/store/useStore';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { Session } from '@supabase/supabase-js';
+import { ProfileService } from './src/services/user/profileService';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -131,6 +132,7 @@ export default function App() {
   const setHousehold = useStore(state => state.setHousehold);
   const isGuestMode = useStore(state => state.isGuestMode);
   const setGuestMode = useStore(state => state.setGuestMode);
+  const setAnalyses = useStore(state => state.setAnalyses);
   const hasHydrated = useStore(state => state.hasHydrated);
 
   // Guard against concurrent syncProfile calls
@@ -150,13 +152,32 @@ export default function App() {
     isSyncingRef.current = true;
     setSessionToken(session.access_token);
 
-    const setLoaded = (profile: any) => {
+    const setLoaded = async (profile: any) => {
+      console.log('[PROBE_SYNC] Perfil carregado, a iniciar sync de análises...');
       setUser(profile);
       if (profile?.household) setHousehold(profile.household);
+      
+      // Re-enable analyses synchronization
+      try {
+        console.log('[PROBE_SYNC] Chamando ProfileService.getAnalyses...');
+        const anaRes = await ProfileService.getAnalyses(session.access_token);
+        console.log('[PROBE_SYNC] Resultado do getAnalyses - ok:', anaRes.ok, 'count:', anaRes.analyses?.length);
+        
+        if (anaRes.ok && anaRes.analyses) {
+          console.log('[PROBE_SYNC] Chamando setAnalyses com:', anaRes.analyses.length, 'itens');
+          setAnalyses(anaRes.analyses);
+        } else {
+          console.warn('[PROBE_SYNC] Falhou ou sem análises para sincronizar');
+        }
+      } catch (err) {
+        console.warn('[PROBE_SYNC] Erro critico ao sincronizar:', err);
+      }
+
       setProfileStatus('loaded');
       isSyncingRef.current = false;
       onDone?.('Main');
     };
+
 
     const setFallback = () => {
       const fallback = {
