@@ -242,7 +242,10 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const initializedRef = React.useRef(false);
+
   useEffect(() => {
+    // STEP 1: Get initial session and sync profile once
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
         setSession(session);
@@ -258,18 +261,24 @@ export default function App() {
         }
       })
       .catch(err => console.error('[App] Auth init failed:', err))
-      .finally(() => setInitialized(true));
+      .finally(() => {
+        setInitialized(true);
+        initializedRef.current = true;
+      });
 
+    // STEP 2: Only react to auth changes that happen AFTER boot is done
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // During initial boot, getSession already handles everything — ignore all events
+      // until initialization is complete to prevent the race condition.
+      if (!initializedRef.current) return;
+
       if (event === 'SIGNED_IN' && session) {
-        // If already syncing, suppress all React setState to avoid concurrent update loop
-        if (isSyncingRef.current) return;
         setSession(session);
         setAuthAccount(session?.user ?? null);
         setSessionToken(session?.access_token ?? null);
         setGuestMode(false);
-        const currentStatus = useStore.getState().profileStatus;
-        if (currentStatus !== 'loaded' && currentStatus !== 'loading') {
+        // Only sync if not already syncing or loaded
+        if (!isSyncingRef.current && useStore.getState().profileStatus !== 'loaded') {
           syncProfile(session);
         }
       } 
@@ -286,12 +295,10 @@ export default function App() {
         const { installedAppIds, grantedPermissions, appEvents } = useStore.getState();
         const { saveToStorage } = require('./src/store/persistence');
         saveToStorage(installedAppIds, grantedPermissions, appEvents, []);
-      } else {
-        // TOKEN_REFRESHED or other non-critical events — only update token silently
-        if (!isSyncingRef.current) {
-          setSession(session);
-          setSessionToken(session?.access_token ?? null);
-        }
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        // Silently update token without re-syncing
+        setSessionToken(session.access_token);
+        useStore.getState().setSessionToken(session.access_token);
       }
     });
 
