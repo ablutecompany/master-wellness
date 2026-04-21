@@ -360,34 +360,29 @@ export default function App() {
   }
 
 
+  const initialRoute = showMain ? 'Main' : 'Welcome';
+
   return (
     <ErrorBoundary>
-      <NavigationContainer linking={linking} theme={DarkTheme}>
+      <NavigationContainer linking={linking} theme={DarkTheme} key={initialRoute}>
         <StatusBar style="light" />
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {!showMain ? (
-            <>
-              <Stack.Screen name="Welcome" component={WelcomeScreen} />
-              <Stack.Screen name="Login" component={LoginScreen} />
-            </>
-          ) : (
-            <>
-              <Stack.Screen name="Main" component={MainTabs} />
-              <Stack.Screen name="Profile" component={ProfileScreen} options={{ presentation: 'modal' }} />
-              <Stack.Screen name="GlobalDetail" component={GlobalDetailScreen} options={{ presentation: 'modal' }} />
-              <Stack.Screen
-                name="MiniApp"
-                options={{
-                  presentation: 'fullScreenModal',
-                  animation: 'slide_from_bottom',
-                }}
-              >
-                {({ route, navigation }: any) => (
-                  <MiniAppContainer app={(route.params as any).app} navigation={navigation} />
-                )}
-              </Stack.Screen>
-            </>
-          )}
+        <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Welcome" component={WelcomeScreen} />
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Main" component={MainTabs} />
+          <Stack.Screen name="Profile" component={ProfileScreen} options={{ presentation: 'modal' }} />
+          <Stack.Screen name="GlobalDetail" component={GlobalDetailScreen} options={{ presentation: 'modal' }} />
+          <Stack.Screen
+            name="MiniApp"
+            options={{
+              presentation: 'fullScreenModal',
+              animation: 'slide_from_bottom',
+            }}
+          >
+            {({ route, navigation }: any) => (
+              <MiniAppContainer app={(route.params as any).app} navigation={navigation} />
+            )}
+          </Stack.Screen>
           <Stack.Screen name="OnboardingGoals" component={OnboardingGoals} />
           <Stack.Screen name="OnboardingPermissions" component={OnboardingPermissions} />
           <Stack.Screen name="Pairing" component={PairingScreen} />
