@@ -7,7 +7,7 @@ import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { theme } from './src/theme';
-import { HomeScreen } from './src/screens/HomeScreen';
+import { HomeScreen } from './src/screens/HomeScreenMinimal'; // DIAGNOSTIC: swapped to minimal
 import { ThemesScreen } from './src/screens/ThemesScreen';
 import { AnalysesScreen } from './src/screens/AnalysesScreen';
 import { AppsScreen } from './src/screens/AppsScreen';
