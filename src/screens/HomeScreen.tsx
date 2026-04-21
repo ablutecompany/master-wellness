@@ -234,7 +234,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   // --- UI & NAVIGATION STATE ---
   const [showDemoModal, setShowDemoModal] = useState(false);
   // Demo uses the app-wide global demoAnalysis.
-  const demoAnalysis = useStore(state => state.demoAnalysis);
+  const demoAnalysis = useStore(useShallow(state => state.demoAnalysis));
   const setDemoAnalysis = useStore(state => state.setDemoAnalysis);
   const [showHistorico, setShowHistorico] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -252,7 +252,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const activeAnalysis = React.useMemo<Analysis | null>(() => {
     if (demoAnalysis) return demoAnalysis;
     
-    let baseAnalysis = null;
+    let baseAnalysis: Analysis | null = null;
     if (activeAnalysisId) {
       baseAnalysis = analyses.find(a => a.id === activeAnalysisId) ?? null;
     }
@@ -262,7 +262,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
     if (!baseAnalysis) return null;
 
-    // ── INJECT EXPORTED CONTEXTS AS ECOSYSTEM FACTS ──
+    // Only create a new object if there are exportedContexts to inject.
+    // Otherwise return baseAnalysis directly to preserve referential stability.
+    if (exportedContexts.length === 0) return baseAnalysis;
+
     const mappedContexts = exportedContexts.map(ctx => {
       let valStr = String(ctx.value);
       if (typeof ctx.value === 'object' && ctx.value !== null) {
@@ -1114,7 +1117,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   return (
     <Container safe style={styles.container}>
       <View style={{ backgroundColor: 'red', padding: 8, zIndex: 9999, alignItems: 'center' }}>
-        <Typography style={{ color: 'white', fontWeight: 'bold' }}>SAFE MODE RUNTIME STEP 7</Typography>
+        <Typography style={{ color: 'white', fontWeight: 'bold' }}>SAFE MODE RUNTIME STEP 8</Typography>
       </View>
       {/* ── FULL SCREEN BACKGROUND ESTÁTICO NEGRO ───────────────────────────────── */}
       <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#020306' }]} pointerEvents="none">
