@@ -324,9 +324,10 @@ export default function App() {
     );
   }
 
-  // showMain: grant access once syncing is done and there's a session, or in guest mode.
-  // Deliberately does NOT read profileStatus from store during render to avoid cascade.
-  const showMain = isGuestMode || (!!session && !isSyncingLocal && profileStatus === 'loaded');
+  // showMain: grant navigation access once local sync flag completes.
+  // Only depends on isSyncingLocal (local React state) — avoids Zustand profileStatus
+  // double-render cascade that was causing React #185.
+  const showMain = isGuestMode || (!!session && !isSyncingLocal);
 
   // Show loading spinner while syncing
   if (session && isSyncingLocal) {
