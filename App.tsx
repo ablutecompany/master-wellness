@@ -98,7 +98,7 @@ const linking = {
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, errorStr: '' };
+    this.state = { hasError: false, errorStr: '', componentStack: '' };
   }
 
   static getDerivedStateFromError(error) {
@@ -106,7 +106,10 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error("ErrorBoundary caught error:", error, errorInfo);
+    const stack = errorInfo?.componentStack || '';
+    this.setState({ componentStack: stack });
+    console.error('[CRASH_DETAIL] Error:', error?.toString());
+    console.error('[CRASH_STACK]', stack);
   }
 
   render() {
@@ -115,6 +118,7 @@ class ErrorBoundary extends React.Component {
         <View style={{ flex: 1, backgroundColor: 'red', padding: 24, justifyContent: 'center' }}>
           <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 20 }}>CRASH:</Text>
           <Text style={{ color: 'white', marginTop: 10 }}>{this.state.errorStr}</Text>
+          <Text style={{ color: 'yellow', marginTop: 10, fontSize: 10 }}>{this.state.componentStack?.slice(0, 500)}</Text>
         </View>
       );
     }
