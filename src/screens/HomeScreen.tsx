@@ -7,7 +7,7 @@ import { useStore } from '../store/useStore';
  * Direct replacement of the HOME view contents to ensure no previous content remains.
  */
 
-export const HomeScreen = () => {
+export const HomeScreen = ({ navigation }: any) => {
   const [currentView, setCurrentView] = useState<'root' | 'home' | 'profile'>('root');
   
   // Real data primitives only
@@ -18,7 +18,7 @@ export const HomeScreen = () => {
   const analysesCount = analyses?.length ?? 0;
   const userId = user?.id ?? 'unavailable';
   const displayMemberId = activeMemberId ?? 'unavailable';
-  const finalCommitSha = "569f3a7"; // Will be updated manually after commit
+  const finalCommitSha = "569f3a8"; // STEP LIVE 06 — DATA SYNC ACTIVE
 
   const renderContent = () => {
     if (currentView === 'home') {
@@ -89,10 +89,18 @@ export const HomeScreen = () => {
           >
             <Text style={styles.navButtonText}>PERFIL</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('Login')} 
+            style={[styles.navButton, { marginTop: 16, backgroundColor: '#005577', borderColor: '#00F2FF' }]}
+          >
+            <Text style={styles.navButtonText}>LOGIN</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
   };
+
 
   return (
     <SafeAreaView style={styles.container}>
