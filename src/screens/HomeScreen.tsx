@@ -180,15 +180,17 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const setSessionToken = useStore(state => state.setSessionToken);
   const setAnalyses = useStore(state => state.setAnalyses);
   const setActiveAnalysisId = useStore(state => state.setActiveAnalysisId);
-  // SAFE BUILD: depend on stable userId string, NOT the user object,
-  // to prevent selectUser's .find() from returning a new ref every render.
+  // LOOP FIX: do NOT call supabase.auth.getSession() here.
+  // That call can trigger a SIGNED_IN event in App.tsx onAuthStateChange,
+  // which calls syncProfile → setUser(fallback) → new user object ref → re-render cascade.
+  // Read token directly from the Zustand store where App.tsx already stored it.
   useEffect(() => {
     async function loadData() {
-      const session = await supabase.auth.getSession();
-      const token = session.data.session?.access_token;
-      const currentUser = useStore.getState().isGuestMode ? null : useStore.getState().user;
-      
-      if (currentUser && token && !useStore.getState().isGuestMode) {
+      const storeState = useStore.getState();
+      const token = storeState.sessionToken;           // already set by App.tsx syncProfile
+      const currentUser = storeState.isGuestMode ? null : storeState.user;
+
+      if (currentUser && token && !storeState.isGuestMode) {
         try {
           const analysesRes = await fetch(`${ENV.BACKEND_URL}/analyses`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -1136,24 +1138,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     );
   }
 
-  // DIAG-RENDER: Return static UI before complex render tree to confirm crash location
-  // ALL hooks above ran → if this shows without crash → crash is in Container/children below
-  return (
-    <View style={{ flex: 1, backgroundColor: '#0a0014', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-      <View style={{ backgroundColor: '#884400', padding: 16, borderRadius: 12, marginBottom: 12, width: '100%', alignItems: 'center' }}>
-        <Typography style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>CHECKPOINT: DIAG-RENDER</Typography>
-        <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, marginTop: 4 }}>Real HomeScreen hooks · Bypassed render tree</Typography>
-      </View>
-      <Typography style={{ color: '#00F2FF', fontSize: 12, textAlign: 'center' }}>
-        userId: {userId || 'null'}{'\n'}w: {width} h: {height}
-      </Typography>
-    </View>
-  );
-
   return (
     <Container safe style={styles.container}>
       <View style={{ backgroundColor: '#005500', padding: 8, zIndex: 9999, alignItems: 'center' }}>
-        <Typography style={{ color: 'white', fontWeight: 'bold' }}>STEP 10 — native driver conflict fixed</Typography>
+        <Typography style={{ color: 'white', fontWeight: 'bold' }}>STEP 11 — no supabase.getSession() in HomeScreen</Typography>
       </View>
       {/* ── FULL SCREEN BACKGROUND ESTÁTICO NEGRO ───────────────────────────────── */}
       <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#020306' }]} pointerEvents="none">
