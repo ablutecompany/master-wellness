@@ -6,7 +6,7 @@
  * The log output will show which effect ran last before crash.
  */
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, Animated } from 'react-native';
+import { View, Text, Animated, PanResponder, useWindowDimensions } from 'react-native';
 import { useStore } from '../store/useStore';
 import { useShallow } from 'zustand/react/shallow';
 import * as Selectors from '../store/selectors';
@@ -14,7 +14,9 @@ import { supabase } from '../services/supabase';
 import { ENV } from '../config/env';
 import { semanticOutputService } from '../services/semantic-output';
 
-export const HomeScreen = () => {
+export const HomeScreen = ({ navigation }: { navigation: any }) => {
+  // useWindowDimensions — same as real HomeScreen line 149
+  const { width, height } = useWindowDimensions();
   // --- Mirror of all real HomeScreen useStore subscriptions ---
   const user = useStore(useShallow(Selectors.selectUser));
   const activeMemberId = useStore(Selectors.selectActiveMemberId);
@@ -37,12 +39,50 @@ export const HomeScreen = () => {
   // Stable ID
   const userId = user?.id ?? null;
 
-  // Local state mirrors
+  // Local state mirrors (from real HomeScreen)
   const [syncFlowState, setSyncFlowState] = useState<'idle'|'searching'|'connected'|'syncing'|'success'|'failed'>('idle');
   const [showProfile, setShowProfile] = useState(false);
+  const [themesOpen, setThemesOpen] = useState(false);
+  const [dataOpen, setDataOpen] = useState(false);
+  const [themesInteractive, setThemesInteractive] = useState(false);
+  const [dataInteractive, setDataInteractive] = useState(false);
   const [diagLog, setDiagLog] = useState('mounted');
   const isMeasuringRef = useRef(false);
+
+  // Animated.Values that depend on width — SAME AS REAL HOMESCREEN
   const arrowAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const floatAnim1 = useRef(new Animated.Value(0)).current;
+  const floatAnim2 = useRef(new Animated.Value(1)).current;
+  const themesAnim = useRef(new Animated.Value(-width)).current;
+  const dataAnim = useRef(new Animated.Value(width)).current;
+  const DRAWER_DOWN = 583;
+  const drawerAnim = useRef(new Animated.Value(DRAWER_DOWN)).current;
+  const switchAnim = useRef(new Animated.Value(0)).current;
+  const lastDrawerY = useRef(DRAWER_DOWN);
+
+  // PanResponder — same as real HomeScreen
+  const drawerPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, { dy }) => {
+        let newY = lastDrawerY.current + dy;
+        if (newY < 0) newY = 0;
+        if (newY > DRAWER_DOWN) newY = DRAWER_DOWN;
+        drawerAnim.setValue(newY);
+      },
+      onPanResponderRelease: (_, { dy, vy }) => {
+        const toValue = (vy < -0.2 || dy < -25) ? 0 : DRAWER_DOWN;
+        Animated.spring(drawerAnim, { toValue, bounciness: 0, useNativeDriver: false })
+          .start(() => { lastDrawerY.current = toValue; });
+      }
+    })
+  ).current;
+
+  // interpolates from width — same pattern as HomeScreen
+  const themesBackdropOpacity = themesAnim.interpolate({ inputRange: [-width, 0], outputRange: [0, 0.88], extrapolate: 'clamp' });
+  const dataBackdropOpacity = dataAnim.interpolate({ inputRange: [0, width], outputRange: [0.88, 0], extrapolate: 'clamp' });
 
   // EFFECT 1: loadData [userId, isGuestMode]
   useEffect(() => {
@@ -129,15 +169,14 @@ export const HomeScreen = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0a0014', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-      <View style={{ backgroundColor: '#003388', padding: 16, borderRadius: 12, marginBottom: 16, width: '100%', alignItems: 'center' }}>
-        <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>CHECKPOINT: DIAG-EFFECTS</Text>
-        <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, marginTop: 4 }}>All subs + All effects · Static UI</Text>
+      <View style={{ backgroundColor: '#550055', padding: 16, borderRadius: 12, marginBottom: 16, width: '100%', alignItems: 'center' }}>
+        <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 18 }}>CHECKPOINT: DIAG-FULL-HOOKS</Text>
+        <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, marginTop: 4 }}>All hooks + width Animated + PanResponder · Static UI</Text>
       </View>
       <Text style={{ color: '#00F2FF', fontSize: 12, textAlign: 'center' }}>
+        w:{width} h:{height}{'\n'}
         userId: {userId || 'null'}{'\n'}
-        isGuest: {String(isGuestMode)}{'\n'}
         analyses: {analyses?.length ?? 0}{'\n'}
-        measurements: {measurementCount}{'\n\n'}
         last: {diagLog}
       </Text>
     </View>
