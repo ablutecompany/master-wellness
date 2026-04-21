@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Platform, View, Text, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { Platform, View, Text, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { ENV } from './src/config/env';
 
@@ -23,15 +23,11 @@ import {
   Brain, 
   Database, 
   LayoutGrid, 
-  User as UserIcon 
 } from 'lucide-react-native';
 import { supabase } from './src/services/supabase';
 import { useStore } from './src/store/useStore';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { Session } from '@supabase/supabase-js';
-
-
-
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -42,18 +38,7 @@ function MainTabs() {
       initialRouteName="Home"
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: Platform.OS === 'web' ? {
-          display: 'none',
-          height: 64,
-          backgroundColor: '#05070A',
-          borderTopColor: 'rgba(255,255,255,0.08)',
-          paddingBottom: 8,
-          paddingTop: 8,
-        } : {
-          display: 'none',
-          backgroundColor: '#05070A',
-          borderTopColor: 'rgba(255,255,255,0.08)',
-        },
+        tabBarStyle: { display: 'none' },
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textMuted,
         tabBarIcon: ({ color, size }: { color: string, size: number }) => {
@@ -94,7 +79,6 @@ const linking = {
   },
 };
 
-
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -126,181 +110,161 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+// ── AUTH BOOT ──────────────────────────────────────────────────────────────────
+// Design principle: the NavigationContainer is mounted ONCE and never remounted.
+// Auth state is managed via a single 'authReady' flag. When authReady=false,
+// the app shows a simple loading screen (no NavigationContainer involved).
+// Once authReady=true, the NavigationContainer mounts with the correct initialRouteName
+// and is never re-mounted again.
+// This prevents the React Navigation internal setState cascade that caused React #185.
 
 export default function App() {
-  const [session, setSession] = React.useState<Session | null>(null);
-  const [initialized, setInitialized] = React.useState(false);
-  // Local sync flag — avoids writing to Zustand store during render to prevent loops
-  const [isSyncingLocal, setIsSyncingLocal] = React.useState(false);
-  
+  // authReady: true once the initial session check + profile sync is complete
+  const [authReady, setAuthReady] = React.useState(false);
+  // authDest: the screen to show once auth is ready
+  const [authDest, setAuthDest] = React.useState<'Main' | 'Welcome'>('Welcome');
+
   const setUser = useStore(state => state.setUser);
   const setAuthAccount = useStore(state => state.setAuthAccount);
-  const profileStatus = useStore(state => state.profileStatus);
   const setProfileStatus = useStore(state => state.setProfileStatus);
   const setSessionToken = useStore(state => state.setSessionToken);
   const setHousehold = useStore(state => state.setHousehold);
-  
   const isGuestMode = useStore(state => state.isGuestMode);
   const setGuestMode = useStore(state => state.setGuestMode);
   const hasHydrated = useStore(state => state.hasHydrated);
 
-  // Guard: prevents concurrent/repeated Supabase SIGNED_IN events from
-  // re-entering syncProfile while it is already running.
+  // Guard against concurrent syncProfile calls
   const isSyncingRef = React.useRef(false);
+  // Guard against listener firing during boot sequence
+  const bootCompletedRef = React.useRef(false);
 
-  const syncProfile = React.useCallback(async (session: Session | null) => {
+  const syncProfile = React.useCallback(async (session: Session | null, onDone?: (dest: 'Main' | 'Welcome') => void) => {
     if (!session?.user || !session.access_token) {
       setUser(null);
       setProfileStatus('idle');
+      onDone?.('Welcome');
       return;
     }
 
     if (isSyncingRef.current) return;
     isSyncingRef.current = true;
-    setIsSyncingLocal(true);
     setSessionToken(session.access_token);
 
+    const setLoaded = (profile: any) => {
+      setUser(profile);
+      if (profile?.household) setHousehold(profile.household);
+      setProfileStatus('loaded');
+      isSyncingRef.current = false;
+      onDone?.('Main');
+    };
+
+    const setFallback = () => {
+      const fallback = {
+        id: session.user.id,
+        email: session.user.email,
+        name: session.user.email?.split('@')[0] || 'Utilizador',
+        height: 170,
+        baseWeight: 70,
+        mainGoal: 'general_wellness',
+      };
+      setUser(fallback as any);
+      setProfileStatus('loaded');
+      isSyncingRef.current = false;
+      onDone?.('Main');
+    };
+
     try {
-      const response = await fetch(`${ENV.BACKEND_URL}/auth/me`, {
+      const meRes = await fetch(`${ENV.BACKEND_URL}/auth/me`, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       });
+      if (meRes.ok) {
+        const data = await meRes.json();
+        if (data.ok && data.profile) { setLoaded(data.profile); return; }
+      }
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.ok && data.profile) {
-          setUser(data.profile);
-          if (data.profile.household) {
-            setHousehold(data.profile.household);
-          }
-          setProfileStatus('loaded');
-          isSyncingRef.current = false;
-          setIsSyncingLocal(false);
-          return;
-        }
-      } 
-      
-      // Profile missing — auto-initialize
+      // Try to initialize profile
       try {
         const initRes = await fetch(`${ENV.BACKEND_URL}/auth/initialize`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
         });
-        
         if (initRes.ok) {
-          const autoMeRes = await fetch(`${ENV.BACKEND_URL}/auth/me`, {
+          const me2 = await fetch(`${ENV.BACKEND_URL}/auth/me`, {
             headers: { 'Authorization': `Bearer ${session.access_token}` }
           });
-          if (autoMeRes.ok) {
-            const autoData = await autoMeRes.json();
-            if (autoData.ok && autoData.profile) {
-              setUser(autoData.profile);
-              if (autoData.profile.household) {
-                setHousehold(autoData.profile.household);
-              }
-              setProfileStatus('loaded');
-              isSyncingRef.current = false;
-              setIsSyncingLocal(false);
-              return;
-            }
+          if (me2.ok) {
+            const d2 = await me2.json();
+            if (d2.ok && d2.profile) { setLoaded(d2.profile); return; }
           }
         }
-        
-        // Fallback profile
-        console.warn('[App] Auto-initialize backend failed, using local profile fallback');
-        const fallbackProfile = {
-          id: session.user.id,
-          email: session.user.email,
-          name: session.user.email?.split('@')[0] || 'Utilizador',
-          height: 170,
-          baseWeight: 70,
-          mainGoal: 'general_wellness',
-        };
-        setUser(fallbackProfile as any);
-        setProfileStatus('loaded');
-        isSyncingRef.current = false;
-        setIsSyncingLocal(false);
-      } catch (initErr) {
-        console.warn('[App] Network failed during auto-initialize, fallback applied:', initErr);
-        const fallbackProfile = {
-          id: session.user.id,
-          email: session.user.email,
-          name: session.user.email?.split('@')[0] || 'Utilizador',
-          height: 170,
-          baseWeight: 70,
-          mainGoal: 'general_wellness',
-        };
-        setUser(fallbackProfile as any);
-        setProfileStatus('loaded');
-        isSyncingRef.current = false;
-        setIsSyncingLocal(false);
+        console.warn('[App] Auto-initialize failed, using fallback');
+        setFallback();
+      } catch {
+        console.warn('[App] Network error during init, using fallback');
+        setFallback();
       }
     } catch (err) {
       console.error('[App] Profile sync failed:', err);
       setProfileStatus('error');
       isSyncingRef.current = false;
-      setIsSyncingLocal(false);
+      onDone?.('Welcome');
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const initializedRef = React.useRef(false);
-
   useEffect(() => {
-    // STEP 1: Get initial session and sync profile once
+    // Boot sequence: get session once, then set authReady exactly once
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
-        setSession(session);
         setAuthAccount(session?.user ?? null);
         if (session) {
           setGuestMode(false);
           setSessionToken(session.access_token);
-          syncProfile(session);
+          // syncProfile calls onDone which sets authDest+authReady — no extra setState cascade
+          syncProfile(session, (dest) => {
+            setAuthDest(dest);
+            setAuthReady(true);
+            bootCompletedRef.current = true;
+          });
+        } else if (isGuestMode) {
+          setAuthDest('Main');
+          setAuthReady(true);
+          bootCompletedRef.current = true;
         } else {
-          setUser(null);
-          setSessionToken(null);
-          setProfileStatus('idle');
+          setAuthDest('Welcome');
+          setAuthReady(true);
+          bootCompletedRef.current = true;
         }
       })
-      .catch(err => console.error('[App] Auth init failed:', err))
-      .finally(() => {
-        setInitialized(true);
-        initializedRef.current = true;
+      .catch(() => {
+        setAuthDest('Welcome');
+        setAuthReady(true);
+        bootCompletedRef.current = true;
       });
 
-    // STEP 2: Only react to auth changes that happen AFTER boot is done
+    // Auth listener: only for post-boot events (new sign-in, sign-out)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // During initial boot, getSession already handles everything — ignore all events
-      // until initialization is complete to prevent the race condition.
-      if (!initializedRef.current) return;
+      if (!bootCompletedRef.current) return; // ignore events during boot
 
       if (event === 'SIGNED_IN' && session) {
-        setSession(session);
-        setAuthAccount(session?.user ?? null);
-        setSessionToken(session?.access_token ?? null);
+        setAuthAccount(session.user);
         setGuestMode(false);
-        // Only sync if not already syncing or loaded
         if (!isSyncingRef.current && useStore.getState().profileStatus !== 'loaded') {
-          syncProfile(session);
+          syncProfile(session, (dest) => setAuthDest(dest));
         }
-      } 
-      else if (event === 'SIGNED_OUT') {
+      } else if (event === 'SIGNED_OUT') {
         isSyncingRef.current = false;
-        setIsSyncingLocal(false);
-        setSession(null);
         setAuthAccount(null);
         setSessionToken(null);
         setUser(null);
         setHousehold(null);
         setProfileStatus('idle');
+        setAuthDest('Welcome');
         useStore.getState().clearSensitiveState();
         const { installedAppIds, grantedPermissions, appEvents } = useStore.getState();
         const { saveToStorage } = require('./src/store/persistence');
         saveToStorage(installedAppIds, grantedPermissions, appEvents, []);
       } else if (event === 'TOKEN_REFRESHED' && session) {
-        // Silently update token without re-syncing
         setSessionToken(session.access_token);
         useStore.getState().setSessionToken(session.access_token);
       }
@@ -310,63 +274,24 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Production Observer (Minimal)
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      window.onerror = (msg, url, line) => {
-        console.warn(`[BOOT_OBSERVER] ${msg} at ${line}`);
-        return false;
-      };
-    }
-  }, []);
-
-  // Production Error Guard (Web)
-  useEffect(() => {
-    if (Platform.OS === 'web') {
-      const handler = (event: ErrorEvent | PromiseRejectionEvent) => {
-        const error = 'reason' in event ? event.reason : event.error || (event as any).message;
-        console.error('[CRITICAL_RUN_FAIL]', error);
-      };
-      window.addEventListener('error', handler);
-      window.addEventListener('unhandledrejection', handler);
-      return () => {
-        window.removeEventListener('error', handler);
-        window.removeEventListener('unhandledrejection', handler);
-      };
-    }
-  }, []);
-
-  if (!initialized || !hasHydrated) {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#010204', justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ color: '#fff', fontSize: 14, letterSpacing: 2 }}>CARREGANDO...</Text>
-      </View>
-    );
-  }
-
-  // showMain: grant navigation access once local sync flag completes.
-  // Only depends on isSyncingLocal (local React state) — avoids Zustand profileStatus
-  // double-render cascade that was causing React #185.
-  const showMain = isGuestMode || (!!session && !isSyncingLocal);
-
-  // Show loading spinner while syncing
-  if (session && isSyncingLocal) {
+  // Show pre-navigation loading screen (no NavigationContainer = no cascade)
+  if (!authReady || !hasHydrated) {
     return (
       <View style={{ flex: 1, backgroundColor: '#010204', justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator color={theme.colors.primary} size="large" />
-        <Text style={{ color: '#fff', fontSize: 12, letterSpacing: 2, marginTop: 20 }}>SINCRONIZANDO PERFIL...</Text>
+        <Text style={{ color: '#fff', fontSize: 12, letterSpacing: 2, marginTop: 20 }}>CARREGANDO...</Text>
       </View>
     );
   }
 
-
-  const initialRoute = showMain ? 'Main' : 'Welcome';
-
+  // NavigationContainer mounts ONCE with the correct initialRouteName.
+  // It never remounts — auth changes are handled via navigation.navigate() or
+  // screen-level guards if needed.
   return (
     <ErrorBoundary>
-      <NavigationContainer linking={linking} theme={DarkTheme} key={initialRoute}>
+      <NavigationContainer linking={linking} theme={DarkTheme}>
         <StatusBar style="light" />
-        <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ headerShown: false }}>
+        <Stack.Navigator initialRouteName={authDest} screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Main" component={MainTabs} />
@@ -374,10 +299,7 @@ export default function App() {
           <Stack.Screen name="GlobalDetail" component={GlobalDetailScreen} options={{ presentation: 'modal' }} />
           <Stack.Screen
             name="MiniApp"
-            options={{
-              presentation: 'fullScreenModal',
-              animation: 'slide_from_bottom',
-            }}
+            options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
           >
             {({ route, navigation }: any) => (
               <MiniAppContainer app={(route.params as any).app} navigation={navigation} />
@@ -391,4 +313,3 @@ export default function App() {
     </ErrorBoundary>
   );
 }
-
