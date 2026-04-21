@@ -138,12 +138,21 @@ export default function App() {
   const setGuestMode = useStore(state => state.setGuestMode);
   const hasHydrated = useStore(state => state.hasHydrated);
 
+  // Guard: prevents concurrent/repeated Supabase SIGNED_IN events from
+  // re-entering syncProfile while it is already running, which would flip
+  // profileStatus loading→loaded→loading and cause React #185.
+  const isSyncingRef = React.useRef(false);
+
   const syncProfile = React.useCallback(async (session: Session | null) => {
     if (!session?.user || !session.access_token) {
       setUser(null);
       setProfileStatus('idle');
       return;
     }
+
+    // Already syncing — skip re-entry to avoid the profileStatus loop.
+    if (isSyncingRef.current) return;
+    isSyncingRef.current = true;
 
     setProfileStatus('loading');
     setSessionToken(session.access_token);
@@ -160,6 +169,7 @@ export default function App() {
             setHousehold(data.profile.household);
           }
           setProfileStatus('loaded');
+          isSyncingRef.current = false;
           return;
         }
       } 
@@ -187,6 +197,7 @@ export default function App() {
                 setHousehold(autoData.profile.household);
               }
               setProfileStatus('loaded');
+              isSyncingRef.current = false;
               return;
             }
           }
@@ -204,6 +215,7 @@ export default function App() {
         };
         setUser(fallbackProfile as any);
         setProfileStatus('loaded');
+        isSyncingRef.current = false;
       } catch (initErr) {
         console.warn('[App] Network failed during auto-initialize, fallback applied:', initErr);
         const fallbackProfile = {
@@ -216,10 +228,12 @@ export default function App() {
         };
         setUser(fallbackProfile as any);
         setProfileStatus('loaded');
+        isSyncingRef.current = false;
       }
     } catch (err) {
       console.error('[App] Profile sync failed:', err);
       setProfileStatus('error');
+      isSyncingRef.current = false;
     }
   }, [setUser, setProfileStatus, setSessionToken]);
 
@@ -243,6 +257,9 @@ export default function App() {
       .finally(() => setInitialized(true));
 
     // Listen for auth changes
+    // IMPORTANT: Supabase emits SIGNED_IN multiple times (initial + token refresh).
+    // We only call syncProfile if profileStatus is not already loaded/loading,
+    // to prevent the spinner from reappearing and causing a loop.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setAuthAccount(session?.user ?? null);
@@ -250,9 +267,14 @@ export default function App() {
       
       if (event === 'SIGNED_IN' && session) {
         setGuestMode(false);
-        syncProfile(session);
+        // Only sync if not already done — avoids re-entry from repeated SIGNED_IN
+        const currentStatus = useStore.getState().profileStatus;
+        if (currentStatus !== 'loaded' && currentStatus !== 'loading') {
+          syncProfile(session);
+        }
       } 
       else if (event === 'SIGNED_OUT') {
+        isSyncingRef.current = false;
         setUser(null);
         setSessionToken(null);
         setHousehold(null);
