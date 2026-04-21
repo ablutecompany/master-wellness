@@ -69,12 +69,17 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
     if (err) { setErrorMsg(err); return; }
 
     setLoading(true);
+    console.warn('[AUTH_DIAG] login submit start', { email: email.trim() });
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       });
-      if (error) throw error;
+      if (error) {
+        console.warn('[AUTH_DIAG] login error:', error.message);
+        throw error;
+      }
+      console.warn('[AUTH_DIAG] login success, waiting for session listener');
       // setUser(data.user) REMOVED: App.tsx handles the session -> profile sync now.
     } catch (error: any) {
       setErrorMsg(error.message || 'Ocorreu um erro inesperado.');
@@ -90,6 +95,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
     if (err) { setErrorMsg(err); return; }
 
     setLoading(true);
+    console.warn('[AUTH_DIAG] register submit start', { email: email.trim() });
     try {
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
@@ -98,7 +104,12 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
           emailRedirectTo: `${ENV.SITE_URL}/login`,
         },
       });
-      if (error) throw error;
+      if (error) {
+        console.warn('[AUTH_DIAG] register error:', error.message);
+        throw error;
+      }
+
+      console.warn('[AUTH_DIAG] register success', { hasSession: !!data.session });
 
       // Supabase pode exigir confirmação por email
       if (data.session) {

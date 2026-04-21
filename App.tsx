@@ -3,7 +3,8 @@ import { Platform, View, Text, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { ENV } from './src/config/env';
 
-import { NavigationContainer, DarkTheme } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme, createNavigationContainerRef } from '@react-navigation/native';
+export const navigationRef = createNavigationContainerRef();
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { theme } from './src/theme';
@@ -148,8 +149,12 @@ export default function App() {
       return;
     }
 
-    if (isSyncingRef.current) return;
+    if (isSyncingRef.current) {
+      console.warn('[AUTH_DIAG] syncProfile already in progress, aborting concurrent call');
+      return;
+    }
     isSyncingRef.current = true;
+    console.warn('[AUTH_DIAG] syncProfile start', { userId: session.user.id });
     setSessionToken(session.access_token);
 
     const trySyncAnalyses = async () => {
@@ -169,6 +174,7 @@ export default function App() {
       await trySyncAnalyses();
       setProfileStatus('loaded');
       isSyncingRef.current = false;
+      console.warn('[AUTH_DIAG] syncProfile success: profile loaded', { userId: profile.id });
       onDone?.('Main');
     };
 
@@ -185,6 +191,7 @@ export default function App() {
       await trySyncAnalyses();
       setProfileStatus('loaded');
       isSyncingRef.current = false;
+      console.warn('[AUTH_DIAG] syncProfile success: fallback used', { userId: fallback.id });
       onDone?.('Main');
     };
 
@@ -228,7 +235,7 @@ export default function App() {
         setFallback();
       }
     } catch (err: any) {
-      console.error('[App] Profile sync critical error:', err);
+      console.error('[AUTH_DIAG] syncProfile critical error:', err);
       setProfileStatus('error');
       isSyncingRef.current = false;
       onDone?.('Welcome');
@@ -278,10 +285,18 @@ export default function App() {
       if (!bootCompletedRef.current) return; // ignore events during boot
 
       if (event === 'SIGNED_IN' && session) {
+        console.warn('[AUTH_DIAG] listener: SIGNED_IN', { userId: session.user.id });
         setAuthAccount(session.user);
         setGuestMode(false);
         if (!isSyncingRef.current && useStore.getState().profileStatus !== 'loaded') {
-          syncProfile(session, (dest) => setAuthDest(dest));
+          syncProfile(session, (dest) => {
+            console.warn('[AUTH_DIAG] listener: syncProfile onDone', { dest });
+            setAuthDest(dest);
+            if (dest === 'Main' && navigationRef.isReady()) {
+              console.warn('[AUTH_DIAG] listener: explicit navigate to Main');
+              navigationRef.navigate('Main' as any);
+            }
+          });
         }
       } else if (event === 'SIGNED_OUT') {
         isSyncingRef.current = false;
@@ -320,7 +335,7 @@ export default function App() {
   // screen-level guards if needed.
   return (
     <ErrorBoundary>
-      <NavigationContainer theme={DarkTheme}>
+      <NavigationContainer theme={DarkTheme} ref={navigationRef}>
         <StatusBar style="light" />
         <Stack.Navigator initialRouteName={authDest} screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
