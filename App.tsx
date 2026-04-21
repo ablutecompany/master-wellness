@@ -222,9 +222,15 @@ export default function App() {
           setSessionToken(session.access_token);
           // syncProfile calls onDone which sets authDest+authReady — no extra setState cascade
           syncProfile(session, (dest) => {
-            setAuthDest(dest);
-            setAuthReady(true);
-            bootCompletedRef.current = true;
+            // Defer NavigationContainer mount by one frame to let React settle
+            // all synchronous Zustand setState updates from syncProfile first.
+            // Without this, SafeAreaProvider mounts during a setState batch and
+            // triggers the React #185 cascade.
+            requestAnimationFrame(() => {
+              setAuthDest(dest);
+              setAuthReady(true);
+              bootCompletedRef.current = true;
+            });
           });
         } else if (isGuestMode) {
           setAuthDest('Main');
