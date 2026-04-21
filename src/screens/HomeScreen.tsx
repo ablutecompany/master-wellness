@@ -148,16 +148,16 @@ const WheelPicker = ({ value, onChange, min = 1, max = 30, width = 80 }: { value
 export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const { width, height } = useWindowDimensions();
   // Subscrição seletiva por domínio
-  const user = useStore(Selectors.selectUser);
+  const user = useStore(useShallow(Selectors.selectUser));
   const activeMemberId = useStore(Selectors.selectActiveMemberId);
   const credits = useStore(Selectors.selectCredits);
   const measurements = useStore(useShallow(Selectors.selectMeasurements));
   // [SAFE BUILD 1] Selectors dependentes de alocação de objetos instáveis desligados para diagnóstico de loop
   // const exportedContexts = useStore(useShallow(Selectors.selectExportedContexts));
   const exportedContexts: any[] = [];
-  const installedAppIds = useStore(Selectors.selectInstalledAppIds);
+  const installedAppIds = useStore(useShallow((state) => state.installedAppIds || []));
   const isGuestMode = useStore(state => state.isGuestMode);
-  const guestProfile = useStore(state => state.guestProfile);
+  const guestProfile = useStore(useShallow(state => state.guestProfile));
   const isMeasuring = useStore(Selectors.selectIsMeasuring);
   const isNfcLoading = useStore(Selectors.selectIsNfcLoading);
   const hasResultsAccess = useStore(Selectors.selectHasResultsAccess);
@@ -173,18 +173,23 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   // const dailySynthesis = useStore(useShallow(state => Selectors.selectDailySynthesis(state)));
   const dailySynthesis = { status: 'needs_attention' as any, title: 'SAFE MODE', negativeHighlight: null, positiveHighlight: null, action: { label: 'Em Mitigação', intent: 'wait' as any } };
 
+  // Stable ID string — avoids re-firing effects when selectUser returns new obj ref
+  const userId = user?.id ?? null;
+
   const setUser = useStore(state => state.setUser);
   const setSessionToken = useStore(state => state.setSessionToken);
   const setAnalyses = useStore(state => state.setAnalyses);
   const setActiveAnalysisId = useStore(state => state.setActiveAnalysisId);
+  // SAFE BUILD: depend on stable userId string, NOT the user object,
+  // to prevent selectUser's .find() from returning a new ref every render.
   useEffect(() => {
     async function loadData() {
       const session = await supabase.auth.getSession();
       const token = session.data.session?.access_token;
+      const currentUser = useStore.getState().isGuestMode ? null : useStore.getState().user;
       
-      if (user && token && !isGuestMode) {
+      if (currentUser && token && !useStore.getState().isGuestMode) {
         try {
-          // 2. CARREGAMENTO REAL DE ANÁLISES — M5 Fatia 2
           const analysesRes = await fetch(`${ENV.BACKEND_URL}/analyses`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
@@ -193,14 +198,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             const realAnalyses = await analysesRes.json();
             setAnalyses(realAnalyses);
 
-            // 3. RESOLUÇÃO DE ANÁLISE ACTIVA COM FALLBACK — M5 Fatia 2
-            const persistedId = user?.activeAnalysisId;
+            const persistedId = currentUser?.activeAnalysisId;
             const existsInReal = realAnalyses.some((a: any) => a.id === persistedId);
 
             if (persistedId && existsInReal) {
               setActiveAnalysisId(persistedId);
             } else if (realAnalyses.length > 0) {
-              // Fallback para a mais recente (já vem ordenada do backend)
               setActiveAnalysisId(realAnalyses[0].id);
             } else {
               setActiveAnalysisId(null);
@@ -213,14 +216,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     }
 
     loadData();
-  }, [user, isGuestMode, setAnalyses, setActiveAnalysisId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, isGuestMode]);
 
   // Garantir inicialização do serviço sem dependência circular
   useEffect(() => {
-    // Usar o ID real se disponível, fallback para legacy session para não quebrar M4
-    const uid = user?.id || 'user_current_session_1';
+    const uid = userId || 'user_current_session_1';
     semanticOutputService.init(uid);
-  }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   // Safe memoized facts query to avoid Zustand infinite render loop
   const rawEvents = useStore(useShallow((state) => state.appContributionEvents));
@@ -1110,7 +1114,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   return (
     <Container safe style={styles.container}>
       <View style={{ backgroundColor: 'red', padding: 8, zIndex: 9999, alignItems: 'center' }}>
-        <Typography style={{ color: 'white', fontWeight: 'bold' }}>SAFE MODE RUNTIME STEP 6</Typography>
+        <Typography style={{ color: 'white', fontWeight: 'bold' }}>SAFE MODE RUNTIME STEP 7</Typography>
       </View>
       {/* ── FULL SCREEN BACKGROUND ESTÁTICO NEGRO ───────────────────────────────── */}
       <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#020306' }]} pointerEvents="none">
