@@ -1136,6 +1136,20 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     );
   }
 
+  // DIAG-RENDER: Return static UI before complex render tree to confirm crash location
+  // ALL hooks above ran → if this shows without crash → crash is in Container/children below
+  return (
+    <View style={{ flex: 1, backgroundColor: '#0a0014', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+      <View style={{ backgroundColor: '#884400', padding: 16, borderRadius: 12, marginBottom: 12, width: '100%', alignItems: 'center' }}>
+        <Typography style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>CHECKPOINT: DIAG-RENDER</Typography>
+        <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, marginTop: 4 }}>Real HomeScreen hooks · Bypassed render tree</Typography>
+      </View>
+      <Typography style={{ color: '#00F2FF', fontSize: 12, textAlign: 'center' }}>
+        userId: {userId || 'null'}{'\n'}w: {width} h: {height}
+      </Typography>
+    </View>
+  );
+
   return (
     <Container safe style={styles.container}>
       <View style={{ backgroundColor: '#005500', padding: 8, zIndex: 9999, alignItems: 'center' }}>
