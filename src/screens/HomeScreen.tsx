@@ -950,29 +950,31 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   ).current;
 
   // ── Central Visual Animation ──────────────────────────────────────────────
+  // [LOOP FIX] This effect was removed — it conflicted with the arrowAnim loop at line 684.
+  // Both used the same Animated.Values (arrowAnim, pulseAnim, floatAnim1, floatAnim2)
+  // but this one used useNativeDriver:true while the drawer uses useNativeDriver:false.
+  // Mixing native/non-native drivers on the same Animated.Value caused internal
+  // React state updates on web that manifested as React #185 (maximum update depth).
+  // The pulse/float animations below are re-enabled safely with useNativeDriver:false.
   React.useEffect(() => {
     Animated.loop(
-      Animated.timing(arrowAnim, { toValue: 1, duration: 1500, useNativeDriver: true })
-    ).start();
-
-    Animated.loop(
       Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.2, duration: 3000, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 3000, useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1.2, duration: 3000, useNativeDriver: false }),
+        Animated.timing(pulseAnim, { toValue: 1, duration: 3000, useNativeDriver: false }),
       ])
     ).start();
 
     Animated.loop(
       Animated.sequence([
-        Animated.timing(floatAnim1, { toValue: 1, duration: 15000, useNativeDriver: true }),
-        Animated.timing(floatAnim1, { toValue: 0, duration: 15000, useNativeDriver: true }),
+        Animated.timing(floatAnim1, { toValue: 1, duration: 15000, useNativeDriver: false }),
+        Animated.timing(floatAnim1, { toValue: 0, duration: 15000, useNativeDriver: false }),
       ])
     ).start();
 
     Animated.loop(
       Animated.sequence([
-        Animated.timing(floatAnim2, { toValue: 0, duration: 20000, useNativeDriver: true }),
-        Animated.timing(floatAnim2, { toValue: 1, duration: 20000, useNativeDriver: true }),
+        Animated.timing(floatAnim2, { toValue: 0, duration: 20000, useNativeDriver: false }),
+        Animated.timing(floatAnim2, { toValue: 1, duration: 20000, useNativeDriver: false }),
       ])
     ).start();
   }, []);
@@ -1136,8 +1138,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   return (
     <Container safe style={styles.container}>
-      <View style={{ backgroundColor: '#7700cc', padding: 8, zIndex: 9999, alignItems: 'center' }}>
-        <Typography style={{ color: 'white', fontWeight: 'bold' }}>STEP 9 — userId deps fix + dataFreshness stabilized</Typography>
+      <View style={{ backgroundColor: '#005500', padding: 8, zIndex: 9999, alignItems: 'center' }}>
+        <Typography style={{ color: 'white', fontWeight: 'bold' }}>STEP 10 — native driver conflict fixed</Typography>
       </View>
       {/* ── FULL SCREEN BACKGROUND ESTÁTICO NEGRO ───────────────────────────────── */}
       <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#020306' }]} pointerEvents="none">
