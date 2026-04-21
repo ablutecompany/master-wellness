@@ -14,11 +14,18 @@ export const HomeScreen = () => {
   const user = useStore((state) => state.user);
   const activeMemberId = useStore((state) => state.activeMemberId);
   const analyses = useStore((state) => state.analyses);
+  const authAccount = useStore((state) => state.authAccount);
 
   const analysesCount = analyses?.length ?? 0;
   const userId = user?.id ?? 'unavailable';
   const displayMemberId = activeMemberId ?? 'unavailable';
-  const finalCommitSha = "569f3a7"; 
+  
+  const profileName = user?.name ?? 'unavailable';
+  const profileEmail = authAccount?.email ?? 'unavailable';
+  const profileCountry = user?.country ?? 'unavailable';
+  const profileTimezone = user?.timezone ?? 'unavailable';
+
+  const finalCommitSha = "f97e04c"; 
 
   const renderContent = () => {
     if (currentView === 'home') {
@@ -62,7 +69,34 @@ export const HomeScreen = () => {
     if (currentView === 'profile') {
       return (
         <View style={styles.center}>
-          <Text style={styles.statusText}>PERFIL MÍNIMO ATIVO</Text>
+          <View style={[styles.card, { backgroundColor: '#001a1a', borderColor: '#00F2FF' }]}>
+            <Text style={styles.cardHeader}>PERFIL REAL — SLICE 01</Text>
+            <View style={styles.divider} />
+            
+            <View style={styles.dataRow}>
+              <Text style={styles.dataLabel}>Nome:</Text>
+              <Text style={styles.dataValue}>{profileName}</Text>
+            </View>
+
+            <View style={styles.dataRow}>
+              <Text style={styles.dataLabel}>Email:</Text>
+              <Text style={styles.dataValue}>{profileEmail}</Text>
+            </View>
+
+            <View style={styles.dataRow}>
+              <Text style={styles.dataLabel}>País:</Text>
+              <Text style={styles.dataValue}>{profileCountry}</Text>
+            </View>
+
+            <View style={styles.dataRow}>
+              <Text style={styles.dataLabel}>Timezone:</Text>
+              <Text style={styles.dataValue}>{profileTimezone}</Text>
+            </View>
+            
+            <View style={styles.divider} />
+            <Text style={styles.footerSha}>commit: {finalCommitSha}</Text>
+          </View>
+
           <TouchableOpacity onPress={() => setCurrentView('root')} style={styles.backBtn}>
             <Text style={styles.backBtnText}>VOLTAR</Text>
           </TouchableOpacity>
