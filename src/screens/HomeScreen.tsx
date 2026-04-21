@@ -10,15 +10,18 @@ import { useStore } from '../store/useStore';
 export const HomeScreen = ({ navigation }: any) => {
   const [currentView, setCurrentView] = useState<'root' | 'home' | 'profile'>('root');
   
+  console.warn('[PROFILE_DIAG] HomeScreen render', { currentView });
+
   // Real data primitives only
   const user = useStore((state) => state.user);
   const activeMemberId = useStore((state) => state.activeMemberId);
   const analyses = useStore((state) => state.analyses);
+  const authAccount = useStore((state) => state.authAccount);
 
   const analysesCount = analyses?.length ?? 0;
   const userId = user?.id ?? 'unavailable';
   const displayMemberId = activeMemberId ?? 'unavailable';
-  const finalCommitSha = "569f3a8"; // STEP LIVE 06 — DATA SYNC ACTIVE
+  const finalCommitSha = "6c8fcf6"; // Updated to match current state
 
   const renderContent = () => {
     if (currentView === 'home') {
@@ -60,14 +63,70 @@ export const HomeScreen = ({ navigation }: any) => {
     }
 
     if (currentView === 'profile') {
-      return (
-        <View style={styles.center}>
-          <Text style={styles.statusText}>PERFIL MÍNIMO ATIVO</Text>
-          <TouchableOpacity onPress={() => setCurrentView('root')} style={styles.backBtn}>
-            <Text style={styles.backBtnText}>VOLTAR</Text>
-          </TouchableOpacity>
-        </View>
-      );
+      try {
+        console.warn('[PROFILE_DIAG] Rendering profile view', {
+          hasUser: !!user,
+          hasAuth: !!authAccount
+        });
+
+        const profileName = user?.name ?? 'unavailable';
+        const profileEmail = authAccount?.email ?? 'unavailable';
+        const profileCountry = user?.country ?? 'unavailable';
+        const profileTimezone = user?.timezone ?? 'unavailable';
+
+        return (
+          <View style={styles.center}>
+            <View style={[styles.card, { backgroundColor: '#001a1a', borderColor: '#00F2FF' }]}>
+              <Text style={styles.cardHeader}>PERFIL REAL — SLICE 01</Text>
+              <View style={styles.divider} />
+              
+              <View style={styles.dataRow}>
+                <Text style={styles.dataLabel}>Nome:</Text>
+                <Text style={styles.dataValue}>{profileName}</Text>
+              </View>
+
+              <View style={styles.dataRow}>
+                <Text style={styles.dataLabel}>Email:</Text>
+                <Text style={styles.dataValue}>{profileEmail}</Text>
+              </View>
+
+              <View style={styles.dataRow}>
+                <Text style={styles.dataLabel}>País:</Text>
+                <Text style={styles.dataValue}>{profileCountry}</Text>
+              </View>
+
+              <View style={styles.dataRow}>
+                <Text style={styles.dataLabel}>Timezone:</Text>
+                <Text style={styles.dataValue}>{profileTimezone}</Text>
+              </View>
+              
+              <View style={styles.divider} />
+              <Text style={styles.footerSha}>commit: {finalCommitSha}</Text>
+            </View>
+
+            <TouchableOpacity 
+              onPress={() => {
+                console.warn('[PROFILE_DIAG] VOLTAR pressed (from profile)');
+                setCurrentView('root');
+              }} 
+              style={styles.backBtn}
+            >
+              <Text style={styles.backBtnText}>VOLTAR</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      } catch (err: any) {
+        console.error('[PROFILE_DIAG] profile render crash:', err.message);
+        return (
+          <View style={styles.center}>
+            <Text style={{ color: '#FF3B30', fontWeight: 'bold', marginBottom: 20 }}>ERRO AO RENDERIZAR PERFIL</Text>
+            <Text style={{ color: '#AAA', fontSize: 10, marginBottom: 40 }}>{err.message}</Text>
+            <TouchableOpacity onPress={() => setCurrentView('root')} style={styles.backBtn}>
+              <Text style={styles.backBtnText}>VOLTAR</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      }
     }
 
     return (
@@ -77,21 +136,30 @@ export const HomeScreen = ({ navigation }: any) => {
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
-            onPress={() => setCurrentView('home')} 
+            onPress={() => {
+              console.warn('[PROFILE_DIAG] HOME button pressed');
+              setCurrentView('home');
+            }} 
             style={styles.navButton}
           >
             <Text style={styles.navButtonText}>HOME</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
-            onPress={() => setCurrentView('profile')} 
+            onPress={() => {
+              console.warn('[PROFILE_DIAG] PERFIL button pressed');
+              setCurrentView('profile');
+            }} 
             style={[styles.navButton, { marginTop: 16, backgroundColor: '#333' }]}
           >
             <Text style={styles.navButtonText}>PERFIL</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
-            onPress={() => navigation.navigate('Login')} 
+            onPress={() => {
+              console.warn('[PROFILE_DIAG] LOGIN button pressed');
+              navigation.navigate('Login');
+            }} 
             style={[styles.navButton, { marginTop: 16, backgroundColor: '#005577', borderColor: '#00F2FF' }]}
           >
             <Text style={styles.navButtonText}>LOGIN</Text>
@@ -105,7 +173,7 @@ export const HomeScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerText}>STEP LIVE 04 — MINIMAL SHELL ON PROD</Text>
+        <Text style={styles.headerText}>STEP LIVE 09 — PROFILE DIAGNOSTIC ACTIVE</Text>
       </View>
       {renderContent()}
     </SafeAreaView>
