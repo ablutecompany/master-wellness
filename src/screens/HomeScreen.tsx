@@ -1141,7 +1141,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   return (
     <Container safe style={styles.container}>
       <View style={{ backgroundColor: '#005500', padding: 8, zIndex: 9999, alignItems: 'center' }}>
-        <Typography style={{ color: 'white', fontWeight: 'bold' }}>STEP 11 — no supabase.getSession() in HomeScreen</Typography>
+        <Typography style={{ color: 'white', fontWeight: 'bold' }}>STEP 12 — Themes, Data and Drawer panels disabled</Typography>
       </View>
       {/* ── FULL SCREEN BACKGROUND ESTÁTICO NEGRO ───────────────────────────────── */}
       <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#020306' }]} pointerEvents="none">
@@ -1527,6 +1527,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
 
       {/* ── SIDE PANEL: THEMES (LEFT) ─────────────────────────────────────── */}
+      {/* DIAG 12: Commenting out panels 
       <Animated.View style={[styles.sidePanel, styles.leftPanel, { transform: [{ translateX: themesAnim }] }]} pointerEvents={themesInteractive ? 'auto' : 'none'}>
         <BlurView intensity={120} tint="dark" style={StyleSheet.absoluteFill}>
           {/* SCRIM DE ESCURECIMENTO ADICIONAL PARA CORTAR BLEED-THROUGH */}
@@ -2653,7 +2654,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           </Animated.View>
         </Animated.View>
       </Animated.View>
-
+      */}
+      
       {/* ── TOKENS MODAL ─────────────────────────────────────────────────── */}
       <Modal visible={showTokens} transparent animationType="fade" onRequestClose={() => setShowTokens(false)}>
         <TouchableOpacity style={[styles.modalOverlay, { backgroundColor: 'transparent' }]} activeOpacity={1} onPress={() => setShowTokens(false)}>
