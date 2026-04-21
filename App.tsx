@@ -261,11 +261,12 @@ export default function App() {
       .finally(() => setInitialized(true));
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setAuthAccount(session?.user ?? null);
-      setSessionToken(session?.access_token ?? null);
-      
       if (event === 'SIGNED_IN' && session) {
+        // If already syncing, suppress all React setState to avoid concurrent update loop
+        if (isSyncingRef.current) return;
+        setSession(session);
+        setAuthAccount(session?.user ?? null);
+        setSessionToken(session?.access_token ?? null);
         setGuestMode(false);
         const currentStatus = useStore.getState().profileStatus;
         if (currentStatus !== 'loaded' && currentStatus !== 'loading') {
@@ -275,14 +276,22 @@ export default function App() {
       else if (event === 'SIGNED_OUT') {
         isSyncingRef.current = false;
         setIsSyncingLocal(false);
-        setUser(null);
+        setSession(null);
+        setAuthAccount(null);
         setSessionToken(null);
+        setUser(null);
         setHousehold(null);
         setProfileStatus('idle');
         useStore.getState().clearSensitiveState();
         const { installedAppIds, grantedPermissions, appEvents } = useStore.getState();
         const { saveToStorage } = require('./src/store/persistence');
         saveToStorage(installedAppIds, grantedPermissions, appEvents, []);
+      } else {
+        // TOKEN_REFRESHED or other non-critical events — only update token silently
+        if (!isSyncingRef.current) {
+          setSession(session);
+          setSessionToken(session?.access_token ?? null);
+        }
       }
     });
 
