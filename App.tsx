@@ -289,7 +289,7 @@ export default function App() {
   // screen-level guards if needed.
   return (
     <ErrorBoundary>
-      <NavigationContainer linking={linking} theme={DarkTheme}>
+      <NavigationContainer theme={DarkTheme}>
         <StatusBar style="light" />
         <Stack.Navigator initialRouteName={authDest} screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
