@@ -1136,8 +1136,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   return (
     <Container safe style={styles.container}>
-      <View style={{ backgroundColor: 'red', padding: 8, zIndex: 9999, alignItems: 'center' }}>
-        <Typography style={{ color: 'white', fontWeight: 'bold' }}>SAFE MODE RUNTIME STEP 8</Typography>
+      <View style={{ backgroundColor: '#7700cc', padding: 8, zIndex: 9999, alignItems: 'center' }}>
+        <Typography style={{ color: 'white', fontWeight: 'bold' }}>STEP 9 — userId deps fix + dataFreshness stabilized</Typography>
       </View>
       {/* ── FULL SCREEN BACKGROUND ESTÁTICO NEGRO ───────────────────────────────── */}
       <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#020306' }]} pointerEvents="none">
