@@ -131,6 +131,7 @@ export default function App() {
   
   const setUser = useStore(state => state.setUser);
   const setAuthAccount = useStore(state => state.setAuthAccount);
+  const profileStatus = useStore(state => state.profileStatus);
   const setProfileStatus = useStore(state => state.setProfileStatus);
   const setSessionToken = useStore(state => state.setSessionToken);
   const setHousehold = useStore(state => state.setHousehold);
@@ -323,8 +324,9 @@ export default function App() {
     );
   }
 
-  // Segmented Auth Guard: Access Main if Perfil is Loaded OR if explicitly in Persistent Guest Mode
-  const showMain = isGuestMode || (!!session && !isSyncingLocal && useStore.getState().profileStatus === 'loaded');
+  // showMain: grant access once syncing is done and there's a session, or in guest mode.
+  // Deliberately does NOT read profileStatus from store during render to avoid cascade.
+  const showMain = isGuestMode || (!!session && !isSyncingLocal && profileStatus === 'loaded');
 
   // Show loading spinner while syncing
   if (session && isSyncingLocal) {
