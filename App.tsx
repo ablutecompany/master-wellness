@@ -126,10 +126,11 @@ class ErrorBoundary extends React.Component {
 export default function App() {
   const [session, setSession] = React.useState<Session | null>(null);
   const [initialized, setInitialized] = React.useState(false);
+  // Local sync flag — avoids writing to Zustand store during render to prevent loops
+  const [isSyncingLocal, setIsSyncingLocal] = React.useState(false);
   
   const setUser = useStore(state => state.setUser);
   const setAuthAccount = useStore(state => state.setAuthAccount);
-  const profileStatus = useStore(state => state.profileStatus);
   const setProfileStatus = useStore(state => state.setProfileStatus);
   const setSessionToken = useStore(state => state.setSessionToken);
   const setHousehold = useStore(state => state.setHousehold);
@@ -139,8 +140,7 @@ export default function App() {
   const hasHydrated = useStore(state => state.hasHydrated);
 
   // Guard: prevents concurrent/repeated Supabase SIGNED_IN events from
-  // re-entering syncProfile while it is already running, which would flip
-  // profileStatus loading→loaded→loading and cause React #185.
+  // re-entering syncProfile while it is already running.
   const isSyncingRef = React.useRef(false);
 
   const syncProfile = React.useCallback(async (session: Session | null) => {
@@ -150,12 +150,11 @@ export default function App() {
       return;
     }
 
-    // Already syncing — skip re-entry to avoid the profileStatus loop.
     if (isSyncingRef.current) return;
     isSyncingRef.current = true;
-
-    setProfileStatus('loading');
+    setIsSyncingLocal(true);
     setSessionToken(session.access_token);
+
     try {
       const response = await fetch(`${ENV.BACKEND_URL}/auth/me`, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
@@ -170,11 +169,12 @@ export default function App() {
           }
           setProfileStatus('loaded');
           isSyncingRef.current = false;
+          setIsSyncingLocal(false);
           return;
         }
       } 
       
-      // If we reach here, profile is missing or fetch failed. Auto-initialize silently.
+      // Profile missing — auto-initialize
       try {
         const initRes = await fetch(`${ENV.BACKEND_URL}/auth/initialize`, {
           method: 'POST',
@@ -185,7 +185,6 @@ export default function App() {
         });
         
         if (initRes.ok) {
-          // Re-fetch profile
           const autoMeRes = await fetch(`${ENV.BACKEND_URL}/auth/me`, {
             headers: { 'Authorization': `Bearer ${session.access_token}` }
           });
@@ -198,12 +197,13 @@ export default function App() {
               }
               setProfileStatus('loaded');
               isSyncingRef.current = false;
+              setIsSyncingLocal(false);
               return;
             }
           }
         }
         
-        // Fallback robusto se a inicialização falhar
+        // Fallback profile
         console.warn('[App] Auto-initialize backend failed, using local profile fallback');
         const fallbackProfile = {
           id: session.user.id,
@@ -216,6 +216,7 @@ export default function App() {
         setUser(fallbackProfile as any);
         setProfileStatus('loaded');
         isSyncingRef.current = false;
+        setIsSyncingLocal(false);
       } catch (initErr) {
         console.warn('[App] Network failed during auto-initialize, fallback applied:', initErr);
         const fallbackProfile = {
@@ -229,16 +230,18 @@ export default function App() {
         setUser(fallbackProfile as any);
         setProfileStatus('loaded');
         isSyncingRef.current = false;
+        setIsSyncingLocal(false);
       }
     } catch (err) {
       console.error('[App] Profile sync failed:', err);
       setProfileStatus('error');
       isSyncingRef.current = false;
+      setIsSyncingLocal(false);
     }
-  }, [setUser, setProfileStatus, setSessionToken]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
-    // Check initial session
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
         setSession(session);
@@ -256,10 +259,6 @@ export default function App() {
       .catch(err => console.error('[App] Auth init failed:', err))
       .finally(() => setInitialized(true));
 
-    // Listen for auth changes
-    // IMPORTANT: Supabase emits SIGNED_IN multiple times (initial + token refresh).
-    // We only call syncProfile if profileStatus is not already loaded/loading,
-    // to prevent the spinner from reappearing and causing a loop.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setAuthAccount(session?.user ?? null);
@@ -267,7 +266,6 @@ export default function App() {
       
       if (event === 'SIGNED_IN' && session) {
         setGuestMode(false);
-        // Only sync if not already done — avoids re-entry from repeated SIGNED_IN
         const currentStatus = useStore.getState().profileStatus;
         if (currentStatus !== 'loaded' && currentStatus !== 'loading') {
           syncProfile(session);
@@ -275,25 +273,21 @@ export default function App() {
       } 
       else if (event === 'SIGNED_OUT') {
         isSyncingRef.current = false;
+        setIsSyncingLocal(false);
         setUser(null);
         setSessionToken(null);
         setHousehold(null);
         setProfileStatus('idle');
-        // T05 Purge
         useStore.getState().clearSensitiveState();
-        
-        // Limpar persistência de contribuições (dados clínicos de MiniApps)
         const { installedAppIds, grantedPermissions, appEvents } = useStore.getState();
         const { saveToStorage } = require('./src/store/persistence');
         saveToStorage(installedAppIds, grantedPermissions, appEvents, []);
       }
-      // Note: other events (TOKEN_REFRESHED, etc.) are handled by keeping auth state
-      // but NOT touching profileStatus unless it's SIGNED_IN/SIGNED_OUT
     });
 
     return () => subscription.unsubscribe();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Mount once — Supabase listener must not re-register on every store update
+  }, []);
 
   // Production Observer (Minimal)
   useEffect(() => {
@@ -330,10 +324,10 @@ export default function App() {
   }
 
   // Segmented Auth Guard: Access Main if Perfil is Loaded OR if explicitly in Persistent Guest Mode
-  const showMain = isGuestMode || (!!session && profileStatus === 'loaded');
+  const showMain = isGuestMode || (!!session && !isSyncingLocal && useStore.getState().profileStatus === 'loaded');
 
-  // Intermediate Screens / Status Handling
-  if (session && profileStatus === 'loading') {
+  // Show loading spinner while syncing
+  if (session && isSyncingLocal) {
     return (
       <View style={{ flex: 1, backgroundColor: '#010204', justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator color={theme.colors.primary} size="large" />
@@ -342,27 +336,6 @@ export default function App() {
     );
   }
 
-
-  if (session && profileStatus === 'error') {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#010204', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-        <Text style={{ color: '#fff', fontSize: 16, marginBottom: 20, textAlign: 'center' }}>
-          Ocorreu um erro temporário a aceder ao teu perfil.
-        </Text>
-        <TouchableOpacity 
-          style={{ paddingVertical: 12, paddingHorizontal: 24, backgroundColor: theme.colors.primary, borderRadius: 8, marginBottom: 20 }}
-          onPress={() => syncProfile(session)}
-        >
-          <Text style={{ color: '#000', fontWeight: 'bold' }}>Tentar Novamente</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          onPress={() => supabase.auth.signOut()}
-        >
-          <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>Sair da conta segura</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
 
   return (
     <ErrorBoundary>
