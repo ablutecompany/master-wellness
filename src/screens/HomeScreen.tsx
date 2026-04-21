@@ -219,10 +219,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, isGuestMode]);
 
-  // Garantir inicialização do serviço sem dependência circular
+  // Garantir inicialização do serviço sem dependência circular.
+  // Defer via setTimeout to prevent notify() chain from firing during mount render.
   useEffect(() => {
     const uid = userId || 'user_current_session_1';
-    semanticOutputService.init(uid);
+    const t = setTimeout(() => semanticOutputService.init(uid), 0);
+    return () => clearTimeout(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
@@ -551,30 +553,48 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [profileWeight, setProfileWeight] = useState(user?.weight ? user.weight.toString() : '');
   const [profileHeight, setProfileHeight] = useState(user?.height ? user.height.toString() : '');
 
-  // A. Corrigir sincronização local do Profile ao abrir o modal
+  // A. Sync local profile state when profile modal opens.
+  // Use userId (stable string) NOT the user object — user object gets a new reference
+  // when setUser(fallbackProfile) is called during boot, which would re-fire this effect
+  // on every render and cause the React #185 setState cascade.
   useEffect(() => {
     if (showProfile) {
       if (isGuestMode) {
-        setProfileName(guestProfile?.name || 'Convidada');
-        setProfileAge(guestProfile?.age ? guestProfile.age.toString() : '');
-        setProfileWeight(guestProfile?.weight ? guestProfile.weight.toString() : '');
-        setProfileHeight(guestProfile?.height ? guestProfile.height.toString() : '');
+        const gp = useStore.getState().guestProfile;
+        setProfileName(gp?.name || 'Convidada');
+        setProfileAge(gp?.age ? gp.age.toString() : '');
+        setProfileWeight(gp?.weight ? gp.weight.toString() : '');
+        setProfileHeight(gp?.height ? gp.height.toString() : '');
       } else {
-        const newVal = user?.name || 'Utilizador';
+        const u = useStore.getState().user;
+        const newVal = u?.name || 'Utilizador';
         if ((window as any) && (window as any)._lastSavedName && newVal !== (window as any)._lastSavedName) {
            console.warn(`[DEV NAME 6] rehydration overwrite detected: saved "${(window as any)._lastSavedName}" but store injected "${newVal}"`);
         }
         setProfileName(newVal);
-        setProfileAge(user?.age ? user.age.toString() : '');
-        setProfileWeight(user?.weight ? user.weight.toString() : '');
-        setProfileHeight(user?.height ? user.height.toString() : '');
+        setProfileAge(u?.age ? u.age.toString() : '');
+        setProfileWeight(u?.weight ? u.weight.toString() : '');
+        setProfileHeight(u?.height ? u.height.toString() : '');
       }
     }
-  }, [showProfile, isGuestMode, user, guestProfile]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showProfile, isGuestMode, userId]);
+  // NOTE: userId (string) replaces user (object) to prevent new-ref cascade on fallback inject
 
   // Odometer calculation (Factual)
-  // Remove selectDaysSinceLastMeasurement locally, rely on freshness slice later
-  const dataFreshness = useStore(useShallow(state => Selectors.selectDataFreshness(state)));
+  // selectDataFreshness returns a new object with Date.now() on every call.
+  // Subscribing to it via useShallow caused permanent re-renders.
+  // Fix: subscribe only to the measurement count (stable scalar) and compute freshness in useMemo.
+  const measurementCount = useStore(state => (state.measurements || []).length);
+  const lastMeasurementTs = useStore(state => {
+    const m = state.measurements || [];
+    if (m.length === 0) return 0;
+    return Math.max(...m.map(x => new Date(x.timestamp || 0).getTime() || 0));
+  });
+  const dataFreshness = React.useMemo(() =>
+    Selectors.selectDataFreshness(useStore.getState()),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [measurementCount, lastMeasurementTs]);
   const diasSemExame = dataFreshness.daysSince ?? 0;
 
   // Settings Form State (Modo de Análise)
