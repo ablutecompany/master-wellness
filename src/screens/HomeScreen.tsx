@@ -1139,11 +1139,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   }
 
   return (
-    <Container safe style={styles.container}>
+    <View style={{ flex: 1 }}>
       <View style={{ backgroundColor: '#005500', padding: 8, zIndex: 9999, alignItems: 'center' }}>
-        <Typography style={{ color: 'white', fontWeight: 'bold' }}>STEP 14 — Skeleton ONLY</Typography>
+        <Typography style={{ color: 'white', fontWeight: 'bold' }}>STEP 15 — Skeleton without Container</Typography>
       </View>
-    </Container>
+    </View>
   );
 
   // DEAD CODE BELOW THIS POINT FOR DIAGNOSTIC PURPOSES
