@@ -3,14 +3,14 @@ import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-na
 import { useStore } from '../store/useStore';
 
 /**
- * STEP LIVE 05B — REAL HOME PROBE (Minimal Variant)
- * Direct replacement of the HOME view to prove store connectivity.
+ * STEP LIVE 05C — HOME REAL PROBE (Minimal Variant)
+ * Direct replacement of the HOME view contents to ensure no previous content remains.
  */
 
 export const HomeScreen = () => {
   const [currentView, setCurrentView] = useState<'root' | 'home' | 'profile'>('root');
   
-  // Real data slice
+  // Real data primitives only
   const user = useStore((state) => state.user);
   const activeMemberId = useStore((state) => state.activeMemberId);
   const analyses = useStore((state) => state.analyses);
@@ -18,28 +18,42 @@ export const HomeScreen = () => {
   const analysesCount = analyses?.length ?? 0;
   const userId = user?.id ?? 'unavailable';
   const displayMemberId = activeMemberId ?? 'unavailable';
-  const currentLevelSha = "92d5905 (05B PUSH)";
+  const finalCommitSha = "569f3a7"; 
 
   const renderContent = () => {
     if (currentView === 'home') {
       return (
         <View style={styles.center}>
-          <View style={[styles.card, { backgroundColor: '#001a33' }]}>
-            <Text style={styles.probeTitle}>STEP LIVE 05B — REAL HOME PROBE</Text>
-            <Text style={styles.cardTitle}>HOME REAL — SLICE 01</Text>
-            
+          <View style={styles.probeHeader}>
+            <Text style={styles.probeStep}>STEP LIVE 05C — HOME REAL PROBE</Text>
+            <Text style={styles.probeSub}>PROVA DIRETA DA LEITURA REAL</Text>
+          </View>
+
+          <View style={[styles.card, { backgroundColor: '#1a0033' }]}>
+            <Text style={styles.cardHeader}>HOME REAL — SLICE 01</Text>
             <View style={styles.divider} />
             
-            <Text style={styles.dataLabel}>userId: <Text style={styles.dataValue}>{userId}</Text></Text>
-            <Text style={styles.dataLabel}>activeMemberId: <Text style={styles.dataValue}>{displayMemberId}</Text></Text>
-            <Text style={styles.dataLabel}>analysesCount: <Text style={styles.dataValue}>{analysesCount}</Text></Text>
+            <View style={styles.dataRow}>
+              <Text style={styles.dataLabel}>userId:</Text>
+              <Text style={styles.dataValue}>{userId}</Text>
+            </View>
+
+            <View style={styles.dataRow}>
+              <Text style={styles.dataLabel}>activeMemberId:</Text>
+              <Text style={styles.dataValue}>{displayMemberId}</Text>
+            </View>
+
+            <View style={styles.dataRow}>
+              <Text style={styles.dataLabel}>analysesCount:</Text>
+              <Text style={styles.dataValue}>{analysesCount}</Text>
+            </View>
             
             <View style={styles.divider} />
-            <Text style={styles.footerSha}>commit: {currentLevelSha}</Text>
+            <Text style={styles.footerSha}>commit: {finalCommitSha}</Text>
           </View>
           
-          <TouchableOpacity onPress={() => setCurrentView('root')} style={styles.backButton}>
-            <Text style={styles.backButtonText}>VOLTAR</Text>
+          <TouchableOpacity onPress={() => setCurrentView('root')} style={styles.backBtn}>
+            <Text style={styles.backBtnText}>VOLTAR</Text>
           </TouchableOpacity>
         </View>
       );
@@ -49,8 +63,8 @@ export const HomeScreen = () => {
       return (
         <View style={styles.center}>
           <Text style={styles.statusText}>PERFIL MÍNIMO ATIVO</Text>
-          <TouchableOpacity onPress={() => setCurrentView('root')} style={styles.backButton}>
-            <Text style={styles.backButtonText}>VOLTAR</Text>
+          <TouchableOpacity onPress={() => setCurrentView('root')} style={styles.backBtn}>
+            <Text style={styles.backBtnText}>VOLTAR</Text>
           </TouchableOpacity>
         </View>
       );
@@ -113,42 +127,56 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  probeHeader: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  probeStep: {
+    color: '#FF00FF', 
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  probeSub: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 4,
+    letterSpacing: 1,
+  },
   card: {
     borderRadius: 16,
     padding: 24,
     width: '100%',
     borderWidth: 2,
-    borderColor: '#00F2FF',
+    borderColor: '#FF00FF',
     marginBottom: 40,
   },
-  probeTitle: {
-    color: '#FFD700', // Gold
+  cardHeader: {
+    color: '#00F2FF',
     fontSize: 14,
-    fontWeight: '900',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  cardTitle: {
-    color: '#FFF',
-    fontSize: 18,
     fontWeight: '800',
     textAlign: 'center',
   },
   divider: {
     height: 1,
-    backgroundColor: 'rgba(0, 242, 255, 0.2)',
+    backgroundColor: 'rgba(255, 0, 255, 0.2)',
     marginVertical: 16,
+  },
+  dataRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
   },
   dataLabel: {
     color: 'rgba(255, 255, 255, 0.5)',
-    fontSize: 12,
-    marginBottom: 10,
+    fontSize: 11,
     fontFamily: 'monospace',
   },
   dataValue: {
-    color: '#00F2FF',
-    fontSize: 13,
+    color: '#FFF',
+    fontSize: 11,
     fontWeight: 'bold',
+    fontFamily: 'monospace',
   },
   footerSha: {
     color: 'rgba(255, 255, 255, 0.3)',
@@ -195,14 +223,14 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     textAlign: 'center',
   },
-  backButton: {
+  backBtn: {
     paddingVertical: 12,
     paddingHorizontal: 24,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(0, 242, 255, 0.1)',
     borderRadius: 8,
   },
-  backButtonText: {
-    color: 'rgba(255,255,255,0.8)',
+  backBtnText: {
+    color: '#00F2FF',
     fontWeight: '600',
     fontSize: 14,
   },
