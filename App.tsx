@@ -292,7 +292,8 @@ export default function App() {
     });
 
     return () => subscription.unsubscribe();
-  }, [setUser, setGuestMode]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Mount once — Supabase listener must not re-register on every store update
 
   // Production Observer (Minimal)
   useEffect(() => {
