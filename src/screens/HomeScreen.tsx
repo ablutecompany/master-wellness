@@ -1141,7 +1141,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   return (
     <Container safe style={styles.container}>
       <View style={{ backgroundColor: '#005500', padding: 8, zIndex: 9999, alignItems: 'center' }}>
-        <Typography style={{ color: 'white', fontWeight: 'bold' }}>STEP 12 — Themes, Data and Drawer panels disabled</Typography>
+        <Typography style={{ color: 'white', fontWeight: 'bold' }}>STEP 13 — Core Pulse Disabled, Panels Disabled</Typography>
       </View>
       {/* ── FULL SCREEN BACKGROUND ESTÁTICO NEGRO ───────────────────────────────── */}
       <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#020306' }]} pointerEvents="none">
@@ -1364,7 +1364,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   opacity: glowOpacityAnim
                 }} pointerEvents="none" />
 
-                {/* The Track Base - Pill interior FIXO - Agora atua como Tubo Sideral */}
+                {/* STEP 13 DIAG: Commenting out inner HoloPulse complex components and SynthesisActionCard 
                 <View style={{ width: 240, height: 410, borderRadius: 120, overflow: 'hidden', backgroundColor: '#000', borderWidth: 1, borderColor: 'rgba(255, 230, 184, 0.08)', zIndex: 10 }}>
                   <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
                     <SiderealBackground />
@@ -1489,6 +1489,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
            onAction={handleSynthesisAction} 
            style={{ position: 'absolute', bottom: 40, left: 24, right: 24 }} 
         />
+        */}
 
         {/* ── LEFT EDGE HANDLE: THEMES ──────────────────────────────────────── */}
         <TouchableOpacity
