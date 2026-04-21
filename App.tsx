@@ -141,54 +141,38 @@ export default function App() {
   const bootCompletedRef = React.useRef(false);
 
   const syncProfile = React.useCallback(async (session: Session | null, onDone?: (dest: 'Main' | 'Welcome') => void) => {
-    console.log('[INIT_DIAG] syncProfile start');
-    
     if (!session?.user || !session.access_token) {
-      console.warn('[INIT_DIAG] session found / missing: MISSING');
       setUser(null);
       setProfileStatus('idle');
       onDone?.('Welcome');
       return;
     }
 
-    if (isSyncingRef.current) {
-      console.log('[INIT_DIAG] syncProfile already in progress, skipping');
-      return;
-    }
-    
-    console.log('[INIT_DIAG] session found / missing: FOUND');
+    if (isSyncingRef.current) return;
     isSyncingRef.current = true;
     setSessionToken(session.access_token);
 
     const trySyncAnalyses = async () => {
-      console.log('[INIT_DIAG] getAnalyses start');
       try {
         const anaRes = await ProfileService.getAnalyses(session.access_token);
-        console.log('[INIT_DIAG] getAnalyses result:', anaRes.ok ? 'SUCCESS' : 'FAILED', 'count:', anaRes.analyses?.length);
-        
         if (anaRes.ok && anaRes.analyses) {
-          console.log('[PROBE_SYNC] Sincronizando', anaRes.analyses.length, 'análises para a store');
           setAnalyses(anaRes.analyses);
         }
-      } catch (err: any) {
-        console.error('[INIT_DIAG] getAnalyses failed:', err?.message || err);
+      } catch (err) {
+        console.warn('[App] Failed to sync analyses:', err);
       }
     };
 
     const setLoaded = async (profile: any) => {
-      console.log('[INIT_DIAG] identity/profile found: YES');
       setUser(profile);
       if (profile?.household) setHousehold(profile.household);
-      
       await trySyncAnalyses();
-
       setProfileStatus('loaded');
       isSyncingRef.current = false;
       onDone?.('Main');
     };
 
-    const setFallback = async (reason: string) => {
-      console.warn('[INIT_DIAG] fallback reason:', reason);
+    const setFallback = async () => {
       const fallback = {
         id: session.user.id,
         email: session.user.email,
@@ -198,34 +182,26 @@ export default function App() {
         mainGoal: 'general_wellness',
       };
       setUser(fallback as any);
-      
-      // FIX: Even in fallback, we attempt to sync analyses because the token is valid
       await trySyncAnalyses();
-
       setProfileStatus('loaded');
       isSyncingRef.current = false;
       onDone?.('Main');
     };
 
     try {
-      console.log('[INIT_DIAG] /auth/me start');
       const meRes = await fetch(`${ENV.BACKEND_URL}/auth/me`, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       });
       
       if (meRes.ok) {
         const data = await meRes.json();
-        console.log('[INIT_DIAG] /auth/me status: 200, data.ok:', data.ok);
         if (data.ok && data.profile) { 
           setLoaded(data.profile); 
           return; 
         }
-      } else {
-        console.warn('[INIT_DIAG] /auth/me failed status:', meRes.status);
       }
 
       // Try to initialize profile if /auth/me didn't return a record
-      console.log('[INIT_DIAG] /auth/initialize start');
       try {
         const initRes = await fetch(`${ENV.BACKEND_URL}/auth/initialize`, {
           method: 'POST',
@@ -235,34 +211,30 @@ export default function App() {
           },
         });
         
-        console.log('[INIT_DIAG] /auth/initialize status:', initRes.status);
-        
         if (initRes.ok) {
-          console.log('[INIT_DIAG] /auth/me (retry) start');
           const me2 = await fetch(`${ENV.BACKEND_URL}/auth/me`, {
             headers: { 'Authorization': `Bearer ${session.access_token}` }
           });
           if (me2.ok) {
             const d2 = await me2.json();
-            console.log('[INIT_DIAG] /auth/me (retry) status: 200, d2.ok:', d2.ok);
             if (d2.ok && d2.profile) { 
               setLoaded(d2.profile); 
               return; 
             }
           }
         }
-        
-        setFallback(`Profile missing and auto-init result was ${initRes.status}`);
-      } catch (err: any) {
-        setFallback(`Network error during init: ${err?.message || err}`);
+        setFallback();
+      } catch (err) {
+        setFallback();
       }
     } catch (err: any) {
-      console.error('[App] Profile sync failed with critical error:', err);
+      console.error('[App] Profile sync critical error:', err);
       setProfileStatus('error');
       isSyncingRef.current = false;
       onDone?.('Welcome');
     }
   }, [setUser, setProfileStatus, setSessionToken, setHousehold, setAnalyses]);
+
 
 
   useEffect(() => {

@@ -155,7 +155,6 @@ export class ProfileService {
    */
   static async getAnalyses(token: string): Promise<{ ok: boolean, analyses?: any[] }> {
     try {
-      console.log('[PROBE_SYNC] GET /analyses - Início do pedido');
       const response = await fetch(`${ENV.BACKEND_URL}/analyses`, {
         method: 'GET',
         headers: {
@@ -163,29 +162,22 @@ export class ProfileService {
         }
       });
       
-      console.log('[PROBE_SYNC] GET /analyses - Status:', response.status);
-      
-      if (!response.ok) {
-        console.error('[PROBE_SYNC] GET /analyses - Falha no pedido:', response.status);
-        return { ok: false };
-      }
+      if (!response.ok) return { ok: false };
       
       const data = await response.json();
-      console.log('[PROBE_SYNC] GET /analyses - Payload bruto:', JSON.stringify(data));
       
       if (Array.isArray(data)) {
-        console.log('[PROBE_SYNC] GET /analyses - Resposta é array, length:', data.length);
         return { ok: true, analyses: data };
       }
       
       const analyses = data.analyses || [];
-      console.log('[PROBE_SYNC] GET /analyses - Resposta é objecto, analyses.length:', analyses.length);
       return { ok: !!data, analyses };
     } catch (err) {
-      console.error('[PROBE_SYNC] GET /analyses - Erro de rede/runtime:', err);
+      console.error('[ProfileService] Erro getAnalyses:', err);
       return { ok: false };
     }
   }
+
 
 }
 
