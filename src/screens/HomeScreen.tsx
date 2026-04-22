@@ -901,7 +901,7 @@ export const HomeScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerText}>STEP LIVE 19D — HOME CONSOLIDADA SCROLLABLE</Text>
+        <Text style={styles.headerText}>STEP LIVE 19E — HOME CONSOLIDADA INDICATORS</Text>
       </View>
       {renderContent()}
     </SafeAreaView>
