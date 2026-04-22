@@ -29,7 +29,30 @@ export const HomeScreen = ({ navigation }: any) => {
     ? (isProfileComplete ? 'completo' : 'incompleto')
     : 'unavailable';
 
-  const finalCommitSha = "32f5d3c"; // Updated after push
+  const finalCommitSha = "24e2013"; // Updated after push
+
+  // Slice 05 — Orientation Logic
+  let nextStep = '';
+  let reason = '';
+  let orientationTarget: 'root' | 'home' | 'profile' | 'Login' = 'root';
+
+  if (!authAccount) {
+    nextStep = 'Iniciar sessão';
+    reason = 'Sem sessão ativa';
+    orientationTarget = 'Login';
+  } else if (!isProfileComplete) {
+    nextStep = 'Rever perfil base';
+    reason = 'Faltam dados essenciais';
+    orientationTarget = 'profile';
+  } else if (analysesCount === 0) {
+    nextStep = 'Confirmar dados do perfil';
+    reason = 'Conta ativa sem histórico disponível';
+    orientationTarget = 'profile';
+  } else {
+    nextStep = 'Consultar detalhe técnico';
+    reason = 'Já existe histórico disponível';
+    orientationTarget = 'home'; // SLICE 01
+  }
 
   // Slice 03 — Contextual Action Logic
   let actionMessage = '';
@@ -283,6 +306,38 @@ export const HomeScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </View>
 
+        {/* SLICE 05 — ORIENTATION CARD */}
+        <View style={[styles.card, { backgroundColor: '#001a00', borderColor: '#4CD964', marginBottom: 24 }]}>
+          <Text style={[styles.cardHeader, { color: '#4CD964' }]}>HOME REAL — SLICE 05</Text>
+          <View style={styles.divider} />
+          
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 11, marginBottom: 4 }}>Próximo passo recomendado:</Text>
+            <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold' }}>{nextStep}</Text>
+          </View>
+
+          <View style={{ marginBottom: 20 }}>
+            <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 11, marginBottom: 4 }}>Motivo:</Text>
+            <Text style={{ color: '#4CD964', fontSize: 13 }}>{reason}</Text>
+          </View>
+
+          <TouchableOpacity 
+            onPress={() => {
+              console.warn(`[PROFILE_DIAG] EXECUTAR pressed: ${nextStep}`, { orientationTarget });
+              if (orientationTarget === 'Login') {
+                navigation.navigate('Login');
+              } else {
+                setCurrentView(orientationTarget as any);
+              }
+            }}
+            style={{ padding: 14, backgroundColor: '#4CD964', borderRadius: 8, alignItems: 'center' }}
+          >
+            <Text style={{ color: '#000', fontSize: 14, fontWeight: 'bold', letterSpacing: 1 }}>
+              EXECUTAR
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             onPress={() => {
@@ -322,7 +377,7 @@ export const HomeScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerText}>STEP LIVE 12 — HOME SLICE 04 ACTIVE</Text>
+        <Text style={styles.headerText}>STEP LIVE 13 — HOME SLICE 05 ACTIVE</Text>
       </View>
       {renderContent()}
     </SafeAreaView>
