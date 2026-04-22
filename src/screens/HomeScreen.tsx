@@ -436,7 +436,7 @@ export const HomeScreen = ({ navigation }: any) => {
 
           <TouchableOpacity 
             onPress={() => {
-              console.warn('[PROFILE_DIAG] Consolidated VER DETALHE TÉCNICO pressed');
+              console.warn('[PROFILE_DIAG] Consolidated ABRIR INSPEÇÃO TÉCNICA pressed');
               if (authAccount) {
                 setViewMode('slices');
                 setCurrentView('home'); // Realça a Slice 01 (Probe Técnica)
@@ -447,23 +447,24 @@ export const HomeScreen = ({ navigation }: any) => {
             style={{ marginTop: 12, padding: 14, backgroundColor: 'rgba(255, 0, 255, 0.1)', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#FF00FF' }}
           >
             <Text style={{ color: '#FF00FF', fontSize: 14, fontWeight: 'bold', letterSpacing: 1 }}>
-              VER DETALHE TÉCNICO
+              ABRIR INSPEÇÃO TÉCNICA
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
             onPress={() => {
-              console.warn('[PROFILE_DIAG] Switch to slices view from BLOCO D');
+              console.warn('[PROFILE_DIAG] Switch to full slices view from BLOCO D');
               setViewMode('slices');
+              setCurrentView('root');
             }}
-            style={{ marginTop: 12, padding: 10, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}
+            style={{ marginTop: 8, padding: 6, alignItems: 'center' }}
           >
-            <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 12, fontWeight: 'bold' }}>
-              VER SLICES (LEGACY)
+            <Text style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: 10, fontWeight: 'bold', textDecorationLine: 'underline' }}>
+              VER SLICES COMPLETAS
             </Text>
           </TouchableOpacity>
           <View style={styles.divider} />
-          <Text style={styles.footerSha}>commit: 406a752</Text>
+          <Text style={styles.footerSha}>commit: 8fb080c</Text>
         </View>
 
       </View>
