@@ -29,7 +29,7 @@ export const HomeScreen = ({ navigation }: any) => {
     ? (isProfileComplete ? 'completo' : 'incompleto')
     : 'unavailable';
 
-  const finalCommitSha = "pending"; // Will be updated after push
+  const finalCommitSha = "11b614c"; // Updated after push
 
   const renderContent = () => {
     if (currentView === 'home') {
