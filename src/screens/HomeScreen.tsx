@@ -17,225 +17,69 @@ export const HomeScreen = ({ navigation }: any) => {
   const user = useStore((state) => state.user);
   const activeMemberId = useStore((state) => state.activeMemberId);
   const analyses = useStore((state) => state.analyses);
-  const authAccount = useStore((state) => state.authAccount);
-
-  const analysesCount = analyses?.length ?? 0;
+  const authAccount = useStore((state) => state.authAccount);  const analysesCount = analyses?.length ?? 0;
   const userId = user?.id ?? 'unavailable';
-  const displayMemberId = activeMemberId ?? 'unavailable';
-  
-  const sessionStatus = authAccount ? 'autenticada' : 'guest';
   const activeEmail = authAccount?.email ?? 'unavailable';
-  const isProfileComplete = user?.name && authAccount?.email;
-  const profileStatusLabel = authAccount 
-    ? (isProfileComplete ? 'completo' : 'incompleto')
-    : 'unavailable';
+  const isProfileComplete = !!(user?.name && authAccount?.email);
+  
+  // Status Labels
+  const sessionStatus = authAccount ? 'autenticada' : 'guest';
+  const profileStatusLabel = authAccount ? (isProfileComplete ? 'completo' : 'incompleto') : 'unavailable';
+  const accountSummaryLabel = authAccount ? 'ativa' : 'guest';
 
-  const finalCommitSha = "5cb083d"; // Updated after push
-
-  // Slice 10 — Evolution Readiness Logic
-  let techBase = '';
-  let profileBase = '';
-  let historyBase = '';
-  let evolutionReadinessLabel = '';
-  let evolutionReadyTarget: 'Login' | 'profile' | 'longitudinal' = 'Login';
-
-  if (!authAccount) {
-    techBase = 'mínima';
-    profileBase = 'não iniciada';
-    historyBase = 'indisponível';
-    evolutionReadinessLabel = 'baixa';
-    evolutionReadyTarget = 'Login';
-  } else {
-    techBase = 'estável';
-    const hasName = !!user?.name;
-    
-    if (hasName) {
-      profileBase = 'confirmada';
-      evolutionReadyTarget = 'longitudinal';
+  // Logic: Longitudinal & Evolution
+  let longitudinalState = 'indisponível';
+  let availableBase = 'Sem sessão iniciada';
+  let evolutionReadiness = 'baixa';
+  
+  if (authAccount) {
+    if (analysesCount === 0) {
+      longitudinalState = 'ainda não disponível';
+      availableBase = 'Conta ativa sem histórico';
+      evolutionReadiness = 'base pronta';
+    } else if (analysesCount === 1) {
+      longitudinalState = 'muito inicial';
+      availableBase = 'Existe 1 análise';
+      evolutionReadiness = 'limitada';
     } else {
-      profileBase = 'parcial';
-      evolutionReadyTarget = 'profile';
-    }
-
-    if (analysesCount > 0) {
-      historyBase = 'disponível';
-      evolutionReadinessLabel = 'elevada';
-    } else {
-      historyBase = 'ainda vazia';
-      evolutionReadinessLabel = hasName ? 'moderada' : 'condicionada';
+      longitudinalState = 'disponível';
+      availableBase = `Existem ${analysesCount} análises`;
+      evolutionReadiness = 'elevada';
     }
   }
 
-  // Slice 09 — Availability Logic
-  let loginAvail = '';
-  let profileAvail = '';
-  let historyAvail = '';
-  let globalAvail = '';
+  // Logic: Availability & Point of Certainty
+  let globalAvail = 'acesso mínimo';
   let pointCertainTarget: 'Login' | 'profile' | 'home' = 'Login';
 
-  if (!authAccount) {
-    loginAvail = 'necessário';
-    profileAvail = 'indisponível';
-    historyAvail = 'indisponível';
-    globalAvail = 'acesso mínimo';
-    pointCertainTarget = 'Login';
-  } else {
-    loginAvail = 'disponível';
+  if (authAccount) {
     const hasName = !!user?.name;
-    
-    if (hasName) {
-      profileAvail = 'disponível';
-      pointCertainTarget = 'home'; // SLICE 01
-    } else {
-      profileAvail = 'parcial';
-      pointCertainTarget = 'profile';
-    }
-
-    if (analysesCount > 0) {
-      historyAvail = 'disponível';
-      globalAvail = 'base funcional expandida';
-    } else {
-      historyAvail = 'vazio';
-      globalAvail = hasName ? 'base funcional pronta' : 'base funcional parcial';
-    }
+    globalAvail = hasName ? (analysesCount > 0 ? 'base funcional expandida' : 'base funcional pronta') : 'base funcional parcial';
+    pointCertainTarget = hasName ? 'home' : 'profile';
   }
 
-  // Slice 08 — Consistency Logic
-  let sessionProfileConsistency = '';
-  let profileContactConsistency = '';
-  let accountHistoryConsistency = '';
-  let globalConsistency = '';
+  // Logic: Orientation & Next Steps (BLOCO B)
+  let nextStep = 'Iniciar sessão';
+  let reason = 'Sem sessão ativa';
+  let orientationTarget: 'root' | 'home' | 'profile' | 'Login' = 'Login';
 
-  if (!authAccount) {
-    sessionProfileConsistency = 'não aplicável';
-    profileContactConsistency = 'não aplicável';
-    accountHistoryConsistency = 'não aplicável';
-    globalConsistency = 'sem sessão';
-  } else {
-    const hasName = !!user?.name;
-    const hasEmail = !!authAccount?.email;
-    
-    sessionProfileConsistency = hasName ? 'coerente' : 'parcial';
-    profileContactConsistency = (hasName && hasEmail) ? 'coerente' : 'parcial';
-    
-    if (analysesCount === 0) {
-      accountHistoryConsistency = 'coerente sem histórico';
+  if (authAccount) {
+    if (!isProfileComplete) {
+      nextStep = 'Rever perfil base';
+      reason = 'Faltam dados essenciais';
+      orientationTarget = 'profile';
+    } else if (analysesCount === 0) {
+      nextStep = 'Confirmar dados do perfil';
+      reason = 'Conta ativa sem histórico disponível';
+      orientationTarget = 'profile';
     } else {
-      accountHistoryConsistency = 'coerente com histórico';
-    }
-
-    if (hasName && hasEmail) {
-      globalConsistency = analysesCount > 0 ? 'pronta' : 'estável';
-    } else {
-      globalConsistency = 'atenção ao perfil';
+      nextStep = 'Consultar detalhe técnico';
+      reason = 'Já existe histórico disponível';
+      orientationTarget = 'home';
     }
   }
 
-  // Slice 07 — Longitudinal Logic
-  let longitudinalState = '';
-  let availableBase = '';
-  let evolutionReadiness = '';
-  
-  if (!authAccount) {
-    longitudinalState = 'indisponível';
-    availableBase = 'Sem sessão iniciada';
-    evolutionReadiness = 'baixa';
-  } else if (analysesCount === 0) {
-    longitudinalState = 'ainda não disponível';
-    availableBase = 'Conta ativa sem histórico';
-    evolutionReadiness = 'base pronta';
-  } else if (analysesCount === 1) {
-    longitudinalState = 'muito inicial';
-    availableBase = 'Existe 1 análise';
-    evolutionReadiness = 'limitada';
-  } else {
-    longitudinalState = 'disponível';
-    availableBase = `Existem ${analysesCount} análises`;
-    evolutionReadiness = 'elevada';
-  }
-
-  // Slice 06 — Operational Logic
-  const sessionOpLabel = authAccount ? 'ativa' : 'guest';
-  const backendOpLabel = (authAccount && userId !== 'unavailable') ? 'pronta' : 'fallback';
-  const profileOpLabel = user?.name ? 'sim' : 'não';
-  const historyOpLabel = analysesCount > 0 ? 'disponível' : 'vazio';
-  
-  let globalOpState = '';
-  if (!authAccount) {
-    globalOpState = 'Acesso limitado';
-  } else if (isProfileComplete && analysesCount === 0) {
-    globalOpState = 'Conta pronta sem histórico';
-  } else if (isProfileComplete && analysesCount > 0) {
-    globalOpState = 'Conta pronta com histórico';
-  } else {
-    globalOpState = 'Conta autenticada com perfil parcial';
-  }
-
-  // Slice 05 — Orientation Logic
-  let nextStep = '';
-  let reason = '';
-  let orientationTarget: 'root' | 'home' | 'profile' | 'Login' = 'root';
-
-  if (!authAccount) {
-    nextStep = 'Iniciar sessão';
-    reason = 'Sem sessão ativa';
-    orientationTarget = 'Login';
-  } else if (!isProfileComplete) {
-    nextStep = 'Rever perfil base';
-    reason = 'Faltam dados essenciais';
-    orientationTarget = 'profile';
-  } else if (analysesCount === 0) {
-    nextStep = 'Confirmar dados do perfil';
-    reason = 'Conta ativa sem histórico disponível';
-    orientationTarget = 'profile';
-  } else {
-    nextStep = 'Consultar detalhe técnico';
-    reason = 'Já existe histórico disponível';
-    orientationTarget = 'home'; // SLICE 01
-  }
-
-  // Slice 03 — Contextual Action Logic
-  let actionMessage = '';
-  let actionLabel = '';
-  let actionTarget: 'root' | 'home' | 'profile' | 'Login' = 'root';
-
-  if (!authAccount) {
-    actionMessage = 'Inicie sessão para aceder ao seu perfil e histórico';
-    actionLabel = 'LOGIN';
-    actionTarget = 'Login';
-  } else if (analysesCount === 0) {
-    actionMessage = 'Ainda não existem análises disponíveis nesta conta';
-    actionLabel = 'ABRIR PERFIL';
-    actionTarget = 'profile';
-  } else if (!isProfileComplete) {
-    actionMessage = 'Complete o perfil base para melhorar a experiência';
-    actionLabel = 'ABRIR PERFIL';
-    actionTarget = 'profile';
-  } else {
-    actionMessage = 'Conta pronta para evoluir para superfícies mais ricas';
-    actionLabel = 'VER HOME';
-    actionTarget = 'home';
-  }
-
-  // Slice 04 — Summary Logic
-  const accountSummaryLabel = authAccount ? 'ativa' : 'guest';
-  const profileSummaryLabel = profileStatusLabel === 'completo' ? 'completo' : 'incompleto';
-  const analysesSummaryLabel = analysesCount.toString();
-  
-  let synthesisMessage = '';
-  if (!authAccount) {
-    synthesisMessage = 'Sem sessão iniciada';
-  } else if (analysesCount === 0) {
-    synthesisMessage = 'Conta ativa sem histórico disponível';
-  } else {
-    synthesisMessage = 'Conta ativa com histórico disponível';
-  }
-
-  // BLOCO D — Diagnostic Center Logic (Migrated from Slice 01 + 08)
-  const dUserId = userId;
-  const dActiveMemberId = activeMemberId ?? 'unavailable';
-  const dAnalysesCount = analysesCount;
-  
+  // Logic: Consistency (BLOCO D)
   let dSessionAndProfile = 'não aplicável';
   let dProfileAndContact = 'não aplicável';
   let dGlobalConsistency = 'sem sessão';
@@ -245,21 +89,26 @@ export const HomeScreen = ({ navigation }: any) => {
     const hasEmail = !!authAccount?.email;
     const hasAnalyses = analysesCount > 0;
 
-    if (hasAnalyses) {
-      dSessionAndProfile = 'coerente';
-      dProfileAndContact = 'coerente';
-      dGlobalConsistency = 'estável';
-    } else if (hasEmail && !hasName) {
-      dSessionAndProfile = 'parcial';
-      dProfileAndContact = 'parcial';
-      dGlobalConsistency = 'atenção ao perfil';
-    } else {
-      // Authenticated + Name + Email + Analyses = 0
-      dSessionAndProfile = 'coerente';
-      dProfileAndContact = 'coerente';
-      dGlobalConsistency = 'estável';
-    }
+    dSessionAndProfile = hasName ? 'coerente' : 'parcial';
+    dProfileAndContact = (hasName && hasEmail) ? 'coerente' : 'parcial';
+    dGlobalConsistency = (hasName && hasEmail) ? (hasAnalyses ? 'estável' : 'pronta') : 'atenção ao perfil';
   }
+
+  // Handlers
+  const handleNavigate = (target: 'root' | 'home' | 'profile' | 'Login') => {
+    console.log(`[NAV_DIAG] Navigating to: ${target}`);
+    if (target === 'Login') {
+      navigation.navigate('Login');
+    } else {
+      setCurrentView(target);
+    }
+  };
+
+  const toggleViewMode = (mode: 'slices' | 'consolidated') => {
+    console.log(`[VIEW_DIAG] Switching view mode to: ${mode}`);
+    setViewMode(mode);
+  };
+  };
 
   const renderConsolidatedHome = () => {
     console.log('[SCROLL_DIAG] Rendering Consolidated Home');
@@ -298,14 +147,7 @@ export const HomeScreen = ({ navigation }: any) => {
           <Text style={{ color: '#00F2FF', fontSize: 13, fontWeight: 'bold', textAlign: 'center', marginBottom: 16 }}>{globalAvail}</Text>
 
           <TouchableOpacity 
-            onPress={() => {
-              console.warn(`[PROFILE_DIAG] Consolidated ABRIR PONTO CERTO pressed: ${pointCertainTarget}`);
-              if (pointCertainTarget === 'Login') {
-                navigation.navigate('Login');
-              } else {
-                setCurrentView(pointCertainTarget as any);
-              }
-            }}
+            onPress={() => handleNavigate(pointCertainTarget)}
             style={{ padding: 14, backgroundColor: 'rgba(0, 242, 255, 0.1)', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#00F2FF' }}
           >
             <Text style={{ color: '#00F2FF', fontSize: 14, fontWeight: 'bold', letterSpacing: 1 }}>
@@ -330,14 +172,7 @@ export const HomeScreen = ({ navigation }: any) => {
           </View>
 
           <TouchableOpacity 
-            onPress={() => {
-              console.warn(`[PROFILE_DIAG] Consolidated EXECUTAR pressed: ${nextStep}`, { orientationTarget });
-              if (orientationTarget === 'Login') {
-                navigation.navigate('Login');
-              } else {
-                setCurrentView(orientationTarget as any);
-              }
-            }}
+            onPress={() => handleNavigate(orientationTarget)}
             style={{ padding: 14, backgroundColor: 'rgba(255, 204, 0, 0.1)', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#FFCC00' }}
           >
             <Text style={{ color: '#FFCC00', fontSize: 14, fontWeight: 'bold', letterSpacing: 1 }}>
@@ -383,14 +218,7 @@ export const HomeScreen = ({ navigation }: any) => {
           </View>
 
           <TouchableOpacity 
-            onPress={() => {
-              console.warn('[PROFILE_DIAG] Consolidated VER BASE pressed');
-              if (authAccount) {
-                setCurrentView('home'); // Probe Slice 01
-              } else {
-                navigation.navigate('Login');
-              }
-            }}
+            onPress={() => handleNavigate(authAccount ? 'home' : 'Login')}
             style={{ marginTop: 12, padding: 14, backgroundColor: 'rgba(76, 217, 100, 0.1)', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#4CD964' }}
           >
             <Text style={{ color: '#4CD964', fontSize: 14, fontWeight: 'bold', letterSpacing: 1 }}>
@@ -406,17 +234,17 @@ export const HomeScreen = ({ navigation }: any) => {
           
           <View style={styles.dataRow}>
             <Text style={styles.dataLabel}>userId:</Text>
-            <Text style={styles.dataValue}>{dUserId}</Text>
+            <Text style={styles.dataValue}>{userId}</Text>
           </View>
 
           <View style={styles.dataRow}>
             <Text style={styles.dataLabel}>activeMemberId:</Text>
-            <Text style={styles.dataValue}>{dActiveMemberId}</Text>
+            <Text style={styles.dataValue}>{activeMemberId ?? 'unavailable'}</Text>
           </View>
 
           <View style={styles.dataRow}>
             <Text style={styles.dataLabel}>analysesCount:</Text>
-            <Text style={styles.dataValue}>{dAnalysesCount}</Text>
+            <Text style={styles.dataValue}>{analysesCount}</Text>
           </View>
 
           <View style={styles.dataRow}>
@@ -429,19 +257,16 @@ export const HomeScreen = ({ navigation }: any) => {
             <Text style={styles.dataValue}>{dProfileAndContact}</Text>
           </View>
 
-          <View style={styles.dataRow}>
-            <Text style={styles.dataLabel}>Consistência global:</Text>
             <Text style={[styles.dataValue, { color: '#FF00FF' }]}>{dGlobalConsistency}</Text>
           </View>
 
           <TouchableOpacity 
             onPress={() => {
-              console.warn('[PROFILE_DIAG] Consolidated ABRIR INSPEÇÃO TÉCNICA pressed');
               if (authAccount) {
-                setViewMode('slices');
-                setCurrentView('home'); // Realça a Slice 01 (Probe Técnica)
+                toggleViewMode('slices');
+                setCurrentView('home');
               } else {
-                navigation.navigate('Login');
+                handleNavigate('Login');
               }
             }}
             style={{ marginTop: 12, padding: 14, backgroundColor: 'rgba(255, 0, 255, 0.1)', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#FF00FF' }}
@@ -453,8 +278,7 @@ export const HomeScreen = ({ navigation }: any) => {
 
           <TouchableOpacity 
             onPress={() => {
-              console.warn('[PROFILE_DIAG] Switch to full slices view from BLOCO D');
-              setViewMode('slices');
+              toggleViewMode('slices');
               setCurrentView('root');
             }}
             style={{ marginTop: 8, padding: 6, alignItems: 'center' }}
@@ -464,7 +288,7 @@ export const HomeScreen = ({ navigation }: any) => {
             </Text>
           </TouchableOpacity>
           <View style={styles.divider} />
-          <Text style={styles.footerSha}>commit: 8fb080c</Text>
+          <Text style={styles.footerSha}>v2.0-stable</Text>
         </View>
 
       </View>
@@ -491,7 +315,7 @@ export const HomeScreen = ({ navigation }: any) => {
 
             <View style={styles.dataRow}>
               <Text style={styles.dataLabel}>activeMemberId:</Text>
-              <Text style={styles.dataValue}>{displayMemberId}</Text>
+              <Text style={styles.dataValue}>{activeMemberId ?? 'unavailable'}</Text>
             </View>
 
             <View style={styles.dataRow}>
@@ -500,7 +324,7 @@ export const HomeScreen = ({ navigation }: any) => {
             </View>
             
             <View style={styles.divider} />
-            <Text style={styles.footerSha}>commit: {finalCommitSha}</Text>
+            <Text style={styles.footerSha}>v2.0-stable</Text>
           </View>
           
           <TouchableOpacity onPress={() => setCurrentView('root')} style={styles.backBtn}>
@@ -549,7 +373,7 @@ export const HomeScreen = ({ navigation }: any) => {
               </View>
               
               <View style={styles.divider} />
-              <Text style={styles.footerSha}>commit: {finalCommitSha}</Text>
+              <Text style={styles.footerSha}>v2.0-stable</Text>
             </View>
 
             <TouchableOpacity 
@@ -616,14 +440,7 @@ export const HomeScreen = ({ navigation }: any) => {
           </View>
 
           <TouchableOpacity 
-            onPress={() => {
-              console.warn('[PROFILE_DIAG] VER BASE pressed (from Slice 07)');
-              if (authAccount) {
-                setCurrentView('home');
-              } else {
-                navigation.navigate('Login');
-              }
-            }}
+            onPress={() => handleNavigate(authAccount ? 'home' : 'Login')}
             style={{ marginTop: 12, padding: 10, backgroundColor: 'rgba(191, 90, 242, 0.1)', borderRadius: 6, alignItems: 'center', borderWidth: 1, borderColor: '#BF5AF2' }}
           >
             <Text style={{ color: '#BF5AF2', fontSize: 11, fontWeight: 'bold' }}>VER BASE</Text>
@@ -656,14 +473,7 @@ export const HomeScreen = ({ navigation }: any) => {
           <Text style={{ color: '#5856D6', fontSize: 13, fontWeight: 'bold', textAlign: 'center', marginBottom: 16 }}>{globalAvail}</Text>
 
           <TouchableOpacity 
-            onPress={() => {
-              console.warn(`[PROFILE_DIAG] ABRIR PONTO CERTO pressed: ${pointCertainTarget}`);
-              if (pointCertainTarget === 'Login') {
-                navigation.navigate('Login');
-              } else {
-                setCurrentView(pointCertainTarget as any);
-              }
-            }}
+            onPress={() => handleNavigate(pointCertainTarget)}
             style={{ padding: 14, backgroundColor: 'rgba(88, 86, 214, 0.2)', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#5856D6' }}
           >
             <Text style={{ color: '#5856D6', fontSize: 14, fontWeight: 'bold', letterSpacing: 1 }}>
@@ -698,20 +508,7 @@ export const HomeScreen = ({ navigation }: any) => {
           </View>
 
           <TouchableOpacity 
-            onPress={() => {
-              console.warn(`[PROFILE_DIAG] VER PRONTIDÃO pressed: ${evolutionReadyTarget}`);
-              if (evolutionReadyTarget === 'Login') {
-                navigation.navigate('Login');
-              } else if (evolutionReadyTarget === 'profile') {
-                setCurrentView('profile');
-              } else {
-                // For 'longitudinal' we scroll to Slice 07. 
-                // Since we don't have scrolling refs easily, we just stay here or point to something relevant.
-                // The request says navigate to SLICE 07, which is just part of this view.
-                // We'll just log it for now as we are already on the screen where Slice 07 is.
-                console.warn('[PROFILE_DIAG] Already on Home, Slice 07 is visible above.');
-              }
-            }}
+            onPress={() => handleNavigate(authAccount ? (user?.name ? 'home' : 'profile') : 'Login')}
             style={{ marginTop: 12, padding: 14, backgroundColor: 'rgba(48, 176, 199, 0.2)', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#30B0C7' }}
           >
             <Text style={{ color: '#30B0C7', fontSize: 14, fontWeight: 'bold', letterSpacing: 1 }}>
@@ -722,40 +519,28 @@ export const HomeScreen = ({ navigation }: any) => {
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
-            onPress={() => {
-              console.warn('[PROFILE_DIAG] HOME button pressed');
-              setCurrentView('home');
-            }} 
+            onPress={() => handleNavigate('home')} 
             style={styles.navButton}
           >
             <Text style={styles.navButtonText}>PROBE TÉCNICA (SLICE 01)</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
-            onPress={() => {
-              console.warn('[PROFILE_DIAG] PERFIL button pressed');
-              setCurrentView('profile');
-            }} 
+            onPress={() => handleNavigate('profile')} 
             style={[styles.navButton, { marginTop: 16, backgroundColor: '#333' }]}
           >
             <Text style={styles.navButtonText}>PERFIL</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
-            onPress={() => {
-              console.warn('[PROFILE_DIAG] LOGIN button pressed');
-              navigation.navigate('Login');
-            }} 
+            onPress={() => handleNavigate('Login')} 
             style={[styles.navButton, { marginTop: 16, backgroundColor: '#005577', borderColor: '#00F2FF' }]}
           >
             <Text style={styles.navButtonText}>LOGIN</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
-            onPress={() => {
-              console.warn('[PROFILE_DIAG] Switch to consolidated view');
-              setViewMode('consolidated');
-            }}
+            onPress={() => toggleViewMode('consolidated')}
             style={{ marginTop: 30, padding: 14, backgroundColor: '#5856D6', borderRadius: 12, width: '100%', alignItems: 'center' }}
           >
             <Text style={{ color: '#FFF', fontWeight: 'bold' }}>VER HOME CONSOLIDADA</Text>
@@ -772,7 +557,7 @@ export const HomeScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerText}>STEP LIVE 20D — NÚCLEO TÉCNICO ESSENCIAL</Text>
+        <Text style={styles.headerText}>STEP LIVE 20E — HOME CONSOLIDADA V2 FINAL</Text>
       </View>
       {renderContent()}
     </SafeAreaView>
