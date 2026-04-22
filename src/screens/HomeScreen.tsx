@@ -450,19 +450,22 @@ export const HomeScreen = ({ navigation }: any) => {
               VER DETALHE TÉCNICO
             </Text>
           </TouchableOpacity>
+
+          <TouchableOpacity 
+            onPress={() => {
+              console.warn('[PROFILE_DIAG] Switch to slices view from BLOCO D');
+              setViewMode('slices');
+            }}
+            style={{ marginTop: 12, padding: 10, backgroundColor: 'rgba(255, 255, 255, 0.05)', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)' }}
+          >
+            <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 12, fontWeight: 'bold' }}>
+              VER SLICES (LEGACY)
+            </Text>
+          </TouchableOpacity>
           <View style={styles.divider} />
           <Text style={styles.footerSha}>commit: 406a752</Text>
         </View>
 
-        <TouchableOpacity 
-          onPress={() => {
-            console.warn('[PROFILE_DIAG] Switch to slices view');
-            setViewMode('slices');
-          }}
-          style={[styles.backBtn, { marginTop: 20, backgroundColor: 'rgba(255, 255, 255, 0.1)' }]}
-        >
-          <Text style={styles.backBtnText}>VER SLICES (LEGACY)</Text>
-        </TouchableOpacity>
       </View>
     );
   };
