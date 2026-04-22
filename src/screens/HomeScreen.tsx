@@ -9,8 +9,9 @@ import { useStore } from '../store/useStore';
 
 export const HomeScreen = ({ navigation }: any) => {
   const [currentView, setCurrentView] = useState<'root' | 'home' | 'profile'>('root');
+  const [viewMode, setViewMode] = useState<'slices' | 'consolidated'>('slices');
   
-  console.warn('[PROFILE_DIAG] HomeScreen render', { currentView });
+  console.warn('[PROFILE_DIAG] HomeScreen render', { currentView, viewMode });
 
   // Real data primitives only
   const user = useStore((state) => state.user);
@@ -29,7 +30,7 @@ export const HomeScreen = ({ navigation }: any) => {
     ? (isProfileComplete ? 'completo' : 'incompleto')
     : 'unavailable';
 
-  const finalCommitSha = "33570dd"; // Updated after push
+  const finalCommitSha = "def7da0"; // Updated after push
 
   // Slice 10 — Evolution Readiness Logic
   let techBase = '';
@@ -230,6 +231,57 @@ export const HomeScreen = ({ navigation }: any) => {
     synthesisMessage = 'Conta ativa com histórico disponível';
   }
 
+  const renderConsolidatedHome = () => {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.title}>Home Consolidada</Text>
+        <Text style={styles.subtitle}>Estrutura Base Preparada</Text>
+
+        {/* BLOCO A — STATUS GLOBAL */}
+        <View style={[styles.card, { borderColor: '#00F2FF', backgroundColor: '#001a1a', marginBottom: 20 }]}>
+          <Text style={styles.cardHeader}>BLOCO A — STATUS GLOBAL</Text>
+          <View style={styles.divider} />
+          <Text style={styles.placeholderText}>estrutura preparada</Text>
+          <Text style={styles.placeholderSub}>lógica entra no próximo step</Text>
+        </View>
+
+        {/* BLOCO B — RECOMENDAÇÃO E AÇÃO */}
+        <View style={[styles.card, { borderColor: '#FFCC00', backgroundColor: '#1a1a00', marginBottom: 20 }]}>
+          <Text style={[styles.cardHeader, { color: '#FFCC00' }]}>BLOCO B — RECOMENDAÇÃO E AÇÃO</Text>
+          <View style={styles.divider} />
+          <Text style={styles.placeholderText}>estrutura preparada</Text>
+          <Text style={styles.placeholderSub}>lógica entra no próximo step</Text>
+        </View>
+
+        {/* BLOCO C — PAINEL DE INDICADORES */}
+        <View style={[styles.card, { borderColor: '#4CD964', backgroundColor: '#001a00', marginBottom: 20 }]}>
+          <Text style={[styles.cardHeader, { color: '#4CD964' }]}>BLOCO C — PAINEL DE INDICADORES</Text>
+          <View style={styles.divider} />
+          <Text style={styles.placeholderText}>estrutura preparada</Text>
+          <Text style={styles.placeholderSub}>lógica entra no próximo step</Text>
+        </View>
+
+        {/* BLOCO D — CENTRO DE DIAGNÓSTICO */}
+        <View style={[styles.card, { borderColor: '#BF5AF2', backgroundColor: '#1a001a', marginBottom: 20 }]}>
+          <Text style={[styles.cardHeader, { color: '#BF5AF2' }]}>BLOCO D — CENTRO DE DIAGNÓSTICO</Text>
+          <View style={styles.divider} />
+          <Text style={styles.placeholderText}>estrutura preparada</Text>
+          <Text style={styles.placeholderSub}>lógica entra no próximo step</Text>
+        </View>
+
+        <TouchableOpacity 
+          onPress={() => {
+            console.warn('[PROFILE_DIAG] Switch to slices view');
+            setViewMode('slices');
+          }}
+          style={[styles.backBtn, { marginTop: 20, backgroundColor: 'rgba(255, 255, 255, 0.1)' }]}
+        >
+          <Text style={styles.backBtnText}>VER SLICES (LEGACY)</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   const renderContent = () => {
     if (currentView === 'home') {
       return (
@@ -340,6 +392,19 @@ export const HomeScreen = ({ navigation }: any) => {
       <View style={styles.center}>
         <Text style={styles.title}>Shell mínima funcional</Text>
         <Text style={styles.subtitle}>Canal de produção correto</Text>
+
+        <TouchableOpacity 
+          onPress={() => {
+            console.warn('[PROFILE_DIAG] Switch to consolidated view');
+            setViewMode('consolidated');
+          }}
+          style={{ marginBottom: 30, padding: 12, backgroundColor: '#5856D6', borderRadius: 8, width: '100%', alignItems: 'center' }}
+        >
+          <Text style={{ color: '#FFF', fontWeight: 'bold' }}>VER HOME CONSOLIDADA</Text>
+        </TouchableOpacity>
+
+        {viewMode === 'consolidated' ? renderConsolidatedHome() : (
+          <>
 
         {/* SLICE 02 — REAL DATA CARD */}
         <View style={[styles.card, { backgroundColor: '#001a1a', borderColor: '#00F2FF', marginBottom: 24 }]}>
@@ -715,6 +780,8 @@ export const HomeScreen = ({ navigation }: any) => {
             <Text style={styles.navButtonText}>LOGIN</Text>
           </TouchableOpacity>
         </View>
+          </>
+        )}
       </View>
     );
   };
@@ -723,7 +790,7 @@ export const HomeScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerText}>STEP LIVE 18 — HOME SLICE 10 ACTIVE</Text>
+        <Text style={styles.headerText}>STEP LIVE 19A — HOME CONSOLIDADA SKELETON</Text>
       </View>
       {renderContent()}
     </SafeAreaView>
@@ -803,6 +870,19 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: 'bold',
     fontFamily: 'monospace',
+  },
+  placeholderText: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  placeholderSub: {
+    color: 'rgba(255, 255, 255, 0.4)',
+    fontSize: 11,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   footerSha: {
     color: 'rgba(255, 255, 255, 0.3)',
