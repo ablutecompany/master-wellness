@@ -30,7 +30,7 @@ export const HomeScreen = ({ navigation }: any) => {
     ? (isProfileComplete ? 'completo' : 'incompleto')
     : 'unavailable';
 
-  const finalCommitSha = "7bcdace"; // Updated after push
+  const finalCommitSha = "5cb083d"; // Updated after push
 
   // Slice 10 — Evolution Readiness Logic
   let techBase = '';
@@ -370,11 +370,57 @@ export const HomeScreen = ({ navigation }: any) => {
         </View>
 
         {/* BLOCO D — CENTRO DE DIAGNÓSTICO */}
-        <View style={[styles.card, { borderColor: '#BF5AF2', backgroundColor: '#1a001a', marginBottom: 20 }]}>
-          <Text style={[styles.cardHeader, { color: '#BF5AF2' }]}>BLOCO D — CENTRO DE DIAGNÓSTICO</Text>
+        <View style={[styles.card, { borderColor: '#FF00FF', backgroundColor: '#1a001a', marginBottom: 20 }]}>
+          <Text style={[styles.cardHeader, { color: '#FF00FF' }]}>BLOCO D — CENTRO DE DIAGNÓSTICO</Text>
           <View style={styles.divider} />
-          <Text style={styles.placeholderText}>estrutura preparada</Text>
-          <Text style={styles.placeholderSub}>lógica entra no próximo step</Text>
+          
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>userId:</Text>
+            <Text style={styles.dataValue}>{userId}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>activeMemberId:</Text>
+            <Text style={styles.dataValue}>{activeMemberId}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>analysesCount:</Text>
+            <Text style={styles.dataValue}>{analysesCount}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Sessão e perfil:</Text>
+            <Text style={styles.dataValue}>{sessionAndProfile}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Perfil e contacto:</Text>
+            <Text style={styles.dataValue}>{profileAndContact}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Consistência global:</Text>
+            <Text style={[styles.dataValue, { color: '#FF00FF' }]}>{globalConsistency}</Text>
+          </View>
+
+          <TouchableOpacity 
+            onPress={() => {
+              console.warn('[PROFILE_DIAG] Consolidated VER DETALHE TÉCNICO pressed');
+              if (authAccount) {
+                setViewMode('slices');
+              } else {
+                navigation.navigate('Login');
+              }
+            }}
+            style={{ marginTop: 12, padding: 14, backgroundColor: 'rgba(255, 0, 255, 0.1)', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#FF00FF' }}
+          >
+            <Text style={{ color: '#FF00FF', fontSize: 14, fontWeight: 'bold', letterSpacing: 1 }}>
+              VER DETALHE TÉCNICO
+            </Text>
+          </TouchableOpacity>
+          <View style={styles.divider} />
+          <Text style={styles.footerSha}>commit: 19I-FINAL-SHA</Text>
         </View>
 
         <TouchableOpacity 
@@ -908,7 +954,7 @@ export const HomeScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerText}>STEP LIVE 19G — HOME CONSOLIDADA SCROLL FIX (SHA: 4f8a2b1)</Text>
+        <Text style={styles.headerText}>STEP LIVE 19I — HOME CONSOLIDADA V1 COMPLETE</Text>
       </View>
       {renderContent()}
     </SafeAreaView>
