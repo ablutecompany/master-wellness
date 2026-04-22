@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import { useStore } from '../store/useStore';
 
 /**
@@ -30,7 +30,7 @@ export const HomeScreen = ({ navigation }: any) => {
     ? (isProfileComplete ? 'completo' : 'incompleto')
     : 'unavailable';
 
-  const finalCommitSha = "56a87c6"; // Updated after push
+  const finalCommitSha = "79ad26a"; // Updated after push
 
   // Slice 10 — Evolution Readiness Logic
   let techBase = '';
@@ -233,7 +233,7 @@ export const HomeScreen = ({ navigation }: any) => {
 
   const renderConsolidatedHome = () => {
     return (
-      <View style={styles.center}>
+      <View style={{ width: '100%', alignItems: 'center' }}>
         <Text style={styles.title}>Home Consolidada</Text>
         <Text style={styles.subtitle}>Estrutura Base Preparada</Text>
 
@@ -451,7 +451,7 @@ export const HomeScreen = ({ navigation }: any) => {
     }
 
     return (
-      <View style={styles.center}>
+      <ScrollView contentContainerStyle={styles.scrollCenter}>
         <Text style={styles.title}>Shell mínima funcional</Text>
         <Text style={styles.subtitle}>Canal de produção correto</Text>
 
@@ -844,7 +844,7 @@ export const HomeScreen = ({ navigation }: any) => {
         </View>
           </>
         )}
-      </View>
+      </ScrollView>
     );
   };
 
@@ -852,7 +852,7 @@ export const HomeScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerText}>STEP LIVE 19A — HOME CONSOLIDADA SKELETON</Text>
+        <Text style={styles.headerText}>STEP LIVE 19D — HOME CONSOLIDADA SCROLLABLE</Text>
       </View>
       {renderContent()}
     </SafeAreaView>
@@ -876,12 +876,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 13,
   },
-  center: {
-    flex: 1,
+  scrollCenter: {
     padding: 24,
-    justifyContent: 'center',
     alignItems: 'center',
+    paddingBottom: 80, // Espaço extra para garantir scroll total
   },
+  center: {
   probeHeader: {
     alignItems: 'center',
     marginBottom: 24,
