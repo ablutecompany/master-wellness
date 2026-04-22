@@ -29,7 +29,41 @@ export const HomeScreen = ({ navigation }: any) => {
     ? (isProfileComplete ? 'completo' : 'incompleto')
     : 'unavailable';
 
-  const finalCommitSha = "3262e66"; // Updated after push
+  const finalCommitSha = "a5bedf8"; // Updated after push
+
+  // Slice 09 — Availability Logic
+  let loginAvail = '';
+  let profileAvail = '';
+  let historyAvail = '';
+  let globalAvail = '';
+  let pointCertainTarget: 'Login' | 'profile' | 'home' = 'Login';
+
+  if (!authAccount) {
+    loginAvail = 'necessário';
+    profileAvail = 'indisponível';
+    historyAvail = 'indisponível';
+    globalAvail = 'acesso mínimo';
+    pointCertainTarget = 'Login';
+  } else {
+    loginAvail = 'disponível';
+    const hasName = !!user?.name;
+    
+    if (hasName) {
+      profileAvail = 'disponível';
+      pointCertainTarget = 'home'; // SLICE 01
+    } else {
+      profileAvail = 'parcial';
+      pointCertainTarget = 'profile';
+    }
+
+    if (analysesCount > 0) {
+      historyAvail = 'disponível';
+      globalAvail = 'base funcional expandida';
+    } else {
+      historyAvail = 'vazio';
+      globalAvail = hasName ? 'base funcional pronta' : 'base funcional parcial';
+    }
+  }
 
   // Slice 08 — Consistency Logic
   let sessionProfileConsistency = '';
@@ -527,6 +561,47 @@ export const HomeScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </View>
 
+        {/* SLICE 09 — AVAILABILITY CARD */}
+        <View style={[styles.card, { backgroundColor: '#1a1a1a', borderColor: '#5856D6', marginBottom: 24 }]}>
+          <Text style={[styles.cardHeader, { color: '#5856D6' }]}>HOME REAL — SLICE 09</Text>
+          <View style={styles.divider} />
+          
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Login:</Text>
+            <Text style={styles.dataValue}>{loginAvail}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Perfil:</Text>
+            <Text style={styles.dataValue}>{profileAvail}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Histórico técnico:</Text>
+            <Text style={styles.dataValue}>{historyAvail}</Text>
+          </View>
+
+          <View style={styles.divider} />
+          <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 11, textAlign: 'center', marginBottom: 4 }}>Disponibilidade global:</Text>
+          <Text style={{ color: '#5856D6', fontSize: 13, fontWeight: 'bold', textAlign: 'center', marginBottom: 16 }}>{globalAvail}</Text>
+
+          <TouchableOpacity 
+            onPress={() => {
+              console.warn(`[PROFILE_DIAG] ABRIR PONTO CERTO pressed: ${pointCertainTarget}`);
+              if (pointCertainTarget === 'Login') {
+                navigation.navigate('Login');
+              } else {
+                setCurrentView(pointCertainTarget as any);
+              }
+            }}
+            style={{ padding: 14, backgroundColor: 'rgba(88, 86, 214, 0.2)', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#5856D6' }}
+          >
+            <Text style={{ color: '#5856D6', fontSize: 14, fontWeight: 'bold', letterSpacing: 1 }}>
+              ABRIR PONTO CERTO
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             onPress={() => {
@@ -566,7 +641,7 @@ export const HomeScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerText}>STEP LIVE 16 — HOME SLICE 08 ACTIVE</Text>
+        <Text style={styles.headerText}>STEP LIVE 17 — HOME SLICE 09 ACTIVE</Text>
       </View>
       {renderContent()}
     </SafeAreaView>
