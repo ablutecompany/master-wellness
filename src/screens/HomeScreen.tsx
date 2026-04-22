@@ -30,7 +30,7 @@ export const HomeScreen = ({ navigation }: any) => {
     ? (isProfileComplete ? 'completo' : 'incompleto')
     : 'unavailable';
 
-  const finalCommitSha = "eb14ed0"; // Updated after push
+  const finalCommitSha = "7bcdace"; // Updated after push
 
   // Slice 10 — Evolution Readiness Logic
   let techBase = '';
@@ -232,6 +232,7 @@ export const HomeScreen = ({ navigation }: any) => {
   }
 
   const renderConsolidatedHome = () => {
+    console.log('[SCROLL_DIAG] Rendering Consolidated Home');
     return (
       <View style={{ width: '100%', alignItems: 'center' }}>
         <Text style={styles.title}>Home Consolidada</Text>
@@ -495,14 +496,19 @@ export const HomeScreen = ({ navigation }: any) => {
       }
     }
 
+    console.log('[SCROLL_DIAG] renderContent mounting ScrollView', { currentView, viewMode });
+
     return (
-      <ScrollView 
-        contentContainerStyle={styles.scrollCenter}
-        style={{ flex: 1 }}
-        showsVerticalScrollIndicator={true}
-      >
-        <Text style={styles.title}>Shell mínima funcional</Text>
-        <Text style={styles.subtitle}>Canal de produção correto</Text>
+      <View style={{ flex: 1, width: '100%' }}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollCenter}
+          style={{ flex: 1 }}
+          showsVerticalScrollIndicator={true}
+          onScroll={() => console.log('[SCROLL_DIAG] scroll event detected')}
+          scrollEventThrottle={16}
+        >
+          <Text style={styles.title}>Shell mínima funcional</Text>
+          <Text style={styles.subtitle}>Canal de produção correto</Text>
 
         <TouchableOpacity 
           onPress={() => {
@@ -893,7 +899,8 @@ export const HomeScreen = ({ navigation }: any) => {
         </View>
           </>
         )}
-      </ScrollView>
+        </ScrollView>
+      </View>
     );
   };
 
@@ -901,7 +908,7 @@ export const HomeScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerText}>STEP LIVE 19E — HOME CONSOLIDADA INDICATORS</Text>
+        <Text style={styles.headerText}>STEP LIVE 19G — HOME CONSOLIDADA SCROLL FIX (SHA: 4f8a2b1)</Text>
       </View>
       {renderContent()}
     </SafeAreaView>
@@ -928,9 +935,8 @@ const styles = StyleSheet.create({
   scrollCenter: {
     padding: 24,
     alignItems: 'center',
-    paddingBottom: 80, // Espaço extra para garantir scroll total
+    paddingBottom: 100, // Mais espaço extra para garantir scroll total
   },
-  center: {
   probeHeader: {
     alignItems: 'center',
     marginBottom: 24,
