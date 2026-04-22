@@ -29,7 +29,7 @@ export const HomeScreen = ({ navigation }: any) => {
     ? (isProfileComplete ? 'completo' : 'incompleto')
     : 'unavailable';
 
-  const finalCommitSha = "8823df4"; // Updated after push
+  const finalCommitSha = "32f5d3c"; // Updated after push
 
   // Slice 03 — Contextual Action Logic
   let actionMessage = '';
@@ -52,6 +52,20 @@ export const HomeScreen = ({ navigation }: any) => {
     actionMessage = 'Conta pronta para evoluir para superfícies mais ricas';
     actionLabel = 'VER HOME';
     actionTarget = 'home';
+  }
+
+  // Slice 04 — Summary Logic
+  const accountSummaryLabel = authAccount ? 'ativa' : 'guest';
+  const profileSummaryLabel = profileStatusLabel === 'completo' ? 'completo' : 'incompleto';
+  const analysesSummaryLabel = analysesCount.toString();
+  
+  let synthesisMessage = '';
+  if (!authAccount) {
+    synthesisMessage = 'Sem sessão iniciada';
+  } else if (analysesCount === 0) {
+    synthesisMessage = 'Conta ativa sem histórico disponível';
+  } else {
+    synthesisMessage = 'Conta ativa com histórico disponível';
   }
 
   const renderContent = () => {
@@ -229,6 +243,46 @@ export const HomeScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </View>
 
+        {/* SLICE 04 — SUMMARY CARD */}
+        <View style={[styles.card, { backgroundColor: '#1a0000', borderColor: '#FF3B30', marginBottom: 24 }]}>
+          <Text style={[styles.cardHeader, { color: '#FF3B30' }]}>HOME REAL — SLICE 04</Text>
+          <View style={styles.divider} />
+          
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Conta:</Text>
+            <Text style={styles.dataValue}>{accountSummaryLabel}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Perfil:</Text>
+            <Text style={styles.dataValue}>{profileSummaryLabel}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Análises:</Text>
+            <Text style={styles.dataValue}>{analysesSummaryLabel}</Text>
+          </View>
+
+          <View style={styles.divider} />
+          <Text style={{ color: '#FFF', fontSize: 12, textAlign: 'center', fontStyle: 'italic', marginBottom: 16 }}>
+            {synthesisMessage}
+          </Text>
+
+          <TouchableOpacity 
+            onPress={() => {
+              console.warn('[PROFILE_DIAG] VER DETALHE pressed (from Slice 04)');
+              if (authAccount) {
+                setCurrentView('home'); // Technical probe (Slice 01)
+              } else {
+                navigation.navigate('Login');
+              }
+            }}
+            style={{ padding: 10, borderWidth: 1, borderColor: '#FF3B30', borderRadius: 6, alignItems: 'center' }}
+          >
+            <Text style={{ color: '#FF3B30', fontSize: 11, fontWeight: 'bold' }}>VER DETALHE</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             onPress={() => {
@@ -268,7 +322,7 @@ export const HomeScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerText}>STEP LIVE 11 — HOME SLICE 03 ACTIVE</Text>
+        <Text style={styles.headerText}>STEP LIVE 12 — HOME SLICE 04 ACTIVE</Text>
       </View>
       {renderContent()}
     </SafeAreaView>
