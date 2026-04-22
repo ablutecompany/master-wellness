@@ -9,7 +9,7 @@ import { useStore } from '../store/useStore';
 
 export const HomeScreen = ({ navigation }: any) => {
   const [currentView, setCurrentView] = useState<'root' | 'home' | 'profile'>('root');
-  const [viewMode, setViewMode] = useState<'slices' | 'consolidated'>('slices');
+  const [viewMode, setViewMode] = useState<'slices' | 'consolidated'>('consolidated');
   
   console.warn('[PROFILE_DIAG] HomeScreen render', { currentView, viewMode });
 
@@ -231,6 +231,36 @@ export const HomeScreen = ({ navigation }: any) => {
     synthesisMessage = 'Conta ativa com histórico disponível';
   }
 
+  // BLOCO D — Diagnostic Center Logic (Migrated from Slice 01 + 08)
+  const dUserId = userId;
+  const dActiveMemberId = activeMemberId ?? 'unavailable';
+  const dAnalysesCount = analysesCount;
+  
+  let dSessionAndProfile = 'não aplicável';
+  let dProfileAndContact = 'não aplicável';
+  let dGlobalConsistency = 'sem sessão';
+
+  if (authAccount) {
+    const hasName = !!user?.name;
+    const hasEmail = !!authAccount?.email;
+    const hasAnalyses = analysesCount > 0;
+
+    if (hasAnalyses) {
+      dSessionAndProfile = 'coerente';
+      dProfileAndContact = 'coerente';
+      dGlobalConsistency = 'estável';
+    } else if (hasEmail && !hasName) {
+      dSessionAndProfile = 'parcial';
+      dProfileAndContact = 'parcial';
+      dGlobalConsistency = 'atenção ao perfil';
+    } else {
+      // Authenticated + Name + Email + Analyses = 0
+      dSessionAndProfile = 'coerente';
+      dProfileAndContact = 'coerente';
+      dGlobalConsistency = 'estável';
+    }
+  }
+
   const renderConsolidatedHome = () => {
     console.log('[SCROLL_DIAG] Rendering Consolidated Home');
     return (
@@ -376,32 +406,32 @@ export const HomeScreen = ({ navigation }: any) => {
           
           <View style={styles.dataRow}>
             <Text style={styles.dataLabel}>userId:</Text>
-            <Text style={styles.dataValue}>{userId}</Text>
+            <Text style={styles.dataValue}>{dUserId}</Text>
           </View>
 
           <View style={styles.dataRow}>
             <Text style={styles.dataLabel}>activeMemberId:</Text>
-            <Text style={styles.dataValue}>{activeMemberId}</Text>
+            <Text style={styles.dataValue}>{dActiveMemberId}</Text>
           </View>
 
           <View style={styles.dataRow}>
             <Text style={styles.dataLabel}>analysesCount:</Text>
-            <Text style={styles.dataValue}>{analysesCount}</Text>
+            <Text style={styles.dataValue}>{dAnalysesCount}</Text>
           </View>
 
           <View style={styles.dataRow}>
             <Text style={styles.dataLabel}>Sessão e perfil:</Text>
-            <Text style={styles.dataValue}>{sessionProfileConsistency}</Text>
+            <Text style={styles.dataValue}>{dSessionAndProfile}</Text>
           </View>
 
           <View style={styles.dataRow}>
             <Text style={styles.dataLabel}>Perfil e contacto:</Text>
-            <Text style={styles.dataValue}>{profileContactConsistency}</Text>
+            <Text style={styles.dataValue}>{dProfileAndContact}</Text>
           </View>
 
           <View style={styles.dataRow}>
             <Text style={styles.dataLabel}>Consistência global:</Text>
-            <Text style={[styles.dataValue, { color: '#FF00FF' }]}>{globalConsistency}</Text>
+            <Text style={[styles.dataValue, { color: '#FF00FF' }]}>{dGlobalConsistency}</Text>
           </View>
 
           <TouchableOpacity 
@@ -409,6 +439,7 @@ export const HomeScreen = ({ navigation }: any) => {
               console.warn('[PROFILE_DIAG] Consolidated VER DETALHE TÉCNICO pressed');
               if (authAccount) {
                 setViewMode('slices');
+                setCurrentView('home'); // Realça a Slice 01 (Probe Técnica)
               } else {
                 navigation.navigate('Login');
               }
@@ -420,7 +451,7 @@ export const HomeScreen = ({ navigation }: any) => {
             </Text>
           </TouchableOpacity>
           <View style={styles.divider} />
-          <Text style={styles.footerSha}>commit: dc742b0</Text>
+          <Text style={styles.footerSha}>commit: 406a752</Text>
         </View>
 
         <TouchableOpacity 
@@ -556,15 +587,6 @@ export const HomeScreen = ({ navigation }: any) => {
           <Text style={styles.title}>Shell mínima funcional</Text>
           <Text style={styles.subtitle}>Canal de produção correto</Text>
 
-        <TouchableOpacity 
-          onPress={() => {
-            console.warn('[PROFILE_DIAG] Switch to consolidated view');
-            setViewMode('consolidated');
-          }}
-          style={{ marginBottom: 30, padding: 12, backgroundColor: '#5856D6', borderRadius: 8, width: '100%', alignItems: 'center' }}
-        >
-          <Text style={{ color: '#FFF', fontWeight: 'bold' }}>VER HOME CONSOLIDADA</Text>
-        </TouchableOpacity>
 
         {viewMode === 'consolidated' ? renderConsolidatedHome() : (
           <>
@@ -942,6 +964,16 @@ export const HomeScreen = ({ navigation }: any) => {
           >
             <Text style={styles.navButtonText}>LOGIN</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity 
+            onPress={() => {
+              console.warn('[PROFILE_DIAG] Switch to consolidated view');
+              setViewMode('consolidated');
+            }}
+            style={{ marginTop: 30, padding: 14, backgroundColor: '#5856D6', borderRadius: 12, width: '100%', alignItems: 'center' }}
+          >
+            <Text style={{ color: '#FFF', fontWeight: 'bold' }}>VER HOME CONSOLIDADA</Text>
+          </TouchableOpacity>
         </View>
           </>
         )}
@@ -954,7 +986,7 @@ export const HomeScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerText}>STEP LIVE 19I — HOME CONSOLIDADA V1 COMPLETE</Text>
+        <Text style={styles.headerText}>STEP LIVE 20A — HOME CONSOLIDADA V1 (DEFAULT)</Text>
       </View>
       {renderContent()}
     </SafeAreaView>
