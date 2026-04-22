@@ -29,7 +29,24 @@ export const HomeScreen = ({ navigation }: any) => {
     ? (isProfileComplete ? 'completo' : 'incompleto')
     : 'unavailable';
 
-  const finalCommitSha = "24e2013"; // Updated after push
+  const finalCommitSha = "cecfa77"; // Updated after push
+
+  // Slice 06 — Operational Logic
+  const sessionOpLabel = authAccount ? 'ativa' : 'guest';
+  const backendOpLabel = (authAccount && userId !== 'unavailable') ? 'pronta' : 'fallback';
+  const profileOpLabel = user?.name ? 'sim' : 'não';
+  const historyOpLabel = analysesCount > 0 ? 'disponível' : 'vazio';
+  
+  let globalOpState = '';
+  if (!authAccount) {
+    globalOpState = 'Acesso limitado';
+  } else if (isProfileComplete && analysesCount === 0) {
+    globalOpState = 'Conta pronta sem histórico';
+  } else if (isProfileComplete && analysesCount > 0) {
+    globalOpState = 'Conta pronta com histórico';
+  } else {
+    globalOpState = 'Conta autenticada com perfil parcial';
+  }
 
   // Slice 05 — Orientation Logic
   let nextStep = '';
@@ -338,6 +355,50 @@ export const HomeScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </View>
 
+        {/* SLICE 06 — OPERATIONAL CARD */}
+        <View style={[styles.card, { backgroundColor: '#000a1a', borderColor: '#007AFF', marginBottom: 24 }]}>
+          <Text style={[styles.cardHeader, { color: '#007AFF' }]}>HOME REAL — SLICE 06</Text>
+          <View style={styles.divider} />
+          
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Sessão:</Text>
+            <Text style={styles.dataValue}>{sessionOpLabel}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Conta backend:</Text>
+            <Text style={styles.dataValue}>{backendOpLabel}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Perfil carregado:</Text>
+            <Text style={styles.dataValue}>{profileOpLabel}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Histórico:</Text>
+            <Text style={styles.dataValue}>{historyOpLabel}</Text>
+          </View>
+
+          <View style={styles.divider} />
+          <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 11, textAlign: 'center', marginBottom: 4 }}>Estado operacional global:</Text>
+          <Text style={{ color: '#007AFF', fontSize: 13, fontWeight: 'bold', textAlign: 'center', marginBottom: 16 }}>{globalOpState}</Text>
+
+          <TouchableOpacity 
+            onPress={() => {
+              console.warn('[PROFILE_DIAG] VER ESTADO pressed (from Slice 06)');
+              if (authAccount) {
+                setCurrentView('home');
+              } else {
+                navigation.navigate('Login');
+              }
+            }}
+            style={{ padding: 10, backgroundColor: 'rgba(0, 122, 255, 0.2)', borderRadius: 6, alignItems: 'center', borderWidth: 1, borderColor: '#007AFF' }}
+          >
+            <Text style={{ color: '#007AFF', fontSize: 11, fontWeight: 'bold' }}>VER ESTADO</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             onPress={() => {
@@ -377,7 +438,7 @@ export const HomeScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerText}>STEP LIVE 13 — HOME SLICE 05 ACTIVE</Text>
+        <Text style={styles.headerText}>STEP LIVE 14 — HOME SLICE 06 ACTIVE</Text>
       </View>
       {renderContent()}
     </SafeAreaView>
