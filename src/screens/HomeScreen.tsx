@@ -29,7 +29,38 @@ export const HomeScreen = ({ navigation }: any) => {
     ? (isProfileComplete ? 'completo' : 'incompleto')
     : 'unavailable';
 
-  const finalCommitSha = "f56470a"; // Updated after push
+  const finalCommitSha = "3262e66"; // Updated after push
+
+  // Slice 08 — Consistency Logic
+  let sessionProfileConsistency = '';
+  let profileContactConsistency = '';
+  let accountHistoryConsistency = '';
+  let globalConsistency = '';
+
+  if (!authAccount) {
+    sessionProfileConsistency = 'não aplicável';
+    profileContactConsistency = 'não aplicável';
+    accountHistoryConsistency = 'não aplicável';
+    globalConsistency = 'sem sessão';
+  } else {
+    const hasName = !!user?.name;
+    const hasEmail = !!authAccount?.email;
+    
+    sessionProfileConsistency = hasName ? 'coerente' : 'parcial';
+    profileContactConsistency = (hasName && hasEmail) ? 'coerente' : 'parcial';
+    
+    if (analysesCount === 0) {
+      accountHistoryConsistency = 'coerente sem histórico';
+    } else {
+      accountHistoryConsistency = 'coerente com histórico';
+    }
+
+    if (hasName && hasEmail) {
+      globalConsistency = analysesCount > 0 ? 'pronta' : 'estável';
+    } else {
+      globalConsistency = 'atenção ao perfil';
+    }
+  }
 
   // Slice 07 — Longitudinal Logic
   let longitudinalState = '';
@@ -457,6 +488,45 @@ export const HomeScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </View>
 
+        {/* SLICE 08 — CONSISTENCY CARD */}
+        <View style={[styles.card, { backgroundColor: '#1a1a1a', borderColor: '#FF9500', marginBottom: 24 }]}>
+          <Text style={[styles.cardHeader, { color: '#FF9500' }]}>HOME REAL — SLICE 08</Text>
+          <View style={styles.divider} />
+          
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Sessão e perfil:</Text>
+            <Text style={styles.dataValue}>{sessionProfileConsistency}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Perfil e contacto:</Text>
+            <Text style={styles.dataValue}>{profileContactConsistency}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Conta e histórico:</Text>
+            <Text style={styles.dataValue}>{accountHistoryConsistency}</Text>
+          </View>
+
+          <View style={styles.divider} />
+          <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 11, textAlign: 'center', marginBottom: 4 }}>Consistência global:</Text>
+          <Text style={{ color: '#FF9500', fontSize: 13, fontWeight: 'bold', textAlign: 'center', marginBottom: 16 }}>{globalConsistency}</Text>
+
+          <TouchableOpacity 
+            onPress={() => {
+              console.warn('[PROFILE_DIAG] VER CONSISTÊNCIA pressed (from Slice 08)');
+              if (authAccount) {
+                setCurrentView('profile');
+              } else {
+                navigation.navigate('Login');
+              }
+            }}
+            style={{ padding: 10, backgroundColor: 'rgba(255, 149, 0, 0.1)', borderRadius: 6, alignItems: 'center', borderWidth: 1, borderColor: '#FF9500' }}
+          >
+            <Text style={{ color: '#FF9500', fontSize: 11, fontWeight: 'bold' }}>VER CONSISTÊNCIA</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             onPress={() => {
@@ -496,7 +566,7 @@ export const HomeScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerText}>STEP LIVE 15 — HOME SLICE 07 ACTIVE</Text>
+        <Text style={styles.headerText}>STEP LIVE 16 — HOME SLICE 08 ACTIVE</Text>
       </View>
       {renderContent()}
     </SafeAreaView>
