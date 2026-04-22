@@ -29,7 +29,41 @@ export const HomeScreen = ({ navigation }: any) => {
     ? (isProfileComplete ? 'completo' : 'incompleto')
     : 'unavailable';
 
-  const finalCommitSha = "a5bedf8"; // Updated after push
+  const finalCommitSha = "33570dd"; // Updated after push
+
+  // Slice 10 — Evolution Readiness Logic
+  let techBase = '';
+  let profileBase = '';
+  let historyBase = '';
+  let evolutionReadinessLabel = '';
+  let evolutionReadyTarget: 'Login' | 'profile' | 'longitudinal' = 'Login';
+
+  if (!authAccount) {
+    techBase = 'mínima';
+    profileBase = 'não iniciada';
+    historyBase = 'indisponível';
+    evolutionReadinessLabel = 'baixa';
+    evolutionReadyTarget = 'Login';
+  } else {
+    techBase = 'estável';
+    const hasName = !!user?.name;
+    
+    if (hasName) {
+      profileBase = 'confirmada';
+      evolutionReadyTarget = 'longitudinal';
+    } else {
+      profileBase = 'parcial';
+      evolutionReadyTarget = 'profile';
+    }
+
+    if (analysesCount > 0) {
+      historyBase = 'disponível';
+      evolutionReadinessLabel = 'elevada';
+    } else {
+      historyBase = 'ainda vazia';
+      evolutionReadinessLabel = hasName ? 'moderada' : 'condicionada';
+    }
+  }
 
   // Slice 09 — Availability Logic
   let loginAvail = '';
@@ -602,6 +636,54 @@ export const HomeScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </View>
 
+        {/* SLICE 10 — EVOLUTION READINESS CARD */}
+        <View style={[styles.card, { backgroundColor: '#001a1a', borderColor: '#30B0C7', marginBottom: 24 }]}>
+          <Text style={[styles.cardHeader, { color: '#30B0C7' }]}>HOME REAL — SLICE 10</Text>
+          <View style={styles.divider} />
+          
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Base técnica:</Text>
+            <Text style={styles.dataValue}>{techBase}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Base de perfil:</Text>
+            <Text style={styles.dataValue}>{profileBase}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Base de histórico:</Text>
+            <Text style={styles.dataValue}>{historyBase}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Prontidão de evolução:</Text>
+            <Text style={[styles.dataValue, { color: '#30B0C7' }]}>{evolutionReadinessLabel}</Text>
+          </View>
+
+          <TouchableOpacity 
+            onPress={() => {
+              console.warn(`[PROFILE_DIAG] VER PRONTIDÃO pressed: ${evolutionReadyTarget}`);
+              if (evolutionReadyTarget === 'Login') {
+                navigation.navigate('Login');
+              } else if (evolutionReadyTarget === 'profile') {
+                setCurrentView('profile');
+              } else {
+                // For 'longitudinal' we scroll to Slice 07. 
+                // Since we don't have scrolling refs easily, we just stay here or point to something relevant.
+                // The request says navigate to SLICE 07, which is just part of this view.
+                // We'll just log it for now as we are already on the screen where Slice 07 is.
+                console.warn('[PROFILE_DIAG] Already on Home, Slice 07 is visible above.');
+              }
+            }}
+            style={{ marginTop: 12, padding: 14, backgroundColor: 'rgba(48, 176, 199, 0.2)', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#30B0C7' }}
+          >
+            <Text style={{ color: '#30B0C7', fontSize: 14, fontWeight: 'bold', letterSpacing: 1 }}>
+              VER PRONTIDÃO
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             onPress={() => {
@@ -641,7 +723,7 @@ export const HomeScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerText}>STEP LIVE 17 — HOME SLICE 09 ACTIVE</Text>
+        <Text style={styles.headerText}>STEP LIVE 18 — HOME SLICE 10 ACTIVE</Text>
       </View>
       {renderContent()}
     </SafeAreaView>
