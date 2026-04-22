@@ -391,12 +391,12 @@ export const HomeScreen = ({ navigation }: any) => {
 
           <View style={styles.dataRow}>
             <Text style={styles.dataLabel}>Sessão e perfil:</Text>
-            <Text style={styles.dataValue}>{sessionAndProfile}</Text>
+            <Text style={styles.dataValue}>{sessionProfileConsistency}</Text>
           </View>
 
           <View style={styles.dataRow}>
             <Text style={styles.dataLabel}>Perfil e contacto:</Text>
-            <Text style={styles.dataValue}>{profileAndContact}</Text>
+            <Text style={styles.dataValue}>{profileContactConsistency}</Text>
           </View>
 
           <View style={styles.dataRow}>
@@ -420,7 +420,7 @@ export const HomeScreen = ({ navigation }: any) => {
             </Text>
           </TouchableOpacity>
           <View style={styles.divider} />
-          <Text style={styles.footerSha}>commit: 79aa977</Text>
+          <Text style={styles.footerSha}>commit: dc742b0</Text>
         </View>
 
         <TouchableOpacity 
