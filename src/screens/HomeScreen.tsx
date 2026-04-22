@@ -30,7 +30,7 @@ export const HomeScreen = ({ navigation }: any) => {
     ? (isProfileComplete ? 'completo' : 'incompleto')
     : 'unavailable';
 
-  const finalCommitSha = "def7da0"; // Updated after push
+  const finalCommitSha = "d8d8852"; // Updated after push
 
   // Slice 10 — Evolution Readiness Logic
   let techBase = '';
@@ -241,8 +241,46 @@ export const HomeScreen = ({ navigation }: any) => {
         <View style={[styles.card, { borderColor: '#00F2FF', backgroundColor: '#001a1a', marginBottom: 20 }]}>
           <Text style={styles.cardHeader}>BLOCO A — STATUS GLOBAL</Text>
           <View style={styles.divider} />
-          <Text style={styles.placeholderText}>estrutura preparada</Text>
-          <Text style={styles.placeholderSub}>lógica entra no próximo step</Text>
+          
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Sessão:</Text>
+            <Text style={styles.dataValue}>{sessionStatus}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Email ativo:</Text>
+            <Text style={styles.dataValue}>{activeEmail}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Perfil:</Text>
+            <Text style={styles.dataValue}>{authAccount ? (user?.name ? 'disponível' : 'parcial') : 'indisponível'}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Backend:</Text>
+            <Text style={styles.dataValue}>{authAccount ? (userId !== 'unavailable' ? 'pronto' : 'fallback') : 'unavailable'}</Text>
+          </View>
+
+          <View style={styles.divider} />
+          <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 11, textAlign: 'center', marginBottom: 4 }}>Disponibilidade global:</Text>
+          <Text style={{ color: '#00F2FF', fontSize: 13, fontWeight: 'bold', textAlign: 'center', marginBottom: 16 }}>{globalAvail}</Text>
+
+          <TouchableOpacity 
+            onPress={() => {
+              console.warn(`[PROFILE_DIAG] Consolidated ABRIR PONTO CERTO pressed: ${pointCertainTarget}`);
+              if (pointCertainTarget === 'Login') {
+                navigation.navigate('Login');
+              } else {
+                setCurrentView(pointCertainTarget as any);
+              }
+            }}
+            style={{ padding: 14, backgroundColor: 'rgba(0, 242, 255, 0.1)', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#00F2FF' }}
+          >
+            <Text style={{ color: '#00F2FF', fontSize: 14, fontWeight: 'bold', letterSpacing: 1 }}>
+              ABRIR PONTO CERTO
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* BLOCO B — RECOMENDAÇÃO E AÇÃO */}
