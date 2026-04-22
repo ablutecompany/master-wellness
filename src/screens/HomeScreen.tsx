@@ -29,7 +29,30 @@ export const HomeScreen = ({ navigation }: any) => {
     ? (isProfileComplete ? 'completo' : 'incompleto')
     : 'unavailable';
 
-  const finalCommitSha = "cecfa77"; // Updated after push
+  const finalCommitSha = "f56470a"; // Updated after push
+
+  // Slice 07 — Longitudinal Logic
+  let longitudinalState = '';
+  let availableBase = '';
+  let evolutionReadiness = '';
+  
+  if (!authAccount) {
+    longitudinalState = 'indisponível';
+    availableBase = 'Sem sessão iniciada';
+    evolutionReadiness = 'baixa';
+  } else if (analysesCount === 0) {
+    longitudinalState = 'ainda não disponível';
+    availableBase = 'Conta ativa sem histórico';
+    evolutionReadiness = 'base pronta';
+  } else if (analysesCount === 1) {
+    longitudinalState = 'muito inicial';
+    availableBase = 'Existe 1 análise';
+    evolutionReadiness = 'limitada';
+  } else {
+    longitudinalState = 'disponível';
+    availableBase = `Existem ${analysesCount} análises`;
+    evolutionReadiness = 'elevada';
+  }
 
   // Slice 06 — Operational Logic
   const sessionOpLabel = authAccount ? 'ativa' : 'guest';
@@ -399,6 +422,41 @@ export const HomeScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </View>
 
+        {/* SLICE 07 — LONGITUDINAL CARD */}
+        <View style={[styles.card, { backgroundColor: '#1a001a', borderColor: '#BF5AF2', marginBottom: 24 }]}>
+          <Text style={[styles.cardHeader, { color: '#BF5AF2' }]}>HOME REAL — SLICE 07</Text>
+          <View style={styles.divider} />
+          
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Leitura longitudinal:</Text>
+            <Text style={styles.dataValue}>{longitudinalState}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Base disponível:</Text>
+            <Text style={styles.dataValue}>{availableBase}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Prontidão para evolução:</Text>
+            <Text style={styles.dataValue}>{evolutionReadiness}</Text>
+          </View>
+
+          <TouchableOpacity 
+            onPress={() => {
+              console.warn('[PROFILE_DIAG] VER BASE pressed (from Slice 07)');
+              if (authAccount) {
+                setCurrentView('home');
+              } else {
+                navigation.navigate('Login');
+              }
+            }}
+            style={{ marginTop: 12, padding: 10, backgroundColor: 'rgba(191, 90, 242, 0.1)', borderRadius: 6, alignItems: 'center', borderWidth: 1, borderColor: '#BF5AF2' }}
+          >
+            <Text style={{ color: '#BF5AF2', fontSize: 11, fontWeight: 'bold' }}>VER BASE</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             onPress={() => {
@@ -438,7 +496,7 @@ export const HomeScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerText}>STEP LIVE 14 — HOME SLICE 06 ACTIVE</Text>
+        <Text style={styles.headerText}>STEP LIVE 15 — HOME SLICE 07 ACTIVE</Text>
       </View>
       {renderContent()}
     </SafeAreaView>
