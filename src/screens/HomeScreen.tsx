@@ -29,7 +29,30 @@ export const HomeScreen = ({ navigation }: any) => {
     ? (isProfileComplete ? 'completo' : 'incompleto')
     : 'unavailable';
 
-  const finalCommitSha = "11b614c"; // Updated after push
+  const finalCommitSha = "8823df4"; // Updated after push
+
+  // Slice 03 — Contextual Action Logic
+  let actionMessage = '';
+  let actionLabel = '';
+  let actionTarget: 'root' | 'home' | 'profile' | 'Login' = 'root';
+
+  if (!authAccount) {
+    actionMessage = 'Inicie sessão para aceder ao seu perfil e histórico';
+    actionLabel = 'LOGIN';
+    actionTarget = 'Login';
+  } else if (analysesCount === 0) {
+    actionMessage = 'Ainda não existem análises disponíveis nesta conta';
+    actionLabel = 'ABRIR PERFIL';
+    actionTarget = 'profile';
+  } else if (!isProfileComplete) {
+    actionMessage = 'Complete o perfil base para melhorar a experiência';
+    actionLabel = 'ABRIR PERFIL';
+    actionTarget = 'profile';
+  } else {
+    actionMessage = 'Conta pronta para evoluir para superfícies mais ricas';
+    actionLabel = 'VER HOME';
+    actionTarget = 'home';
+  }
 
   const renderContent = () => {
     if (currentView === 'home') {
@@ -180,6 +203,32 @@ export const HomeScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         </View>
 
+        {/* SLICE 03 — CONTEXTUAL ACTION CARD */}
+        <View style={[styles.card, { backgroundColor: '#1a1a00', borderColor: '#FFCC00', marginBottom: 24 }]}>
+          <Text style={[styles.cardHeader, { color: '#FFCC00' }]}>HOME REAL — SLICE 03</Text>
+          <View style={styles.divider} />
+          
+          <Text style={{ color: '#FFF', fontSize: 13, textAlign: 'center', marginBottom: 16 }}>
+            {actionMessage}
+          </Text>
+
+          <TouchableOpacity 
+            onPress={() => {
+              console.warn(`[PROFILE_DIAG] Contextual action pressed: ${actionLabel}`, { actionTarget });
+              if (actionTarget === 'Login') {
+                navigation.navigate('Login');
+              } else {
+                setCurrentView(actionTarget as any);
+              }
+            }}
+            style={{ padding: 14, backgroundColor: '#FFCC00', borderRadius: 8, alignItems: 'center' }}
+          >
+            <Text style={{ color: '#000', fontSize: 14, fontWeight: 'bold', letterSpacing: 1 }}>
+              {actionLabel}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             onPress={() => {
@@ -219,7 +268,7 @@ export const HomeScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerText}>STEP LIVE 10 — HOME SLICE 02 ACTIVE</Text>
+        <Text style={styles.headerText}>STEP LIVE 11 — HOME SLICE 03 ACTIVE</Text>
       </View>
       {renderContent()}
     </SafeAreaView>
