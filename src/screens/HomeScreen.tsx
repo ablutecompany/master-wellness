@@ -420,7 +420,7 @@ export const HomeScreen = ({ navigation }: any) => {
             </Text>
           </TouchableOpacity>
           <View style={styles.divider} />
-          <Text style={styles.footerSha}>commit: 19I-FINAL-SHA</Text>
+          <Text style={styles.footerSha}>commit: 79aa977</Text>
         </View>
 
         <TouchableOpacity 
