@@ -30,7 +30,7 @@ export const HomeScreen = ({ navigation }: any) => {
     ? (isProfileComplete ? 'completo' : 'incompleto')
     : 'unavailable';
 
-  const finalCommitSha = "d8d8852"; // Updated after push
+  const finalCommitSha = "56a87c6"; // Updated after push
 
   // Slice 10 — Evolution Readiness Logic
   let techBase = '';
@@ -287,8 +287,32 @@ export const HomeScreen = ({ navigation }: any) => {
         <View style={[styles.card, { borderColor: '#FFCC00', backgroundColor: '#1a1a00', marginBottom: 20 }]}>
           <Text style={[styles.cardHeader, { color: '#FFCC00' }]}>BLOCO B — RECOMENDAÇÃO E AÇÃO</Text>
           <View style={styles.divider} />
-          <Text style={styles.placeholderText}>estrutura preparada</Text>
-          <Text style={styles.placeholderSub}>lógica entra no próximo step</Text>
+          
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 11, marginBottom: 4 }}>Próximo passo recomendado:</Text>
+            <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold' }}>{nextStep}</Text>
+          </View>
+
+          <View style={{ marginBottom: 20 }}>
+            <Text style={{ color: 'rgba(255, 255, 255, 0.6)', fontSize: 11, marginBottom: 4 }}>Motivo:</Text>
+            <Text style={{ color: '#FFCC00', fontSize: 13 }}>{reason}</Text>
+          </View>
+
+          <TouchableOpacity 
+            onPress={() => {
+              console.warn(`[PROFILE_DIAG] Consolidated EXECUTAR pressed: ${nextStep}`, { orientationTarget });
+              if (orientationTarget === 'Login') {
+                navigation.navigate('Login');
+              } else {
+                setCurrentView(orientationTarget as any);
+              }
+            }}
+            style={{ padding: 14, backgroundColor: 'rgba(255, 204, 0, 0.1)', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#FFCC00' }}
+          >
+            <Text style={{ color: '#FFCC00', fontSize: 14, fontWeight: 'bold', letterSpacing: 1 }}>
+              EXECUTAR
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* BLOCO C — PAINEL DE INDICADORES */}
