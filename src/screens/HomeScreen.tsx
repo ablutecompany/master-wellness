@@ -30,7 +30,7 @@ export const HomeScreen = ({ navigation }: any) => {
     ? (isProfileComplete ? 'completo' : 'incompleto')
     : 'unavailable';
 
-  const finalCommitSha = "79ad26a"; // Updated after push
+  const finalCommitSha = "eb14ed0"; // Updated after push
 
   // Slice 10 — Evolution Readiness Logic
   let techBase = '';
@@ -319,8 +319,53 @@ export const HomeScreen = ({ navigation }: any) => {
         <View style={[styles.card, { borderColor: '#4CD964', backgroundColor: '#001a00', marginBottom: 20 }]}>
           <Text style={[styles.cardHeader, { color: '#4CD964' }]}>BLOCO C — PAINEL DE INDICADORES</Text>
           <View style={styles.divider} />
-          <Text style={styles.placeholderText}>estrutura preparada</Text>
-          <Text style={styles.placeholderSub}>lógica entra no próximo step</Text>
+          
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Conta:</Text>
+            <Text style={styles.dataValue}>{accountSummaryLabel}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Perfil:</Text>
+            <Text style={styles.dataValue}>{authAccount ? (isProfileComplete ? 'completo' : 'incompleto') : 'unavailable'}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Análises:</Text>
+            <Text style={styles.dataValue}>{analysesCount}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Leitura longitudinal:</Text>
+            <Text style={styles.dataValue}>{longitudinalState}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Prontidão de evolução:</Text>
+            <Text style={[styles.dataValue, { color: '#4CD964' }]}>
+              {(!authAccount) ? 'baixa' : (
+                !isProfileComplete ? 'condicionada' : (
+                  analysesCount > 1 ? 'elevada' : 'moderada'
+                )
+              )}
+            </Text>
+          </View>
+
+          <TouchableOpacity 
+            onPress={() => {
+              console.warn('[PROFILE_DIAG] Consolidated VER BASE pressed');
+              if (authAccount) {
+                setCurrentView('home'); // Probe Slice 01
+              } else {
+                navigation.navigate('Login');
+              }
+            }}
+            style={{ marginTop: 12, padding: 14, backgroundColor: 'rgba(76, 217, 100, 0.1)', borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: '#4CD964' }}
+          >
+            <Text style={{ color: '#4CD964', fontSize: 14, fontWeight: 'bold', letterSpacing: 1 }}>
+              VER BASE
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* BLOCO D — CENTRO DE DIAGNÓSTICO */}
@@ -451,7 +496,11 @@ export const HomeScreen = ({ navigation }: any) => {
     }
 
     return (
-      <ScrollView contentContainerStyle={styles.scrollCenter}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollCenter}
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={true}
+      >
         <Text style={styles.title}>Shell mínima funcional</Text>
         <Text style={styles.subtitle}>Canal de produção correto</Text>
 
