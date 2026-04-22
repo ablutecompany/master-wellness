@@ -21,7 +21,15 @@ export const HomeScreen = ({ navigation }: any) => {
   const analysesCount = analyses?.length ?? 0;
   const userId = user?.id ?? 'unavailable';
   const displayMemberId = activeMemberId ?? 'unavailable';
-  const finalCommitSha = "6c8fcf6"; // Updated to match current state
+  
+  const sessionStatus = authAccount ? 'autenticada' : 'guest';
+  const activeEmail = authAccount?.email ?? 'unavailable';
+  const isProfileComplete = user?.name && authAccount?.email;
+  const profileStatusLabel = authAccount 
+    ? (isProfileComplete ? 'completo' : 'incompleto')
+    : 'unavailable';
+
+  const finalCommitSha = "pending"; // Will be updated after push
 
   const renderContent = () => {
     if (currentView === 'home') {
@@ -134,6 +142,44 @@ export const HomeScreen = ({ navigation }: any) => {
         <Text style={styles.title}>Shell mínima funcional</Text>
         <Text style={styles.subtitle}>Canal de produção correto</Text>
 
+        {/* SLICE 02 — REAL DATA CARD */}
+        <View style={[styles.card, { backgroundColor: '#001a1a', borderColor: '#00F2FF', marginBottom: 24 }]}>
+          <Text style={styles.cardHeader}>HOME REAL — SLICE 02</Text>
+          <View style={styles.divider} />
+          
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Estado da sessão:</Text>
+            <Text style={styles.dataValue}>{sessionStatus}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Email ativo:</Text>
+            <Text style={styles.dataValue}>{activeEmail}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Análises disponíveis:</Text>
+            <Text style={styles.dataValue}>{analysesCount}</Text>
+          </View>
+
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Perfil base:</Text>
+            <Text style={[styles.dataValue, { color: profileStatusLabel === 'completo' ? '#4CD964' : '#FF9500' }]}>
+              {profileStatusLabel}
+            </Text>
+          </View>
+
+          <TouchableOpacity 
+            onPress={() => {
+              console.warn('[PROFILE_DIAG] Abrir Perfil pressed (from Home Slice 02)');
+              setCurrentView('profile');
+            }}
+            style={{ marginTop: 12, padding: 8, backgroundColor: 'rgba(0, 242, 255, 0.1)', borderRadius: 6, alignItems: 'center' }}
+          >
+            <Text style={{ color: '#00F2FF', fontSize: 12, fontWeight: 'bold' }}>ABRIR PERFIL</Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity 
             onPress={() => {
@@ -142,7 +188,7 @@ export const HomeScreen = ({ navigation }: any) => {
             }} 
             style={styles.navButton}
           >
-            <Text style={styles.navButtonText}>HOME</Text>
+            <Text style={styles.navButtonText}>PROBE TÉCNICA (SLICE 01)</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -173,7 +219,7 @@ export const HomeScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerBar}>
-        <Text style={styles.headerText}>STEP LIVE 09 — PROFILE DIAGNOSTIC ACTIVE</Text>
+        <Text style={styles.headerText}>STEP LIVE 10 — HOME SLICE 02 ACTIVE</Text>
       </View>
       {renderContent()}
     </SafeAreaView>
