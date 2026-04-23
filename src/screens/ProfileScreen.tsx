@@ -412,6 +412,9 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
   return (
     <Container safe style={styles.container}>
+      <View style={{ backgroundColor: '#ff00ff', padding: 8, alignItems: 'center', marginVertical: 10, borderRadius: 8 }}>
+        <Typography variant="caption" style={{ color: 'white', fontWeight: 'bold' }}>PROFILE V2 LIVE MARKER: fc3fa9a-v2</Typography>
+      </View>
       <TouchableOpacity style={styles.header} onPress={handleEditName}>
         <View style={styles.avatar}>
           <Settings size={40} color={theme.colors.background} />

@@ -8,7 +8,7 @@ import { useStore } from '../store/useStore';
  */
 
 export const HomeScreen = ({ navigation }: any) => {
-  const [currentView, setCurrentView] = useState<'root' | 'home' | 'profile'>('root');
+  const [currentView, setCurrentView] = useState<'root' | 'home'>('root');
   const [viewMode, setViewMode] = useState<'slices' | 'consolidated'>('consolidated');
   
   console.warn('[PROFILE_DIAG] HomeScreen render', { currentView, viewMode });
@@ -99,6 +99,8 @@ export const HomeScreen = ({ navigation }: any) => {
     console.log(`[NAV_DIAG] Navigating to: ${target}`);
     if (target === 'Login') {
       navigation.navigate('Login');
+    } else if (target === 'profile') {
+      navigation.navigate('Profile');
     } else {
       setCurrentView(target);
     }
@@ -334,72 +336,7 @@ export const HomeScreen = ({ navigation }: any) => {
       );
     }
 
-    if (currentView === 'profile') {
-      try {
-        console.warn('[PROFILE_DIAG] Rendering profile view', {
-          hasUser: !!user,
-          hasAuth: !!authAccount
-        });
 
-        const profileName = user?.name ?? 'unavailable';
-        const profileEmail = authAccount?.email ?? 'unavailable';
-        const profileCountry = user?.country ?? 'unavailable';
-        const profileTimezone = user?.timezone ?? 'unavailable';
-
-        return (
-          <View style={styles.center}>
-            <View style={[styles.card, { backgroundColor: '#001a1a', borderColor: '#00F2FF' }]}>
-              <Text style={styles.cardHeader}>PERFIL REAL — SLICE 01</Text>
-              <View style={styles.divider} />
-              
-              <View style={styles.dataRow}>
-                <Text style={styles.dataLabel}>Nome:</Text>
-                <Text style={styles.dataValue}>{profileName}</Text>
-              </View>
-
-              <View style={styles.dataRow}>
-                <Text style={styles.dataLabel}>Email:</Text>
-                <Text style={styles.dataValue}>{profileEmail}</Text>
-              </View>
-
-              <View style={styles.dataRow}>
-                <Text style={styles.dataLabel}>País:</Text>
-                <Text style={styles.dataValue}>{profileCountry}</Text>
-              </View>
-
-              <View style={styles.dataRow}>
-                <Text style={styles.dataLabel}>Timezone:</Text>
-                <Text style={styles.dataValue}>{profileTimezone}</Text>
-              </View>
-              
-              <View style={styles.divider} />
-              <Text style={styles.footerSha}>v2.0-stable</Text>
-            </View>
-
-            <TouchableOpacity 
-              onPress={() => {
-                console.warn('[PROFILE_DIAG] VOLTAR pressed (from profile)');
-                setCurrentView('root');
-              }} 
-              style={styles.backBtn}
-            >
-              <Text style={styles.backBtnText}>VOLTAR</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      } catch (err: any) {
-        console.error('[PROFILE_DIAG] profile render crash:', err.message);
-        return (
-          <View style={styles.center}>
-            <Text style={{ color: '#FF3B30', fontWeight: 'bold', marginBottom: 20 }}>ERRO AO RENDERIZAR PERFIL</Text>
-            <Text style={{ color: '#AAA', fontSize: 10, marginBottom: 40 }}>{err.message}</Text>
-            <TouchableOpacity onPress={() => setCurrentView('root')} style={styles.backBtn}>
-              <Text style={styles.backBtnText}>VOLTAR</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      }
-    }
 
     console.log('[SCROLL_DIAG] renderContent mounting ScrollView', { currentView, viewMode });
 
@@ -557,6 +494,7 @@ export const HomeScreen = ({ navigation }: any) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.headerBar}>
+        <Text style={styles.headerMarker}>PROD BUILD MARKER: fc3fa9a</Text>
         <Text style={styles.headerText}>STEP LIVE 20E — HOME CONSOLIDADA V2 FINAL</Text>
       </View>
       {renderContent()}
@@ -576,7 +514,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#00F2FF',
   },
-  headerText: {
+  headerMarker: {
     color: '#FFF',
     fontWeight: 'bold',
     fontSize: 13,
