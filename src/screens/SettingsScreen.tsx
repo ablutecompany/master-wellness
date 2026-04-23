@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View, TouchableOpacity, ScrollView, Platform } from 'react-native';
 import { Container, Typography } from '../components/Base';
 import { theme } from '../theme';
-import { ChevronRight, Globe, Activity, Settings, Shield, Bell, Eye, Database } from 'lucide-react-native';
+import { ChevronRight, Globe, Activity, Settings, Shield, Bell, Eye, Database, X } from 'lucide-react-native';
 import { useStore } from '../store/useStore';
 import { TextInput } from 'react-native';
 
@@ -24,6 +24,12 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   return (
     <Container safe scroll withAura={true}>
       <View style={styles.header}>
+        <TouchableOpacity 
+          onPress={() => navigation.navigate('Home')} 
+          style={styles.closeButton}
+        >
+          <X size={24} color="rgba(255,255,255,0.4)" />
+        </TouchableOpacity>
         <Typography variant="h3" style={{ fontWeight: '600', letterSpacing: 0.5 }}>Definições</Typography>
         <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>CONFIGURAÇÃO DO SISTEMA</Typography>
       </View>
@@ -121,6 +127,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: theme.spacing.xl,
     marginBottom: theme.spacing.lg,
+    position: 'relative',
+    width: '100%',
+  },
+  closeButton: {
+    position: 'absolute',
+    right: 20,
+    top: -5,
+    padding: 8,
+    zIndex: 10,
   },
   menuSection: {
     marginBottom: theme.spacing.xl,

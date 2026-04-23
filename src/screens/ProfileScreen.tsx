@@ -2,7 +2,19 @@ import React, { useEffect } from 'react';
 import { StyleSheet, View, TouchableOpacity, ScrollView, Platform, Image } from 'react-native';
 import { Container, Typography } from '../components/Base';
 import { theme } from '../theme';
-import { User, CreditCard, Settings, LogOut, ChevronRight, Globe, Activity, Users } from 'lucide-react-native';
+import { 
+  ChevronRight, 
+  Camera, 
+  Globe, 
+  Activity, 
+  Users, 
+  Settings, 
+  LogOut,
+  ChevronLeft,
+  X,
+  User,
+  CreditCard
+} from 'lucide-react-native';
 import { GatingOverlay } from '../components/GatingOverlay';
 import { useStore } from '../store/useStore';
 import * as Selectors from '../store/selectors';
@@ -481,6 +493,14 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                </View>
             )}
           </TouchableOpacity>
+          
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('Home')} 
+            style={styles.closeButton}
+          >
+            <X size={24} color="rgba(255,255,255,0.4)" />
+          </TouchableOpacity>
+
           <Typography variant="h2" style={{ fontWeight: '700' }}>
             {displayUserName || 'Utilizador'}
           </Typography>
@@ -983,6 +1003,15 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginVertical: theme.spacing.xxl,
+    position: 'relative',
+    width: '100%',
+  },
+  closeButton: {
+    position: 'absolute',
+    right: 10,
+    top: -20,
+    padding: 10,
+    zIndex: 10,
   },
   avatar: {
     width: 80,
