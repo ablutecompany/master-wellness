@@ -110,7 +110,6 @@ export const HomeScreen = ({ navigation }: any) => {
     console.log(`[VIEW_DIAG] Switching view mode to: ${mode}`);
     setViewMode(mode);
   };
-  };
 
   const renderConsolidatedHome = () => {
     console.log('[SCROLL_DIAG] Rendering Consolidated Home');
@@ -259,6 +258,8 @@ export const HomeScreen = ({ navigation }: any) => {
             <Text style={styles.dataValue}>{dProfileAndContact}</Text>
           </View>
 
+          <View style={styles.dataRow}>
+            <Text style={styles.dataLabel}>Consistência:</Text>
             <Text style={[styles.dataValue, { color: '#FF00FF' }]}>{dGlobalConsistency}</Text>
           </View>
 
