@@ -4,7 +4,7 @@ import { Container, Typography } from '../components/Base';
 import { theme } from '../theme';
 import { BrandLogo } from '../components/BrandLogo';
 import { ThemeCard } from '../components/ThemeCard';
-import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, ChevronRight, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, LogIn } from 'lucide-react-native';
+import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, ChevronRight, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, LogIn, LogOut, Globe, Users } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Video, ResizeMode } from 'expo-av';
@@ -130,6 +130,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const isGuestMode = useStore(state => state.isGuestMode);
   const profileStatus = useStore(state => state.profileStatus);
   const analyses = useStore(state => state.analyses);
+  const credits = useStore(state => state.credits);
 
   const isAuthenticated = !!authAccount || isGuestMode;
   const userName = user?.name || (isGuestMode ? 'Guest' : (authAccount?.email?.split('@')[0] || 'Utilizador'));
@@ -329,6 +330,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           <BrandLogo size="medium" />
           <View style={styles.headerRight}>
             <View style={styles.topIconRow}>
+              <View style={styles.tokenChip}>
+                <Zap size={12} color="#FFD700" fill="#FFD700" />
+                <Typography variant="caption" style={styles.tokenText}>{credits ?? 0}</Typography>
+              </View>
+              
               <TouchableOpacity style={styles.iconCircle} onPress={() => navigation.navigate('Settings')}>
                 <SlidersHorizontal size={20} color="#fff" />
               </TouchableOpacity>
@@ -749,6 +755,24 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  tokenChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 215, 0, 0.1)',
+    paddingHorizontal: 10,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 215, 0, 0.2)',
+    marginRight: 4,
+    alignSelf: 'center',
+    gap: 6,
+  },
+  tokenText: {
+    color: '#FFD700',
+    fontWeight: '800',
+    fontSize: 12,
   },
   evalBadge: {
     backgroundColor: 'rgba(115, 188, 255, 0.1)',
