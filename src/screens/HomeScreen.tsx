@@ -329,7 +329,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           <BrandLogo size="medium" />
           <View style={styles.headerRight}>
             <View style={styles.topIconRow}>
-              <TouchableOpacity style={styles.iconCircle} onPress={() => setShowControl(true)}>
+              <TouchableOpacity style={styles.iconCircle} onPress={() => navigation.navigate('Settings')}>
                 <SlidersHorizontal size={20} color="#fff" />
               </TouchableOpacity>
               

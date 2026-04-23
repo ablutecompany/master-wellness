@@ -19,6 +19,7 @@ import { OnboardingGoals } from './src/screens/OnboardingGoals';
 import { OnboardingPermissions } from './src/screens/OnboardingPermissions';
 import { PairingScreen } from './src/screens/PairingScreen';
 import { MiniAppContainer } from './src/miniapps/MiniAppContainer';
+import { SettingsScreen } from './src/screens/SettingsScreen';
 import { 
   Home as HomeIcon, 
   Brain, 
@@ -342,6 +343,7 @@ export default function App() {
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Main" component={MainTabs} />
           <Stack.Screen name="Profile" component={ProfileScreen} options={{ presentation: 'modal' }} />
+          <Stack.Screen name="Settings" component={SettingsScreen} options={{ presentation: 'modal' }} />
           <Stack.Screen name="GlobalDetail" component={GlobalDetailScreen} options={{ presentation: 'modal' }} />
           <Stack.Screen
             name="MiniApp"

@@ -665,23 +665,6 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             </View>
 
             <View style={styles.groupItem}>
-              <Typography style={styles.groupLabel}>Localização</Typography>
-              <View style={styles.groupValueRow}>
-                {isEditMode ? (
-                  <TextInput
-                    value={displayUser?.location || displayUser?.country || ''}
-                    onChangeText={(val) => updateProfileField({ location: val })}
-                    placeholder="Cidade, País"
-                    placeholderTextColor="rgba(255,255,255,0.3)"
-                    style={styles.inlineInput}
-                  />
-                ) : (
-                  <Typography>{displayUser?.location || (displayUser?.country === '' ? 'Omitida' : (displayUser?.country || 'A detetar...'))}</Typography>
-                )}
-              </View>
-            </View>
-
-            <View style={styles.groupItem}>
               <Typography style={styles.groupLabel}>Altura</Typography>
               <View style={styles.groupValueRow}>
                 {isEditMode ? (
@@ -885,31 +868,6 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         )}
 
 
-        <View style={[styles.menuSection, isEditMode && { opacity: 0.4 }]}>
-          <Typography variant="caption" style={styles.sectionLabel}>SISTEMA & PREFERÊNCIAS</Typography>
-          <View style={styles.cardGroup}>
-            <TouchableOpacity style={styles.groupItem} disabled={isEditMode}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Globe size={20} color={theme.colors.text} style={{ marginRight: 12 }} />
-                <Typography style={styles.menuTitle}>Mapa de Equipamento</Typography>
-              </View>
-              <ChevronRight size={20} color={theme.colors.textMuted} />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.groupItem, { borderBottomWidth: 0 }]} 
-              onPress={() => navigation.navigate('OnboardingPermissions')}
-              disabled={isEditMode}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Activity size={20} color={theme.colors.text} style={{ marginRight: 12 }} />
-                <Typography style={styles.menuTitle}>Inputs e Fontes de Dados</Typography>
-              </View>
-              <ChevronRight size={20} color={theme.colors.textMuted} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
         {!isGuestMode && (
           <View style={[styles.menuSection, isEditMode && { opacity: 0.4 }]}>
             <Typography variant="caption" style={styles.sectionLabel}>MÓDULOS FAMILIARES</Typography>
@@ -931,18 +889,6 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             </View>
           </View>
         )}
-
-        <View style={[styles.menuSection, isEditMode && { opacity: 0.4 }]}>
-          <View style={styles.cardGroup}>
-            <TouchableOpacity style={[styles.groupItem, { borderBottomWidth: 0 }]} disabled={isEditMode}>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Settings size={20} color={theme.colors.text} style={{ marginRight: 12 }} />
-                <Typography style={styles.menuTitle}>Configurações Avançadas</Typography>
-              </View>
-              <ChevronRight size={20} color={theme.colors.textMuted} />
-            </TouchableOpacity>
-          </View>
-        </View>
 
         <TouchableOpacity 
           style={[styles.logoutBtn, isEditMode && { opacity: 0.4 }]}
