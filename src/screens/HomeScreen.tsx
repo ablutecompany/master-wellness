@@ -337,7 +337,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   else Alert.alert('Créditos', `Tens ${credits ?? 0} tokens disponíveis.`);
                 }}
               >
-                <Zap size={12} color="#FFD700" fill="#FFD700" />
+                <Zap size={14} color="#000" fill="#000" />
                 <Typography variant="caption" style={styles.tokenText}>{credits ?? 0}</Typography>
               </TouchableOpacity>
               
@@ -765,20 +765,23 @@ const styles = StyleSheet.create({
   tokenChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 215, 0, 0.1)',
-    paddingHorizontal: 10,
+    backgroundColor: '#FFD700',
+    paddingHorizontal: 12,
     height: 32,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 215, 0, 0.2)',
-    marginRight: 4,
+    marginRight: 8,
     alignSelf: 'center',
     gap: 6,
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 4,
+    elevation: 4,
   },
   tokenText: {
-    color: '#FFD700',
-    fontWeight: '800',
-    fontSize: 12,
+    color: '#000',
+    fontWeight: '900',
+    fontSize: 13,
   },
   evalBadge: {
     backgroundColor: 'rgba(115, 188, 255, 0.1)',
