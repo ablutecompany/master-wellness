@@ -330,10 +330,16 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           <BrandLogo size="medium" />
           <View style={styles.headerRight}>
             <View style={styles.topIconRow}>
-              <View style={styles.tokenChip}>
+              <TouchableOpacity 
+                style={styles.tokenChip} 
+                onPress={() => {
+                  if (Platform.OS === 'web') alert(`Saldo atual: ${credits ?? 0} tokens para bio-análise.`);
+                  else Alert.alert('Créditos', `Tens ${credits ?? 0} tokens disponíveis.`);
+                }}
+              >
                 <Zap size={12} color="#FFD700" fill="#FFD700" />
                 <Typography variant="caption" style={styles.tokenText}>{credits ?? 0}</Typography>
-              </View>
+              </TouchableOpacity>
               
               <TouchableOpacity style={styles.iconCircle} onPress={() => navigation.navigate('Settings')}>
                 <SlidersHorizontal size={20} color="#fff" />
