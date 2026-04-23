@@ -17,6 +17,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const user = useStore(Selectors.selectUser);
   const isGuestMode = useStore(state => state.isGuestMode);
   const updateGuestProfile = useStore(state => state.updateGuestProfile);
+  const authAccount = useStore(state => state.authAccount);
   const household = useStore(Selectors.selectHousehold);
   const activeMemberId = useStore(Selectors.selectActiveMemberId);
   const setActiveMember = useStore(state => state.setActiveMember);
