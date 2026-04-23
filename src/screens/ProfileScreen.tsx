@@ -7,7 +7,7 @@ import { GatingOverlay } from '../components/GatingOverlay';
 import { useStore } from '../store/useStore';
 import * as Selectors from '../store/selectors';
 
-import { Alert, Modal, SafeAreaView, Dimensions } from 'react-native';
+import { Alert, Modal, SafeAreaView, Dimensions, TextInput } from 'react-native';
 import { supabase } from '../services/supabase';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 
@@ -579,17 +579,22 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             IDENTIDADE {isEditMode && '(EDITÁVEL)'}
           </Typography>
           <View style={[styles.cardGroup, isEditMode && { borderColor: theme.colors.primary + '40' }]}>
-            <TouchableOpacity 
-              style={[styles.groupItem, !isEditMode && { opacity: 0.9 }]} 
-              onPress={handleEditName}
-              disabled={!isEditMode}
-            >
+            <View style={[styles.groupItem, !isEditMode && { opacity: 0.9 }]}>
               <Typography style={styles.groupLabel}>Nome Completo</Typography>
               <View style={styles.groupValueRow}>
-                <Typography>{displayUserName || 'Não definido'}</Typography>
-                {isEditMode && <ChevronRight size={16} color={theme.colors.primary} />}
+                {isEditMode ? (
+                  <TextInput
+                    value={displayUserName || ''}
+                    onChangeText={(val) => updateProfileField({ fullName: val })}
+                    placeholder="Seu nome"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    style={styles.inlineInput}
+                  />
+                ) : (
+                  <Typography>{displayUserName || 'Não definido'}</Typography>
+                )}
               </View>
-            </TouchableOpacity>
+            </View>
 
             <TouchableOpacity 
               style={styles.groupItem} 
@@ -618,17 +623,22 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             PERFIL PESSOAL {isEditMode && '(EDITÁVEL)'}
           </Typography>
           <View style={[styles.cardGroup, isEditMode && { borderColor: theme.colors.primary + '40' }]}>
-            <TouchableOpacity 
-              style={styles.groupItem} 
-              onPress={handleEditDateOfBirth}
-              disabled={!isEditMode}
-            >
+            <View style={styles.groupItem}>
               <Typography style={styles.groupLabel}>Data de Nascimento</Typography>
               <View style={styles.groupValueRow}>
-                <Typography>{displayUser?.dateOfBirth || displayUser?.birthDate || 'Não definida'}</Typography>
-                {isEditMode && <ChevronRight size={16} color={theme.colors.primary} />}
+                {isEditMode ? (
+                  <TextInput
+                    value={displayUser?.dateOfBirth || displayUser?.birthDate || ''}
+                    onChangeText={(val) => updateProfileField({ dateOfBirth: val })}
+                    placeholder="AAAA-MM-DD"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    style={styles.inlineInput}
+                  />
+                ) : (
+                  <Typography>{displayUser?.dateOfBirth || displayUser?.birthDate || 'Não definida'}</Typography>
+                )}
               </View>
-            </TouchableOpacity>
+            </View>
 
             <View style={[styles.groupItem, { opacity: isEditMode ? 0.5 : 1 }]}>
               <Typography style={styles.groupLabel}>Idade</Typography>
@@ -637,53 +647,75 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
               </Typography>
             </View>
 
-            <TouchableOpacity 
-              style={styles.groupItem} 
-              onPress={handleEditSex}
-              disabled={!isEditMode}
-            >
+            <View style={styles.groupItem}>
               <Typography style={styles.groupLabel}>Identidade de Género</Typography>
               <View style={styles.groupValueRow}>
-                <Typography>{displayUser?.genderIdentity || displayUser?.sex || 'Não definido'}</Typography>
-                {isEditMode && <ChevronRight size={16} color={theme.colors.primary} />}
+                {isEditMode ? (
+                  <TextInput
+                    value={displayUser?.genderIdentity || displayUser?.sex || ''}
+                    onChangeText={(val) => updateProfileField({ genderIdentity: val })}
+                    placeholder="Gênero"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    style={styles.inlineInput}
+                  />
+                ) : (
+                  <Typography>{displayUser?.genderIdentity || displayUser?.sex || 'Não definido'}</Typography>
+                )}
               </View>
-            </TouchableOpacity>
+            </View>
 
-            <TouchableOpacity 
-              style={styles.groupItem} 
-              onPress={handleEditLocation}
-              disabled={!isEditMode}
-            >
+            <View style={styles.groupItem}>
               <Typography style={styles.groupLabel}>Localização</Typography>
               <View style={styles.groupValueRow}>
-                <Typography>{displayUser?.location || (displayUser?.country === '' ? 'Omitida' : (displayUser?.country || 'A detetar...'))}</Typography>
-                {isEditMode && <ChevronRight size={16} color={theme.colors.primary} />}
+                {isEditMode ? (
+                  <TextInput
+                    value={displayUser?.location || displayUser?.country || ''}
+                    onChangeText={(val) => updateProfileField({ location: val })}
+                    placeholder="Cidade, País"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    style={styles.inlineInput}
+                  />
+                ) : (
+                  <Typography>{displayUser?.location || (displayUser?.country === '' ? 'Omitida' : (displayUser?.country || 'A detetar...'))}</Typography>
+                )}
               </View>
-            </TouchableOpacity>
+            </View>
 
-            <TouchableOpacity 
-              style={styles.groupItem} 
-              onPress={handleEditHeight}
-              disabled={!isEditMode}
-            >
+            <View style={styles.groupItem}>
               <Typography style={styles.groupLabel}>Altura</Typography>
               <View style={styles.groupValueRow}>
-                <Typography>{displayUser?.height ? `${displayUser.height} cm` : 'Não definida'}</Typography>
-                {isEditMode && <ChevronRight size={16} color={theme.colors.primary} />}
+                {isEditMode ? (
+                  <TextInput
+                    value={displayUser?.height ? String(displayUser.height) : ''}
+                    onChangeText={(val) => updateProfileField({ height: parseInt(val) || 0 })}
+                    placeholder="cm"
+                    keyboardType="numeric"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    style={styles.inlineInput}
+                  />
+                ) : (
+                  <Typography>{displayUser?.height ? `${displayUser.height} cm` : 'Não definida'}</Typography>
+                )}
               </View>
-            </TouchableOpacity>
+            </View>
 
-            <TouchableOpacity 
-              style={styles.groupItem} 
-              onPress={handleEditWeight}
-              disabled={!isEditMode}
-            >
+            <View style={styles.groupItem}>
               <Typography style={styles.groupLabel}>Peso Atual</Typography>
               <View style={styles.groupValueRow}>
-                <Typography>{displayUser?.weight?.value ? `${displayUser.weight.value} kg` : 'Não definido'}</Typography>
-                {isEditMode && <ChevronRight size={16} color={theme.colors.primary} />}
+                {isEditMode ? (
+                  <TextInput
+                    value={displayUser?.weight?.value ? String(displayUser.weight.value) : ''}
+                    onChangeText={(val) => updateProfileField({ weight: { ...displayUser.weight, value: parseFloat(val) || 0, source: 'manual' } })}
+                    placeholder="kg"
+                    keyboardType="numeric"
+                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    style={styles.inlineInput}
+                  />
+                ) : (
+                  <Typography>{displayUser?.weight?.value ? `${displayUser.weight.value} kg` : 'Não definido'}</Typography>
+                )}
               </View>
-            </TouchableOpacity>
+            </View>
 
             <View style={[styles.groupItem, { borderBottomWidth: 0, opacity: isEditMode ? 0.5 : 1 }]}>
               <Typography style={styles.groupLabel}>Última Bioanálise</Typography>
@@ -1089,6 +1121,16 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  inlineInput: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'right',
+    flex: 1,
+    padding: 0,
+    margin: 0,
+    minWidth: 120,
   },
   groupLabel: {
     color: theme.colors.textMuted,
