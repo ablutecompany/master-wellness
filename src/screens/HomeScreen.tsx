@@ -4,7 +4,7 @@ import { Container, Typography } from '../components/Base';
 import { theme } from '../theme';
 import { BrandLogo } from '../components/BrandLogo';
 import { ThemeCard } from '../components/ThemeCard';
-import { Utensils, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, ChevronRight, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, LogIn, LogOut, Globe, Users } from 'lucide-react-native';
+import { Utensils, Star, SlidersHorizontal, Activity, Database, Smartphone, X, User, ChevronRight, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, LogIn, LogOut, Globe, Users } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Video, ResizeMode } from 'expo-av';
@@ -337,7 +337,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   else Alert.alert('Créditos', `Tens ${credits ?? 0} tokens disponíveis.`);
                 }}
               >
-                <Zap size={14} color="#000" fill="#000" />
+                <Star size={14} color="#000" fill="#000" />
                 <Typography variant="caption" style={styles.tokenText}>{credits ?? 0}</Typography>
               </TouchableOpacity>
               
