@@ -122,21 +122,22 @@ const styles = StyleSheet.create({
     marginVertical: theme.spacing.xxl,
   },
   menuSection: {
-    marginBottom: theme.spacing.xl,
+    marginBottom: theme.spacing.xxl,
   },
   sectionLabel: {
-    color: theme.colors.textMuted,
-    fontSize: 10,
-    letterSpacing: 1.5,
+    color: theme.colors.primary,
+    fontSize: 11,
+    letterSpacing: 2,
     marginBottom: theme.spacing.md,
     marginLeft: theme.spacing.xs,
-    fontWeight: '700',
+    fontWeight: '800',
+    opacity: 0.8,
   },
   cardGroup: {
-    backgroundColor: theme.colors.card,
+    backgroundColor: 'rgba(255,255,255,0.03)',
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: theme.colors.cardBorder,
+    borderColor: 'rgba(255,255,255,0.08)',
     overflow: 'hidden',
   },
   groupItem: {
@@ -150,10 +151,12 @@ const styles = StyleSheet.create({
   groupLabel: {
     color: theme.colors.textMuted,
     fontSize: 14,
+    fontWeight: '500',
   },
   menuTitle: {
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#fff',
+    fontSize: 15,
   },
   groupValueRow: {
     flexDirection: 'row',
@@ -163,9 +166,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   inlineInput: {
-    color: '#fff',
+    color: theme.colors.primary,
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     textAlign: 'right',
     flex: 1,
     padding: 0,
