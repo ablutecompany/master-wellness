@@ -265,12 +265,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       ])
     ).start();
 
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(floatAnim1, { toValue: 1, duration: 15000, useNativeDriver: true }),
-        Animated.timing(floatAnim1, { toValue: 0, duration: 15000, useNativeDriver: true }),
-      ])
-    ).start();
 
     Animated.loop(
       Animated.sequence([
