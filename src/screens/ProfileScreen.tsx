@@ -310,7 +310,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           </TouchableOpacity>
           
           <Typography variant="caption" style={{ color: theme.colors.textMuted, fontSize: 8, marginTop: 8 }}>
-             BUILD V2.3-DEMO | {isGuestMode ? 'GUEST' : 'AUTH'}
+             BUILD V2.5-STABLE | {isGuestMode ? 'GUEST' : 'AUTH'}
           </Typography>
         </View>
 
