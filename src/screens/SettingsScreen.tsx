@@ -25,7 +25,7 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
     <Container safe scroll withAura={true}>
       <View style={styles.header}>
         <TouchableOpacity 
-          onPress={() => navigation.navigate('Home')} 
+          onPress={() => navigation.navigate('Main', { screen: 'Home' })} 
           style={styles.closeButton}
         >
           <X size={24} color="rgba(255,255,255,0.4)" />
@@ -34,7 +34,7 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
         <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>CONFIGURAÇÃO DO SISTEMA</Typography>
       </View>
 
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} style={{ backgroundColor: theme.colors.background }}>
         {/* 1. LOCALIZAÇÃO (Migrado do Perfil) */}
         <View style={styles.menuSection}>
           <Typography variant="caption" style={styles.sectionLabel}>GEOGRAFIA & PRIVACIDADE</Typography>

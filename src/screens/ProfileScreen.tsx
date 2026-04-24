@@ -39,15 +39,15 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const [hasScanned, setHasScanned] = React.useState(false);
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 0. EDIT MODE STATE
+  // 0. EDIT HANDLERS (DIRECT)
   // ─────────────────────────────────────────────────────────────────────────────
-  const [isEditMode, setIsEditMode] = React.useState(false);
-  const [localUpdates, setLocalUpdates] = React.useState<any>({});
-  const [isSaving, setIsSaving] = React.useState(false);
-
-  // Derived user with local changes applied
-  const displayUser = React.useMemo(() => ({ ...user, ...localUpdates }), [user, localUpdates]);
-  const displayUserName = localUpdates.fullName || localUpdates.name || (user?.fullName || user?.name);
+  const updateProfileField = (updates: any) => {
+    if (isGuestMode) {
+      useStore.getState().updateGuestProfile(updates);
+    } else {
+      useStore.getState().updateAuthenticatedProfile(updates);
+    }
+  };
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 1. BOOT & SYNC EFFECTS
@@ -115,71 +115,45 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   }, [user?.timezone, user?.country, isGuestMode]);
 
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 2. EDIT HANDLERS (CONSOLIDATED)
-  // ─────────────────────────────────────────────────────────────────────────────
-  const updateProfileField = (updates: any) => {
-    if (isEditMode) {
-      setLocalUpdates((prev: any) => ({ ...prev, ...updates }));
-    } else {
-      // Direct update for boot/auto-sync logic
-      if (isGuestMode) {
-        useStore.getState().updateGuestProfile(updates);
-      } else {
-        useStore.getState().updateAuthenticatedProfile(updates);
-      }
-    }
-  };
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      if (isGuestMode) {
-        useStore.getState().updateGuestProfile(localUpdates);
-      } else {
-        await useStore.getState().updateAuthenticatedProfile(localUpdates);
-      }
-      setIsEditMode(false);
-      setLocalUpdates({});
-      if (Platform.OS === 'web') alert('Perfil atualizado com sucesso.');
-    } catch (err) {
-      console.error(err);
-      if (Platform.OS === 'web') alert('Falha ao guardar perfil.');
-      else Alert.alert('Erro', 'Falha ao guardar perfil.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleCancel = () => {
-    setLocalUpdates({});
-    setIsEditMode(false);
-  };
-
   const handleEditName = () => {
-    if (!isEditMode) return;
-    const defaultName = displayUserName || '';
-    const title = isGuestMode ? 'Editar Nome (Guest)' : 'Editar Nome';
+    const current = user?.name || user?.fullName || '';
     const msg = 'Como gostarias de ser tratada?';
 
     if (Platform.OS === 'web') {
-      const newName = window.prompt(msg, defaultName);
-      if (newName !== null && newName.trim() !== '') {
-        updateProfileField({ name: newName.trim(), fullName: newName.trim() });
+      const val = window.prompt(msg, current);
+      if (val !== null && val.trim() !== '') {
+        updateProfileField({ name: val.trim(), fullName: val.trim() });
       }
       return;
     }
 
-    Alert.prompt(title, msg, [
+    Alert.prompt('Editar Nome', msg, [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salvar', onPress: (val: string | undefined) => val?.trim() && updateProfileField({ name: val.trim(), fullName: val.trim() }) }
-    ], 'plain-text', defaultName);
+      { text: 'Salvar', onPress: (val) => val?.trim() && updateProfileField({ name: val.trim(), fullName: val.trim() }) }
+    ], 'plain-text', current);
+  };
+
+  const handleEditSex = () => {
+    const current = user?.sex || user?.genderIdentity || '';
+    const options = ['Homem', 'Mulher', 'Não indicar'];
+    
+    if (Platform.OS === 'web') {
+      const val = window.prompt(`Escolha o Sexo (${options.join(', ')}):`, current);
+      if (val !== null) {
+        const match = options.find(o => o.toLowerCase() === val.trim().toLowerCase());
+        if (match) updateProfileField({ sex: match, genderIdentity: match });
+      }
+      return;
+    }
+
+    Alert.alert('Sexo', 'Selecione uma opção:', options.map(o => ({
+      text: o, onPress: () => updateProfileField({ sex: o, genderIdentity: o })
+    })));
   };
 
   const handleEditDateOfBirth = () => {
-    if (!isEditMode) return;
-    const current = displayUser?.dateOfBirth || displayUser?.birthDate || '';
-    const msg = 'Insere a tua data de nascimento (AAAA-MM-DD):';
+    const current = user?.dateOfBirth || user?.birthDate || '';
+    const msg = 'Data de Nascimento (AAAA-MM-DD):';
 
     if (Platform.OS === 'web') {
       const val = window.prompt(msg, current);
@@ -195,7 +169,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
     Alert.prompt('Data de Nascimento', msg, [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salvar', onPress: (val: string | undefined) => {
+      { text: 'Salvar', onPress: (val) => {
         if (val?.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(val.trim())) {
           Alert.alert('Erro', 'Formato inválido. Usa AAAA-MM-DD.');
           return;
@@ -206,150 +180,55 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   };
 
   const handleEditHeight = () => {
-    if (!isEditMode) return;
-    const current = displayUser?.height ? String(displayUser.height) : '';
-    const msg = 'Insere a tua altura em cm:';
+    const current = user?.height ? String(user.height) : '';
+    const msg = 'Altura (cm):';
 
     if (Platform.OS === 'web') {
       const val = window.prompt(msg, current);
       if (val !== null && val.trim() !== '') {
         const num = parseInt(val.trim(), 10);
-        if (isNaN(num) || num < 50 || num > 300) {
-          alert('Altura inválida. Usa um número em cm.');
-          return;
-        }
-        updateProfileField({ height: num });
+        if (!isNaN(num)) updateProfileField({ height: num });
       }
       return;
     }
 
     Alert.prompt('Altura', msg, [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salvar', onPress: (val: string | undefined) => {
+      { text: 'Salvar', onPress: (val) => {
         const num = parseInt(val?.trim() || '', 10);
-        if (!isNaN(num) && num >= 50 && num <= 300) {
-          updateProfileField({ height: num });
-        } else if (val?.trim()) {
-          Alert.alert('Erro', 'Altura inválida.');
-        }
+        if (!isNaN(num)) updateProfileField({ height: num });
       }}
     ], 'plain-text', current, 'numeric');
   };
 
-  const handleEditSex = () => {
-    if (!isEditMode) return;
-    const current = displayUser?.genderIdentity || displayUser?.sex || '';
-    const msg = 'Insere o teu sexo (M, F ou vazio):';
-
-    if (Platform.OS === 'web') {
-      const val = window.prompt(msg, current);
-      if (val !== null) {
-        const clean = val.trim().toUpperCase();
-        if (clean !== '' && clean !== 'M' && clean !== 'F') {
-          alert('Sexo inválido (M/F).');
-          return;
-        }
-        updateProfileField({ sex: clean || null, genderIdentity: clean || null });
-      }
-      return;
-    }
-
-    Alert.prompt('Sexo', msg, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salvar', onPress: (val: string | undefined) => {
-        const clean = val?.trim().toUpperCase();
-        if (clean === '' || clean === 'M' || clean === 'F') {
-          updateProfileField({ sex: clean || null, genderIdentity: clean || null });
-        } else {
-          Alert.alert('Erro', 'Use M ou F.');
-        }
-      }}
-    ], 'plain-text', current);
-  };
-
   const handleEditWeight = () => {
-    if (!isEditMode) return;
-    const current = displayUser?.weight?.manualValue ? String(displayUser.weight.manualValue) : (displayUser?.weight?.value ? String(displayUser.weight.value) : '');
-    const msg = 'Peso (kg) ou vazio para automático:';
+    const current = user?.weight?.value ? String(user.weight.value) : '';
+    const msg = 'Peso (kg):';
 
     if (Platform.OS === 'web') {
       const val = window.prompt(msg, current);
-      if (val === null) return;
-      
-      if (val.trim() === '') {
-        const measured = displayUser?.weight?.measuredValue || null;
-        updateProfileField({ weight: { value: measured, source: measured ? 'measured' : 'missing', manualValue: null, measuredValue: measured, isDiscrepant: false } });
-        return;
+      if (val !== null && val.trim() !== '') {
+        const num = parseFloat(val.trim().replace(',', '.'));
+        if (!isNaN(num)) updateProfileField({ weight: { ...user?.weight, value: num, source: 'manual' } });
       }
-
-      const num = parseFloat(val.trim().replace(',', '.'));
-      if (isNaN(num) || num < 20 || num > 300) {
-        alert('Peso inválido.');
-        return;
-      }
-      const measured = displayUser?.weight?.measuredValue || null;
-      updateProfileField({ weight: { value: num, source: 'manual', manualValue: num, measuredValue: measured, isDiscrepant: measured !== null && Math.abs(num - measured) >= 2.5 } });
       return;
     }
 
     Alert.prompt('Peso', msg, [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salvar', onPress: (val: string | undefined) => {
-        if (val?.trim() === '') {
-          const m = displayUser?.weight?.measuredValue || null;
-          updateProfileField({ weight: { value: m, source: m ? 'measured' : 'missing', manualValue: null, measuredValue: m, isDiscrepant: false } });
-        } else {
-          const num = parseFloat(val?.trim().replace(',', '.') || '');
-          if (!isNaN(num)) {
-            const m = displayUser?.weight?.measuredValue || null;
-            updateProfileField({ weight: { value: num, source: 'manual', manualValue: num, measuredValue: m, isDiscrepant: m !== null && Math.abs(num - m) >= 2.5 } });
-          }
-        }
+      { text: 'Salvar', onPress: (val) => {
+        const num = parseFloat(val?.trim().replace(',', '.') || '');
+        if (!isNaN(num)) updateProfileField({ weight: { ...user?.weight, value: num, source: 'manual' } });
       }}
     ], 'plain-text', current, 'numeric');
   };
 
-  const handleEditLocation = () => {
-    if (!isEditMode) return;
-    const current = displayUser?.location || displayUser?.country || '';
-    const msg = 'Insere a tua localização (País/Cidade):';
-
-    if (Platform.OS === 'web') {
-      const val = window.prompt(msg, current);
-      if (val !== null) updateProfileField({ country: val.trim(), location: val.trim() });
-      return;
-    }
-
-    Alert.prompt('Localização', msg, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salvar', onPress: (val: string | undefined) => updateProfileField({ country: val?.trim() || '', location: val?.trim() || '' }) }
-    ], 'plain-text', current);
-  };
-
-  const handleEditAvatar = () => {
-    if (!isEditMode) return;
-    const msg = 'URL da imagem do avatar:';
-    const current = displayUser?.avatarUrl || '';
-
-    if (Platform.OS === 'web') {
-      const val = window.prompt(msg, current);
-      if (val !== null) updateProfileField({ avatarUrl: val.trim() });
-      return;
-    }
-
-    Alert.prompt('Avatar', msg, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salvar', onPress: (val: string | undefined) => updateProfileField({ avatarUrl: val?.trim() || '' }) }
-    ], 'plain-text', current);
-  };
-
-
-  const userAge = calculateAge(displayUser?.dateOfBirth || (displayUser as any)?.birthDate);
+  const userAge = calculateAge(user?.dateOfBirth || (user as any)?.birthDate);
 
   const isProfileComplete = Boolean(
-    (displayUser?.fullName || displayUser?.name) && (displayUser?.fullName || displayUser?.name) !== 'Convidada' &&
-    (displayUser?.dateOfBirth || (displayUser as any)?.birthDate) &&
-    displayUser?.height
+    (user?.fullName || user?.name) && (user?.fullName || user?.name) !== 'Convidada' &&
+    (user?.dateOfBirth || (user as any)?.birthDate) &&
+    user?.height
   );
 
   const measurementsCount = useStore.getState().measurements?.length || 0;
@@ -393,22 +272,6 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     });
   }
 
-  if (pendingInvitesCount > 0) {
-    setupItems.push({
-      id: 'invites', title: 'Convites Pendentes', desc: 'Existem contas por emparelhar no seu agregado.',
-      icon: <Activity size={14} color="#FF6060" />,
-      action: () => { alert('Role para baixo até ao Agregado para gerir os convites pendentes.'); }
-    });
-  }
-
-  if (measurementsCount === 0) {
-    setupItems.push({
-      id: 'data', title: 'Primeira Sincronização', desc: 'Aguardando fluxo biométrico dos seus dispositivos.',
-      icon: <Activity size={14} color="#00D4AA" />,
-      action: () => navigation.navigate('Home')
-    });
-  }
-
   if (exportedContextsCount === 0) {
     setupItems.push({
       id: 'context', title: 'Ativar Mini-Apps', desc: 'Alimente o contexto comportamental para IA mais astuta.',
@@ -419,96 +282,35 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
   return (
     <Container safe scroll withAura={true}>
-      {/* 0. STICKY EDIT BAR */}
-      <View style={{ 
-        position: Platform.OS === 'web' ? 'sticky' : 'relative', 
-        top: 0, 
-        zIndex: 100, 
-        backgroundColor: isEditMode ? theme.colors.primary + 'EE' : 'transparent',
-        borderBottomWidth: isEditMode ? 1 : 0,
-        borderColor: 'rgba(255,255,255,0.2)'
-      } as any}>
-        <View style={{ 
-          padding: 12, 
-          flexDirection: 'row', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          maxWidth: 500,
-          alignSelf: 'center',
-          width: '100%'
-        }}>
-          {isEditMode ? (
-            <>
-              <TouchableOpacity onPress={handleCancel} disabled={isSaving} style={{ padding: 8 }}>
-                <Typography style={{ color: 'white', fontWeight: 'bold' }}>CANCELAR</Typography>
-              </TouchableOpacity>
-              <Typography style={{ color: 'white', fontWeight: 'bold' }}>MODO EDIÇÃO</Typography>
-              <TouchableOpacity onPress={handleSave} disabled={isSaving} style={{ 
-                backgroundColor: 'white', 
-                paddingHorizontal: 16, 
-                paddingVertical: 6, 
-                borderRadius: 8,
-                opacity: isSaving ? 0.7 : 1
-              }}>
-                <Typography style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
-                  {isSaving ? 'A GUARDAR...' : 'GUARDAR'}
-                </Typography>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <View />
-              <TouchableOpacity 
-                onPress={() => setIsEditMode(true)} 
-                style={{ 
-                  backgroundColor: theme.colors.primary, 
-                  paddingHorizontal: 20, 
-                  paddingVertical: 8, 
-                  borderRadius: 12,
-                  shadowColor: theme.colors.primary,
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 8,
-                  elevation: 5
-                }}
-              >
-                <Typography style={{ color: 'white', fontWeight: 'bold', letterSpacing: 1 }}>EDITAR PERFIL</Typography>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </View>
 
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} style={{ backgroundColor: theme.colors.background }}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.avatar} onPress={handleEditAvatar} disabled={!isEditMode}>
-            {displayUser?.avatarUrl ? (
-              <Image source={{ uri: displayUser.avatarUrl }} style={{ width: 80, height: 80, borderRadius: 40 }} />
-            ) : (
-              <User size={40} color="white" />
-            )}
-            {isEditMode && (
-               <View style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: theme.colors.primary, borderRadius: 12, padding: 4, borderWidth: 2, borderColor: theme.colors.background }}>
-                  <Activity size={12} color="white" />
-               </View>
-            )}
-          </TouchableOpacity>
-          
           <TouchableOpacity 
             onPress={() => navigation.navigate('Main', { screen: 'Home' })} 
             style={styles.closeButton}
           >
-            <X size={24} color="rgba(255,255,255,0.4)" />
+            <X size={28} color="#fff" />
           </TouchableOpacity>
 
-          <Typography variant="h2" style={{ fontWeight: '700' }}>
-            {displayUserName || 'Utilizador'}
-          </Typography>
-          <Typography variant="caption" style={{ color: theme.colors.textMuted }}>
-            {displayUser?.email || (authAccount?.email) || 'Sem email associado'}
-          </Typography>
-          <Typography variant="caption" style={{ color: theme.colors.textMuted, fontSize: 8, marginTop: 4 }}>
-             BUILD V2.2-DEMO | {isGuestMode ? 'GUEST' : 'AUTH'}
+          <TouchableOpacity style={styles.avatar} onPress={() => {}} disabled>
+            {user?.avatarUrl ? (
+              <Image source={{ uri: user.avatarUrl }} style={{ width: 80, height: 80, borderRadius: 40 }} />
+            ) : (
+              <User size={40} color="white" />
+            )}
+          </TouchableOpacity>
+          
+          <TouchableOpacity onPress={handleEditName} style={{ alignItems: 'center' }}>
+            <Typography variant="h2" style={{ fontWeight: '700' }}>
+              {user?.name || user?.fullName || 'Utilizador'}
+            </Typography>
+            <Typography variant="caption" style={{ color: theme.colors.textMuted }}>
+              {user?.email || (authAccount?.email) || 'Sem email associado'}
+            </Typography>
+          </TouchableOpacity>
+          
+          <Typography variant="caption" style={{ color: theme.colors.textMuted, fontSize: 8, marginTop: 8 }}>
+             BUILD V2.3-DEMO | {isGuestMode ? 'GUEST' : 'AUTH'}
           </Typography>
         </View>
 
@@ -593,138 +395,31 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           </View>
         )}
 
-        {/* 1. IDENTIDADE */}
+        {/* 1. INFO BIOMÉTRICA (Compacta) */}
         <View style={styles.menuSection}>
-          <Typography variant="caption" style={[styles.sectionLabel, isEditMode ? { color: theme.colors.primary } : {}]}>
-            IDENTIDADE {isEditMode && '(EDITÁVEL)'}
-          </Typography>
-          <View style={[styles.cardGroup, isEditMode && { borderColor: theme.colors.primary + '40' }]}>
-            <View style={[styles.groupItem, !isEditMode && { opacity: 0.9 }]}>
-              <Typography style={styles.groupLabel}>Nome Completo</Typography>
-              <View style={styles.groupValueRow}>
-                {isEditMode ? (
-                  <TextInput
-                    value={displayUserName || ''}
-                    onChangeText={(val) => updateProfileField({ fullName: val })}
-                    placeholder="Seu nome"
-                    placeholderTextColor="rgba(255,255,255,0.3)"
-                    style={styles.inlineInput}
-                  />
-                ) : (
-                  <Typography>{displayUserName || 'Não definido'}</Typography>
-                )}
-              </View>
+          <Typography variant="caption" style={styles.sectionLabel}>DADOS BIOMÉTRICOS</Typography>
+          <View style={styles.cardGroup}>
+            <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
+              <TouchableOpacity style={[styles.groupItem, { flex: 1, borderBottomWidth: 0 }]} onPress={handleEditSex}>
+                <Typography style={styles.groupLabel}>Sexo</Typography>
+                <Typography>{user?.sex || user?.genderIdentity || '—'}</Typography>
+              </TouchableOpacity>
+              <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.05)' }} />
+              <TouchableOpacity style={[styles.groupItem, { flex: 1, borderBottomWidth: 0 }]} onPress={handleEditDateOfBirth}>
+                <Typography style={styles.groupLabel}>Idade</Typography>
+                <Typography>{userAge !== null ? `${userAge}a` : '—'}</Typography>
+              </TouchableOpacity>
             </View>
-
-            <TouchableOpacity 
-              style={styles.groupItem} 
-              onPress={handleEditAvatar}
-              disabled={!isEditMode}
-            >
-              <Typography style={styles.groupLabel}>Avatar</Typography>
-              <View style={styles.groupValueRow}>
-                <Typography variant="caption" style={{ color: theme.colors.textMuted }}>
-                  {displayUser?.avatarUrl ? 'Personalizado' : 'Ícone Padrão'}
-                </Typography>
-                {isEditMode && <ChevronRight size={16} color={theme.colors.primary} />}
-              </View>
-            </TouchableOpacity>
-
-            <View style={[styles.groupItem, { borderBottomWidth: 0, opacity: isEditMode ? 0.5 : 1 }]}>
-              <Typography style={styles.groupLabel}>Email</Typography>
-              <Typography>{displayUser?.email || (authAccount?.email) || 'Não definido'}</Typography>
-            </View>
-          </View>
-        </View>
-
-        {/* 2. PERFIL PESSOAL */}
-        <View style={styles.menuSection}>
-          <Typography variant="caption" style={[styles.sectionLabel, isEditMode ? { color: theme.colors.primary } : {}]}>
-            PERFIL PESSOAL {isEditMode && '(EDITÁVEL)'}
-          </Typography>
-          <View style={[styles.cardGroup, isEditMode && { borderColor: theme.colors.primary + '40' }]}>
-            <View style={styles.groupItem}>
-              <Typography style={styles.groupLabel}>Data de Nascimento</Typography>
-              <View style={styles.groupValueRow}>
-                {isEditMode ? (
-                  <TextInput
-                    value={displayUser?.dateOfBirth || displayUser?.birthDate || ''}
-                    onChangeText={(val) => updateProfileField({ dateOfBirth: val })}
-                    placeholder="AAAA-MM-DD"
-                    placeholderTextColor="rgba(255,255,255,0.3)"
-                    style={styles.inlineInput}
-                  />
-                ) : (
-                  <Typography>{displayUser?.dateOfBirth || displayUser?.birthDate || 'Não definida'}</Typography>
-                )}
-              </View>
-            </View>
-
-            <View style={[styles.groupItem, { opacity: isEditMode ? 0.5 : 1 }]}>
-              <Typography style={styles.groupLabel}>Idade</Typography>
-              <Typography>
-                {userAge !== null ? `${userAge} anos` : 'Não definida'}
-              </Typography>
-            </View>
-
-            <View style={styles.groupItem}>
-              <Typography style={styles.groupLabel}>Identidade de Género</Typography>
-              <View style={styles.groupValueRow}>
-                {isEditMode ? (
-                  <TextInput
-                    value={displayUser?.genderIdentity || displayUser?.sex || ''}
-                    onChangeText={(val) => updateProfileField({ genderIdentity: val })}
-                    placeholder="Gênero"
-                    placeholderTextColor="rgba(255,255,255,0.3)"
-                    style={styles.inlineInput}
-                  />
-                ) : (
-                  <Typography>{displayUser?.genderIdentity || displayUser?.sex || 'Não definido'}</Typography>
-                )}
-              </View>
-            </View>
-
-            <View style={styles.groupItem}>
-              <Typography style={styles.groupLabel}>Altura</Typography>
-              <View style={styles.groupValueRow}>
-                {isEditMode ? (
-                  <TextInput
-                    value={displayUser?.height ? String(displayUser.height) : ''}
-                    onChangeText={(val) => updateProfileField({ height: parseInt(val) || 0 })}
-                    placeholder="cm"
-                    keyboardType="numeric"
-                    placeholderTextColor="rgba(255,255,255,0.3)"
-                    style={styles.inlineInput}
-                  />
-                ) : (
-                  <Typography>{displayUser?.height ? `${displayUser.height} cm` : 'Não definida'}</Typography>
-                )}
-              </View>
-            </View>
-
-            <View style={styles.groupItem}>
-              <Typography style={styles.groupLabel}>Peso Atual</Typography>
-              <View style={styles.groupValueRow}>
-                {isEditMode ? (
-                  <TextInput
-                    value={displayUser?.weight?.value ? String(displayUser.weight.value) : ''}
-                    onChangeText={(val) => updateProfileField({ weight: { ...displayUser.weight, value: parseFloat(val) || 0, source: 'manual' } })}
-                    placeholder="kg"
-                    keyboardType="numeric"
-                    placeholderTextColor="rgba(255,255,255,0.3)"
-                    style={styles.inlineInput}
-                  />
-                ) : (
-                  <Typography>{displayUser?.weight?.value ? `${displayUser.weight.value} kg` : 'Não definido'}</Typography>
-                )}
-              </View>
-            </View>
-
-            <View style={[styles.groupItem, { borderBottomWidth: 0, opacity: isEditMode ? 0.5 : 1 }]}>
-              <Typography style={styles.groupLabel}>Última Bioanálise</Typography>
-              <Typography variant="caption" style={{ color: theme.colors.textMuted }}>
-                {displayUser?.lastAnalysisDate || 'Sem registos recentes'}
-              </Typography>
+            <View style={{ flexDirection: 'row' }}>
+              <TouchableOpacity style={[styles.groupItem, { flex: 1, borderBottomWidth: 0 }]} onPress={handleEditHeight}>
+                <Typography style={styles.groupLabel}>Altura</Typography>
+                <Typography>{user?.height ? `${user.height}cm` : '—'}</Typography>
+              </TouchableOpacity>
+              <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.05)' }} />
+              <TouchableOpacity style={[styles.groupItem, { flex: 1, borderBottomWidth: 0 }]} onPress={handleEditWeight}>
+                <Typography style={styles.groupLabel}>Peso</Typography>
+                <Typography>{user?.weight?.value ? `${user.weight.value}kg` : '—'}</Typography>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -911,8 +606,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         )}
 
         <TouchableOpacity 
-          style={[styles.logoutBtn, isEditMode && { opacity: 0.4 }]}
-          disabled={isEditMode}
+          style={styles.logoutBtn}
           onPress={async () => {
             if (isGuestMode) {
               useStore.getState().setGuestMode(false);

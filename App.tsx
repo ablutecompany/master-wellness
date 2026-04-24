@@ -342,9 +342,9 @@ export default function App() {
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Main" component={MainTabs} />
-          <Stack.Screen name="Profile" component={ProfileScreen} options={{ presentation: 'modal' }} />
-          <Stack.Screen name="Settings" component={SettingsScreen} options={{ presentation: 'modal' }} />
-          <Stack.Screen name="GlobalDetail" component={GlobalDetailScreen} options={{ presentation: 'modal' }} />
+          <Stack.Screen name="Profile" component={ProfileScreen} options={{ presentation: 'modal', gestureEnabled: false }} />
+          <Stack.Screen name="Settings" component={SettingsScreen} options={{ presentation: 'modal', gestureEnabled: false }} />
+          <Stack.Screen name="GlobalDetail" component={GlobalDetailScreen} options={{ presentation: 'modal', gestureEnabled: false }} />
           <Stack.Screen
             name="MiniApp"
             options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
