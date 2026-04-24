@@ -32,6 +32,7 @@ export const useStore = create<AppState>()(
       partialize: (state) => ({
         isGuestMode: state.isGuestMode,
         guestProfile: state.guestProfile,
+        isDemoMode: state.isDemoMode,
         credits: state.credits,
         installedAppIds: state.installedAppIds,
       }),

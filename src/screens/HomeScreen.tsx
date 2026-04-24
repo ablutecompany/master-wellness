@@ -4,7 +4,7 @@ import { Container, Typography } from '../components/Base';
 import { theme } from '../theme';
 import { BrandLogo } from '../components/BrandLogo';
 import { ThemeCard } from '../components/ThemeCard';
-import { Utensils, Star, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, ChevronRight, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, LogIn, LogOut, Globe, Users } from 'lucide-react-native';
+import { Utensils, Star, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, ChevronRight, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, LogIn, LogOut, Globe, Users, ChevronDown } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Video, ResizeMode } from 'expo-av';
@@ -120,6 +120,7 @@ const MOCK_THEMES = [
 ];
 
 export const HomeScreen = ({ navigation }: { navigation: any }) => {
+  console.log('[HOME_BOOT] V2.2-DEMO Initializing...');
   const { width, height } = useWindowDimensions();
   const [showControl, setShowControl] = useState(false);
   const [showNfcModal, setShowNfcModal] = useState(false);
@@ -131,6 +132,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const profileStatus = useStore(state => state.profileStatus);
   const analyses = useStore(state => state.analyses);
   const credits = useStore(state => state.credits);
+  const isDemoMode = useStore(state => state.isDemoMode);
+  const setIsDemoMode = useStore(state => state.setIsDemoMode);
+  const setDemoAnalysis = useStore(state => state.setDemoAnalysis);
 
   const isAuthenticated = !!authAccount || isGuestMode;
   const userName = user?.name || (isGuestMode ? 'Guest' : (authAccount?.email?.split('@')[0] || 'Utilizador'));
@@ -139,8 +143,17 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const themesAnim = useRef(new Animated.Value(-width)).current;
   const dataAnim = useRef(new Animated.Value(width)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const floatAnim1 = useRef(new Animated.Value(0)).current;
-  const floatAnim2 = useRef(new Animated.Value(1)).current;
+  const floatAnim2 = useRef(new Animated.Value(0)).current;
+  const arrowAnim = useRef(new Animated.Value(0)).current;
+
+  const lastAnalysisDate = user?.lastAnalysisDate;
+  const daysSince = lastAnalysisDate ? Math.floor((new Date().getTime() - new Date(lastAnalysisDate).getTime()) / (1000 * 60 * 60 * 24)) : 7;
+  const daysSinceText = daysSince === 0 ? 'ANÁLISE HOJE' : `HÁ ${daysSince} DIAS`;
+
+  // Luz Envolvente: Amarelo -> Vermelho conforme urgência (0-30 dias)
+  const urgencyFactor = Math.min(daysSince / 30, 1);
+  const glowColor = urgencyFactor < 0.2 ? '#FFE600' : (urgencyFactor < 0.6 ? '#FF8C00' : '#FF0000');
+  const glowExpansion = 0.9 + (urgencyFactor * 0.4); 
 
   // ── Switch Setup ──────────────────────────────────────────────────────────
   const switchAnim = useRef(new Animated.Value(0)).current; // 0 = UP, 160 = DOWN
@@ -265,7 +278,61 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         Animated.timing(floatAnim2, { toValue: 1, duration: 20000, useNativeDriver: true }),
       ])
     ).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(arrowAnim, { toValue: 8, duration: 1000, useNativeDriver: true }),
+        Animated.timing(arrowAnim, { toValue: 0, duration: 1000, useNativeDriver: true }),
+      ])
+    ).start();
   }, []);
+  
+  // ── DEMO Logic ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (isDemoMode) {
+      const demoData = {
+        id: 'demo-001',
+        memberId: 'guest-001',
+        label: 'Análise Demonstrativa',
+        analysisDate: new Date().toISOString(),
+        source: 'demo' as const,
+        measurements: [
+          { id: 'm1', type: 'urinalysis', marker: 'Glicose', value: '92', unit: 'mg/dL', recordedAt: new Date().toISOString() },
+          { id: 'm2', type: 'urinalysis', marker: 'Sódio', value: '138', unit: 'mEq/L', recordedAt: new Date().toISOString() },
+          { id: 'm3', type: 'ecg', value: '72', unit: 'bpm', recordedAt: new Date().toISOString() },
+          { id: 'm4', type: 'ppg', value: '99', unit: '%', recordedAt: new Date().toISOString() },
+        ],
+        ecosystemFacts: [],
+        createdAt: new Date().toISOString(),
+      };
+      setDemoAnalysis(demoData);
+    } else {
+      setDemoAnalysis(null);
+    }
+  }, [isDemoMode]);
+
+  const displayBiomarkers = isDemoMode ? [
+    { id: 'd1', name: 'Glicose (Demo)', value: '92', unit: 'mg/dL', source: 'ablute' },
+    { id: 'd2', name: 'Sódio (Demo)', value: '138', unit: 'mEq/L', source: 'ablute' },
+    { id: 'd3', name: 'SpO2 (Demo)', value: '99', unit: '%', source: 'health_kit' },
+    { id: 'd4', name: 'Ritmo (Demo)', value: '72', unit: 'bpm', source: 'health_kit' },
+  ] : RAW_BIOMARKERS;
+
+  const displayThemes = isDemoMode ? [
+    {
+      title: 'Cenário Simulado: Otimização',
+      score: 94,
+      iconName: 'Target',
+      paragraph1: 'Este é um cenário de demonstração ativa. O sistema está a simular uma resposta biológica de alta performance.',
+      paragraph2: 'Em modo DEMO, podes navegar pelos Resultados e validar a interpretação da IA sem necessidade de hardware real.',
+      refText1: 'Simulação de rastro biográfico de alta fidelidade.',
+      refText2: 'Ambiente de teste operacional.',
+      suggestions: [
+        { title: 'Explora os Resultados', desc: 'Clica em DADOS para ver os biomarcadores simulados.' },
+        { title: 'Valida a Navegação', desc: 'Clica em TEMAS para ver esta interpretação detalhada.' }
+      ]
+    }
+  ] : MOCK_THEMES;
 
   // ── Gesture Handlers ──────────────────────────────────────────────────────
   const mainPanResponder = useRef(
@@ -341,6 +408,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 <Typography variant="caption" style={styles.tokenText}>{credits ?? 0}</Typography>
               </TouchableOpacity>
               
+              <TouchableOpacity 
+                style={[styles.demoPill, isDemoMode && styles.demoPillActive]} 
+                onPress={() => setIsDemoMode(!isDemoMode)}
+              >
+                <Typography variant="caption" style={[styles.demoText, isDemoMode && styles.demoTextActive]}>
+                  {isDemoMode ? 'DEMO ON' : 'DEMO'}
+                </Typography>
+              </TouchableOpacity>
+              
               <TouchableOpacity style={styles.iconCircle} onPress={() => navigation.navigate('Settings')}>
                 <SlidersHorizontal size={20} color="#fff" />
               </TouchableOpacity>
@@ -364,67 +440,80 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
         {/* ── CENTRAL VISUAL (The HoloPulse) ────────────────────────────────── */}
         <Animated.View style={[styles.centerContainer, { transform: [{ translateY: centerContentY }] }]}>
-          <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
+          
+          {/* Luz Envolvente (Auras) - APENAS ESTA PARTE PULSA DISCRETAMENTE */}
+          <Animated.View style={{ 
+            position: 'absolute', 
+            width: 220 * glowExpansion, 
+            height: 380 * glowExpansion, 
+            borderRadius: 110, 
+            shadowColor: glowColor, 
+            shadowOffset: { width: 0, height: 0 }, 
+            shadowOpacity: 0.8, 
+            shadowRadius: 20 + (urgencyFactor * 40), 
+            elevation: 20,
+            transform: [{ scale: pulseAnim }] 
+          }} />
 
-            {/* Outer Blue Aura */}
-            <View style={{ width: 240, height: 400, borderRadius: 120, shadowColor: '#00F2FF', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 55, elevation: 8 }}>
-              {/* Middle Orange Aura */}
-              <View style={{ width: 240, height: 400, borderRadius: 120, shadowColor: '#FF6F00', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.7, shadowRadius: 35, elevation: 12 }}>
-                {/* Inner Yellow Aura */}
-                <View style={{ width: 240, height: 400, borderRadius: 120, shadowColor: '#FFE600', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.9, shadowRadius: 15, elevation: 18 }}>
+          {/* Núcleo Central (FIXO) */}
+          <View style={{ width: 190, height: 350, borderRadius: 95, overflow: 'hidden', backgroundColor: 'rgba(5, 10, 20, 0.4)', zIndex: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+            <Animated.View style={{ width: 190, height: 190, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
+              <View style={[styles.pulseContainer, { width: 190, height: 190, borderRadius: 95, marginBottom: 0 }]} pointerEvents="box-none">
+                {/* Outer dynamically playing border */}
+                <View style={{ position: 'absolute', width: 190, height: 190, borderRadius: 95, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
+                  <Video
+                    source={require('../../assets/video (2).mp4')}
+                    style={{ position: 'absolute', width: 190, height: 190, opacity: 1 }}
+                    resizeMode={ResizeMode.COVER}
+                    shouldPlay
+                    isLooping
+                    isMuted
+                    pointerEvents="none"
+                  />
+                </View>
 
-                  {/* The Track Base */}
-                  <View style={{ width: 240, height: 400, borderRadius: 120, overflow: 'hidden', backgroundColor: 'rgba(5, 10, 20, 0.4)', zIndex: 10 }}>
-                    <Animated.View style={{ width: 240, height: 240, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
-                      <View style={[styles.pulseContainer, { marginBottom: 0 }]} pointerEvents="box-none">
-                    {/* Outer dynamically playing border */}
-                    <View style={{ position: 'absolute', width: 240, height: 240, borderRadius: 120, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
-                      <Video
-                        source={require('../../assets/video (2).mp4')}
-                        style={{ position: 'absolute', width: 240, height: 240, opacity: 1 }}
-                        resizeMode={ResizeMode.COVER}
-                        shouldPlay
-                        isLooping
-                        isMuted
-                        pointerEvents="none"
-                      />
-                    </View>
+                {/* Inner primary holographic content */}
+                <View style={{ position: 'absolute', width: 176, height: 176, borderRadius: 88, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
+                  <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+                  <Video
+                    source={require('../../assets/video (3).mp4')}
+                    style={{ position: 'absolute', width: 176, height: 176, opacity: 0.9 }}
+                    resizeMode={ResizeMode.COVER}
+                    shouldPlay
+                    isLooping
+                    isMuted
+                    pointerEvents="none"
+                  />
+                  {/* PERSON IMAGE REMOVED AS REQUESTED */}
+                  <LinearGradient
+                    colors={['rgba(0, 242, 255, 0.2)', 'rgba(0, 212, 170, 0.1)']}
+                    style={StyleSheet.absoluteFillObject}
+                    pointerEvents="none"
+                  />
 
-                    {/* Inner primary holographic content */}
-                    <View style={{ position: 'absolute', width: 223, height: 223, borderRadius: 111.5, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
-                      <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
-                      <Video
-                        source={require('../../assets/video (3).mp4')}
-                        style={{ position: 'absolute', width: 223, height: 223, opacity: 0.9 }}
-                        resizeMode={ResizeMode.COVER}
-                        shouldPlay
-                        isLooping
-                        isMuted
-                        pointerEvents="none"
-                      />
-                      <Image
-                        source={require('../../assets/hologram_body.png')}
-                        style={{ position: 'absolute', width: 223, height: 223, opacity: 0.85 }}
-                        resizeMode="contain"
-                      />
-                      <LinearGradient
-                        colors={['rgba(0, 242, 255, 0.2)', 'rgba(0, 212, 170, 0.1)']}
-                        style={StyleSheet.absoluteFillObject}
-                        pointerEvents="none"
-                      />
-
-                      {/* Inner diffuse mask (vignette effect) */}
-                      <View style={[StyleSheet.absoluteFill, { borderRadius: 111.5, borderWidth: 15, borderColor: 'rgba(5,10,20,0.4)' }]} pointerEvents="none" />
-                      <View style={[StyleSheet.absoluteFill, { borderRadius: 111.5, borderWidth: 10, borderColor: 'rgba(5,10,20,0.6)' }]} pointerEvents="none" />
-                      <View style={[StyleSheet.absoluteFill, { borderRadius: 111.5, borderWidth: 5, borderColor: 'rgba(5,10,20,0.9)' }]} pointerEvents="none" />
-                    </View>
-                      </View>
-                    </Animated.View>
+                  {/* Labels inside the core */}
+                  <View style={{ alignItems: 'center', zIndex: 100 }}>
+                    <Typography style={[styles.centerLabel, { fontSize: 14, marginBottom: 4 }]}>BIO-ANÁLISE</Typography>
+                    <Typography style={[styles.centerSub, { fontSize: 9, color: glowColor }]}>{daysSinceText.toUpperCase()}</Typography>
                   </View>
+
+                  {/* Inner diffuse mask (vignette effect) */}
+                  <View style={[StyleSheet.absoluteFill, { borderRadius: 88, borderWidth: 15, borderColor: 'rgba(5,10,20,0.4)' }]} pointerEvents="none" />
+                  <View style={[StyleSheet.absoluteFill, { borderRadius: 88, borderWidth: 5, borderColor: 'rgba(5,10,20,0.8)' }]} pointerEvents="none" />
                 </View>
               </View>
+            </Animated.View>
+
+            {/* Setas Animadas para orientar o utilizador */}
+            <View style={{ position: 'absolute', bottom: 30, left: 0, right: 0, alignItems: 'center' }}>
+              <Animated.View style={{ transform: [{ translateY: arrowAnim }], opacity: 0.6 }}>
+                <ChevronDown size={20} color={glowColor} strokeWidth={3} />
+                <View style={{ marginTop: -12 }}>
+                  <ChevronDown size={20} color={glowColor} strokeWidth={2} opacity={0.5} />
+                </View>
+              </Animated.View>
             </View>
-          </Animated.View>
+          </View>
         </Animated.View>
 
         {/* ── LEFT EDGE HANDLE: THEMES ──────────────────────────────────────── */}
@@ -453,15 +542,32 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       <Animated.View style={[styles.sidePanel, styles.leftPanel, { transform: [{ translateX: themesAnim }] }]}>
         <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill}>
           <View style={styles.panelHeader}>
-            <Typography variant="h2" style={styles.panelTitle}>Interpretação das análises por IA</Typography>
+            <View style={{ flex: 1 }}>
+              <Typography variant="h2" style={styles.panelTitle}>IA Interpretação</Typography>
+              {isDemoMode && (
+                <View style={{ backgroundColor: 'rgba(255,100,0,0.15)', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, marginTop: 4 }}>
+                  <Typography style={{ color: '#FF6400', fontSize: 10, fontWeight: '800', letterSpacing: 1 }}>SIMULAÇÃO ATIVA</Typography>
+                </View>
+              )}
+            </View>
             <TouchableOpacity onPress={() => Animated.spring(themesAnim, { toValue: -width, useNativeDriver: true }).start()}>
               <X size={24} color="#fff" />
             </TouchableOpacity>
           </View>
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.panelScroll}>
-            {MOCK_THEMES.map((theme, i) => (
+            {displayThemes.map((theme, i) => (
               <ThemeCard key={i} {...theme} iconName={theme.iconName as any} />
             ))}
+            
+            <TouchableOpacity 
+              style={styles.panelActionBtn} 
+              onPress={() => {
+                Animated.spring(themesAnim, { toValue: -width, useNativeDriver: true }).start();
+                navigation.navigate('Temas');
+              }}
+            >
+              <Typography style={styles.panelActionText}>EXPLORAR TODOS OS TEMAS</Typography>
+            </TouchableOpacity>
           </ScrollView>
         </BlurView>
       </Animated.View>
@@ -473,10 +579,17 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             <TouchableOpacity onPress={() => Animated.spring(dataAnim, { toValue: width, useNativeDriver: true }).start()}>
               <X size={24} color="#fff" />
             </TouchableOpacity>
-            <Typography variant="h2" style={styles.panelTitle}>Bio-análise</Typography>
+            <View style={{ alignItems: 'flex-end' }}>
+              <Typography variant="h2" style={styles.panelTitle}>Bio-análise</Typography>
+              {isDemoMode && (
+                <View style={{ backgroundColor: 'rgba(255,100,0,0.15)', alignSelf: 'flex-end', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, marginTop: 4 }}>
+                  <Typography style={{ color: '#FF6400', fontSize: 10, fontWeight: '800', letterSpacing: 1 }}>SIMULAÇÃO ATIVA</Typography>
+                </View>
+              )}
+            </View>
           </View>
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.panelScroll}>
-            {RAW_BIOMARKERS.map((item, i) => (
+            {displayBiomarkers.map((item, i) => (
               <View key={i} style={styles.bioRow}>
                 <Typography style={styles.bioName}>{item.name}</Typography>
                 <View style={styles.bioValueArea}>
@@ -485,6 +598,16 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 </View>
               </View>
             ))}
+            
+            <TouchableOpacity 
+              style={styles.panelActionBtn} 
+              onPress={() => {
+                Animated.spring(dataAnim, { toValue: width, useNativeDriver: true }).start();
+                navigation.navigate('Dados');
+              }}
+            >
+              <Typography style={styles.panelActionText}>VER HISTÓRICO COMPLETO</Typography>
+            </TouchableOpacity>
           </ScrollView>
         </BlurView>
       </Animated.View>
@@ -783,6 +906,47 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     fontSize: 13,
   },
+  demoPill: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    height: 32,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 4,
+    alignSelf: 'center',
+  },
+  demoPillActive: {
+    backgroundColor: 'rgba(255, 100, 0, 0.15)',
+    borderColor: 'rgba(255, 100, 0, 0.4)',
+  },
+  demoText: {
+    color: 'rgba(255,255,255,0.4)',
+    fontWeight: '800',
+    fontSize: 10,
+    letterSpacing: 1,
+  },
+  demoTextActive: {
+    color: '#FF6400',
+  },
+  panelActionBtn: {
+    marginTop: 20,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  panelActionText: {
+    color: '#00F2FF',
+    fontWeight: '800',
+    fontSize: 12,
+    letterSpacing: 2,
+  },
   evalBadge: {
     backgroundColor: 'rgba(115, 188, 255, 0.1)',
     paddingVertical: 6,
@@ -881,13 +1045,14 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   edgeLabel: {
-    fontSize: 7,
-    fontWeight: '800',
-    letterSpacing: 1,
-    color: 'rgba(255,255,255,0.4)',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 2,
+    color: '#fff',
     writingDirection: 'ltr',
     transform: [{ rotate: '90deg' }],
-    marginTop: 4,
+    marginTop: 8,
+    opacity: 0.8,
   },
   // Bottom App Drawer trigger (always visible)
   drawerTrigger: {

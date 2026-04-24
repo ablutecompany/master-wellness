@@ -231,6 +231,7 @@ export function computeSemanticFromMeasurements(
     version: '1.2.0',
     generatedAt: Date.now(),
     status: 'ready',
+    aiStatus: 'ready',
     isLive: true,
     metadata: {
       lastUpdatedAt: Date.now(),
@@ -284,6 +285,7 @@ function buildEmptyState(): SemanticOutputState {
     version: '1.2.0',
     generatedAt: Date.now(),
     status: 'insufficient_data',
+    aiStatus: 'idle',
     isLive: false,
     metadata: {
       lastUpdatedAt: Date.now(), lastRequestedAt: Date.now(),

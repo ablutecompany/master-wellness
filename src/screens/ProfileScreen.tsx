@@ -172,7 +172,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
     Alert.prompt(title, msg, [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salvar', onPress: (val) => val?.trim() && updateProfileField({ name: val.trim(), fullName: val.trim() }) }
+      { text: 'Salvar', onPress: (val: string | undefined) => val?.trim() && updateProfileField({ name: val.trim(), fullName: val.trim() }) }
     ], 'plain-text', defaultName);
   };
 
@@ -195,7 +195,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
     Alert.prompt('Data de Nascimento', msg, [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salvar', onPress: (val) => {
+      { text: 'Salvar', onPress: (val: string | undefined) => {
         if (val?.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(val.trim())) {
           Alert.alert('Erro', 'Formato inválido. Usa AAAA-MM-DD.');
           return;
@@ -225,7 +225,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
     Alert.prompt('Altura', msg, [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salvar', onPress: (val) => {
+      { text: 'Salvar', onPress: (val: string | undefined) => {
         const num = parseInt(val?.trim() || '', 10);
         if (!isNaN(num) && num >= 50 && num <= 300) {
           updateProfileField({ height: num });
@@ -256,7 +256,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
     Alert.prompt('Sexo', msg, [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salvar', onPress: (val) => {
+      { text: 'Salvar', onPress: (val: string | undefined) => {
         const clean = val?.trim().toUpperCase();
         if (clean === '' || clean === 'M' || clean === 'F') {
           updateProfileField({ sex: clean || null, genderIdentity: clean || null });
@@ -294,7 +294,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
     Alert.prompt('Peso', msg, [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salvar', onPress: (val) => {
+      { text: 'Salvar', onPress: (val: string | undefined) => {
         if (val?.trim() === '') {
           const m = displayUser?.weight?.measuredValue || null;
           updateProfileField({ weight: { value: m, source: m ? 'measured' : 'missing', manualValue: null, measuredValue: m, isDiscrepant: false } });
@@ -322,7 +322,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
     Alert.prompt('Localização', msg, [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salvar', onPress: (val) => updateProfileField({ country: val?.trim() || '', location: val?.trim() || '' }) }
+      { text: 'Salvar', onPress: (val: string | undefined) => updateProfileField({ country: val?.trim() || '', location: val?.trim() || '' }) }
     ], 'plain-text', current);
   };
 
@@ -339,7 +339,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
     Alert.prompt('Avatar', msg, [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salvar', onPress: (val) => updateProfileField({ avatarUrl: val?.trim() || '' }) }
+      { text: 'Salvar', onPress: (val: string | undefined) => updateProfileField({ avatarUrl: val?.trim() || '' }) }
     ], 'plain-text', current);
   };
 
@@ -427,7 +427,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         backgroundColor: isEditMode ? theme.colors.primary + 'EE' : 'transparent',
         borderBottomWidth: isEditMode ? 1 : 0,
         borderColor: 'rgba(255,255,255,0.2)'
-      }}>
+      } as any}>
         <View style={{ 
           padding: 12, 
           flexDirection: 'row', 
@@ -495,7 +495,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           </TouchableOpacity>
           
           <TouchableOpacity 
-            onPress={() => navigation.navigate('Home')} 
+            onPress={() => navigation.navigate('Main', { screen: 'Home' })} 
             style={styles.closeButton}
           >
             <X size={24} color="rgba(255,255,255,0.4)" />
@@ -508,7 +508,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             {displayUser?.email || (authAccount?.email) || 'Sem email associado'}
           </Typography>
           <Typography variant="caption" style={{ color: theme.colors.textMuted, fontSize: 8, marginTop: 4 }}>
-             BUILD V2.1-EDIT | {isGuestMode ? 'GUEST' : 'AUTH'}
+             BUILD V2.2-DEMO | {isGuestMode ? 'GUEST' : 'AUTH'}
           </Typography>
         </View>
 
@@ -595,7 +595,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
         {/* 1. IDENTIDADE */}
         <View style={styles.menuSection}>
-          <Typography variant="caption" style={[styles.sectionLabel, isEditMode && { color: theme.colors.primary }]}>
+          <Typography variant="caption" style={[styles.sectionLabel, isEditMode ? { color: theme.colors.primary } : {}]}>
             IDENTIDADE {isEditMode && '(EDITÁVEL)'}
           </Typography>
           <View style={[styles.cardGroup, isEditMode && { borderColor: theme.colors.primary + '40' }]}>
@@ -639,7 +639,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
         {/* 2. PERFIL PESSOAL */}
         <View style={styles.menuSection}>
-          <Typography variant="caption" style={[styles.sectionLabel, isEditMode && { color: theme.colors.primary }]}>
+          <Typography variant="caption" style={[styles.sectionLabel, isEditMode ? { color: theme.colors.primary } : {}]}>
             PERFIL PESSOAL {isEditMode && '(EDITÁVEL)'}
           </Typography>
           <View style={[styles.cardGroup, isEditMode && { borderColor: theme.colors.primary + '40' }]}>
@@ -793,7 +793,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                         } else {
                           Alert.prompt('Convite', 'Email do utilizador a convidar:', [
                             { text: 'Cancelar', style: 'cancel' },
-                            { text: 'Enviar', onPress: (email) => {
+                            { text: 'Enviar', onPress: (email: string | undefined) => {
                               if (email && email.trim() !== '') {
                                 useStore.getState().inviteHouseholdMember(activeMemberId, email.trim()).then(ok => {
                                     if (ok) Alert.alert('Sucesso', 'Convite emitido.');

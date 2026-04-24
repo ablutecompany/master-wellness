@@ -5,13 +5,13 @@ import { theme } from '../theme';
 import { Lock } from 'lucide-react-native';
 
 export const GatingOverlay: React.FC<{ 
-  isBlocked: boolean; 
-  message: string; 
+  isBlocked?: boolean; 
+  message?: string; 
   actionLabel?: string; 
   onAction?: () => void; 
-  children: React.ReactNode; 
+  children?: React.ReactNode; 
   style?: ViewStyle;
-}> = ({ isBlocked, message, actionLabel, onAction, children, style }) => {
+}> = ({ isBlocked = false, message = '', actionLabel, onAction, children, style }) => {
   if (!isBlocked) return <>{children}</>;
 
   return (
