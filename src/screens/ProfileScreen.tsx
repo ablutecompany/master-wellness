@@ -425,27 +425,27 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         </View>
 
         {/* 3. CONTA */}
-        <View style={[styles.menuSection, isEditMode && { opacity: 0.4 }]}>
+        <View style={styles.menuSection}>
           <Typography variant="caption" style={styles.sectionLabel}>CONTA</Typography>
           <View style={styles.cardGroup}>
             <View style={styles.groupItem}>
               <Typography style={styles.groupLabel}>Plano</Typography>
               <Typography style={{ color: theme.colors.primary, fontWeight: '700' }}>
-                {displayUser?.planType || 'Free'}
+                {user?.planType || 'Free'}
               </Typography>
             </View>
 
             <View style={styles.groupItem}>
               <Typography style={styles.groupLabel}>Membro desde</Typography>
               <Typography variant="caption">
-                {displayUser?.memberSince || 'N/A'}
+                {user?.memberSince || 'N/A'}
               </Typography>
             </View>
 
             <View style={[styles.groupItem, { borderBottomWidth: 0 }]}>
               <Typography style={styles.groupLabel}>Último Acesso</Typography>
               <Typography variant="caption">
-                {displayUser?.lastLogin || 'Agora'}
+                {user?.lastLogin || 'Agora'}
               </Typography>
             </View>
           </View>
@@ -453,7 +453,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
         {/* 4. GESTÃO DE MEMBRO (Apenas se activeMemberId) */}
         {activeMemberId && (
-          <View style={[styles.menuSection, isEditMode && { opacity: 0.4 }]}>
+          <View style={styles.menuSection}>
             <Typography variant="caption" style={styles.sectionLabel}>GESTÃO DE MEMBRO</Typography>
             <View style={[styles.cardGroup, { padding: 20 }]}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
@@ -472,7 +472,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                 </Typography>
               </View>
 
-              {!household?.members.find((m: any) => m.id === activeMemberId)?.userId && !household?.invitations?.find((i: any) => i.memberId === activeMemberId && i.status === 'pending') && !isEditMode && (
+              {!household?.members.find((m: any) => m.id === activeMemberId)?.userId && !household?.invitations?.find((i: any) => i.memberId === activeMemberId && i.status === 'pending') && (
                  <View style={{ gap: 12 }}>
                    <TouchableOpacity 
                      style={{ backgroundColor: theme.colors.primary + '20', padding: 12, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: theme.colors.primary + '40' }}
@@ -537,29 +537,27 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                    <Typography variant="caption" style={{ color: theme.colors.textMuted, marginBottom: 20 }}>
                       QR Code para emparelhamento
                    </Typography>
-                   {!isEditMode && (
-                     <TouchableOpacity 
-                       onPress={() => {
-                          if (Platform.OS === 'web') {
-                            if (window.confirm('Queres cancelar este convite pendente?')) {
-                              useStore.getState().cancelHouseholdInvite((((household?.invitations || []).find((i: any) => i.memberId === activeMemberId && i.status === 'pending') || {id: ''}).id));
-                            }
-                          } else {
-                            Alert.alert('Cancelar Convite', 'Cancelar convite pendente?', [
-                              { text: 'Não', style: 'cancel' },
-                              { text: 'Sim', onPress: () => useStore.getState().cancelHouseholdInvite((((household?.invitations || []).find((i: any) => i.memberId === activeMemberId && i.status === 'pending') || {id: ''}).id)) }
-                            ]);
+                   <TouchableOpacity 
+                     onPress={() => {
+                        if (Platform.OS === 'web') {
+                          if (window.confirm('Queres cancelar este convite pendente?')) {
+                            useStore.getState().cancelHouseholdInvite((((household?.invitations || []).find((i: any) => i.memberId === activeMemberId && i.status === 'pending') || {id: ''}).id));
                           }
-                       }}
-                       style={{ paddingVertical: 10, paddingHorizontal: 20, backgroundColor: theme.colors.cardBorder, borderRadius: 12 }}
-                     >
-                        <Typography variant="caption" style={{ color: theme.colors.text }}>Cancelar Convite</Typography>
-                     </TouchableOpacity>
-                   )}
+                        } else {
+                          Alert.alert('Cancelar Convite', 'Cancelar convite pendente?', [
+                            { text: 'Não', style: 'cancel' },
+                            { text: 'Sim', onPress: () => useStore.getState().cancelHouseholdInvite((((household?.invitations || []).find((i: any) => i.memberId === activeMemberId && i.status === 'pending') || {id: ''}).id)) }
+                          ]);
+                        }
+                     }}
+                     style={{ paddingVertical: 10, paddingHorizontal: 20, backgroundColor: theme.colors.cardBorder, borderRadius: 12 }}
+                   >
+                      <Typography variant="caption" style={{ color: theme.colors.text }}>Cancelar Convite</Typography>
+                   </TouchableOpacity>
                  </View>
               )}
 
-              {household?.members.find((m: any) => m.id === activeMemberId)?.userId && !isEditMode && (
+              {household?.members.find((m: any) => m.id === activeMemberId)?.userId && (
                  <TouchableOpacity 
                    style={{ marginTop: 10, alignItems: 'center' }}
                    onPress={() => {
@@ -584,13 +582,13 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
 
         {!isGuestMode && (
-          <View style={[styles.menuSection, isEditMode && { opacity: 0.4 }]}>
+          <View style={styles.menuSection}>
             <Typography variant="caption" style={styles.sectionLabel}>MÓDULOS FAMILIARES</Typography>
             <View style={styles.cardGroup}>
               <TouchableOpacity 
                 style={[styles.groupItem, { borderBottomWidth: 0 }]} 
                 onPress={() => Alert.alert('Criar Agregado (Em Breve)', 'A criação e gestão central de agregados familiares será ativada na próxima versão através do ícone no ecrã principal.')}
-                disabled={isEditMode}
+                disabled={false}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Users size={20} color={theme.colors.primary} style={{ marginRight: 12 }} />
