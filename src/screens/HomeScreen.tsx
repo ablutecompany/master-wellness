@@ -143,6 +143,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const themesAnim = useRef(new Animated.Value(-width)).current;
   const dataAnim = useRef(new Animated.Value(width)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const floatAnim1 = useRef(new Animated.Value(0)).current;
   const floatAnim2 = useRef(new Animated.Value(0)).current;
   const arrowAnim = useRef(new Animated.Value(0)).current;
 
@@ -264,7 +265,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         Animated.timing(pulseAnim, { toValue: 1, duration: 3000, useNativeDriver: true }),
       ])
     ).start();
-
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim1, { toValue: 1, duration: 15000, useNativeDriver: true }),
+        Animated.timing(floatAnim1, { toValue: 0, duration: 15000, useNativeDriver: true }),
+      ])
+    ).start();
 
     Animated.loop(
       Animated.sequence([
