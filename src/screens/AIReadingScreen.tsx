@@ -53,7 +53,7 @@ export const AIReadingScreen: React.FC = () => {
   
   const { authAccount, isGuestMode, user } = store;
   const userName = user?.name || (isGuestMode ? 'Guest' : (authAccount?.email?.split('@')[0] || 'Utilizador'));
-  const BUILD_MARKER = 'AI READING V2 LIVE MARKER: ec59458';
+  const BUILD_MARKER = 'AI READING V2 LIVE MARKER: 8d1142b';
 
   const aiConfidence = selectAiConfidence(store);
   const dailySynthesis = selectDailySynthesis(store);
