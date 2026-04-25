@@ -46,7 +46,6 @@ export const semanticOutputService: any = {
 class SemanticOutputService {
   private static isInitialized = false;
   private static activeContext: ActiveAnalysisContext | null = null;
-...
 
   /**
    * Inicialização operacional: Ligar ao Lifecycle da App.
