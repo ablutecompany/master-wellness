@@ -301,10 +301,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         measurements: [
           { id: 'm1', type: 'urinalysis', marker: 'Glicose', value: '92', unit: 'mg/dL', recordedAt: new Date().toISOString() },
           { id: 'm2', type: 'urinalysis', marker: 'Sódio', value: '138', unit: 'mEq/L', recordedAt: new Date().toISOString() },
-          { id: 'm3', type: 'ecg', value: '72', unit: 'bpm', recordedAt: new Date().toISOString() },
-          { id: 'm4', type: 'ppg', value: '99', unit: '%', recordedAt: new Date().toISOString() },
+          { id: 'm3', type: 'urinalysis', marker: 'pH Urinário', value: '6.5', unit: 'pH', recordedAt: new Date().toISOString() },
+          { id: 'm4', type: 'fecal', marker: 'Bristol', value: 'Tipo 4', unit: 'Escala', recordedAt: new Date().toISOString() },
+          { id: 'm5', type: 'ecg', marker: 'Ritmo Cardíaco', value: '72', unit: 'bpm', recordedAt: new Date().toISOString() },
+          { id: 'm6', type: 'ppg', marker: 'SpO2', value: '99', unit: '%', recordedAt: new Date().toISOString() },
+          { id: 'm7', type: 'temp', marker: 'Temperatura', value: '36.6', unit: '°C', recordedAt: new Date().toISOString() },
         ],
-        ecosystemFacts: [],
+        ecosystemFacts: [
+          { id: 'f1', type: 'sleep_duration_logged', value: '7h 30m', last_update: Date.now(), domain: 'sleep', source: 'ecosystem' },
+        ],
         createdAt: new Date().toISOString(),
       };
       setDemoAnalysis(demoData);

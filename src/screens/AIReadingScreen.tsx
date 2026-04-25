@@ -3,7 +3,7 @@ import { StyleSheet, View, ScrollView, Platform, TouchableOpacity, LayoutAnimati
 import { Container, Typography, BlurView } from '../components/Base';
 import { theme } from '../theme';
 import { useStore } from '../store/useStore';
-import { selectAiConfidence, selectDailySynthesis, selectContextualResults } from '../store/selectors';
+import { selectAiConfidence, selectDailySynthesis, selectContextualResults, selectDataFreshness } from '../store/selectors';
 import { getSemanticService } from '../services/semantic-output';
 import { resolveNutritionActions, resolveMotionActions, resolveSleepActions } from '../services/ecosystem/actionInterpreter';
 import { Activity, Zap, Target, Heart, Moon, Brain, ChevronDown, ChevronUp, Info, AlertCircle, CheckCircle2, FlaskConical } from 'lucide-react-native';
@@ -47,7 +47,7 @@ const ActionItem = ({ action }: { action: any }) => (
   </View>
 );
 
-export const AIReadingScreen: React.FC = () => {
+export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const store = useStore();
   const [expandedRefs, setExpandedRefs] = useState(false);
   
@@ -58,6 +58,7 @@ export const AIReadingScreen: React.FC = () => {
   const aiConfidence = selectAiConfidence(store);
   const dailySynthesis = selectDailySynthesis(store);
   const contextualResults = selectContextualResults(store);
+  const dataFreshness = selectDataFreshness(store);
   const semanticBundle = getSemanticService().getBundle();
   
   // Interpreted Actions (Derived locally for UI)
@@ -117,6 +118,18 @@ export const AIReadingScreen: React.FC = () => {
              </View>
           )}
         </BlurView>
+
+        {/* CONTEXTUAL CTA */}
+        <TouchableOpacity 
+          style={styles.contextualCTA} 
+          onPress={() => (navigation as any).navigate('Dados')}
+        >
+          <BlurView intensity={20} style={styles.ctaBlur}>
+            <Database size={16} color="#00F2FF" />
+            <Typography style={styles.ctaText}>VER DADOS FACTUAIS</Typography>
+            <ChevronRight size={14} color="#00F2FF" />
+          </BlurView>
+        </TouchableOpacity>
 
         {/* BLOCK 2: Families Considered */}
         <View style={styles.sectionHeader}>
@@ -221,8 +234,10 @@ export const AIReadingScreen: React.FC = () => {
           </View>
         )}
 
-        <View style={{ marginTop: 40, alignItems: 'center', opacity: 0.2 }}>
-          <Typography variant="caption" style={{ fontSize: 9 }}>{BUILD_MARKER}</Typography>
+        <View style={{ marginTop: 40, alignItems: 'center', opacity: 0.4 }}>
+          <Typography variant="caption" style={styles.markerText}>
+            {isDemoMode ? 'MODO DEMO ATIVO • ' : ''}AI READING V2.2 • {dataFreshness.temporalLabel.toUpperCase()}
+          </Typography>
         </View>
 
       </ScrollView>
@@ -505,5 +520,32 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 16,
     textAlign: 'center',
+  },
+  contextualCTA: {
+    marginTop: -16,
+    marginBottom: 32,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 242, 255, 0.2)',
+  },
+  ctaBlur: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  ctaText: {
+    color: '#00F2FF',
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 1,
+    flex: 1,
+  },
+  markerText: {
+    color: 'rgba(0, 242, 255, 0.5)',
+    fontSize: 8,
+    fontWeight: '700',
+    letterSpacing: 1,
   }
 });
