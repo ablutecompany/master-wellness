@@ -864,7 +864,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
     letterSpacing: 1,
-  }
+  },
+  container: {
     backgroundColor: '#05070A',
   },
   atmosphere: {
