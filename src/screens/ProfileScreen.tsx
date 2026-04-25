@@ -13,8 +13,7 @@ import {
   ChevronLeft,
   X,
   User,
-  CreditCard,
-  LogOut
+  CreditCard
 } from 'lucide-react-native';
 import { GatingOverlay } from '../components/GatingOverlay';
 import { useStore } from '../store/useStore';
@@ -428,54 +427,50 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       </SafeAreaView>
       
       <GatingOverlay />
-    </View>
-  );
-};
 
-        <Modal visible={isScanningQRCode} animationType="slide" transparent={false}>
-          <SafeAreaView style={{ flex: 1, backgroundColor: 'black' }}>
-            <View style={{ padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-               <Typography style={{ color: 'white', fontSize: 18, fontWeight: 'bold' }}>Scan de Agregado</Typography>
-               <TouchableOpacity onPress={() => setIsScanningQRCode(false)} style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20 }}>
-                  <Typography style={{ color: 'white' }}>Fechar</Typography>
-               </TouchableOpacity>
-            </View>
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <CameraView 
-                 style={{ width: Dimensions.get('window').width, height: Dimensions.get('window').width }}
-                 facing="back"
-                 barcodeScannerSettings={{
-                   barcodeTypes: ["qr"]
-                 }}
-                 onBarcodeScanned={({ data }) => {
-                   if (hasScanned) return;
-                   setHasScanned(true);
-                   setIsScanningQRCode(false);
-                   setTimeout(() => {
-                     if (data && data.trim() !== '') {
-                       const finalCode = data.trim().startsWith('inv_') ? data.trim() : `inv_${data.trim()}`;
-                       useStore.getState().acceptHouseholdInvite(finalCode).then(ok => {
-                         if (ok) {
-                            if (Platform.OS === 'web') alert('Convite aceite por QR! Foste adicionado(a) ao agregado.');
-                            else Alert.alert('Sucesso', 'Foste adicionado(a) ao agregado.');
-                         } else {
-                            if (Platform.OS === 'web') alert('Falha ao aceder ao convite lido.');
-                            else Alert.alert('Erro', 'Convite QR inválido ou expirado.');
-                         }
-                       });
-                     }
-                   }, 500);
-                 }}
-              />
-              <View style={{ position: 'absolute', width: 250, height: 250, borderWidth: 2, borderColor: theme.colors.primary, borderRadius: 10, backgroundColor: 'transparent' }} />
-            </View>
-            <View style={{ padding: 30, alignItems: 'center' }}>
-               <Typography style={{ color: 'white', textAlign: 'center' }}>Aponta o quadrado central para o QR code no telemóvel do Dono do Agregado.</Typography>
-            </View>
-          </SafeAreaView>
-        </Modal>
-      </ScrollView>
-    </Container>
+      <Modal visible={isScanningQRCode} animationType="slide" transparent={false}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: 'black' }}>
+          <View style={{ padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+             <Typography style={{ color: 'white', fontSize: 18, fontWeight: 'bold' }}>Scan de Agregado</Typography>
+             <TouchableOpacity onPress={() => setIsScanningQRCode(false)} style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20 }}>
+                <Typography style={{ color: 'white' }}>Fechar</Typography>
+             </TouchableOpacity>
+          </View>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <CameraView 
+               style={{ width: Dimensions.get('window').width, height: Dimensions.get('window').width }}
+               facing="back"
+               barcodeScannerSettings={{
+                 barcodeTypes: ["qr"]
+               }}
+               onBarcodeScanned={({ data }) => {
+                 if (hasScanned) return;
+                 setHasScanned(true);
+                 setIsScanningQRCode(false);
+                 setTimeout(() => {
+                   if (data && data.trim() !== '') {
+                     const finalCode = data.trim().startsWith('inv_') ? data.trim() : `inv_${data.trim()}`;
+                     useStore.getState().acceptHouseholdInvite(finalCode).then(ok => {
+                       if (ok) {
+                          if (Platform.OS === 'web') alert('Convite aceite por QR! Foste adicionado(a) ao agregado.');
+                          else Alert.alert('Sucesso', 'Foste adicionado(a) ao agregado.');
+                       } else {
+                          if (Platform.OS === 'web') alert('Falha ao aceder ao convite lido.');
+                          else Alert.alert('Erro', 'Convite QR inválido ou expirado.');
+                       }
+                     });
+                   }
+                 }, 500);
+               }}
+            />
+            <View style={{ position: 'absolute', width: 250, height: 250, borderWidth: 2, borderColor: theme.colors.primary, borderRadius: 10, backgroundColor: 'transparent' }} />
+          </View>
+          <View style={{ padding: 30, alignItems: 'center' }}>
+             <Typography style={{ color: 'white', textAlign: 'center' }}>Aponta o quadrado central para o QR code no telemóvel do Dono do Agregado.</Typography>
+          </View>
+        </SafeAreaView>
+      </Modal>
+    </View>
   );
 };
 
