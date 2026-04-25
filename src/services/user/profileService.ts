@@ -149,4 +149,35 @@ export class ProfileService {
       return { ok: false };
     }
   }
+
+  /**
+   * Ler a lista de análises reais do backend.
+   */
+  static async getAnalyses(token: string): Promise<{ ok: boolean, analyses?: any[] }> {
+    try {
+      const response = await fetch(`${ENV.BACKEND_URL}/analyses`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) return { ok: false };
+      
+      const data = await response.json();
+      
+      if (Array.isArray(data)) {
+        return { ok: true, analyses: data };
+      }
+      
+      const analyses = data.analyses || [];
+      return { ok: !!data, analyses };
+    } catch (err) {
+      console.error('[ProfileService] Erro getAnalyses:', err);
+      return { ok: false };
+    }
+  }
+
+
 }
+

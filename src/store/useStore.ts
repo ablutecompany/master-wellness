@@ -11,6 +11,7 @@ import { createAppRuntimeSlice } from './slices/appRuntime';
 import { createPermissionsSlice } from './slices/permissions';
 import { createContributionsSlice } from './slices/contributions';
 import { createUiOperationalSlice } from './slices/uiOperational';
+import { createEcosystemSlice } from './slices/ecosystem';
 
 // Combine all slice creators into a single unified store with persistence
 export const useStore = create<AppState>()(
@@ -23,6 +24,7 @@ export const useStore = create<AppState>()(
       ...createPermissionsSlice(...a),
       ...createContributionsSlice(...a),
       ...createUiOperationalSlice(...a),
+      ...createEcosystemSlice(...a),
     }),
     {
       name: 'ablute-wellness-storage',
@@ -32,8 +34,12 @@ export const useStore = create<AppState>()(
       partialize: (state) => ({
         isGuestMode: state.isGuestMode,
         guestProfile: state.guestProfile,
+        isDemoMode: state.isDemoMode,
         credits: state.credits,
         installedAppIds: state.installedAppIds,
+        lastContextBundle: state.lastContextBundle, // Cache do último bundle útil (Fallback)
+        longitudinalMemory: state.longitudinalMemory, // Resumo histórico por domínio
+        processedEventIds: state.processedEventIds, // Histórico para deduplicação
       }),
       onRehydrateStorage: (state) => {
         return (rehydratedState, error) => {

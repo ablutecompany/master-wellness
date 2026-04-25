@@ -3,7 +3,8 @@ import { Platform, View, Text, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { ENV } from './src/config/env';
 
-import { NavigationContainer, DarkTheme } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme, createNavigationContainerRef } from '@react-navigation/native';
+export const navigationRef = createNavigationContainerRef();
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { theme } from './src/theme';
@@ -18,6 +19,7 @@ import { OnboardingGoals } from './src/screens/OnboardingGoals';
 import { OnboardingPermissions } from './src/screens/OnboardingPermissions';
 import { PairingScreen } from './src/screens/PairingScreen';
 import { MiniAppContainer } from './src/miniapps/MiniAppContainer';
+import { SettingsScreen } from './src/screens/SettingsScreen';
 import { 
   Home as HomeIcon, 
   Brain, 
@@ -28,6 +30,7 @@ import { supabase } from './src/services/supabase';
 import { useStore } from './src/store/useStore';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { Session } from '@supabase/supabase-js';
+import { ProfileService } from './src/services/user/profileService';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -131,6 +134,7 @@ export default function App() {
   const setHousehold = useStore(state => state.setHousehold);
   const isGuestMode = useStore(state => state.isGuestMode);
   const setGuestMode = useStore(state => state.setGuestMode);
+  const setAnalyses = useStore(state => state.setAnalyses);
   const hasHydrated = useStore(state => state.hasHydrated);
 
   // Guard against concurrent syncProfile calls
@@ -146,19 +150,36 @@ export default function App() {
       return;
     }
 
-    if (isSyncingRef.current) return;
+    if (isSyncingRef.current) {
+      console.warn('[AUTH_DIAG] syncProfile already in progress, aborting concurrent call');
+      return;
+    }
     isSyncingRef.current = true;
+    console.warn('[AUTH_DIAG] syncProfile start', { userId: session.user.id });
     setSessionToken(session.access_token);
 
-    const setLoaded = (profile: any) => {
+    const trySyncAnalyses = async () => {
+      try {
+        const anaRes = await ProfileService.getAnalyses(session.access_token);
+        if (anaRes.ok && anaRes.analyses) {
+          setAnalyses(anaRes.analyses);
+        }
+      } catch (err) {
+        console.warn('[App] Failed to sync analyses:', err);
+      }
+    };
+
+    const setLoaded = async (profile: any) => {
       setUser(profile);
       if (profile?.household) setHousehold(profile.household);
+      await trySyncAnalyses();
       setProfileStatus('loaded');
       isSyncingRef.current = false;
+      console.warn('[AUTH_DIAG] syncProfile success: profile loaded', { userId: profile.id });
       onDone?.('Main');
     };
 
-    const setFallback = () => {
+    const setFallback = async () => {
       const fallback = {
         id: session.user.id,
         email: session.user.email,
@@ -168,8 +189,10 @@ export default function App() {
         mainGoal: 'general_wellness',
       };
       setUser(fallback as any);
+      await trySyncAnalyses();
       setProfileStatus('loaded');
       isSyncingRef.current = false;
+      console.warn('[AUTH_DIAG] syncProfile success: fallback used', { userId: fallback.id });
       onDone?.('Main');
     };
 
@@ -177,40 +200,50 @@ export default function App() {
       const meRes = await fetch(`${ENV.BACKEND_URL}/auth/me`, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       });
+      
       if (meRes.ok) {
         const data = await meRes.json();
-        if (data.ok && data.profile) { setLoaded(data.profile); return; }
+        if (data.ok && data.profile) { 
+          setLoaded(data.profile); 
+          return; 
+        }
       }
 
-      // Try to initialize profile
+      // Try to initialize profile if /auth/me didn't return a record
       try {
         const initRes = await fetch(`${ENV.BACKEND_URL}/auth/initialize`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+          headers: { 
+            'Authorization': `Bearer ${session.access_token}`, 
+            'Content-Type': 'application/json' 
+          },
         });
+        
         if (initRes.ok) {
           const me2 = await fetch(`${ENV.BACKEND_URL}/auth/me`, {
             headers: { 'Authorization': `Bearer ${session.access_token}` }
           });
           if (me2.ok) {
             const d2 = await me2.json();
-            if (d2.ok && d2.profile) { setLoaded(d2.profile); return; }
+            if (d2.ok && d2.profile) { 
+              setLoaded(d2.profile); 
+              return; 
+            }
           }
         }
-        console.warn('[App] Auto-initialize failed, using fallback');
         setFallback();
-      } catch {
-        console.warn('[App] Network error during init, using fallback');
+      } catch (err) {
         setFallback();
       }
-    } catch (err) {
-      console.error('[App] Profile sync failed:', err);
+    } catch (err: any) {
+      console.error('[AUTH_DIAG] syncProfile critical error:', err);
       setProfileStatus('error');
       isSyncingRef.current = false;
       onDone?.('Welcome');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [setUser, setProfileStatus, setSessionToken, setHousehold, setAnalyses]);
+
+
 
   useEffect(() => {
     // Boot sequence: get session once, then set authReady exactly once
@@ -253,10 +286,18 @@ export default function App() {
       if (!bootCompletedRef.current) return; // ignore events during boot
 
       if (event === 'SIGNED_IN' && session) {
+        console.warn('[AUTH_DIAG] listener: SIGNED_IN', { userId: session.user.id });
         setAuthAccount(session.user);
         setGuestMode(false);
         if (!isSyncingRef.current && useStore.getState().profileStatus !== 'loaded') {
-          syncProfile(session, (dest) => setAuthDest(dest));
+          syncProfile(session, (dest) => {
+            console.warn('[AUTH_DIAG] listener: syncProfile onDone', { dest });
+            setAuthDest(dest);
+            if (dest === 'Main' && navigationRef.isReady()) {
+              console.warn('[AUTH_DIAG] listener: explicit navigate to Main');
+              navigationRef.navigate('Main' as any);
+            }
+          });
         }
       } else if (event === 'SIGNED_OUT') {
         isSyncingRef.current = false;
@@ -295,14 +336,15 @@ export default function App() {
   // screen-level guards if needed.
   return (
     <ErrorBoundary>
-      <NavigationContainer theme={DarkTheme}>
+      <NavigationContainer theme={DarkTheme} ref={navigationRef}>
         <StatusBar style="light" />
         <Stack.Navigator initialRouteName={authDest} screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Main" component={MainTabs} />
-          <Stack.Screen name="Profile" component={ProfileScreen} options={{ presentation: 'modal' }} />
-          <Stack.Screen name="GlobalDetail" component={GlobalDetailScreen} options={{ presentation: 'modal' }} />
+          <Stack.Screen name="Profile" component={ProfileScreen} options={{ presentation: 'modal', gestureEnabled: false }} />
+          <Stack.Screen name="Settings" component={SettingsScreen} options={{ presentation: 'modal', gestureEnabled: false }} />
+          <Stack.Screen name="GlobalDetail" component={GlobalDetailScreen} options={{ presentation: 'modal', gestureEnabled: false }} />
           <Stack.Screen
             name="MiniApp"
             options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}

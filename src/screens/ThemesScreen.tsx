@@ -5,9 +5,28 @@ import { ThemeCard } from '../components/ThemeCard';
 import { getSemanticInsights, getSemanticStatus } from '../services/insights';
 import { semanticOutputService } from '../services/semantic-output';
 
+import { useStore } from '../store/useStore';
+
 export const ThemesScreen: React.FC = () => {
+  const isDemoMode = useStore(state => state.isDemoMode);
   const [themes, setThemes] = React.useState(getSemanticInsights());
   const [status, setStatus] = React.useState(getSemanticStatus());
+
+  const demoThemes = [
+    {
+      title: 'Cenário Simulado: Otimização',
+      score: 94,
+      iconName: 'Target' as const,
+      paragraph1: 'Este é um cenário de demonstração ativa. O sistema está a simular uma resposta biológica de alta performance.',
+      paragraph2: 'Em modo DEMO, podes navegar pelos Resultados e validar a interpretação da IA sem necessidade de hardware real.',
+      refText1: 'Simulação de rastro biográfico de alta fidelidade.',
+      refText2: 'Ambiente de teste operacional.',
+      suggestions: [
+        { title: 'Explora os Resultados', desc: 'Clica em DADOS para ver os biomarcadores simulados.' },
+        { title: 'Valida a Navegação', desc: 'Clica em TEMAS para ver esta interpretação detalhada.' }
+      ]
+    }
+  ];
 
   React.useEffect(() => {
     const unsubscribe = semanticOutputService.subscribe(() => {
@@ -17,8 +36,10 @@ export const ThemesScreen: React.FC = () => {
     return unsubscribe;
   }, []);
 
+  const displayThemes = isDemoMode ? demoThemes : themes;
+
   const renderContent = () => {
-    if (status === 'loading') {
+    if (status === 'loading' && !isDemoMode) {
       return (
         <View style={styles.stateContainer}>
           <Typography style={styles.stateText}>A sincronizar rastro biográfico...</Typography>
@@ -36,7 +57,7 @@ export const ThemesScreen: React.FC = () => {
 
     return (
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        {themes.map((theme, index) => (
+        {displayThemes.map((theme, index) => (
           <ThemeCard key={index} {...theme} />
         ))}
       </ScrollView>

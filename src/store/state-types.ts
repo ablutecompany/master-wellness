@@ -3,6 +3,7 @@ import { MiniAppManifest, Permission, MiniAppEvent, AppContributionEvent, Contri
 export interface UserProfile {
   id: string; // The canonical ID of this specific profile
   name: string;
+  fullName?: string;
   habits?: string[];
   age?: number;
   weight?: SourcedMetric<number>;
@@ -11,6 +12,8 @@ export interface UserProfile {
   sex?: 'M' | 'F';
   timezone?: string;
   country?: string;
+  location?: string;
+  goals?: string[];
   activeAnalysisId?: string;
 }
 
@@ -95,6 +98,7 @@ export interface HouseholdMember {
 
 export interface Household {
   id: string;
+  name: string;
   rootMemberId: string;
   invitations?: any[];
   members: HouseholdMember[];
@@ -127,6 +131,19 @@ export interface AppState {
   activeApp: MiniAppManifest | null;
   grantedPermissions: Record<string, Permission[]>;
   demoAnalysis: Analysis | null;
+  isDemoMode: boolean;
+
+  // Ecossistema (Step Shell 2 & 3)
+  miniAppRegistry: import('./ecosystem-contracts').MiniAppRegistryEntry[];
+  lastContextBundle: import('./ecosystem-contracts').ContextBundle | null;
+  longitudinalMemory: Record<string, any>; // Resumo por domínio (ex: { sleep: {...}, nutrition: {...} })
+  processedEventIds: string[]; // Para deduplicação
+
+  refreshContextBundle: () => void;
+  ingestContributionEvent: (event: import('./ecosystem-contracts').ContributionEvent) => void;
+  ingestSessionSummary: (summary: import('./ecosystem-contracts').SessionSummary) => void;
+
+  setIsDemoMode: (val: boolean) => void;
   setUser: (user: UserProfile | null) => void;
   setAuthAccount: (account: any | null) => void;
   setProfileStatus: (status: ProfileStatus) => void;
@@ -136,6 +153,14 @@ export interface AppState {
 
   setHousehold: (household: Household | null) => void;
   setActiveMember: (memberId: string | null) => void;
+  addHouseholdMember: (member: any) => Promise<boolean>;
+  updateHouseholdMember: (memberId: string, updates: Partial<UserProfile>) => Promise<boolean>;
+  updateHouseholdMemberPermissions: (memberId: string, permissions: any) => Promise<boolean>;
+  inviteHouseholdMember: (memberId: string, email: string) => Promise<boolean>;
+  acceptHouseholdInvite: (inviteId: string) => Promise<boolean>;
+  cancelHouseholdInvite: (inviteId: string) => Promise<boolean>;
+  removeHouseholdMember: (memberId: string) => Promise<boolean>;
+  disconnectHouseholdMember: (memberId: string) => Promise<boolean>;
 
   setExportedContext: (context: AppExportedContext) => void;
   clearExportedContext: (id: string) => void;
@@ -148,6 +173,7 @@ export interface AppState {
   setNfcLoading: (loading: boolean) => void;
   setIsMeasuring: (measuring: boolean) => void;
   setCredits: (credits: number) => void;
+  setSessionToken: (token: string | null) => void;
   recordAppEvent: (event: MiniAppEvent) => void;
   addAppContributionEvent: (event: AppContributionEvent) => void;
   installApp: (id: string) => void;
