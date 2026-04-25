@@ -27,9 +27,26 @@ export interface ActiveAnalysisContext {
  * SEMANTIC SERVICE INTERFACE (v1.2.2)
  * Robust Singleton Alias using Proxy to prevent TDZ/ReferenceErrors in cyclic bundles.
  */
-export class SemanticOutputService {
+/**
+ * SEMANTIC SERVICE INTERFACE (v1.2.5)
+ * Early-defined singleton to prevent ReferenceErrors in cyclic bundles.
+ */
+export const semanticOutputService: any = {
+  init: (userId: string) => SemanticOutputService.init(userId),
+  refreshBundle: (userId: string) => SemanticOutputService.refreshBundle(userId),
+  getBundle: () => SemanticOutputService.getBundle(),
+  getStatus: () => SemanticOutputService.getStatus(),
+  getDomainOutput: (domain: string) => SemanticOutputService.getDomainOutput(domain),
+  getCrossDomainSummary: () => SemanticOutputService.getCrossDomainSummary(),
+  loadAnalysis: (analysis: any) => SemanticOutputService.loadAnalysis(analysis),
+  updateTemporalContext: (ctx: any) => SemanticOutputService.updateTemporalContext(ctx),
+  trackConsumption: (domain: string, action: 'viewed' | 'tapped') => SemanticOutputService.trackConsumption(domain, action)
+};
+
+class SemanticOutputService {
   private static isInitialized = false;
   private static activeContext: ActiveAnalysisContext | null = null;
+...
 
   /**
    * Inicialização operacional: Ligar ao Lifecycle da App.
@@ -425,18 +442,3 @@ export class SemanticOutputService {
   }
 }
 
-/**
- * SEMANTIC SERVICE INTERFACE (v1.2.2)
- * Robust Singleton Alias using a direct proxy-like object to prevent TDZ.
- */
-export const semanticOutputService = {
-  init: (userId: string) => SemanticOutputService.init(userId),
-  refreshBundle: (userId: string) => SemanticOutputService.refreshBundle(userId),
-  getBundle: () => SemanticOutputService.getBundle(),
-  getStatus: () => SemanticOutputService.getStatus(),
-  getDomainOutput: (domain: string) => SemanticOutputService.getDomainOutput(domain),
-  getCrossDomainSummary: () => SemanticOutputService.getCrossDomainSummary(),
-  loadAnalysis: (analysis: any) => SemanticOutputService.loadAnalysis(analysis),
-  updateTemporalContext: (ctx: any) => SemanticOutputService.updateTemporalContext(ctx),
-  trackConsumption: (domain: string, action: 'viewed' | 'tapped') => SemanticOutputService.trackConsumption(domain, action)
-};
