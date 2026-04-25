@@ -132,6 +132,12 @@ export interface AppState {
   grantedPermissions: Record<string, Permission[]>;
   demoAnalysis: Analysis | null;
   isDemoMode: boolean;
+
+  // Ecossistema (Step Shell 2)
+  miniAppRegistry: import('./ecosystem-contracts').MiniAppRegistryEntry[];
+  lastContextBundle: import('./ecosystem-contracts').ContextBundle | null;
+  refreshContextBundle: () => void;
+
   setIsDemoMode: (val: boolean) => void;
   setUser: (user: UserProfile | null) => void;
   setAuthAccount: (account: any | null) => void;
