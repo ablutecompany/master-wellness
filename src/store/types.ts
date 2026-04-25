@@ -1,5 +1,6 @@
 import { ContributionEventType } from '../miniapps/types';
 export * from './state-types';
+export * from './ecosystem-contracts';
 
 export interface DomainPackage {
   domain: 'sleep' | 'nutrition' | 'general' | 'female-health';
