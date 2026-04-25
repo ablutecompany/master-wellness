@@ -133,10 +133,15 @@ export interface AppState {
   demoAnalysis: Analysis | null;
   isDemoMode: boolean;
 
-  // Ecossistema (Step Shell 2)
+  // Ecossistema (Step Shell 2 & 3)
   miniAppRegistry: import('./ecosystem-contracts').MiniAppRegistryEntry[];
   lastContextBundle: import('./ecosystem-contracts').ContextBundle | null;
+  longitudinalMemory: Record<string, any>; // Resumo por domínio (ex: { sleep: {...}, nutrition: {...} })
+  processedEventIds: string[]; // Para deduplicação
+
   refreshContextBundle: () => void;
+  ingestContributionEvent: (event: import('./ecosystem-contracts').ContributionEvent) => void;
+  ingestSessionSummary: (summary: import('./ecosystem-contracts').SessionSummary) => void;
 
   setIsDemoMode: (val: boolean) => void;
   setUser: (user: UserProfile | null) => void;
