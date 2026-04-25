@@ -4,7 +4,8 @@ import { Container, Typography } from '../components/Base';
 import { theme } from '../theme';
 import { ChevronRight, Globe, Activity, Settings, Shield, Bell, Eye, Database, X } from 'lucide-react-native';
 import { useStore } from '../store/useStore';
-import { TextInput } from 'react-native';
+import { TextInput, SafeAreaView } from 'react-native';
+import { BlurView } from '../components/Base';
 
 export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const user = useStore(state => state.user);
@@ -22,19 +23,28 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   };
 
   return (
-    <Container safe scroll withAura={true}>
-      <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={() => navigation.navigate('Main', { screen: 'Home' })} 
-          style={styles.closeButton}
-        >
-          <X size={24} color="rgba(255,255,255,0.4)" />
-        </TouchableOpacity>
-        <Typography variant="h3" style={{ fontWeight: '600', letterSpacing: 0.5 }}>Definições</Typography>
-        <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.3)', marginTop: 4 }}>CONFIGURAÇÃO DO SISTEMA</Typography>
-      </View>
+    <View style={styles.outerContainer}>
+      <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
+      
+      <SafeAreaView style={{ flex: 1 }}>
+        <View style={styles.modalPanel}>
+          <View style={styles.modalHeader}>
+            <View>
+              <Typography variant="h3" style={{ fontWeight: '700', color: '#fff' }}>Definições</Typography>
+              <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>CONFIGURAÇÃO DO SISTEMA</Typography>
+            </View>
+            <TouchableOpacity 
+              onPress={() => navigation.goBack()} 
+              style={styles.closeBtnCircle}
+            >
+              <X size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
 
-      <ScrollView contentContainerStyle={styles.container} style={{ backgroundColor: theme.colors.background }}>
+          <ScrollView 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
         {/* 1. LOCALIZAÇÃO (Migrado do Perfil) */}
         <View style={styles.menuSection}>
           <Typography variant="caption" style={styles.sectionLabel}>GEOGRAFIA & PRIVACIDADE</Typography>
@@ -113,45 +123,66 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           </View>
         </View>
 
-        <View style={{ height: 100 }} />
-      </ScrollView>
-    </Container>
+            <View style={{ height: 40 }} />
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: theme.spacing.xl,
+  outerContainer: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
-  header: {
+  modalPanel: {
+    flex: 1,
+    marginHorizontal: 16,
+    marginTop: Platform.OS === 'ios' ? 20 : 40,
+    marginBottom: 20,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 32,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: theme.spacing.xl,
-    marginBottom: theme.spacing.lg,
-    position: 'relative',
-    width: '100%',
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
   },
-  closeButton: {
-    position: 'absolute',
-    right: 20,
-    top: -5,
-    padding: 8,
-    zIndex: 10,
+  closeBtnCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 40,
   },
   menuSection: {
-    marginBottom: theme.spacing.xl,
+    marginBottom: 24,
   },
   sectionLabel: {
-    color: 'rgba(255,255,255,0.2)',
+    color: 'rgba(255,255,255,0.25)',
     fontSize: 9,
-    letterSpacing: 2.5,
-    marginBottom: theme.spacing.sm,
-    marginLeft: theme.spacing.xs,
+    letterSpacing: 2,
+    marginBottom: 12,
+    marginLeft: 4,
     fontWeight: '800',
-    textTransform: 'uppercase',
   },
   cardGroup: {
-    backgroundColor: 'rgba(255,255,255,0.02)',
-    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 24,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
     overflow: 'hidden',
@@ -160,8 +191,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
+    padding: 18,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255,255,255,0.03)',
   },
@@ -171,8 +201,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   menuTitle: {
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.9)',
+    fontWeight: '600',
+    color: '#fff',
     fontSize: 14,
   },
   groupValueRow: {
@@ -183,9 +213,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   inlineInput: {
-    color: theme.colors.primary,
+    color: '#00F2FF',
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'right',
     flex: 1,
     padding: 0,

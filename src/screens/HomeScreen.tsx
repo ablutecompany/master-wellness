@@ -114,16 +114,17 @@ const MOCK_THEMES = [
       { title: 'Se fores fazer trabalho de força, prefere técnica, controlo e amplitude a carga máxima', desc: 'Neste dia, qualidade muscular tende a render mais do que agressividade.' },
       { title: 'Evita treinar grupos já muito exigidos como se estivesses num dia totalmente fresco', desc: 'Hoje a resposta muscular parece beneficiar mais de manutenção inteligente do que de estímulo extremo.' },
       { title: 'Se não fores voltar a treinar hoje, usa 10–15 minutos para mobilidade ou libertação ligeira', desc: 'Isso pode ajudar a preservar melhor sensação muscular e recuperação funcional.' },
-      { title: 'Olha para o próximo treino como continuação da adaptação, não como teste de capacidade', desc: 'Neste momento, a consistência parece servir melhor o teu corpo do que tentar provar mais qualquer coisa hoje.' }
+      { title: 'Olha para o próximo treino como continuação da adaptação e não como esforço isolado', desc: 'Hoje, a consistência vai render mais a longo prazo.' }
     ]
   }
 ];
 
 export const HomeScreen = ({ navigation }: { navigation: any }) => {
-  console.log('[HOME_BOOT] V22A-STABLE Initializing...');
+  console.log('[HOME_BOOT] V22B-AI Initializing...');
   const { width, height } = useWindowDimensions();
   const [showControl, setShowControl] = useState(false);
   const [showNfcModal, setShowNfcModal] = useState(false);
+  const [expandedAppId, setExpandedAppId] = useState<string | null>(null);
 
   // Real Store State
   const user = useStore(state => state.user);
@@ -318,6 +319,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     { id: 'd4', name: 'Ritmo (Demo)', value: '72', unit: 'bpm', source: 'health_kit' },
   ] : RAW_BIOMARKERS;
 
+  const semanticBundle = semanticOutputService.getBundle();
+  const domains = semanticBundle.domains || {};
+  
   const displayThemes = isDemoMode ? [
     {
       title: 'Cenário Simulado: Otimização',
@@ -332,7 +336,16 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         { title: 'Valida a Navegação', desc: 'Clica em TEMAS para ver esta interpretação detalhada.' }
       ]
     }
-  ] : MOCK_THEMES;
+  ] : Object.values(domains).map(d => ({
+    title: d.label.charAt(0).toUpperCase() + d.label.slice(1),
+    score: d.score,
+    iconName: d.domain === 'sleep' ? 'Moon' : d.domain === 'energy' ? 'Zap' : d.domain === 'performance' ? 'Target' : d.domain === 'recovery' ? 'Heart' : 'Activity',
+    paragraph1: d.mainInsight?.summary || '',
+    paragraph2: d.mainInsight?.description || '',
+    refText1: '',
+    refText2: '',
+    suggestions: d.recommendations?.map(r => ({ title: r.title, desc: r.actionable })) || []
+  }));
 
   // ── Gesture Handlers ──────────────────────────────────────────────────────
   const mainPanResponder = useRef(
@@ -441,29 +454,41 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         {/* ── CENTRAL VISUAL (The HoloPulse) ────────────────────────────────── */}
         <Animated.View style={[styles.centerContainer, { transform: [{ translateY: centerContentY }] }]}>
           
-          {/* Luz Envolvente (Auras) - APENAS ESTA PARTE PULSA DISCRETAMENTE */}
+          {/* Luz Envolvente (Auras) - RECUPERAÇÃO: Irradia do núcleo, pulsa subtilmente */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 220 * glowExpansion, 
-            height: 380 * glowExpansion, 
-            borderRadius: 110, 
+            width: 200, 
+            height: 340, 
+            borderRadius: 100, 
             shadowColor: glowColor, 
             shadowOffset: { width: 0, height: 0 }, 
             shadowOpacity: 0.8, 
-            shadowRadius: 20 + (urgencyFactor * 40), 
-            elevation: 20,
-            transform: [{ scale: pulseAnim }] 
+            shadowRadius: 30 + (urgencyFactor * 20), 
+            elevation: 25,
+            transform: [{ scale: pulseAnim }],
+            backgroundColor: 'transparent' // Garante que a sombra venha da borda
           }} />
 
-          {/* Núcleo Central (FIXO) */}
-          <View style={{ width: 190, height: 350, borderRadius: 95, overflow: 'hidden', backgroundColor: 'rgba(5, 10, 20, 0.4)', zIndex: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
-            <Animated.View style={{ width: 190, height: 190, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
-              <View style={[styles.pulseContainer, { width: 190, height: 190, borderRadius: 95, marginBottom: 0 }]} pointerEvents="box-none">
-                {/* Outer dynamically playing border */}
-                <View style={{ position: 'absolute', width: 190, height: 190, borderRadius: 95, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
+          {/* Núcleo Central (RECUPERADO: Compacto e Elegante) */}
+          <View style={{ 
+            width: 170, 
+            height: 320, 
+            borderRadius: 85, 
+            overflow: 'hidden', 
+            backgroundColor: 'rgba(5, 10, 20, 0.6)', 
+            zIndex: 10, 
+            borderWidth: 1, 
+            borderColor: 'rgba(255,255,255,0.08)',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}>
+            <Animated.View style={{ width: 170, height: 170, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
+              <View style={[styles.pulseContainer, { width: 170, height: 170, borderRadius: 85, marginBottom: 0, backgroundColor: 'transparent' }]} pointerEvents="box-none">
+                {/* Outer halo video */}
+                <View style={{ position: 'absolute', width: 170, height: 170, borderRadius: 85, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
                   <Video
                     source={require('../../assets/video (2).mp4')}
-                    style={{ position: 'absolute', width: 190, height: 190, opacity: 1 }}
+                    style={{ position: 'absolute', width: 170, height: 170, opacity: 0.8 }}
                     resizeMode={ResizeMode.COVER}
                     shouldPlay
                     isLooping
@@ -473,43 +498,42 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 </View>
 
                 {/* Inner primary holographic content */}
-                <View style={{ position: 'absolute', width: 176, height: 176, borderRadius: 88, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
-                  <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
+                <View style={{ position: 'absolute', width: 156, height: 156, borderRadius: 78, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
+                  <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
                   <Video
                     source={require('../../assets/video (3).mp4')}
-                    style={{ position: 'absolute', width: 176, height: 176, opacity: 0.9 }}
+                    style={{ position: 'absolute', width: 156, height: 156, opacity: 0.7 }}
                     resizeMode={ResizeMode.COVER}
                     shouldPlay
                     isLooping
                     isMuted
                     pointerEvents="none"
                   />
-                  {/* PERSON IMAGE REMOVED AS REQUESTED */}
+                  
                   <LinearGradient
-                    colors={['rgba(0, 242, 255, 0.2)', 'rgba(0, 212, 170, 0.1)']}
+                    colors={['rgba(0, 242, 255, 0.1)', 'rgba(0, 212, 170, 0.05)']}
                     style={StyleSheet.absoluteFillObject}
                     pointerEvents="none"
                   />
 
-                  {/* Labels inside the core */}
+                  {/* Labels inside the core (RECUPERADO) */}
                   <View style={{ alignItems: 'center', zIndex: 100 }}>
-                    <Typography style={[styles.centerLabel, { fontSize: 14, marginBottom: 4 }]}>BIO-ANÁLISE</Typography>
-                    <Typography style={[styles.centerSub, { fontSize: 9, color: glowColor }]}>{daysSinceText.toUpperCase()}</Typography>
+                    <Typography style={[styles.centerLabel, { fontSize: 13, marginBottom: 2, opacity: 0.9 }]}>BIO-ANÁLISE</Typography>
+                    <Typography style={[styles.centerSub, { fontSize: 8, color: glowColor, opacity: 0.8 }]}>{daysSinceText.toUpperCase()}</Typography>
                   </View>
 
-                  {/* Inner diffuse mask (vignette effect) */}
-                  <View style={[StyleSheet.absoluteFill, { borderRadius: 88, borderWidth: 15, borderColor: 'rgba(5,10,20,0.4)' }]} pointerEvents="none" />
-                  <View style={[StyleSheet.absoluteFill, { borderRadius: 88, borderWidth: 5, borderColor: 'rgba(5,10,20,0.8)' }]} pointerEvents="none" />
+                  {/* Inner diffuse mask */}
+                  <View style={[StyleSheet.absoluteFill, { borderRadius: 78, borderWidth: 12, borderColor: 'rgba(5,10,20,0.3)' }]} pointerEvents="none" />
                 </View>
               </View>
             </Animated.View>
 
-            {/* Setas Animadas para orientar o utilizador */}
-            <View style={{ position: 'absolute', bottom: 30, left: 0, right: 0, alignItems: 'center' }}>
-              <Animated.View style={{ transform: [{ translateY: arrowAnim }], opacity: 0.6 }}>
-                <ChevronDown size={20} color={glowColor} strokeWidth={3} />
-                <View style={{ marginTop: -12 }}>
-                  <ChevronDown size={20} color={glowColor} strokeWidth={2} opacity={0.5} />
+            {/* Setas Animadas para orientar o utilizador (REPOSICIONADAS) */}
+            <View style={{ position: 'absolute', bottom: 25, left: 0, right: 0, alignItems: 'center' }}>
+              <Animated.View style={{ transform: [{ translateY: arrowAnim }], opacity: 0.7 }}>
+                <ChevronDown size={18} color={glowColor} strokeWidth={3} />
+                <View style={{ marginTop: -10 }}>
+                  <ChevronDown size={18} color={glowColor} strokeWidth={2} opacity={0.4} />
                 </View>
               </Animated.View>
             </View>
@@ -651,113 +675,47 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             >
               <Typography variant="h3" style={styles.sectionTitle}>Disponíveis para Download</Typography>
               <View style={styles.downloadList}>
-                <View style={styles.downloadRow}>
-                  <View style={styles.rowIcon}>
-                    <Moon size={24} color="#00F2FF" opacity={0.6} />
+                {[
+                  { id: 'sleep', name: 'Sleep+', desc: 'Otimização de Ciclos', icon: <Moon size={24} color="#00F2FF" />, fullDesc: 'Analisa as variações de pH urinário ao acordar para sugerir ajustes no timing do sono e otimizar a recuperação metabólica noturna.' },
+                  { id: 'hydra', name: 'HydraTrack', desc: 'Gestão de Água', icon: <Droplet size={24} color="#00F2FF" />, fullDesc: 'Mapeia a densidade da urina em tempo real para prever estados de desidratação celular antes do sintoma de sede aparecer.' },
+                  { id: 'mind', name: 'Mind', desc: 'Foco e Meditação', icon: <Brain size={24} color="#00F2FF" />, fullDesc: 'Utiliza marcadores de stress fisiológico detetados na bio-análise para sugerir protocolos de respiração e foco adaptados ao teu estado mental.' },
+                  { id: 'fasting', name: 'Fasting', desc: 'Jejum Intermitente', icon: <Activity size={24} color="#00F2FF" />, fullDesc: 'Acompanha a cetose e o equilíbrio eletrolítico durante o jejum, garantindo que o protocolo é seguro e eficaz para o teu metabolismo.' },
+                  { id: 'cardio', name: 'CardioSync', desc: 'Saúde Cardiovascular', icon: <Heart size={24} color="#00F2FF" />, fullDesc: 'Cruza dados de pressão arterial e ritmo cardíaco com resultados de biomarcadores para monitorizar a tua eficiência cardiovascular.' },
+                  { id: 'macro', name: 'MacroTrack', desc: 'Nutrição Detalhada', icon: <Target size={24} color="#00F2FF" />, fullDesc: 'Otimiza a tua ingestão de macronutrientes com base na utilização real que o teu corpo está a fazer dos nutrientes, detetada via análise.' },
+                ].map((app) => (
+                  <View key={app.id} style={styles.downloadRow}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={styles.rowIcon}>
+                        <View style={{ opacity: 0.6 }}>{app.icon}</View>
+                      </View>
+                      <View style={styles.rowInfo}>
+                        <Typography style={styles.rowTitle}>{app.name}</Typography>
+                        <Typography variant="caption" style={styles.rowDesc}>{app.desc}</Typography>
+                      </View>
+                      <View style={styles.rowActions}>
+                        <TouchableOpacity 
+                          style={styles.actionBtn}
+                          onPress={() => setExpandedAppId(expandedAppId === app.id ? null : app.id)}
+                        >
+                          <Typography style={styles.actionText}>
+                            {expandedAppId === app.id ? 'VER MENOS' : '+ INFO'}
+                          </Typography>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.actionBtn, styles.installBtn]}>
+                          <Typography style={[styles.actionText, styles.installText]}>INSTALAR</Typography>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                    
+                    {expandedAppId === app.id && (
+                      <Animated.View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
+                        <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 }}>
+                          {app.fullDesc}
+                        </Typography>
+                      </Animated.View>
+                    )}
                   </View>
-                  <View style={styles.rowInfo}>
-                    <Typography style={styles.rowTitle}>Sleep+</Typography>
-                    <Typography variant="caption" style={styles.rowDesc}>Otimização de Ciclos</Typography>
-                  </View>
-                  <View style={styles.rowActions}>
-                    <TouchableOpacity style={styles.actionBtn}>
-                      <Typography style={styles.actionText}>INFO</Typography>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, styles.installBtn]}>
-                      <Typography style={[styles.actionText, styles.installText]}>INSTALAR</Typography>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.downloadRow}>
-                  <View style={styles.rowIcon}>
-                    <Droplet size={24} color="#00F2FF" opacity={0.6} />
-                  </View>
-                  <View style={styles.rowInfo}>
-                    <Typography style={styles.rowTitle}>HydraTrack</Typography>
-                    <Typography variant="caption" style={styles.rowDesc}>Gestão de Água</Typography>
-                  </View>
-                  <View style={styles.rowActions}>
-                    <TouchableOpacity style={styles.actionBtn}>
-                      <Typography style={styles.actionText}>INFO</Typography>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, styles.installBtn]}>
-                      <Typography style={[styles.actionText, styles.installText]}>INSTALAR</Typography>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.downloadRow}>
-                  <View style={styles.rowIcon}>
-                    <Brain size={24} color="#00F2FF" opacity={0.6} />
-                  </View>
-                  <View style={styles.rowInfo}>
-                    <Typography style={styles.rowTitle}>Mind</Typography>
-                    <Typography variant="caption" style={styles.rowDesc}>Foco e Meditação</Typography>
-                  </View>
-                  <View style={styles.rowActions}>
-                    <TouchableOpacity style={styles.actionBtn}>
-                      <Typography style={styles.actionText}>INFO</Typography>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, styles.installBtn]}>
-                      <Typography style={[styles.actionText, styles.installText]}>INSTALAR</Typography>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.downloadRow}>
-                  <View style={styles.rowIcon}>
-                    <Activity size={24} color="#00F2FF" opacity={0.6} />
-                  </View>
-                  <View style={styles.rowInfo}>
-                    <Typography style={styles.rowTitle}>Fasting</Typography>
-                    <Typography variant="caption" style={styles.rowDesc}>Jejum Intermitente</Typography>
-                  </View>
-                  <View style={styles.rowActions}>
-                    <TouchableOpacity style={styles.actionBtn}>
-                      <Typography style={styles.actionText}>INFO</Typography>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, styles.installBtn]}>
-                      <Typography style={[styles.actionText, styles.installText]}>INSTALAR</Typography>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.downloadRow}>
-                  <View style={styles.rowIcon}>
-                    <Heart size={24} color="#00F2FF" opacity={0.6} />
-                  </View>
-                  <View style={styles.rowInfo}>
-                    <Typography style={styles.rowTitle}>CardioSync</Typography>
-                    <Typography variant="caption" style={styles.rowDesc}>Saúde Cardiovascular</Typography>
-                  </View>
-                  <View style={styles.rowActions}>
-                    <TouchableOpacity style={styles.actionBtn}>
-                      <Typography style={styles.actionText}>INFO</Typography>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, styles.installBtn]}>
-                      <Typography style={[styles.actionText, styles.installText]}>INSTALAR</Typography>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.downloadRow}>
-                  <View style={styles.rowIcon}>
-                    <Target size={24} color="#00F2FF" opacity={0.6} />
-                  </View>
-                  <View style={styles.rowInfo}>
-                    <Typography style={styles.rowTitle}>MacroTrack</Typography>
-                    <Typography variant="caption" style={styles.rowDesc}>Nutrição Detalhada</Typography>
-                  </View>
-                  <View style={styles.rowActions}>
-                    <TouchableOpacity style={styles.actionBtn}>
-                      <Typography style={styles.actionText}>INFO</Typography>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtn, styles.installBtn]}>
-                      <Typography style={[styles.actionText, styles.installText]}>INSTALAR</Typography>
-                    </TouchableOpacity>
-                  </View>
-                </View>
+                ))}
               </View>
             </ScrollView>
           </Animated.View>
@@ -1040,8 +998,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 120,
-    backgroundColor: 'rgba(5,10,20,0.9)',
+    marginBottom: 0,
+    backgroundColor: 'rgba(5,10,20,0.4)',
   },
   orbInner: {
     ...StyleSheet.absoluteFillObject,
@@ -1257,13 +1215,13 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   downloadRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 20,
     backgroundColor: 'rgba(255,255,255,0.03)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
+    marginBottom: 12,
   },
   rowIcon: {
     width: 48,

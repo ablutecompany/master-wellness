@@ -9,7 +9,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { theme } from './src/theme';
 import { HomeScreen } from './src/screens/HomeScreen';
-import { ThemesScreen } from './src/screens/ThemesScreen';
+import { AIReadingScreen } from './src/screens/AIReadingScreen';
 import { AnalysesScreen } from './src/screens/AnalysesScreen';
 import { AppsScreen } from './src/screens/AppsScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
@@ -54,7 +54,7 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Temas" component={ThemesScreen} />
+      <Tab.Screen name="Temas" component={AIReadingScreen} />
       <Tab.Screen name="Dados" component={AnalysesScreen} />
       <Tab.Screen name="Apps" component={AppsScreen} />
     </Tab.Navigator>

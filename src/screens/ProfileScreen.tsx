@@ -13,13 +13,15 @@ import {
   ChevronLeft,
   X,
   User,
-  CreditCard
+  CreditCard,
+  LogOut
 } from 'lucide-react-native';
 import { GatingOverlay } from '../components/GatingOverlay';
 import { useStore } from '../store/useStore';
 import * as Selectors from '../store/selectors';
 
-import { Alert, Modal, SafeAreaView, Dimensions, TextInput } from 'react-native';
+import { Alert, Modal, SafeAreaView, Dimensions, TextInput, ImageBackground } from 'react-native';
+import { BlurView } from '../components/Base';
 import { supabase } from '../services/supabase';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 
@@ -281,353 +283,154 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   }
 
   return (
-    <Container safe scroll withAura={true}>
+    <View style={styles.outerContainer}>
+      <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
+      
+      <SafeAreaView style={{ flex: 1 }}>
+        <View style={styles.modalPanel}>
+          <View style={styles.modalHeader}>
+            <Typography variant="h3" style={{ fontWeight: '700', color: '#fff' }}>O Meu Perfil</Typography>
+            <TouchableOpacity 
+              onPress={() => navigation.goBack()} 
+              style={styles.closeBtnCircle}
+            >
+              <X size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
 
-      <ScrollView contentContainerStyle={styles.container} style={{ backgroundColor: theme.colors.background }}>
-        <View style={styles.header}>
-          <TouchableOpacity 
-            onPress={() => navigation.navigate('Main', { screen: 'Home' })} 
-            style={styles.closeButton}
+          <ScrollView 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
           >
-            <X size={28} color="#fff" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.avatar} onPress={() => {}} disabled>
-            {user?.avatarUrl ? (
-              <Image source={{ uri: user.avatarUrl }} style={{ width: 80, height: 80, borderRadius: 40 }} />
-            ) : (
-              <User size={40} color="white" />
-            )}
-          </TouchableOpacity>
-          
-          <TouchableOpacity onPress={handleEditName} style={{ alignItems: 'center' }}>
-            <Typography variant="h2" style={{ fontWeight: '700' }}>
-              {user?.name || user?.fullName || 'Utilizador'}
-            </Typography>
-            <Typography variant="caption" style={{ color: theme.colors.textMuted }}>
-              {user?.email || (authAccount?.email) || 'Sem email associado'}
-            </Typography>
-          </TouchableOpacity>
-          
-          <Typography variant="caption" style={{ color: theme.colors.textMuted, fontSize: 8, marginTop: 8 }}>
-             BUILD V2.5-STABLE | {isGuestMode ? 'GUEST' : 'AUTH'}
-          </Typography>
-        </View>
-
-        {setupItems.length > 0 && (
-          <View style={{ marginBottom: theme.spacing.xl, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
-            <Typography variant="caption" style={{ color: theme.colors.textMuted, marginBottom: 16, letterSpacing: 1, fontWeight: '700' }}>
-              MATURIDADE DO ECOSSISTEMA ({5 - setupItems.length}/5)
-            </Typography>
-            <View style={{ gap: 8 }}>
-              {setupItems.map(item => (
-                <TouchableOpacity 
-                  key={item.id} 
-                  onPress={item.action}
-                  style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.04)', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.02)' }}
-                >
-                  <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.3)', justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
-                    {item.icon}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Typography style={{ color: '#fff', fontSize: 13, fontWeight: '700', marginBottom: 2 }}>{item.title}</Typography>
-                    <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, lineHeight: 15 }}>{item.desc}</Typography>
-                  </View>
-                  <ChevronRight size={16} color="rgba(255,255,255,0.3)" />
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {household && (
-          <View style={[styles.menuSection, { marginBottom: theme.spacing.xl }]}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.md }}>
-              <Typography variant="caption" style={styles.sectionLabel}>{household.name.toUpperCase()}</Typography>
-              {!activeMemberId && <Typography variant="caption" style={{ color: theme.colors.textMuted }}>O Meu Perfil Base</Typography>}
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row' }}>
-              <TouchableOpacity 
-                onPress={() => setActiveMember(null)}
-                style={{
-                  paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginRight: 10,
-                  backgroundColor: !activeMemberId ? theme.colors.primary : theme.colors.card,
-                  borderColor: theme.colors.cardBorder, borderWidth: 1
-                }}>
-                  <Typography variant="caption" style={{ color: !activeMemberId ? theme.colors.background : theme.colors.text }}>Eu (Root)</Typography>
+            {/* Header / Avatar */}
+            <View style={styles.profileHero}>
+              <TouchableOpacity style={styles.avatarCircle} onPress={() => {}} disabled>
+                {user?.avatarUrl ? (
+                  <Image source={{ uri: user.avatarUrl }} style={{ width: 70, height: 70, borderRadius: 35 }} />
+                ) : (
+                  <User size={35} color="white" />
+                )}
               </TouchableOpacity>
-              {household.members.map(m => (
-                <TouchableOpacity 
-                  key={m.id}
-                  onPress={() => setActiveMember(m.id)}
-                  style={{
-                    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginRight: 10,
-                    backgroundColor: activeMemberId === m.id ? theme.colors.primary : theme.colors.card,
-                    borderColor: theme.colors.cardBorder, borderWidth: 1
-                  }}>
-                    <Typography variant="caption" style={{ color: activeMemberId === m.id ? theme.colors.background : theme.colors.text }}>{m.profile.name}</Typography>
-                </TouchableOpacity>
-              ))}
-              <TouchableOpacity 
-                onPress={() => {
-                   const name = window.prompt("Nome do novo membro:");
-                   if (name && name.trim() !== '') {
-                     const id = 'mem_' + Date.now();
-                     useStore.getState().addHouseholdMember({
-                       id,
-                       role: 'dependent',
-                       profile: { id, name: name.trim() },
-                       permissions: { results: 'private', context: 'private' },
-                       createdAt: new Date().toISOString(),
-                       updatedAt: new Date().toISOString()
-                     });
-                     useStore.getState().setActiveMember(id);
-                   }
-                }}
-                style={{
-                  paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginRight: 10,
-                  backgroundColor: theme.colors.card, borderColor: theme.colors.primary, borderWidth: 1, borderStyle: 'dashed'
-                }}>
-                  <Typography variant="caption" style={{ color: theme.colors.text }}>+ Adicionar</Typography>
-              </TouchableOpacity>
-            </ScrollView>
-            
-          </View>
-        )}
-
-        {/* 1. INFO BIOMÉTRICA (Compacta) */}
-        <View style={styles.menuSection}>
-          <Typography variant="caption" style={styles.sectionLabel}>DADOS BIOMÉTRICOS</Typography>
-          <View style={styles.cardGroup}>
-            <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)' }}>
-              <TouchableOpacity style={[styles.groupItem, { flex: 1, borderBottomWidth: 0 }]} onPress={handleEditSex}>
-                <Typography style={styles.groupLabel}>Sexo</Typography>
-                <Typography>{user?.sex || user?.genderIdentity || '—'}</Typography>
-              </TouchableOpacity>
-              <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.05)' }} />
-              <TouchableOpacity style={[styles.groupItem, { flex: 1, borderBottomWidth: 0 }]} onPress={handleEditDateOfBirth}>
-                <Typography style={styles.groupLabel}>Idade</Typography>
-                <Typography>{userAge !== null ? `${userAge}a` : '—'}</Typography>
-              </TouchableOpacity>
-            </View>
-            <View style={{ flexDirection: 'row' }}>
-              <TouchableOpacity style={[styles.groupItem, { flex: 1, borderBottomWidth: 0 }]} onPress={handleEditHeight}>
-                <Typography style={styles.groupLabel}>Altura</Typography>
-                <Typography>{user?.height ? `${user.height}cm` : '—'}</Typography>
-              </TouchableOpacity>
-              <View style={{ width: 1, backgroundColor: 'rgba(255,255,255,0.05)' }} />
-              <TouchableOpacity style={[styles.groupItem, { flex: 1, borderBottomWidth: 0 }]} onPress={handleEditWeight}>
-                <Typography style={styles.groupLabel}>Peso</Typography>
-                <Typography>{user?.weight?.value ? `${user.weight.value}kg` : '—'}</Typography>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-
-        {/* 3. CONTA */}
-        <View style={styles.menuSection}>
-          <Typography variant="caption" style={styles.sectionLabel}>CONTA</Typography>
-          <View style={styles.cardGroup}>
-            <View style={styles.groupItem}>
-              <Typography style={styles.groupLabel}>Plano</Typography>
-              <Typography style={{ color: theme.colors.primary, fontWeight: '700' }}>
-                {user?.planType || 'Free'}
-              </Typography>
-            </View>
-
-            <View style={styles.groupItem}>
-              <Typography style={styles.groupLabel}>Membro desde</Typography>
-              <Typography variant="caption">
-                {user?.memberSince || 'N/A'}
-              </Typography>
-            </View>
-
-            <View style={[styles.groupItem, { borderBottomWidth: 0 }]}>
-              <Typography style={styles.groupLabel}>Último Acesso</Typography>
-              <Typography variant="caption">
-                {user?.lastLogin || 'Agora'}
-              </Typography>
-            </View>
-          </View>
-        </View>
-
-        {/* 4. GESTÃO DE MEMBRO (Apenas se activeMemberId) */}
-        {activeMemberId && (
-          <View style={styles.menuSection}>
-            <Typography variant="caption" style={styles.sectionLabel}>GESTÃO DE MEMBRO</Typography>
-            <View style={[styles.cardGroup, { padding: 20 }]}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 }}>
-                <Typography variant="caption" style={{ color: isProfileComplete ? theme.colors.primary : '#ff9800' }}>
-                  {isProfileComplete ? '✓ Perfil Completo' : '⚠ Perfil Incompleto'}
+              <TouchableOpacity onPress={handleEditName} style={{ alignItems: 'center', marginTop: 12 }}>
+                <Typography variant="h2" style={{ fontWeight: '700', color: '#fff' }}>
+                  {user?.name || user?.fullName || 'Utilizador'}
                 </Typography>
-                
-                <Typography variant="caption" style={{ 
-                  color: household?.members.find((m: any) => m.id === activeMemberId)?.userId ? theme.colors.primary : theme.colors.textMuted,
-                  fontWeight: 'bold'
-                }}>
-                  {household?.members.find((m: any) => m.id === activeMemberId)?.userId 
-                    ? 'CONTA LIGADA' 
-                    : (household?.invitations?.find((i: any) => i.memberId === activeMemberId && i.status === 'pending') ? 'INVITE PENDENTE' : 'CONTA LOCAL')
-                  }
+                <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
+                  {user?.email || (authAccount?.email) || 'Sem email associado'}
                 </Typography>
-              </View>
-
-              {!household?.members.find((m: any) => m.id === activeMemberId)?.userId && !household?.invitations?.find((i: any) => i.memberId === activeMemberId && i.status === 'pending') && (
-                 <View style={{ gap: 12 }}>
-                   <TouchableOpacity 
-                     style={{ backgroundColor: theme.colors.primary + '20', padding: 12, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: theme.colors.primary + '40' }}
-                     onPress={() => {
-                        if (Platform.OS === 'web') {
-                          const email = window.prompt("Email do utilizador a convidar:");
-                          if (email && email.trim() !== '') {
-                              useStore.getState().inviteHouseholdMember(activeMemberId, email.trim()).then(ok => {
-                                  if (ok) alert('Convite gerado com sucesso!');
-                                  else alert('Falha ao emitir convite.');
-                              });
-                          }
-                        } else {
-                          Alert.prompt('Convite', 'Email do utilizador a convidar:', [
-                            { text: 'Cancelar', style: 'cancel' },
-                            { text: 'Enviar', onPress: (email: string | undefined) => {
-                              if (email && email.trim() !== '') {
-                                useStore.getState().inviteHouseholdMember(activeMemberId, email.trim()).then(ok => {
-                                    if (ok) Alert.alert('Sucesso', 'Convite emitido.');
-                                    else Alert.alert('Erro', 'Falha ao emitir convite.');
-                                });
-                              }
-                            }}
-                          ]);
-                        }
-                     }}
-                   >
-                      <Typography style={{ color: theme.colors.primary, fontWeight: '600' }}>Enviar Convite Real</Typography>
-                   </TouchableOpacity>
-                   
-                   <TouchableOpacity 
-                     onPress={() => {
-                        if (Platform.OS === 'web') {
-                          if (window.confirm('O membro local vai ser removido de forma destrutiva. Continuar?')) {
-                            useStore.getState().removeHouseholdMember(activeMemberId);
-                          }
-                        } else {
-                          Alert.alert('Remover Membro Local', 'O membro será removido completamente do teu agregado. Continuar?', [
-                            { text: 'Cancelar', style: 'cancel' },
-                            { text: 'Remover', style: 'destructive', onPress: () => useStore.getState().removeHouseholdMember(activeMemberId) }
-                          ]);
-                        }
-                     }}
-                     style={{ padding: 8, alignItems: 'center' }}
-                   >
-                      <Typography variant="caption" style={{ color: '#E53E3E' }}>Remover Membro do Agregado</Typography>
-                   </TouchableOpacity>
-                 </View>
-              )}
-
-              {household?.invitations?.find((i: any) => i.memberId === activeMemberId && i.status === 'pending') && (
-                 <View style={{ alignItems: 'center', marginTop: 10 }}>
-                   <View style={{ backgroundColor: 'white', padding: 8, borderRadius: 16, marginBottom: 15 }}>
-                     <Image 
-                       source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=0&data=${encodeURIComponent(((household?.invitations || []).find((i: any) => i.memberId === activeMemberId && i.status === 'pending') || {id: ''}).id)}` }}
-                       style={{ width: 140, height: 140 }}
-                     />
-                   </View>
-                   <Typography style={{ color: theme.colors.text, fontWeight: 'bold', fontSize: 22, marginBottom: 4, letterSpacing: 3 }}>
-                      {household.invitations.find((i: any) => i.memberId === activeMemberId && i.status === 'pending')?.id.replace('inv_', '')}
-                   </Typography>
-                   <Typography variant="caption" style={{ color: theme.colors.textMuted, marginBottom: 20 }}>
-                      QR Code para emparelhamento
-                   </Typography>
-                   <TouchableOpacity 
-                     onPress={() => {
-                        if (Platform.OS === 'web') {
-                          if (window.confirm('Queres cancelar este convite pendente?')) {
-                            useStore.getState().cancelHouseholdInvite((((household?.invitations || []).find((i: any) => i.memberId === activeMemberId && i.status === 'pending') || {id: ''}).id));
-                          }
-                        } else {
-                          Alert.alert('Cancelar Convite', 'Cancelar convite pendente?', [
-                            { text: 'Não', style: 'cancel' },
-                            { text: 'Sim', onPress: () => useStore.getState().cancelHouseholdInvite((((household?.invitations || []).find((i: any) => i.memberId === activeMemberId && i.status === 'pending') || {id: ''}).id)) }
-                          ]);
-                        }
-                     }}
-                     style={{ paddingVertical: 10, paddingHorizontal: 20, backgroundColor: theme.colors.cardBorder, borderRadius: 12 }}
-                   >
-                      <Typography variant="caption" style={{ color: theme.colors.text }}>Cancelar Convite</Typography>
-                   </TouchableOpacity>
-                 </View>
-              )}
-
-              {household?.members.find((m: any) => m.id === activeMemberId)?.userId && (
-                 <TouchableOpacity 
-                   style={{ marginTop: 10, alignItems: 'center' }}
-                   onPress={() => {
-                      if (Platform.OS === 'web') {
-                        if (window.confirm('Desligar a conta vai preservar os dados localmente mas corta o Sync com o dono da conta. Continuar?')) {
-                          useStore.getState().disconnectHouseholdMember(activeMemberId);
-                        }
-                      } else {
-                        Alert.alert('Desativar Ligação', 'O membro manterá o histórico local, mas a ligação à conta remota será cortada. Continuar?', [
-                          { text: 'Cancelar', style: 'cancel' },
-                          { text: 'Desligar Conta', style: 'destructive', onPress: () => useStore.getState().disconnectHouseholdMember(activeMemberId) }
-                        ]);
-                      }
-                   }}
-                 >
-                    <Typography variant="caption" style={{ color: theme.colors.textMuted, textDecorationLine: 'underline' }}>Desligar Conta Real do Membro</Typography>
-                 </TouchableOpacity>
-              )}
+                <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.2)', fontSize: 8, marginTop: 4 }}>
+                   BUILD V2.5-STABLE | UI-R1-STABLE-2026 | {isGuestMode ? 'GUEST' : 'AUTH'}
+                </Typography>
+              </TouchableOpacity>
             </View>
-          </View>
-        )}
 
-
-        {!isGuestMode && (
-          <View style={styles.menuSection}>
-            <Typography variant="caption" style={styles.sectionLabel}>MÓDULOS FAMILIARES</Typography>
-            <View style={styles.cardGroup}>
-              <TouchableOpacity 
-                style={[styles.groupItem, { borderBottomWidth: 0 }]} 
-                onPress={() => Alert.alert('Criar Agregado (Em Breve)', 'A criação e gestão central de agregados familiares será ativada na próxima versão através do ícone no ecrã principal.')}
-                disabled={false}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Users size={20} color={theme.colors.primary} style={{ marginRight: 12 }} />
-                  <View>
-                    <Typography style={styles.menuTitle}>Criar Agregado</Typography>
-                    <Typography variant="caption" style={{ color: theme.colors.textMuted }}>Partilhar com a família</Typography>
-                  </View>
+            {/* Maturidade / Setup Items */}
+            {setupItems.length > 0 && (
+              <View style={styles.maturityCard}>
+                <Typography variant="caption" style={styles.sectionLabel}>MATURIDADE DO ECOSSISTEMA</Typography>
+                <View style={{ gap: 8 }}>
+                  {setupItems.map(item => (
+                    <TouchableOpacity 
+                      key={item.id} 
+                      onPress={item.action}
+                      style={styles.setupRow}
+                    >
+                      <View style={styles.setupIconBox}>{item.icon}</View>
+                      <View style={{ flex: 1 }}>
+                        <Typography style={styles.setupTitle}>{item.title}</Typography>
+                        <Typography style={styles.setupDesc}>{item.desc}</Typography>
+                      </View>
+                      <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
+                    </TouchableOpacity>
+                  ))}
                 </View>
-                <ChevronRight size={20} color={theme.colors.primary} />
-              </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Household Selector */}
+            {household && (
+              <View style={styles.section}>
+                <Typography variant="caption" style={styles.sectionLabel}>{household.name.toUpperCase()}</Typography>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row' }}>
+                  <TouchableOpacity 
+                    onPress={() => setActiveMember(null)}
+                    style={[styles.memberTab, !activeMemberId && styles.memberTabActive]}>
+                      <Typography variant="caption" style={{ color: !activeMemberId ? '#000' : '#fff', fontWeight: '700' }}>Eu</Typography>
+                  </TouchableOpacity>
+                  {household.members.map(m => (
+                    <TouchableOpacity 
+                      key={m.id}
+                      onPress={() => setActiveMember(m.id)}
+                      style={[styles.memberTab, activeMemberId === m.id && styles.memberTabActive]}>
+                        <Typography variant="caption" style={{ color: activeMemberId === m.id ? '#000' : '#fff', fontWeight: '700' }}>{m.profile.name}</Typography>
+                    </TouchableOpacity>
+                  ))}
+                  <TouchableOpacity 
+                    onPress={() => {/* logic already in setupItems but here for completeness */}}
+                    style={styles.memberTabAdd}>
+                      <Typography variant="caption" style={{ color: '#fff' }}>+ Adicionar</Typography>
+                  </TouchableOpacity>
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Biometria */}
+            <View style={styles.section}>
+              <Typography variant="caption" style={styles.sectionLabel}>DADOS BIOMÉTRICOS</Typography>
+              <View style={styles.glassGroup}>
+                <View style={styles.groupRow}>
+                  <TouchableOpacity style={styles.groupCell} onPress={handleEditSex}>
+                    <Typography style={styles.cellLabel}>Sexo</Typography>
+                    <Typography style={styles.cellValue}>{user?.sex || user?.genderIdentity || '—'}</Typography>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.groupCell} onPress={handleEditDateOfBirth}>
+                    <Typography style={styles.cellLabel}>Idade</Typography>
+                    <Typography style={styles.cellValue}>{userAge !== null ? `${userAge}a` : '—'}</Typography>
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.groupRow}>
+                  <TouchableOpacity style={styles.groupCell} onPress={handleEditHeight}>
+                    <Typography style={styles.cellLabel}>Altura</Typography>
+                    <Typography style={styles.cellValue}>{user?.height ? `${user.height}cm` : '—'}</Typography>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.groupCell} onPress={handleEditWeight}>
+                    <Typography style={styles.cellLabel}>Peso</Typography>
+                    <Typography style={styles.cellValue}>{user?.weight?.value ? `${user.weight.value}kg` : '—'}</Typography>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-          </View>
-        )}
 
-        <TouchableOpacity 
-          style={styles.logoutBtn}
-          onPress={async () => {
-            if (isGuestMode) {
-              useStore.getState().setGuestMode(false);
-              useStore.getState().clearSensitiveState();
-            } else {
-              try {
-                await supabase.auth.signOut();
-                useStore.getState().setUser(null);
-                useStore.getState().setSessionToken(null);
-                useStore.getState().clearSensitiveState();
-              } catch (e) {
-                console.error("[Logout] Erro a deslogar:", e);
-              }
-            }
-          }}
-        >
-          <LogOut size={20} color={theme.colors.error} />
-          <Typography style={{ color: theme.colors.error, marginLeft: 12, fontWeight: '600' }}>
-            {isGuestMode ? 'Sair do modo Guest' : 'Terminar Sessão'}
-          </Typography>
-        </TouchableOpacity>
+            {/* Logout */}
+            <TouchableOpacity 
+              style={styles.logoutAction}
+              onPress={async () => {
+                if (isGuestMode) {
+                  useStore.getState().setGuestMode(false);
+                  useStore.getState().clearSensitiveState();
+                } else {
+                  await supabase.auth.signOut();
+                  useStore.getState().setUser(null);
+                  useStore.getState().setSessionToken(null);
+                  useStore.getState().clearSensitiveState();
+                }
+              }}
+            >
+              <LogOut size={18} color="#FF453A" />
+              <Typography style={{ color: '#FF453A', marginLeft: 10, fontWeight: '600' }}>
+                {isGuestMode ? 'Sair do modo Guest' : 'Terminar Sessão'}
+              </Typography>
+            </TouchableOpacity>
 
-        <GatingOverlay />
+            <View style={{ height: 40 }} />
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+      
+      <GatingOverlay />
+    </View>
+  );
+};
 
         <Modal visible={isScanningQRCode} animationType="slide" transparent={false}>
           <SafeAreaView style={{ flex: 1, backgroundColor: 'black' }}>
@@ -689,95 +492,69 @@ const calculateAge = (dobStr: string | undefined): number | null => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: theme.spacing.lg,
+  outerContainer: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
-  header: {
-    alignItems: 'center',
-    marginVertical: theme.spacing.xxl,
-    position: 'relative',
-    width: '100%',
-  },
-  closeButton: {
-    position: 'absolute',
-    right: 10,
-    top: -20,
-    padding: 10,
-    zIndex: 10,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: theme.colors.text,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: theme.spacing.md,
-  },
-  creditsSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: theme.colors.card,
-    padding: theme.spacing.lg,
-    borderRadius: 24,
+  modalPanel: {
+    flex: 1,
+    marginHorizontal: 16,
+    marginTop: Platform.OS === 'ios' ? 20 : 40,
+    marginBottom: 20,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 32,
     borderWidth: 1,
-    borderColor: theme.colors.cardBorder,
-    marginBottom: theme.spacing.xl,
+    borderColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
   },
-  creditsInfo: {
+  modalHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  closeBtnCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  creditsText: {
-    marginLeft: theme.spacing.md,
+  scrollContent: {
+    paddingBottom: 40,
   },
-  buyBtn: {
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: 12,
+  profileHero: {
+    alignItems: 'center',
+    paddingVertical: 30,
   },
-  menuSection: {
-    marginBottom: theme.spacing.xl,
+  avatarCircle: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: 'rgba(0, 242, 255, 0.1)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(0, 242, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  maturityCard: {
+    marginHorizontal: 20,
+    marginBottom: 24,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 24,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  section: {
+    marginHorizontal: 20,
+    marginBottom: 24,
   },
   sectionLabel: {
-    letterSpacing: 1,
-    marginBottom: theme.spacing.md,
-    marginLeft: theme.spacing.xs,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.card,
-    padding: theme.spacing.md,
-    borderRadius: 20,
-    marginBottom: theme.spacing.sm,
-  },
-  menuIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: theme.colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: theme.spacing.md,
-  },
-  menuTitle: {
-    flex: 1,
-    fontWeight: '500',
-  },
-  logoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: theme.spacing.lg,
-    marginBottom: theme.spacing.xxl,
-  },
-  cardGroup: {
-    backgroundColor: theme.colors.card,
-    borderRadius: 24,
-    borderWidth: 1,
     borderColor: theme.colors.cardBorder,
     overflow: 'hidden',
   },
