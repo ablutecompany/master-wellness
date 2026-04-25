@@ -236,6 +236,9 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
              <Typography variant="caption" style={styles.footerDisclaimer}>
                Dados de referência biológica para suporte funcional. Não constitui diagnóstico clínico.
              </Typography>
+             <Typography variant="caption" style={styles.markerText}>
+               RESULTS V2 LIVE MARKER: f5c1fed
+             </Typography>
           </View>
         </ScrollView>
       </GatingOverlay>
@@ -459,6 +462,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 11,
     lineHeight: 16,
+  },
+  markerText: {
+    color: 'rgba(0, 242, 255, 0.3)',
+    fontSize: 8,
+    marginTop: 8,
+    fontWeight: '700',
+    letterSpacing: 1,
   },
   // MODAL
   modalOverlay: {
