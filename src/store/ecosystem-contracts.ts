@@ -38,6 +38,7 @@ export interface ContextBundle {
   user_mode: 'guest' | 'authenticated'; // Modo de sessão do utilizador
   bundle_status: FreshnessStatus; // Estado global de validade do bundle
   items: ContextBundleItem[]; // Lista de factos/dados contidos no pacote
+  interpreted_actions?: InterpretedAction[]; // Diretivas interpretadas pela Shell
 }
 
 /**
@@ -93,4 +94,30 @@ export interface ConsentScope {
   granted_at?: number;       // Quando foi concedido
   expires_at?: number;       // Validade do consentimento
   reason?: string;           // Motivo ou descrição para o utilizador
+}
+
+/**
+ * Representa uma ação ou diretiva interpretada pela Shell a partir de dados brutos ou análises IA.
+ */
+export interface InterpretedAction {
+  action_id: string;         // Identificador único da ação
+  domain_target: string;     // Domínio alvo (ex: "nutrition", "motion")
+  action_type: string;       // Tipo da ação (ex: "hydration_focus", "nutrient_priority")
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  reason: string;            // Justificação estruturada da shell
+  confidence: number;        // Nível de confiança na interpretação
+  source_set: string[];      // IDs de factos ou eventos que originaram a ação
+  generated_at: number;      // Timestamp de geração
+  expires_at: number;        // Quando a ação deixa de ser válida/útil
+  status: 'active' | 'degraded' | 'expired';
+  payload?: any;             // Parâmetros extra da ação (ex: { nutrient: "magnesium" })
+}
+
+/**
+ * Conjunto de ações interpretadas para um domínio específico.
+ */
+export interface InterpretedActionSet {
+  domain_target: string;
+  generated_at: number;
+  actions: InterpretedAction[];
 }

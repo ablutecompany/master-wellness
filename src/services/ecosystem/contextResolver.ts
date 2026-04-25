@@ -1,4 +1,5 @@
 import { AppState, ContextBundle, ContextBundleItem, FreshnessStatus } from '../../store/types';
+import { resolveNutritionActions } from './actionInterpreter';
 
 /**
  * @file contextResolver.ts
@@ -125,6 +126,7 @@ export const resolveMotionContextBundle = (state: AppState): ContextBundle => {
   };
 
   const items = [sleepItem, recoveryItem, hydrationItem, physioItem, stressItem, symptomsItem, effortItem, prefsItem];
+  const nutritionActions = resolveNutritionActions(state);
 
   return {
     context_version: '1.0.0',
@@ -132,6 +134,7 @@ export const resolveMotionContextBundle = (state: AppState): ContextBundle => {
     app_scope: 'global_wellness_cockpit',
     user_mode: state.isGuestMode ? 'guest' : 'authenticated',
     bundle_status: items.every(i => i.status === 'fresh') ? 'fresh' : 'usable_with_warning',
-    items
+    items,
+    interpreted_actions: nutritionActions.actions
   };
 };
