@@ -47,8 +47,8 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 
   const isGuestMode = useStore(state => state.isGuestMode);
   const user = useStore(Selectors.selectUser);
-  const storeMeasurements = useStore(Selectors.selectMeasurements);
-  const contextualResults = useStore(Selectors.selectContextualResults);
+  const storeMeasurements = useStore(useShallow(Selectors.selectMeasurements));
+  const contextualResults = useStore(useShallow(Selectors.selectContextualResults));
   const hasResultsAccess = useStore(Selectors.selectHasResultsAccess);
 
   // 1. Mapeamento e Normalização de Dados
@@ -237,7 +237,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                Dados de referência biológica para suporte funcional. Não constitui diagnóstico clínico.
              </Typography>
              <Typography variant="caption" style={styles.markerText}>
-               RESULTS V2 LIVE MARKER: 8f36c45
+               RESULTS V2 LIVE MARKER: 22A1-FIX
              </Typography>
           </View>
         </ScrollView>
