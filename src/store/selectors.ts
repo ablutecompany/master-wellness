@@ -252,6 +252,17 @@ export const selectActiveDerivedContextFacts = (state: AppState): ContextFact[] 
 export const selectActiveFactsByDomain = (state: AppState, domain: ContextFact['domain']): ContextFact[] => 
   selectActiveDerivedContextFacts(state).filter(f => f.domain === domain);
 
+export const selectLongitudinalMemory = (state: AppState) => state.longitudinalMemory || {};
+
+export const selectContextualResults = (state: AppState) => {
+   const memory = selectLongitudinalMemory(state);
+   // Converte o objeto de memória longitudinal em uma lista de itens formatados para UI
+   return Object.keys(memory).map(domain => ({
+      domain,
+      ...memory[domain]
+   }));
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // I) AI Confidence Selectors (Bioanálise Readiness)
 // ─────────────────────────────────────────────────────────────────────────────
