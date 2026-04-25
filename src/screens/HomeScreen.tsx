@@ -9,7 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Video, ResizeMode } from 'expo-av';
 import { useStore } from '../store/useStore';
-import { semanticOutputService } from '../services/semantic-output';
+import { getSemanticService } from '../services/semantic-output';
 
 const RAW_BIOMARKERS = [
   { id: 'b1', name: 'NT-proBNP', value: '120', unit: 'pg/mL', source: 'ablute' },
@@ -320,7 +320,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     { id: 'd4', name: 'Ritmo (Demo)', value: '72', unit: 'bpm', source: 'health_kit' },
   ] : RAW_BIOMARKERS;
 
-  const semanticBundle = semanticOutputService.getBundle();
+  const semanticBundle = getSemanticService().getBundle();
   const domains = semanticBundle.domains || {};
   
   const displayThemes = isDemoMode ? [

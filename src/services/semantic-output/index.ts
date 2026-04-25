@@ -28,20 +28,29 @@ export interface ActiveAnalysisContext {
  * Robust Singleton Alias using Proxy to prevent TDZ/ReferenceErrors in cyclic bundles.
  */
 /**
- * SEMANTIC SERVICE INTERFACE (v1.2.5)
- * Early-defined singleton to prevent ReferenceErrors in cyclic bundles.
+ * SEMANTIC SERVICE INTERFACE (v1.2.6)
+ * Exporting a getter to ensure the class is defined before access.
  */
-export const semanticOutputService: any = {
-  init: (userId: string) => SemanticOutputService.init(userId),
-  refreshBundle: (userId: string) => SemanticOutputService.refreshBundle(userId),
-  getBundle: () => SemanticOutputService.getBundle(),
-  getStatus: () => SemanticOutputService.getStatus(),
-  getDomainOutput: (domain: string) => SemanticOutputService.getDomainOutput(domain),
-  getCrossDomainSummary: () => SemanticOutputService.getCrossDomainSummary(),
-  loadAnalysis: (analysis: any) => SemanticOutputService.loadAnalysis(analysis),
-  updateTemporalContext: (ctx: any) => SemanticOutputService.updateTemporalContext(ctx),
-  trackConsumption: (domain: string, action: 'viewed' | 'tapped') => SemanticOutputService.trackConsumption(domain, action)
-};
+let _serviceInstance: any = null;
+export function getSemanticService() {
+  if (!_serviceInstance) {
+    _serviceInstance = {
+      init: (userId: string) => SemanticOutputService.init(userId),
+      refreshBundle: (userId: string) => SemanticOutputService.refreshBundle(userId),
+      getBundle: () => SemanticOutputService.getBundle(),
+      getStatus: () => SemanticOutputService.getStatus(),
+      getDomainOutput: (domain: string) => SemanticOutputService.getDomainOutput(domain),
+      getCrossDomainSummary: () => SemanticOutputService.getCrossDomainSummary(),
+      loadAnalysis: (analysis: any) => SemanticOutputService.loadAnalysis(analysis),
+      updateTemporalContext: (ctx: any) => SemanticOutputService.updateTemporalContext(ctx),
+      trackConsumption: (domain: string, action: 'viewed' | 'tapped') => SemanticOutputService.trackConsumption(domain, action)
+    };
+  }
+  return _serviceInstance;
+}
+
+// Keep the old name as a deprecated alias if needed, but we'll migrate the components.
+export const semanticOutputService = getSemanticService();
 
 class SemanticOutputService {
   private static isInitialized = false;

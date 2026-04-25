@@ -4,7 +4,7 @@ import { Container, Typography, BlurView } from '../components/Base';
 import { theme } from '../theme';
 import { useStore } from '../store/useStore';
 import { selectAiConfidence, selectDailySynthesis, selectContextualResults } from '../store/selectors';
-import { semanticOutputService } from '../services/semantic-output';
+import { getSemanticService } from '../services/semantic-output';
 import { resolveNutritionActions, resolveMotionActions, resolveSleepActions } from '../services/ecosystem/actionInterpreter';
 import { Activity, Zap, Target, Heart, Moon, Brain, ChevronDown, ChevronUp, Info, AlertCircle, CheckCircle2, FlaskConical } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -53,12 +53,12 @@ export const AIReadingScreen: React.FC = () => {
   
   const { authAccount, isGuestMode, user } = store;
   const userName = user?.name || (isGuestMode ? 'Guest' : (authAccount?.email?.split('@')[0] || 'Utilizador'));
-  const BUILD_MARKER = 'AI READING V2 LIVE MARKER: a515f83';
+  const BUILD_MARKER = 'AI READING V2 LIVE MARKER: a945b35';
 
   const aiConfidence = selectAiConfidence(store);
   const dailySynthesis = selectDailySynthesis(store);
   const contextualResults = selectContextualResults(store);
-  const semanticBundle = semanticOutputService.getBundle();
+  const semanticBundle = getSemanticService().getBundle();
   
   // Interpreted Actions (Derived locally for UI)
   const interpretedActions = useMemo(() => {
