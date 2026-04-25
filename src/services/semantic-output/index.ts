@@ -425,4 +425,18 @@ export class SemanticOutputService {
   }
 }
 
-export const semanticOutputService = SemanticOutputService;
+/**
+ * SEMANTIC SERVICE INTERFACE (v1.2.2)
+ * Robust Singleton Alias using a direct proxy-like object to prevent TDZ.
+ */
+export const semanticOutputService = {
+  init: (userId: string) => SemanticOutputService.init(userId),
+  refreshBundle: (userId: string) => SemanticOutputService.refreshBundle(userId),
+  getBundle: () => SemanticOutputService.getBundle(),
+  getStatus: () => SemanticOutputService.getStatus(),
+  getDomainOutput: (domain: string) => SemanticOutputService.getDomainOutput(domain),
+  getCrossDomainSummary: () => SemanticOutputService.getCrossDomainSummary(),
+  loadAnalysis: (analysis: any) => SemanticOutputService.loadAnalysis(analysis),
+  updateTemporalContext: (ctx: any) => SemanticOutputService.updateTemporalContext(ctx),
+  trackConsumption: (domain: string, action: 'viewed' | 'tapped') => SemanticOutputService.trackConsumption(domain, action)
+};
