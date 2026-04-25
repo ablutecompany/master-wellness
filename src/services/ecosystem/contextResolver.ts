@@ -1,5 +1,5 @@
 import { AppState, ContextBundle, ContextBundleItem, FreshnessStatus } from '../../store/types';
-import { resolveNutritionActions } from './actionInterpreter';
+import { resolveNutritionActions, resolveMotionActions, resolveSleepActions } from './actionInterpreter';
 
 /**
  * @file contextResolver.ts
@@ -24,11 +24,17 @@ const getFreshness = (timestamp: number): { status: FreshnessStatus; reason?: st
 
 /**
  * Resolve o bundle central de contexto para a "Motion Engine" e Mini-Apps.
+ * @param state Estado atual do store.
+ * @param targetAppId ID da app que receberá o bundle (opcional, para governação de scopes).
  */
-export const resolveMotionContextBundle = (state: AppState): ContextBundle => {
+export const resolveMotionContextBundle = (state: AppState, targetAppId?: string): ContextBundle => {
   const now = Date.now();
   const user = state.user || state.guestProfile;
   const lastAnalysis = state.analyses.length > 0 ? state.analyses[state.analyses.length - 1] : null;
+
+  // Governação de Consentimento
+  const appPermissions = targetAppId ? (state.grantedPermissions[targetAppId] || []) : [];
+  const hasReadConsent = !targetAppId || appPermissions.some(p => p.toLowerCase().includes('read') || p.toLowerCase().includes('all'));
 
   // 1. SONO (Tenta ler de contextos exportados por apps de sono)
   const sleepContext = state.exportedContexts.find(c => c.key === 'sleep_quality' || c.key === 'sleep_summary');
@@ -39,7 +45,8 @@ export const resolveMotionContextBundle = (state: AppState): ContextBundle => {
     updated_at: now,
     source: sleepContext?.appId || 'mock_provider',
     confidence: sleepContext ? 0.9 : 0.5,
-    ...getFreshness(sleepContext ? new Date(sleepContext.updatedAt).getTime() : now - (1000 * 60 * 60 * 8))
+    status: getFreshness(sleepContext ? new Date(sleepContext.updatedAt).getTime() : now - (1000 * 60 * 60 * 8)).status,
+    origin_mode: sleepContext ? 'real' : 'mock'
   };
 
   // 2. RECUPERAÇÃO (Baseado em análise biológica se existir)
@@ -51,7 +58,8 @@ export const resolveMotionContextBundle = (state: AppState): ContextBundle => {
     updated_at: now,
     source: lastAnalysis ? 'ablute_device' : 'system_estimate',
     confidence: lastAnalysis ? 0.85 : 0.3,
-    ...getFreshness(lastAnalysis ? new Date(lastAnalysis.analysisDate).getTime() : now)
+    status: getFreshness(lastAnalysis ? new Date(lastAnalysis.analysisDate).getTime() : now).status,
+    origin_mode: lastAnalysis ? 'derived' : 'mock'
   };
 
   // 3. HIDRATAÇÃO (Dados reais de urinálise)
@@ -63,7 +71,8 @@ export const resolveMotionContextBundle = (state: AppState): ContextBundle => {
     updated_at: now,
     source: hydrationData ? 'ablute_device' : 'system_estimate',
     confidence: hydrationData ? 0.95 : 0.2,
-    ...getFreshness(lastAnalysis ? new Date(lastAnalysis.analysisDate).getTime() : now)
+    status: getFreshness(lastAnalysis ? new Date(lastAnalysis.analysisDate).getTime() : now).status,
+    origin_mode: hydrationData ? 'real' : 'mock'
   };
 
   // 4. ESTADO FISIOLÓGICO
@@ -78,7 +87,8 @@ export const resolveMotionContextBundle = (state: AppState): ContextBundle => {
     updated_at: now,
     source: 'profile_engine',
     confidence: 0.7,
-    status: 'fresh'
+    status: 'fresh',
+    origin_mode: user?.weight?.value ? 'derived' : 'mock'
   };
 
   // 5. STRESS / CARGA MENTAL (Mock)
@@ -89,7 +99,8 @@ export const resolveMotionContextBundle = (state: AppState): ContextBundle => {
     updated_at: now,
     source: 'mock_provider',
     confidence: 0.4,
-    status: 'fresh'
+    status: 'fresh',
+    origin_mode: 'mock'
   };
 
   // 6. SINTOMAS / LIMITAÇÕES (Real se no perfil)
@@ -100,7 +111,8 @@ export const resolveMotionContextBundle = (state: AppState): ContextBundle => {
     updated_at: now,
     source: 'user_profile',
     confidence: 0.9,
-    status: 'fresh'
+    status: 'fresh',
+    origin_mode: user?.habits ? 'real' : 'mock'
   };
 
   // 7. ESFORÇO RECENTE (Mock)
@@ -111,7 +123,8 @@ export const resolveMotionContextBundle = (state: AppState): ContextBundle => {
     updated_at: now,
     source: 'mock_activity_provider',
     confidence: 0.5,
-    ...getFreshness(now - (1000 * 60 * 120))
+    status: getFreshness(now - (1000 * 60 * 120)).status,
+    origin_mode: 'mock'
   };
 
   // 8. PREFERÊNCIAS RELEVANTES
@@ -122,19 +135,34 @@ export const resolveMotionContextBundle = (state: AppState): ContextBundle => {
     updated_at: now,
     source: 'user_profile',
     confidence: 1.0,
-    status: 'fresh'
+    status: 'fresh',
+    origin_mode: user?.goals ? 'real' : 'mock'
   };
 
   const items = [sleepItem, recoveryItem, hydrationItem, physioItem, stressItem, symptomsItem, effortItem, prefsItem];
+  
+  // Agregação de Ações Interpretadas (Governação de Interpretação)
   const nutritionActions = resolveNutritionActions(state);
+  const motionActions = resolveMotionActions(state);
+  const sleepActions = resolveSleepActions(state);
+  
+  const allActions = [
+    ...nutritionActions.actions,
+    ...motionActions.actions,
+    ...sleepActions.actions
+  ];
+
+  // Aplicação de Governação: Filtrar itens se o consentimento de leitura faltar
+  const governedItems = hasReadConsent ? items : [];
+  const governedActions = hasReadConsent ? allActions : [];
 
   return {
     context_version: '1.0.0',
     generated_at: now,
-    app_scope: 'global_wellness_cockpit',
+    app_scope: targetAppId || 'global_wellness_cockpit',
     user_mode: state.isGuestMode ? 'guest' : 'authenticated',
-    bundle_status: items.every(i => i.status === 'fresh') ? 'fresh' : 'usable_with_warning',
-    items,
-    interpreted_actions: nutritionActions.actions
+    bundle_status: !hasReadConsent ? 'unavailable' : (governedItems.every(i => i.status === 'fresh') ? 'fresh' : 'usable_with_warning'),
+    items: governedItems,
+    interpreted_actions: governedActions
   };
 };

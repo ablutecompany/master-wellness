@@ -25,6 +25,7 @@ export interface ContextBundleItem {
   source: string;            // Identificador da fonte (app_id, sensor_id ou "system")
   confidence: number;        // Nível de confiança no dado (0.0 a 1.0)
   status: FreshnessStatus;   // Estado de validade atual deste item específico
+  origin_mode: 'real' | 'derived' | 'mock' | 'hybrid'; // Natureza do dado
   freshness_reason?: string; // Justificação para o status (ex: "TTL expired", "Sensor noise")
 }
 

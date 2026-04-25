@@ -20,10 +20,19 @@ export const processContributionEvent = (
     return { longitudinalMemory: currentState.longitudinalMemory, isDuplicate: true };
   }
 
-  // 2. Validação via Registry
+  // 2. Validação via Registry e Consentimento
   const registryEntry = getRegistryEntry(event.miniapp_id);
   if (!registryEntry) {
     console.warn(`[Ingestion] Evento rejeitado: Mini-app ${event.miniapp_id} não registada.`);
+    return { longitudinalMemory: currentState.longitudinalMemory, isDuplicate: false };
+  }
+
+  // Verificação de Consentimento Real (Governação)
+  const appPermissions = currentState.grantedPermissions[event.miniapp_id] || [];
+  const hasConsent = appPermissions.some(p => p.toLowerCase().includes('write') || p.toLowerCase().includes('all'));
+  
+  if (registryEntry.requires_consents && !hasConsent) {
+    console.warn(`[Ingestion] Bloqueio de Segurança: App ${event.miniapp_id} tentou escrever sem consentimento.`);
     return { longitudinalMemory: currentState.longitudinalMemory, isDuplicate: false };
   }
 
