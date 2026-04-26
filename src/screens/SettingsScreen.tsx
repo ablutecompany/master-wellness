@@ -195,8 +195,8 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
               {/* 0.2 OBSERVABILIDADE (Step Shell 7) */}
               <Typography variant="caption" style={[styles.sectionLabel, { marginTop: 24 }]}>OBSERVABILIDADE DO ECOSSISTEMA</Typography>
               <View style={styles.cardGroup}>
-                {ecosystemLogs.slice(0, 5).map((log, i) => (
-                  <View key={log.id} style={[styles.govItem, i === Math.min(ecosystemLogs.length, 5) - 1 && { borderBottomWidth: 0 }, { paddingVertical: 12 }]}>
+                {ecosystemLogs.slice(0, 10).map((log, i) => (
+                  <View key={log.id} style={[styles.govItem, i === Math.min(ecosystemLogs.length, 10) - 1 && { borderBottomWidth: 0 }, { paddingVertical: 12 }]}>
                      <View style={{ flex: 1 }}>
                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
                           <View style={[styles.logStatusDot, { backgroundColor: log.status === 'success' ? '#00F2FF' : (log.status === 'warning' || log.status === 'governance_block') ? '#FFD700' : '#FF3366' }]} />
@@ -221,6 +221,11 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                 <TouchableOpacity 
                   style={styles.govItem} 
                   onPress={() => {
+                    const store = useStore.getState();
+                    // Auto-grant permissions for debug simulation
+                    if (!store.grantedPermissions['nutri-menu']) {
+                      store.grantPermissions('nutri-menu', ['all'] as any);
+                    }
                     import('../services/ecosystem/bridge').then(m => {
                       m.bridge.dispatchContribution({
                         event_id: `test_${Date.now()}`,
