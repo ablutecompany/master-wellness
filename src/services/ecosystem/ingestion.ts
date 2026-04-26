@@ -29,11 +29,24 @@ export const processContributionEvent = (
 
   // Verificação de Consentimento Real (Governação)
   const appPermissions = currentState.grantedPermissions[event.miniapp_id] || [];
-  const hasConsent = appPermissions.some(p => p.toLowerCase().includes('write') || p.toLowerCase().includes('all'));
+  const hasConsent = appPermissions.some(p => (p as any).toLowerCase().includes('write') || (p as any).toLowerCase().includes('all'));
   
   if (registryEntry.requires_consents && !hasConsent) {
     console.warn(`[Ingestion] Bloqueio de Segurança: App ${event.miniapp_id} tentou escrever sem consentimento.`);
     return { longitudinalMemory: currentState.longitudinalMemory, isDuplicate: false };
+  }
+
+  // 2.5 Governação Utilizável (Step Shell 5)
+  const appConfig = currentState.ecosystemConfig[event.miniapp_id] || { enabled: true, influenceDisabled: false };
+  
+  if (!appConfig.enabled) {
+    console.warn(`[Ingestion] Bloqueio por Utilizador: App ${event.miniapp_id} está desativada.`);
+    return { longitudinalMemory: currentState.longitudinalMemory, isDuplicate: false };
+  }
+
+  if (appConfig.influenceDisabled) {
+     console.warn(`[Ingestion] Influência Desativada: App ${event.miniapp_id} não afeta perfil global.`);
+     return { longitudinalMemory: currentState.longitudinalMemory, isDuplicate: false };
   }
 
   // 3. Mapeamento de Domínio e Sumarização (Longitudinal Memory)
@@ -72,6 +85,8 @@ export const processContributionEvent = (
   newMemory[domain] = {
     last_update: Date.now(),
     contributions_count: domainSummary.contributions_count + 1,
+    origin_mode: (event.payload.origin_mode as any) || 'real', // Assume real se não especificado
+    contribution_type: event.event_type.includes('logged') ? 'action' : 'sensor', // Heurística simples
     summary_data
   };
 
@@ -87,6 +102,15 @@ export const processSessionSummary = (
 ): Record<string, any> => {
   const newMemory = { ...currentState.longitudinalMemory };
   const appEntry = summary.miniapp_id ? getRegistryEntry(summary.miniapp_id) : null;
+  
+  if (summary.miniapp_id) {
+    const appConfig = currentState.ecosystemConfig[summary.miniapp_id] || { enabled: true, influenceDisabled: false };
+    if (!appConfig.enabled || appConfig.influenceDisabled) {
+      console.warn(`[Ingestion] Sumário ignorado por governação: ${summary.miniapp_id}`);
+      return currentState.longitudinalMemory;
+    }
+  }
+
   const domain = appEntry?.domain || 'system';
 
   const domainSummary = newMemory[domain] || { last_update: 0, sessions_count: 0, total_credits_spent: 0 };

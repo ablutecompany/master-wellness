@@ -59,6 +59,16 @@ export const canViewTargetData = (state: AppState, targetMemberId: string, scope
 // C) Measurement Selectors
 // ─────────────────────────────────────────────────────────────────────────────
 export const selectMeasurements = (state: AppState) => {
+  if (state.isDemoMode && state.demoAnalysis) {
+    return state.demoAnalysis.measurements.map(m => ({
+      id: m.id,
+      memberId: state.demoAnalysis!.memberId,
+      type: m.type as any,
+      value: { marker: m.marker, value: m.value, unit: m.unit },
+      timestamp: new Date(m.recordedAt).getTime()
+    }));
+  }
+
   const allMeasurements = state.measurements || [];
   if (state.activeMemberId) {
     if (!canViewTargetData(state, state.activeMemberId, 'results')) return [];
@@ -255,10 +265,22 @@ export const selectActiveFactsByDomain = (state: AppState, domain: ContextFact['
 export const selectLongitudinalMemory = (state: AppState) => state.longitudinalMemory || {};
 
 export const selectContextualResults = (state: AppState) => {
+   if (state.isDemoMode && state.demoAnalysis) {
+      return (state.demoAnalysis.ecosystemFacts || []).map(f => ({
+         domain: (f as any).domain || 'demo',
+         origin_mode: 'mock',
+         contribution_type: 'action',
+         last_update: Date.now(),
+         summary_data: { [(f as any).type]: (f as any).value }
+      }));
+   }
+
    const memory = selectLongitudinalMemory(state);
    // Converte o objeto de memória longitudinal em uma lista de itens formatados para UI
    return Object.keys(memory).map(domain => ({
       domain,
+      origin_mode: memory[domain].origin_mode || 'ecosystem',
+      contribution_type: memory[domain].contribution_type || 'hybrid',
       ...memory[domain]
    }));
 };

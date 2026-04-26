@@ -15,6 +15,19 @@ export const createEcosystemSlice: StateCreator<AppState, [], [], any> = (set, g
   lastContextBundle: null,
   longitudinalMemory: {},
   processedEventIds: [],
+  ecosystemConfig: {},
+
+  setEcosystemConfig: (appId: string, config: { enabled: boolean; influenceDisabled: boolean }) => {
+    set(state => ({
+      ecosystemConfig: {
+        ...state.ecosystemConfig,
+        [appId]: config
+      }
+    }));
+    
+    // Se desativar uma app, podemos querer limpar o bundle de contexto relacionado ou forçar refresh
+    get().refreshContextBundle();
+  },
 
   refreshContextBundle: () => {
     const bundle = resolveMotionContextBundle(get());

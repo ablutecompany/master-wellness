@@ -3,10 +3,10 @@ import { StyleSheet, View, ScrollView, Platform, TouchableOpacity, LayoutAnimati
 import { Container, Typography, BlurView } from '../components/Base';
 import { theme } from '../theme';
 import { useStore } from '../store/useStore';
-import { selectAiConfidence, selectDailySynthesis, selectContextualResults } from '../store/selectors';
+import { selectAiConfidence, selectDailySynthesis, selectContextualResults, selectDataFreshness } from '../store/selectors';
 import { getSemanticService } from '../services/semantic-output';
 import { resolveNutritionActions, resolveMotionActions, resolveSleepActions } from '../services/ecosystem/actionInterpreter';
-import { Activity, Zap, Target, Heart, Moon, Brain, ChevronDown, ChevronUp, Info, AlertCircle, CheckCircle2, FlaskConical } from 'lucide-react-native';
+import { Activity, Zap, Target, Heart, Moon, Brain, ChevronDown, ChevronUp, Info, AlertCircle, CheckCircle2, FlaskConical, X, ChevronRight } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 /**
@@ -47,17 +47,18 @@ const ActionItem = ({ action }: { action: any }) => (
   </View>
 );
 
-export const AIReadingScreen: React.FC = () => {
+export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const store = useStore();
   const [expandedRefs, setExpandedRefs] = useState(false);
   
-  const { authAccount, isGuestMode, user } = store;
+  const { authAccount, isGuestMode, user, isDemoMode } = store;
   const userName = user?.name || (isGuestMode ? 'Guest' : (authAccount?.email?.split('@')[0] || 'Utilizador'));
   const BUILD_MARKER = 'AI READING V2 LIVE MARKER: a945b35';
 
   const aiConfidence = selectAiConfidence(store);
   const dailySynthesis = selectDailySynthesis(store);
   const contextualResults = selectContextualResults(store);
+  const dataFreshness = selectDataFreshness(store);
   const semanticBundle = getSemanticService().getBundle();
   
   // Interpreted Actions (Derived locally for UI)
@@ -97,10 +98,20 @@ export const AIReadingScreen: React.FC = () => {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {/* Header */}
         <View style={styles.header}>
-          <Typography variant="h1" style={styles.title}>Leitura AI</Typography>
-          <View style={styles.statusBadge}>
-            <View style={[styles.statusDot, { backgroundColor: aiConfidence.color }]} />
-            <Typography style={styles.statusLabel}>{aiConfidence.label}</Typography>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <View>
+              <Typography variant="h1" style={styles.title}>Leitura AI</Typography>
+              <View style={styles.statusBadge}>
+                <View style={[styles.statusDot, { backgroundColor: aiConfidence.color }]} />
+                <Typography style={styles.statusLabel}>{aiConfidence.label}</Typography>
+              </View>
+            </View>
+            <TouchableOpacity 
+              onPress={() => navigation.goBack()} 
+              style={styles.closeBtnCircle}
+            >
+              <X size={20} color="#fff" />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -118,6 +129,18 @@ export const AIReadingScreen: React.FC = () => {
           )}
         </BlurView>
 
+        {/* CONTEXTUAL CTA */}
+        <TouchableOpacity 
+          style={styles.contextualCTA} 
+          onPress={() => (navigation as any).navigate('Dados')}
+        >
+          <BlurView intensity={20} style={styles.ctaBlur}>
+            <FlaskConical size={16} color="#00F2FF" />
+            <Typography style={styles.ctaText}>VER DADOS FACTUAIS (RESULTADOS)</Typography>
+            <ChevronRight size={14} color="#00F2FF" />
+          </BlurView>
+        </TouchableOpacity>
+
         {/* BLOCK 2: Families Considered */}
         <View style={styles.sectionHeader}>
           <Typography style={styles.sectionTitle}>BASE FACTUAL CONSIDERADA</Typography>
@@ -128,7 +151,7 @@ export const AIReadingScreen: React.FC = () => {
               <Typography style={[styles.familyText, f.active ? styles.familyTextActive : null]}>
                 {f.label}
               </Typography>
-              {f.active && <View style={styles.activeDot} />}
+              {f.active && <View style={[styles.activeDot, { backgroundColor: f.id === 'ctx' ? '#A020F0' : '#00F2FF' }]} />}
             </View>
           ))}
         </View>
@@ -221,8 +244,10 @@ export const AIReadingScreen: React.FC = () => {
           </View>
         )}
 
-        <View style={{ marginTop: 40, alignItems: 'center', opacity: 0.2 }}>
-          <Typography variant="caption" style={{ fontSize: 9 }}>{BUILD_MARKER}</Typography>
+        <View style={{ marginTop: 40, alignItems: 'center', opacity: 0.4 }}>
+          <Typography variant="caption" style={styles.markerText}>
+            {isDemoMode ? 'MODO DEMO ATIVO • ' : ''}AI READING V2.2 • {dataFreshness.temporalLabel.toUpperCase()}
+          </Typography>
         </View>
 
       </ScrollView>
@@ -505,5 +530,40 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 16,
     textAlign: 'center',
-  }
+  },
+  contextualCTA: {
+    marginTop: -16,
+    marginBottom: 32,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 242, 255, 0.2)',
+  },
+  ctaBlur: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  ctaText: {
+    color: '#00F2FF',
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 1,
+    flex: 1,
+  },
+  markerText: {
+    color: 'rgba(0, 242, 255, 0.5)',
+    fontSize: 8,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  closeBtnCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });

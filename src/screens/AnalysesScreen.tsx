@@ -16,7 +16,8 @@ import {
   Clock,
   History,
   TrendingUp,
-  FlaskConical
+  FlaskConical,
+  Brain
 } from 'lucide-react-native';
 import { useStore } from '../store/useStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -39,6 +40,8 @@ interface FormattedResult {
   type: string;
   marker?: string;
   category?: string;
+  origin?: string;
+  contribution_type?: string;
 }
 
 export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
@@ -50,6 +53,8 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   const storeMeasurements = useStore(useShallow(Selectors.selectMeasurements));
   const contextualResults = useStore(useShallow(Selectors.selectContextualResults));
   const hasResultsAccess = useStore(Selectors.selectHasResultsAccess);
+  const isDemoMode = useStore(state => state.isDemoMode);
+  const dataFreshness = useStore(Selectors.selectDataFreshness);
 
   // 1. Mapeamento e Normalização de Dados
   const allResults = useMemo(() => {
@@ -84,7 +89,9 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           dateStr: new Date(ctx.last_update).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' }),
           source: 'ecosystem',
           type: 'contextual',
-          category: ctx.domain
+          category: ctx.domain,
+          origin: ctx.origin_mode,
+          contribution_type: ctx.contribution_type
         });
       });
     });
@@ -140,7 +147,24 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
       </View>
       
       <View style={styles.cardMain}>
-        <Typography style={styles.cardName} numberOfLines={1}>{item.name}</Typography>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+          <Typography style={styles.cardName} numberOfLines={1}>{item.name}</Typography>
+          {item.type === 'contextual' && (
+            <View style={styles.semanticBadges}>
+              <View style={styles.domainBadge}>
+                <Typography style={styles.domainBadgeText}>{item.category?.toUpperCase()}</Typography>
+              </View>
+              <View style={[styles.originBadge, { borderColor: item.origin === 'real' ? '#00FF9D' : '#A020F0' }]}>
+                <Typography style={[styles.originBadgeText, { color: item.origin === 'real' ? '#00FF9D' : '#A020F0' }]}>
+                  {item.origin?.toUpperCase()}
+                </Typography>
+              </View>
+              <View style={styles.typeBadge}>
+                <Typography style={styles.typeBadgeText}>{item.contribution_type?.toUpperCase()}</Typography>
+              </View>
+            </View>
+          )}
+        </View>
         <View style={styles.valueRow}>
           <Typography style={styles.cardValue}>{item.value}</Typography>
           <Typography variant="caption" style={styles.cardUnit}>{item.unit}</Typography>
@@ -149,7 +173,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 
       <View style={styles.cardFooter}>
          <Typography variant="caption" style={styles.cardSource}>
-           {item.source === 'ablute' ? 'SINAL BIOLÓGICO' : item.source === 'ecosystem' ? 'CONTEXTO IA' : 'SENSOR DISPOSITIVO'}
+           {item.source === 'ablute' ? 'SINAL BIOLÓGICO' : item.source === 'ecosystem' ? 'CONTEXTO IA' : 'SENSOR'}
          </Typography>
          <ChevronRight size={12} color="rgba(255,255,255,0.2)" />
       </View>
@@ -181,7 +205,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           {renderTabButton('urina', 'Urina', Droplets)}
           {renderTabButton('fezes', 'Fezes', Database)}
           {renderTabButton('fisiologicos', 'Fisiológicos', Heart)}
-          {renderTabButton('contextuais', 'Contextuais', LayoutGrid)}
+          {renderTabButton('contextuais', 'Contexto', LayoutGrid)}
         </ScrollView>
       </View>
 
@@ -216,6 +240,18 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
               </View>
               {recent.map(r => renderResultCard(r))}
 
+              {/* CONTEXTUAL CTA */}
+              <TouchableOpacity 
+                style={styles.contextualCTA} 
+                onPress={() => navigation.navigate('Temas')}
+              >
+                <BlurView intensity={20} style={styles.ctaBlur}>
+                  <Brain size={16} color="#00F2FF" />
+                  <Typography style={styles.ctaText}>VER INTERPRETAÇÃO IA</Typography>
+                  <ChevronRight size={14} color="#00F2FF" />
+                </BlurView>
+              </TouchableOpacity>
+
               {/* SECÇÃO HISTÓRICO */}
               {historical.length > 0 && (
                 <>
@@ -233,12 +269,12 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 
           <View style={styles.footer}>
              <Info size={14} color="rgba(255,255,255,0.2)" />
-             <Typography variant="caption" style={styles.footerDisclaimer}>
-               Dados de referência biológica para suporte funcional. Não constitui diagnóstico clínico.
-             </Typography>
-             <Typography variant="caption" style={styles.markerText}>
-               RESULTS V2 LIVE MARKER: 22A1-FIX
-             </Typography>
+              <Typography variant="caption" style={styles.footerDisclaimer}>
+                Dados de referência biológica para suporte funcional. Não constitui diagnóstico clínico.
+              </Typography>
+              <Typography variant="caption" style={styles.markerText}>
+                {isDemoMode ? 'MODO DEMO ATIVO • ' : ''}RESULTS V2.2 • {dataFreshness.temporalLabel.toUpperCase()}
+              </Typography>
           </View>
         </ScrollView>
       </GatingOverlay>
@@ -470,6 +506,27 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1,
   },
+  contextualCTA: {
+    marginTop: 8,
+    marginBottom: 24,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 242, 255, 0.2)',
+  },
+  ctaBlur: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  ctaText: {
+    color: '#00F2FF',
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 1,
+    flex: 1,
+  },
   // MODAL
   modalOverlay: {
     flex: 1,
@@ -491,6 +548,46 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
     alignSelf: 'center',
     marginBottom: 24,
+  },
+  domainBadge: {
+    backgroundColor: 'rgba(160, 32, 240, 0.1)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 0.5,
+    borderColor: 'rgba(160, 32, 240, 0.3)',
+  },
+  domainBadgeText: {
+    color: '#A020F0',
+    fontSize: 8,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  semanticBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  originBadge: {
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 3,
+    borderWidth: 0.5,
+  },
+  originBadgeText: {
+    fontSize: 7,
+    fontWeight: '800',
+  },
+  typeBadge: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 3,
+  },
+  typeBadgeText: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 7,
+    fontWeight: '800',
   },
   modalName: {
     color: '#fff',
