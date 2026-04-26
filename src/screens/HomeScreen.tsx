@@ -390,21 +390,21 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           isLooping
           isMuted
         />
-        {/* Base darkening layer */}
-        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.65)' }]} pointerEvents="none" />
+        {/* Base darkening layer - RECUPERADO: Mais escuro para atmosfera profunda */}
+        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.85)' }]} pointerEvents="none" />
 
-        {/* Floating nuances */}
-        <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: floatAnim1 }]} pointerEvents="none">
+        {/* Floating nuances - RECUPERADO: Mais sutis */}
+        <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: Animated.multiply(floatAnim1, 0.4) }]} pointerEvents="none">
           <LinearGradient
-            colors={['rgba(0,0,0,0.8)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.8)']}
+            colors={['rgba(0,0,0,0.9)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.9)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFillObject}
           />
         </Animated.View>
-        <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: floatAnim2 }]} pointerEvents="none">
+        <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: Animated.multiply(floatAnim2, 0.4) }]} pointerEvents="none">
           <LinearGradient
-            colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.9)', 'rgba(0,0,0,0.2)']}
+            colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.95)', 'rgba(0,0,0,0.2)']}
             start={{ x: 1, y: 0 }}
             end={{ x: 0, y: 1 }}
             style={StyleSheet.absoluteFillObject}
@@ -460,43 +460,45 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         </View>
 
         {/* ── CENTRAL VISUAL (The HoloPulse) ────────────────────────────────── */}
-        <Animated.View style={[styles.centerContainer, { transform: [{ translateY: centerContentY }] }]}>
+        {/* RECUPERADO: Melhor centrado e ligeiramente mais alto */}
+        <Animated.View style={[styles.centerContainer, { transform: [{ translateY: Animated.add(centerContentY, -40) }] }]}>
           
-          {/* Luz Envolvente (Auras) - RECUPERAÇÃO: Irradia do núcleo, pulsa subtilmente */}
+          {/* Luz Envolvente (Auras) - RECUPERAÇÃO: Irradia do núcleo, sem gap */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 200, 
-            height: 340, 
-            borderRadius: 100, 
+            width: 150, 
+            height: 270, 
+            borderRadius: 75, 
             shadowColor: glowColor, 
             shadowOffset: { width: 0, height: 0 }, 
-            shadowOpacity: 0.8, 
-            shadowRadius: 30 + (urgencyFactor * 20), 
-            elevation: 25,
+            shadowOpacity: 0.9, 
+            shadowRadius: 25 + (urgencyFactor * 15), 
+            elevation: 30,
             transform: [{ scale: pulseAnim }],
-            backgroundColor: 'transparent' // Garante que a sombra venha da borda
+            backgroundColor: glowColor,
+            opacity: 0.15
           }} />
 
-          {/* Núcleo Central (RECUPERADO: Compacto e Elegante) */}
+          {/* Núcleo Central (RECUPERADO: Mais Pequeno, Compacto e Elegante) */}
           <View style={{ 
-            width: 170, 
-            height: 320, 
-            borderRadius: 85, 
+            width: 140, 
+            height: 260, 
+            borderRadius: 70, 
             overflow: 'hidden', 
-            backgroundColor: 'rgba(5, 10, 20, 0.6)', 
+            backgroundColor: 'rgba(5, 10, 20, 0.75)', 
             zIndex: 10, 
             borderWidth: 1, 
-            borderColor: 'rgba(255,255,255,0.08)',
-            justifyContent: 'center',
+            borderColor: 'rgba(255,255,255,0.12)',
+            justifyContent: 'flex-start', // Foco no círculo superior
             alignItems: 'center'
           }}>
-            <Animated.View style={{ width: 170, height: 170, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
-              <View style={[styles.pulseContainer, { width: 170, height: 170, borderRadius: 85, marginBottom: 0, backgroundColor: 'transparent' }]} pointerEvents="box-none">
+            <Animated.View style={{ width: 140, height: 140, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
+              <View style={[styles.pulseContainer, { width: 140, height: 140, borderRadius: 70, marginBottom: 0, backgroundColor: 'transparent' }]} pointerEvents="box-none">
                 {/* Outer halo video */}
-                <View style={{ position: 'absolute', width: 170, height: 170, borderRadius: 85, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
+                <View style={{ position: 'absolute', width: 140, height: 140, borderRadius: 70, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
                   <Video
                     source={require('../../assets/video (2).mp4')}
-                    style={{ position: 'absolute', width: 170, height: 170, opacity: 0.8 }}
+                    style={{ position: 'absolute', width: 140, height: 140, opacity: 0.8 }}
                     resizeMode={ResizeMode.COVER}
                     shouldPlay
                     isLooping
@@ -506,11 +508,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 </View>
 
                 {/* Inner primary holographic content */}
-                <View style={{ position: 'absolute', width: 156, height: 156, borderRadius: 78, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
+                <View style={{ position: 'absolute', width: 128, height: 128, borderRadius: 64, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
                   <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
                   <Video
                     source={require('../../assets/video (3).mp4')}
-                    style={{ position: 'absolute', width: 156, height: 156, opacity: 0.7 }}
+                    style={{ position: 'absolute', width: 128, height: 128, opacity: 0.7 }}
                     resizeMode={ResizeMode.COVER}
                     shouldPlay
                     isLooping
@@ -531,13 +533,13 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   </View>
 
                   {/* Inner diffuse mask */}
-                  <View style={[StyleSheet.absoluteFill, { borderRadius: 78, borderWidth: 12, borderColor: 'rgba(5,10,20,0.3)' }]} pointerEvents="none" />
+                  <View style={[StyleSheet.absoluteFill, { borderRadius: 64, borderWidth: 10, borderColor: 'rgba(5,10,20,0.3)' }]} pointerEvents="none" />
                 </View>
               </View>
             </Animated.View>
 
             {/* Setas Animadas para orientar o utilizador (REPOSICIONADAS) */}
-            <View style={{ position: 'absolute', bottom: 25, left: 0, right: 0, alignItems: 'center' }}>
+            <View style={{ position: 'absolute', bottom: 20, left: 0, right: 0, alignItems: 'center' }}>
               <Animated.View style={{ transform: [{ translateY: arrowAnim }], opacity: 0.7 }}>
                 <ChevronDown size={18} color={glowColor} strokeWidth={3} />
                 <View style={{ marginTop: -10 }}>
