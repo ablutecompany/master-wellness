@@ -313,8 +313,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         createdAt: new Date().toISOString(),
       };
       setDemoAnalysis(demoData);
+      getSemanticService().loadAnalysis(demoData);
     } else {
       setDemoAnalysis(null);
+      getSemanticService().loadAnalysis(null);
     }
   }, [isDemoMode]);
 

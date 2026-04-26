@@ -6,7 +6,7 @@ import { useStore } from '../store/useStore';
 import { selectAiConfidence, selectDailySynthesis, selectContextualResults, selectDataFreshness } from '../store/selectors';
 import { getSemanticService } from '../services/semantic-output';
 import { resolveNutritionActions, resolveMotionActions, resolveSleepActions } from '../services/ecosystem/actionInterpreter';
-import { Activity, Zap, Target, Heart, Moon, Brain, ChevronDown, ChevronUp, Info, AlertCircle, CheckCircle2, FlaskConical } from 'lucide-react-native';
+import { Activity, Zap, Target, Heart, Moon, Brain, ChevronDown, ChevronUp, Info, AlertCircle, CheckCircle2, FlaskConical, X, ChevronRight } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 /**
@@ -51,7 +51,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   const store = useStore();
   const [expandedRefs, setExpandedRefs] = useState(false);
   
-  const { authAccount, isGuestMode, user } = store;
+  const { authAccount, isGuestMode, user, isDemoMode } = store;
   const userName = user?.name || (isGuestMode ? 'Guest' : (authAccount?.email?.split('@')[0] || 'Utilizador'));
   const BUILD_MARKER = 'AI READING V2 LIVE MARKER: a945b35';
 
@@ -98,10 +98,20 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {/* Header */}
         <View style={styles.header}>
-          <Typography variant="h1" style={styles.title}>Leitura AI</Typography>
-          <View style={styles.statusBadge}>
-            <View style={[styles.statusDot, { backgroundColor: aiConfidence.color }]} />
-            <Typography style={styles.statusLabel}>{aiConfidence.label}</Typography>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <View>
+              <Typography variant="h1" style={styles.title}>Leitura AI</Typography>
+              <View style={styles.statusBadge}>
+                <View style={[styles.statusDot, { backgroundColor: aiConfidence.color }]} />
+                <Typography style={styles.statusLabel}>{aiConfidence.label}</Typography>
+              </View>
+            </View>
+            <TouchableOpacity 
+              onPress={() => navigation.goBack()} 
+              style={styles.closeBtnCircle}
+            >
+              <X size={20} color="#fff" />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -125,8 +135,8 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           onPress={() => (navigation as any).navigate('Dados')}
         >
           <BlurView intensity={20} style={styles.ctaBlur}>
-            <Database size={16} color="#00F2FF" />
-            <Typography style={styles.ctaText}>VER DADOS FACTUAIS</Typography>
+            <FlaskConical size={16} color="#00F2FF" />
+            <Typography style={styles.ctaText}>VER DADOS FACTUAIS (RESULTADOS)</Typography>
             <ChevronRight size={14} color="#00F2FF" />
           </BlurView>
         </TouchableOpacity>
@@ -141,7 +151,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
               <Typography style={[styles.familyText, f.active ? styles.familyTextActive : null]}>
                 {f.label}
               </Typography>
-              {f.active && <View style={styles.activeDot} />}
+              {f.active && <View style={[styles.activeDot, { backgroundColor: f.id === 'ctx' ? '#A020F0' : '#00F2FF' }]} />}
             </View>
           ))}
         </View>
@@ -547,5 +557,13 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: '700',
     letterSpacing: 1,
-  }
+  },
+  closeBtnCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });

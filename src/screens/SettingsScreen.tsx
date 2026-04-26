@@ -4,14 +4,18 @@ import { Container, Typography } from '../components/Base';
 import { theme } from '../theme';
 import { ChevronRight, Globe, Activity, Settings, Shield, Bell, Eye, Database, X } from 'lucide-react-native';
 import { useStore } from '../store/useStore';
-import { TextInput, SafeAreaView } from 'react-native';
+import { TextInput, SafeAreaView, Switch } from 'react-native';
 import { BlurView } from '../components/Base';
+import { ECOSYSTEM_REGISTRY } from '../services/ecosystem/registry';
+import { Droplet, Info, LayoutGrid, Zap } from 'lucide-react-native';
 
 export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const user = useStore(state => state.user);
   const isGuestMode = useStore(state => state.isGuestMode);
   const updateGuestProfile = useStore(state => state.updateGuestProfile);
   const updateAuthenticatedProfile = useStore(state => state.updateAuthenticatedProfile);
+  const ecosystemConfig = useStore(state => state.ecosystemConfig);
+  const setEcosystemConfig = useStore(state => state.setEcosystemConfig);
 
   const handleUpdateLocation = (val: string) => {
     const updates = { location: val };
@@ -45,6 +49,86 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
+            {/* 0. GOVERNAÇÃO DO ECOSSISTEMA (Step Shell 5) */}
+            <View style={styles.menuSection}>
+              <Typography variant="caption" style={styles.sectionLabel}>GOVERNAÇÃO & CONSENTIMENTOS</Typography>
+              <View style={styles.cardGroup}>
+                <View style={styles.govHeader}>
+                  <Shield size={16} color="#00F2FF" />
+                  <Typography style={styles.govHeaderText}>CONTROLO DE DADOS E PRIVACIDADE</Typography>
+                </View>
+                
+                {/* NATIVE SOURCES */}
+                <View style={styles.govSubHeader}>
+                  <Typography variant="caption" style={styles.govSubHeaderText}>FONTES NATIVAS (ABLUTE)</Typography>
+                </View>
+                {[
+                  { id: 'urinalysis', label: 'Análise Urinária', icon: <Droplet size={14} color="#fff" /> },
+                  { id: 'physiological', label: 'Sinais Vitais (HR/HRV)', icon: <Activity size={14} color="#fff" /> },
+                ].map((src, i) => (
+                  <View key={src.id} style={[styles.govItem, i === 1 && { borderBottomWidth: 0 }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={styles.govIconBox}>{src.icon}</View>
+                      <Typography style={styles.menuTitle}>{src.label}</Typography>
+                    </View>
+                    <Switch value={true} disabled trackColor={{ false: '#333', true: '#00F2FF' }} />
+                  </View>
+                ))}
+
+                <View style={styles.divider} />
+
+                {/* ECOSYSTEM APPS */}
+                <View style={styles.govSubHeader}>
+                  <Typography variant="caption" style={styles.govSubHeaderText}>MÓDULOS DE ECOSSISTEMA (MINI-APPS)</Typography>
+                </View>
+                
+                {ECOSYSTEM_REGISTRY.map((app, idx) => {
+                  const config = ecosystemConfig[app.miniapp_id] || { enabled: true, influenceDisabled: false };
+                  const isLast = idx === ECOSYSTEM_REGISTRY.length - 1;
+                  
+                  return (
+                    <View key={app.miniapp_id} style={[styles.govItem, isLast && { borderBottomWidth: 0 }]}>
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                          <LayoutGrid size={14} color="rgba(255,255,255,0.4)" style={{ marginRight: 6 }} />
+                          <Typography style={styles.menuTitle}>{app.miniapp_id.toUpperCase()}</Typography>
+                        </View>
+                        <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10 }}>
+                          DOMÍNIO: {app.domain.toUpperCase()} • v{app.contract_version}
+                        </Typography>
+                      </View>
+                      
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                        {app.influences_global_profile && (
+                          <TouchableOpacity 
+                            onPress={() => setEcosystemConfig(app.miniapp_id, { ...config, influenceDisabled: !config.influenceDisabled })}
+                            style={[styles.influenceBadge, config.influenceDisabled && styles.influenceDisabled]}
+                          >
+                            <Zap size={10} color={config.influenceDisabled ? 'rgba(255,255,255,0.3)' : '#00F2FF'} style={{ marginRight: 4 }} />
+                            <Typography style={[styles.influenceText, config.influenceDisabled && { color: 'rgba(255,255,255,0.3)' }]}>
+                              {config.influenceDisabled ? 'ISOLADO' : 'PERFIL'}
+                            </Typography>
+                          </TouchableOpacity>
+                        )}
+                        
+                        <Switch 
+                          value={config.enabled}
+                          onValueChange={(val) => setEcosystemConfig(app.miniapp_id, { ...config, enabled: val })}
+                          trackColor={{ false: '#333', true: '#00F2FF' }}
+                          thumbColor={Platform.OS === 'ios' ? '#fff' : config.enabled ? '#fff' : '#aaa'}
+                        />
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+              <View style={styles.govFooterInfo}>
+                <Info size={12} color="rgba(255,255,255,0.2)" />
+                <Typography variant="caption" style={styles.govFooterText}>
+                  A desativação de um módulo impede a ingestão de novos dados. Módulos 'ISOLADOS' não afetam o resumo biográfico global.
+                </Typography>
+              </View>
+            </View>
         {/* 1. LOCALIZAÇÃO (Migrado do Perfil) */}
         <View style={styles.menuSection}>
           <Typography variant="caption" style={styles.sectionLabel}>GEOGRAFIA & PRIVACIDADE</Typography>
@@ -221,5 +305,84 @@ const styles = StyleSheet.create({
     padding: 0,
     margin: 0,
     minWidth: 120,
+  },
+  govHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: 'rgba(0, 242, 255, 0.05)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+  },
+  govHeaderText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#00F2FF',
+    marginLeft: 8,
+    letterSpacing: 1,
+  },
+  govSubHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(255,255,255,0.02)',
+  },
+  govSubHeaderText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.4)',
+    letterSpacing: 1,
+  },
+  govItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.03)',
+  },
+  govIconBox: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  influenceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: 'rgba(0, 242, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 242, 255, 0.2)',
+  },
+  influenceDisabled: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  influenceText: {
+    fontSize: 8,
+    fontWeight: '900',
+    color: '#00F2FF',
+    letterSpacing: 0.5,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  govFooterInfo: {
+    flexDirection: 'row',
+    padding: 12,
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  govFooterText: {
+    flex: 1,
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.2)',
+    lineHeight: 14,
   },
 });

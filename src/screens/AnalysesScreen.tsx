@@ -16,7 +16,8 @@ import {
   Clock,
   History,
   TrendingUp,
-  FlaskConical
+  FlaskConical,
+  Brain
 } from 'lucide-react-native';
 import { useStore } from '../store/useStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -39,6 +40,8 @@ interface FormattedResult {
   type: string;
   marker?: string;
   category?: string;
+  origin?: string;
+  contribution_type?: string;
 }
 
 export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
@@ -50,6 +53,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   const storeMeasurements = useStore(useShallow(Selectors.selectMeasurements));
   const contextualResults = useStore(useShallow(Selectors.selectContextualResults));
   const hasResultsAccess = useStore(Selectors.selectHasResultsAccess);
+  const isDemoMode = useStore(state => state.isDemoMode);
   const dataFreshness = useStore(Selectors.selectDataFreshness);
 
   // 1. Mapeamento e Normalização de Dados
@@ -85,7 +89,9 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           dateStr: new Date(ctx.last_update).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' }),
           source: 'ecosystem',
           type: 'contextual',
-          category: ctx.domain
+          category: ctx.domain,
+          origin: ctx.origin_mode,
+          contribution_type: ctx.contribution_type
         });
       });
     });
@@ -143,9 +149,19 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
       <View style={styles.cardMain}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
           <Typography style={styles.cardName} numberOfLines={1}>{item.name}</Typography>
-          {item.type === 'contextual' && item.category && (
-            <View style={styles.domainBadge}>
-              <Typography style={styles.domainBadgeText}>{item.category.toUpperCase()}</Typography>
+          {item.type === 'contextual' && (
+            <View style={styles.semanticBadges}>
+              <View style={styles.domainBadge}>
+                <Typography style={styles.domainBadgeText}>{item.category?.toUpperCase()}</Typography>
+              </View>
+              <View style={[styles.originBadge, { borderColor: item.origin === 'real' ? '#00FF9D' : '#A020F0' }]}>
+                <Typography style={[styles.originBadgeText, { color: item.origin === 'real' ? '#00FF9D' : '#A020F0' }]}>
+                  {item.origin?.toUpperCase()}
+                </Typography>
+              </View>
+              <View style={styles.typeBadge}>
+                <Typography style={styles.typeBadgeText}>{item.contribution_type?.toUpperCase()}</Typography>
+              </View>
             </View>
           )}
         </View>
@@ -546,6 +562,32 @@ const styles = StyleSheet.create({
     fontSize: 8,
     fontWeight: '800',
     letterSpacing: 0.5,
+  },
+  semanticBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  originBadge: {
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 3,
+    borderWidth: 0.5,
+  },
+  originBadgeText: {
+    fontSize: 7,
+    fontWeight: '800',
+  },
+  typeBadge: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 3,
+  },
+  typeBadgeText: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 7,
+    fontWeight: '800',
   },
   modalName: {
     color: '#fff',

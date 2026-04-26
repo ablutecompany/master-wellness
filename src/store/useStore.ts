@@ -40,6 +40,7 @@ export const useStore = create<AppState>()(
         lastContextBundle: state.lastContextBundle, // Cache do último bundle útil (Fallback)
         longitudinalMemory: state.longitudinalMemory, // Resumo histórico por domínio
         processedEventIds: state.processedEventIds, // Histórico para deduplicação
+        ecosystemConfig: state.ecosystemConfig, // Governação granular
       }),
       onRehydrateStorage: (state) => {
         return (rehydratedState, error) => {
