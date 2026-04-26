@@ -105,6 +105,17 @@ export interface Household {
   createdAt: string;
 }
 
+export interface EcosystemLog {
+  id: string;
+  timestamp: number;
+  type: 'incoming' | 'outgoing' | 'blocked' | 'internal';
+  appId?: string;
+  domain?: string;
+  message: string;
+  status: 'success' | 'warning' | 'error' | 'governance_block';
+  payload?: any;
+}
+
 export interface AppState {
   user: UserProfile | null;
   authAccount: any | null;
@@ -144,6 +155,7 @@ export interface AppState {
     participationDisabled?: boolean; 
     retentionDays?: number;
   }>; // Governação granular
+  ecosystemLogs: EcosystemLog[];
 
   refreshContextBundle: () => void;
   ingestContributionEvent: (event: import('./ecosystem-contracts').ContributionEvent) => void;
@@ -200,4 +212,5 @@ export interface AppState {
   hasGrantedPermissions: (id: string) => boolean;
   clearSensitiveState: () => void;
   setHasHydrated: (val: boolean) => void;
+  addEcosystemLog: (log: Omit<import('./state-types').EcosystemLog, 'id' | 'timestamp'>) => void;
 }

@@ -11,11 +11,18 @@ import { ContributionEvent, SessionSummary } from '../ecosystem-contracts';
  */
 
 export const createEcosystemSlice: StateCreator<AppState, [], [], any> = (set, get) => ({
-  miniAppRegistry: ECOSYSTEM_REGISTRY,
-  lastContextBundle: null,
-  longitudinalMemory: {},
-  processedEventIds: [],
-  ecosystemConfig: {},
+  ecosystemLogs: [],
+
+  addEcosystemLog: (log: Omit<import('../state-types').EcosystemLog, 'id' | 'timestamp'>) => {
+    const newLog: import('../state-types').EcosystemLog = {
+      ...log,
+      id: Math.random().toString(36).substring(2, 9),
+      timestamp: Date.now()
+    };
+    set(state => ({
+      ecosystemLogs: [newLog, ...state.ecosystemLogs].slice(0, 100)
+    }));
+  },
 
   setEcosystemConfig: (appId: string, config: { 
     enabled: boolean; 
@@ -30,6 +37,12 @@ export const createEcosystemSlice: StateCreator<AppState, [], [], any> = (set, g
       }
     }));
     get().refreshContextBundle();
+    get().addEcosystemLog({
+      type: 'internal',
+      appId,
+      message: `Configuração de governação atualizada: ${config.enabled ? 'Ativo' : 'Desativado'}`,
+      status: 'success'
+    });
   },
 
   purgeEcosystemData: (appId: string) => {
@@ -38,12 +51,17 @@ export const createEcosystemSlice: StateCreator<AppState, [], [], any> = (set, g
 
     set(state => {
       const nextMemory = { ...state.longitudinalMemory };
-      // Limpa a entrada do domínio se for a única app, ou tenta filtrar (simplificado aqui para domínio)
       delete nextMemory[entry.domain];
       return { longitudinalMemory: nextMemory };
     });
     get().refreshContextBundle();
-    console.warn(`[Shell] Dados da App ${appId} purgados por governação.`);
+    get().addEcosystemLog({
+      type: 'internal',
+      appId,
+      domain: entry.domain,
+      message: `Dados purgados por governação (Módulo: ${appId})`,
+      status: 'warning'
+    });
   },
 
   purgeDomainData: (domain: string) => {
@@ -53,14 +71,20 @@ export const createEcosystemSlice: StateCreator<AppState, [], [], any> = (set, g
       return { longitudinalMemory: nextMemory };
     });
     get().refreshContextBundle();
-    console.warn(`[Shell] Dados do Domínio ${domain} purgados por governação.`);
+    get().addEcosystemLog({
+      type: 'internal',
+      domain,
+      message: `Dados do domínio ${domain} purgados.`,
+      status: 'warning'
+    });
   },
 
   resetDemoData: () => {
     set({ 
       longitudinalMemory: {}, 
       processedEventIds: [],
-      lastContextBundle: null 
+      lastContextBundle: null,
+      ecosystemLogs: []
     });
     console.warn(`[Shell] Estados persistidos resetados (DEMO Reset).`);
   },
@@ -68,14 +92,20 @@ export const createEcosystemSlice: StateCreator<AppState, [], [], any> = (set, g
   refreshContextBundle: () => {
     const bundle = resolveMotionContextBundle(get());
     set({ lastContextBundle: bundle });
-    console.warn('[Shell] Context Bundle Refreshed:', bundle.bundle_status);
+    // Log opcional para não poluir demasiado
   },
 
   ingestContributionEvent: (event: ContributionEvent) => {
-    const { longitudinalMemory, isDuplicate } = processContributionEvent(event, get());
+    const { longitudinalMemory, isDuplicate, status, reason } = processContributionEvent(event, get());
     
-    if (isDuplicate) {
-      console.warn('[Shell] Evento ignorado (duplicado):', event.event_id);
+    if (status === 'blocked' || status === 'error') {
+      get().addEcosystemLog({
+        type: 'blocked',
+        appId: event.miniapp_id,
+        message: `Ingestão Bloqueada: ${reason || 'Desconhecido'}`,
+        status: status === 'error' ? 'error' : 'governance_block',
+        payload: { event_type: event.event_type }
+      });
       return;
     }
 
@@ -84,16 +114,39 @@ export const createEcosystemSlice: StateCreator<AppState, [], [], any> = (set, g
       processedEventIds: [...state.processedEventIds, event.event_id]
     }));
     
-    console.warn(`[Shell] Evento ingerido (${event.event_type}) da app ${event.miniapp_id}`);
+    get().addEcosystemLog({
+      type: 'incoming',
+      appId: event.miniapp_id,
+      domain: ECOSYSTEM_REGISTRY.find(e => e.miniapp_id === event.miniapp_id)?.domain,
+      message: `Sucesso: Ingestão de ${event.event_type}`,
+      status: 'success',
+      payload: event.payload
+    });
     
-    // Atualiza o bundle de contexto sempre que há nova informação relevante
     get().refreshContextBundle();
   },
 
   ingestSessionSummary: (summary: SessionSummary) => {
-    const longitudinalMemory = processSessionSummary(summary, get());
+    const { longitudinalMemory, status, reason } = processSessionSummary(summary, get());
     
+    if (status === 'blocked' || status === 'error') {
+       get().addEcosystemLog({
+        type: 'blocked',
+        appId: summary.miniapp_id,
+        message: `Sumário Bloqueado: ${reason || 'Desconhecido'}`,
+        status: status === 'error' ? 'error' : 'governance_block'
+      });
+      return;
+    }
+
     set({ longitudinalMemory });
-    console.warn(`[Shell] Sumário de sessão ingerido da app ${summary.miniapp_id || 'N/A'}`);
+    
+    get().addEcosystemLog({
+      type: 'incoming',
+      appId: summary.miniapp_id,
+      message: `Sumário de sessão ingerido (Status: ${summary.outcome_status})`,
+      status: 'success',
+      payload: { credits: summary.consumed_credits }
+    });
   }
 });

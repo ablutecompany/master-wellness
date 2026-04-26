@@ -20,6 +20,7 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   const purgeDomainData = useStore(state => state.purgeDomainData);
   const resetDemoData = useStore(state => state.resetDemoData);
   const longitudinalMemory = useStore(state => state.longitudinalMemory);
+  const ecosystemLogs = useStore(state => state.ecosystemLogs);
 
   const handleUpdateLocation = (val: string) => {
     const updates = { location: val };
@@ -189,6 +190,66 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                 <Typography variant="caption" style={styles.govFooterText}>
                   A desativação de um módulo impede a ingestão de novos dados. Módulos 'ISOLADOS' não afetam o resumo biográfico global.
                 </Typography>
+              </View>
+
+              {/* 0.2 OBSERVABILIDADE (Step Shell 7) */}
+              <Typography variant="caption" style={[styles.sectionLabel, { marginTop: 24 }]}>OBSERVABILIDADE DO ECOSSISTEMA</Typography>
+              <View style={styles.cardGroup}>
+                {ecosystemLogs.slice(0, 5).map((log, i) => (
+                  <View key={log.id} style={[styles.govItem, i === Math.min(ecosystemLogs.length, 5) - 1 && { borderBottomWidth: 0 }, { paddingVertical: 12 }]}>
+                     <View style={{ flex: 1 }}>
+                       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+                          <View style={[styles.logStatusDot, { backgroundColor: log.status === 'success' ? '#00F2FF' : (log.status === 'warning' || log.status === 'governance_block') ? '#FFD700' : '#FF3366' }]} />
+                          <Typography style={{ fontSize: 11, fontWeight: '700', color: '#fff' }}>{log.message}</Typography>
+                       </View>
+                       <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.2)', fontSize: 9 }}>
+                          {new Date(log.timestamp).toLocaleTimeString()} • {log.type.toUpperCase()} {log.appId ? `• ${log.appId}` : ''}
+                       </Typography>
+                     </View>
+                  </View>
+                ))}
+                {ecosystemLogs.length === 0 && (
+                  <View style={{ padding: 20, alignItems: 'center' }}>
+                    <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.2)' }}>Sem eventos registados na bridge.</Typography>
+                  </View>
+                )}
+              </View>
+
+              {/* 0.3 TESTE DA BRIDGE (Step Shell 7) */}
+              <Typography variant="caption" style={[styles.sectionLabel, { marginTop: 24 }]}>DEBUG: TESTE DA BRIDGE</Typography>
+              <View style={styles.cardGroup}>
+                <TouchableOpacity 
+                  style={styles.govItem} 
+                  onPress={() => {
+                    import('../services/ecosystem/bridge').then(m => {
+                      m.bridge.dispatchContribution({
+                        event_id: `test_${Date.now()}`,
+                        miniapp_id: 'nutri-menu',
+                        event_type: 'meal_logged',
+                        recorded_at: Date.now(),
+                        received_at: Date.now(),
+                        confidence: 1.0,
+                        contract_version: '1.2.0',
+                        payload: { calories: 450, meal_type: 'lunch' }
+                      });
+                    });
+                  }}
+                >
+                  <Typography style={styles.menuTitle}>Simular Meal (Nutri)</Typography>
+                  <ChevronRight size={18} color="#00F2FF" />
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={[styles.govItem, { borderBottomWidth: 0 }]} 
+                  onPress={() => {
+                    import('../services/ecosystem/bridge').then(m => {
+                      m.bridge.getContextBundle();
+                    });
+                  }}
+                >
+                  <Typography style={styles.menuTitle}>Solicitar Context Bundle</Typography>
+                  <ChevronRight size={18} color="#00F2FF" />
+                </TouchableOpacity>
               </View>
             </View>
         {/* 1. LOCALIZAÇÃO (Migrado do Perfil) */}
@@ -460,5 +521,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: 'rgba(255,255,255,0.6)',
     letterSpacing: 1,
+  },
+  logStatusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 8,
   },
 });

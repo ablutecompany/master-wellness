@@ -13,18 +13,17 @@ import { getRegistryEntry } from './registry';
 export const processContributionEvent = (
   event: ContributionEvent,
   currentState: AppState
-): { longitudinalMemory: Record<string, any>, isDuplicate: boolean } => {
+): { longitudinalMemory: Record<string, any>, isDuplicate: boolean, status: 'success' | 'blocked' | 'error', reason?: string } => {
   
   // 1. Deduplicação
   if (currentState.processedEventIds.includes(event.event_id)) {
-    return { longitudinalMemory: currentState.longitudinalMemory, isDuplicate: true };
+    return { longitudinalMemory: currentState.longitudinalMemory, isDuplicate: true, status: 'blocked', reason: 'Duplicate event ID' };
   }
 
   // 2. Validação via Registry e Consentimento
   const registryEntry = getRegistryEntry(event.miniapp_id);
   if (!registryEntry) {
-    console.warn(`[Ingestion] Evento rejeitado: Mini-app ${event.miniapp_id} não registada.`);
-    return { longitudinalMemory: currentState.longitudinalMemory, isDuplicate: false };
+    return { longitudinalMemory: currentState.longitudinalMemory, isDuplicate: false, status: 'error', reason: `Mini-app ${event.miniapp_id} não registada.` };
   }
 
   // Verificação de Consentimento Real (Governação)
@@ -32,21 +31,18 @@ export const processContributionEvent = (
   const hasConsent = appPermissions.some(p => (p as any).toLowerCase().includes('write') || (p as any).toLowerCase().includes('all'));
   
   if (registryEntry.requires_consents && !hasConsent) {
-    console.warn(`[Ingestion] Bloqueio de Segurança: App ${event.miniapp_id} tentou escrever sem consentimento.`);
-    return { longitudinalMemory: currentState.longitudinalMemory, isDuplicate: false };
+    return { longitudinalMemory: currentState.longitudinalMemory, isDuplicate: false, status: 'blocked', reason: 'Falta de consentimento (write scope).' };
   }
 
   // 2.5 Governação Utilizável (Step Shell 5)
   const appConfig = currentState.ecosystemConfig[event.miniapp_id] || { enabled: true, influenceDisabled: false };
   
   if (!appConfig.enabled) {
-    console.warn(`[Ingestion] Bloqueio por Utilizador: App ${event.miniapp_id} está desativada.`);
-    return { longitudinalMemory: currentState.longitudinalMemory, isDuplicate: false };
+    return { longitudinalMemory: currentState.longitudinalMemory, isDuplicate: false, status: 'blocked', reason: 'Módulo desativado pelo utilizador.' };
   }
 
   if (appConfig.influenceDisabled) {
-     console.warn(`[Ingestion] Influência Desativada: App ${event.miniapp_id} não afeta perfil global.`);
-     return { longitudinalMemory: currentState.longitudinalMemory, isDuplicate: false };
+     return { longitudinalMemory: currentState.longitudinalMemory, isDuplicate: false, status: 'blocked', reason: 'Influência no perfil desativada.' };
   }
 
   // 3. Mapeamento de Domínio e Sumarização (Longitudinal Memory)
@@ -90,7 +86,7 @@ export const processContributionEvent = (
     summary_data
   };
 
-  return { longitudinalMemory: newMemory, isDuplicate: false };
+  return { longitudinalMemory: newMemory, isDuplicate: false, status: 'success' };
 };
 
 /**
@@ -99,15 +95,14 @@ export const processContributionEvent = (
 export const processSessionSummary = (
   summary: SessionSummary,
   currentState: AppState
-): Record<string, any> => {
+): { longitudinalMemory: Record<string, any>, status: 'success' | 'blocked' | 'error', reason?: string } => {
   const newMemory = { ...currentState.longitudinalMemory };
   const appEntry = summary.miniapp_id ? getRegistryEntry(summary.miniapp_id) : null;
   
   if (summary.miniapp_id) {
     const appConfig = currentState.ecosystemConfig[summary.miniapp_id] || { enabled: true, influenceDisabled: false };
     if (!appConfig.enabled || appConfig.influenceDisabled) {
-      console.warn(`[Ingestion] Sumário ignorado por governação: ${summary.miniapp_id}`);
-      return currentState.longitudinalMemory;
+      return { longitudinalMemory: currentState.longitudinalMemory, status: 'blocked', reason: 'Governação: Módulo ou Influência desativados.' };
     }
   }
 
@@ -123,5 +118,5 @@ export const processSessionSummary = (
     last_session_outcome: summary.outcome_status
   };
 
-  return newMemory;
+  return { longitudinalMemory: newMemory, status: 'success' };
 };
