@@ -7,7 +7,7 @@ import { useStore } from '../store/useStore';
 import { TextInput, SafeAreaView, Switch } from 'react-native';
 import { BlurView } from '../components/Base';
 import { ECOSYSTEM_REGISTRY } from '../services/ecosystem/registry';
-import { Droplet, Info, LayoutGrid, Zap } from 'lucide-react-native';
+import { Droplet, Info, LayoutGrid, Zap, Brain } from 'lucide-react-native';
 
 export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const user = useStore(state => state.user);
