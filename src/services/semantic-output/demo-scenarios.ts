@@ -8,9 +8,11 @@ export type DemoScenarioKey =
   | 'unstable_rhythm' 
   | 'mixed';
 
+const BASE_TIMESTAMP = 1714172400000; // April 26, 2024 23:00:00
+
 const baseBundle: Partial<SemanticOutputState> = {
   version: '1.2.0',
-  generatedAt: Date.now(),
+  generatedAt: BASE_TIMESTAMP,
   status: 'ready',
   isLive: true,
 };
@@ -31,8 +33,8 @@ function buildDomain(
     status: 'sufficient_data',
     statusLabel,
     band,
-    generatedAt: Date.now(),
-    lastComputedAt: Date.now(),
+    generatedAt: BASE_TIMESTAMP,
+    lastComputedAt: BASE_TIMESTAMP,
     isStale: false,
     version: '1.2.0',
     mainInsight: {

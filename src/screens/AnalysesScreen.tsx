@@ -54,7 +54,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   const contextualResults = useStore(useShallow(Selectors.selectContextualResults));
   const hasResultsAccess = useStore(Selectors.selectHasResultsAccess);
   const isDemoMode = useStore(state => state.isDemoMode);
-  const dataFreshness = useStore(Selectors.selectDataFreshness);
+  const dataFreshness = useStore(useShallow(Selectors.selectDataFreshness));
 
   // 1. Mapeamento e Normalização de Dados
   const allResults = useMemo(() => {
@@ -274,6 +274,9 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
               </Typography>
               <Typography variant="caption" style={styles.markerText}>
                 {isDemoMode ? 'MODO DEMO ATIVO • ' : ''}RESULTS V2.2 • {dataFreshness.temporalLabel.toUpperCase()}
+              </Typography>
+              <Typography variant="caption" style={[styles.markerText, { marginTop: 4, opacity: 0.5 }]}>
+                ANALYSES HOTFIX LIVE MARKER: 1b2b177
               </Typography>
           </View>
         </ScrollView>

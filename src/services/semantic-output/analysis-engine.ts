@@ -38,15 +38,16 @@ function getSleepHours(facts: AnalysisEvent[]): number {
 function buildDomain(
   domain: string, score: number, statusLabel: string,
   b: 'optimal' | 'fair' | 'poor', summary: string, description: string,
-  recs: Array<{ title: string; actionable: string }>
+  recs: Array<{ title: string; actionable: string }>,
+  baseTimestamp: number
 ): SemanticDomainView {
   return {
     domain, label: domain, score,
     status: 'sufficient_data', statusLabel, band: b,
-    generatedAt: Date.now(), lastComputedAt: Date.now(), isStale: false, version: '1.2.0',
-    mainInsight: { id: `insight_${domain}_${Date.now()}`, summary, description, tone: 'informative', factors: [] },
+    generatedAt: baseTimestamp, lastComputedAt: baseTimestamp, isStale: false, version: '1.2.0',
+    mainInsight: { id: `insight_${domain}_${baseTimestamp}`, summary, description, tone: 'informative', factors: [] },
     recommendations: recs.map((r, i) => ({
-      id: `rec_${domain}_${i}_${Date.now()}`, title: r.title, actionable: r.actionable, impact: 'médio', effort: 'baixo'
+      id: `rec_${domain}_${i}_${baseTimestamp}`, title: r.title, actionable: r.actionable, impact: 'médio', effort: 'baixo'
     })) as any,
   };
 }
@@ -62,9 +63,15 @@ export function computeSemanticFromMeasurements(
   measurements: AnalysisMeasurement[],
   ecosystemFacts: AnalysisEvent[],
 ): SemanticOutputState {
+  // Anchor timestamp: use the latest measurement, fact, or a stable fixed reference
+  // This prevents floating references causing infinite re-renders
+  const baseTimestamp = measurements.length > 0 
+    ? Math.max(...measurements.map(m => new Date(m.timestamp || 0).getTime()))
+    : (ecosystemFacts.length > 0 ? ecosystemFacts[0].last_update : 1714172400000);
+
   // Nenhum dado → estado honesto
   if (measurements.length === 0 && ecosystemFacts.length === 0) {
-    return buildEmptyState();
+    return buildEmptyState(baseTimestamp);
   }
 
   // ── Extracção ──────────────────────────────────────────────────────────────
@@ -229,13 +236,13 @@ export function computeSemanticFromMeasurements(
 
   return {
     version: '1.2.0',
-    generatedAt: Date.now(),
+    generatedAt: baseTimestamp,
     status: 'ready',
     aiStatus: 'ready',
     isLive: true,
     metadata: {
-      lastUpdatedAt: Date.now(),
-      lastRequestedAt: Date.now(),
+      lastUpdatedAt: baseTimestamp,
+      lastRequestedAt: baseTimestamp,
       isDirty: false,
       dirtyDomains: {} as Record<string, boolean>,
       staleAfterMs: 300000,
@@ -250,29 +257,29 @@ export function computeSemanticFromMeasurements(
     },
     domains: {
       sleep: buildDomain('sleep', sleepScore, sleepLabel, band(sleepScore), sleepSummary, sleepDesc,
-        sleepScore < 60 ? [{ title: 'Aumentar Duração', actionable: 'Deite-se 30 minutos mais cedo durante 5 dias consecutivos.' }] : []),
+        sleepScore < 60 ? [{ title: 'Aumentar Duração', actionable: 'Deite-se 30 minutos mais cedo durante 5 dias consecutivos.' }] : [], baseTimestamp),
       nutrition: buildDomain('nutrition', nutritionScore, nutritionLabel, band(nutritionScore), nutritionSummary, nutritionDesc,
-        hasKetones ? [{ title: 'Reforçar Aporte', actionable: 'Adicione hidratos complexos à próxima refeição.' }] : []),
+        hasKetones ? [{ title: 'Reforçar Aporte', actionable: 'Adicione hidratos complexos à próxima refeição.' }] : [], baseTimestamp),
       general: buildDomain('general', generalScore, generalLabel, band(generalScore), generalSummary, generalDesc,
-        isDehydrated ? [{ title: 'Hidratação', actionable: 'Beba 500ml de água nas próximas 2 horas.' }] : []),
+        isDehydrated ? [{ title: 'Hidratação', actionable: 'Beba 500ml de água nas próximas 2 horas.' }] : [], baseTimestamp),
       energy: buildDomain('energy', energyScore, energyLabel, band(energyScore), energySummary, energyDesc,
-        energyScore < 55 ? [{ title: 'Pausa Estratégica', actionable: 'Agende 20 min de descanso sem ecrãs ao meio-dia.' }] : []),
+        energyScore < 55 ? [{ title: 'Pausa Estratégica', actionable: 'Agende 20 min de descanso sem ecrãs ao meio-dia.' }] : [], baseTimestamp),
       recovery: buildDomain('recovery', recoveryScore, recoveryLabel, band(recoveryScore), recoverySummary, recoveryDesc,
-        recoveryScore < 55 ? [{ title: 'Descanso Activo', actionable: 'Substitua treino de força por mobilidade suave hoje.' }] : []),
-      performance: buildDomain('performance', performanceScore, performanceLabel, band(performanceScore), performanceSummary, performanceDesc, []),
+        recoveryScore < 55 ? [{ title: 'Descanso Activo', actionable: 'Substitua treino de força por mobilidade suave hoje.' }] : [], baseTimestamp),
+      performance: buildDomain('performance', performanceScore, performanceLabel, band(performanceScore), performanceSummary, performanceDesc, [], baseTimestamp),
     },
   } as SemanticOutputState;
 }
 
 // ── Estado vazio honesto ────────────────────────────────────────────────────
 
-function buildEmptyState(): SemanticOutputState {
+function buildEmptyState(baseTimestamp: number): SemanticOutputState {
   const emptyDomain = (domain: string): SemanticDomainView => ({
     domain, label: domain, score: 0,
     status: 'insufficient_data', statusLabel: 'Sem Dados', band: 'poor',
-    generatedAt: Date.now(), lastComputedAt: Date.now(), isStale: false, version: '1.2.0',
+    generatedAt: baseTimestamp, lastComputedAt: baseTimestamp, isStale: false, version: '1.2.0',
     mainInsight: {
-      id: `empty_${domain}`,
+      id: `empty_${domain}_${baseTimestamp}`,
       summary: 'Sem dados disponíveis',
       description: 'Não existem dados de análise activos. Selecione uma análise no histórico ou realize uma nova análise.',
       tone: 'informative',
@@ -283,12 +290,12 @@ function buildEmptyState(): SemanticOutputState {
 
   return {
     version: '1.2.0',
-    generatedAt: Date.now(),
+    generatedAt: baseTimestamp,
     status: 'insufficient_data',
     aiStatus: 'idle',
     isLive: false,
     metadata: {
-      lastUpdatedAt: Date.now(), lastRequestedAt: Date.now(),
+      lastUpdatedAt: baseTimestamp, lastRequestedAt: baseTimestamp,
       isDirty: false, dirtyDomains: {} as Record<string, boolean>,
       staleAfterMs: 300000, retryCount: 0, version: '1.2.0',
     },

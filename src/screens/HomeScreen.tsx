@@ -149,8 +149,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const floatAnim2 = useRef(new Animated.Value(0)).current;
   const arrowAnim = useRef(new Animated.Value(0)).current;
 
-  const lastAnalysisDate = user?.lastAnalysisDate;
-  const daysSince = lastAnalysisDate ? Math.floor((new Date().getTime() - new Date(lastAnalysisDate).getTime()) / (1000 * 60 * 60 * 24)) : 7;
+  const daysSince = useMemo(() => {
+    const lastAnalysisDate = user?.lastAnalysisDate;
+    if (!lastAnalysisDate) return 7;
+    return Math.floor((Date.now() - new Date(lastAnalysisDate).getTime()) / (1000 * 60 * 60 * 24));
+  }, [user?.lastAnalysisDate]);
+
   const daysSinceText = daysSince === 0 ? 'ANÁLISE HOJE' : `HÁ ${daysSince} DIAS`;
 
   // Luz Envolvente: Amarelo -> Vermelho conforme urgência (0-30 dias)
@@ -320,17 +324,17 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     }
   }, [isDemoMode]);
 
-  const displayBiomarkers = isDemoMode ? [
+  const displayBiomarkers = useMemo(() => isDemoMode ? [
     { id: 'd1', name: 'Glicose (Demo)', value: '92', unit: 'mg/dL', source: 'ablute' },
     { id: 'd2', name: 'Sódio (Demo)', value: '138', unit: 'mEq/L', source: 'ablute' },
     { id: 'd3', name: 'SpO2 (Demo)', value: '99', unit: '%', source: 'health_kit' },
     { id: 'd4', name: 'Ritmo (Demo)', value: '72', unit: 'bpm', source: 'health_kit' },
-  ] : RAW_BIOMARKERS;
+  ] : RAW_BIOMARKERS, [isDemoMode]);
 
-  const semanticBundle = getSemanticService().getBundle();
+  const semanticBundle = useMemo(() => getSemanticService().getBundle(), [isDemoMode, analyses]);
   const domains = semanticBundle.domains || {};
   
-  const displayThemes = isDemoMode ? [
+  const displayThemes = useMemo(() => isDemoMode ? [
     {
       title: 'Cenário Simulado: Otimização',
       score: 94,
@@ -353,7 +357,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     refText1: '',
     refText2: '',
     suggestions: d.recommendations?.map(r => ({ title: r.title, desc: r.actionable })) || []
-  }));
+  })), [isDemoMode, domains]);
 
   // ── Gesture Handlers ──────────────────────────────────────────────────────
   const mainPanResponder = useRef(

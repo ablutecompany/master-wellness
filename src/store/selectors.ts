@@ -65,7 +65,7 @@ export const selectMeasurements = (state: AppState) => {
       memberId: state.demoAnalysis!.memberId,
       type: m.type as any,
       value: { marker: m.marker, value: m.value, unit: m.unit },
-      timestamp: new Date(m.recordedAt).getTime()
+      timestamp: new Date(m.recordedAt || 0).getTime()
     }));
   }
 
@@ -103,7 +103,9 @@ export const selectDaysSinceLastMeasurement = (state: AppState) => {
   const measurements = selectMeasurements(state);
   if (measurements.length === 0) return 0;
   const latest = Math.max(...measurements.map(m => m.timestamp));
-  const diff = Date.now() - latest;
+  // In demo mode or static contexts, use a stable "now" from state if available
+  const now = state.lastContextBundle?.timestamp || Date.now();
+  const diff = now - latest;
   return Math.floor(diff / (1000 * 60 * 60 * 24));
 };
 
@@ -185,7 +187,10 @@ export const selectDataFreshness = (state: AppState, forcedMemberId?: string): D
   const latestTs = Math.max(...myMeas.map(m => new Date(m.timestamp).getTime() || 0));
   if (!latestTs || isNaN(latestTs)) return { status: 'no_data', label: 'Sinais Ausentes', color: 'rgba(255,255,255,0.4)', daysSince: null, actionLabel: 'Recolher Sinais', actionIntent: 'sync_now', temporalLabel: 'Sem base temporal válida' };
 
-  const diffMs = Date.now() - latestTs;
+  // Use state-bound reference for "now" to avoid floating references in loops
+  // Fallback to a fixed stable timestamp if lastContextBundle is not yet available
+  const referenceNow = state.lastContextBundle?.timestamp || 1714172400000;
+  const diffMs = referenceNow - latestTs;
   const daysDiff = Math.floor(diffMs / (1000 * 3600 * 24));
   const tLabel = formatTemporalLabel(latestTs);
 
@@ -274,11 +279,12 @@ export const selectIsAppParticipationAllowed = (state: AppState, appId: string) 
 
 export const selectContextualResults = (state: AppState) => {
    if (state.isDemoMode && state.demoAnalysis) {
+      const demoTs = state.demoAnalysis.generatedAt || 1714172400000;
       return (state.demoAnalysis.ecosystemFacts || []).map(f => ({
          domain: (f as any).domain || 'demo',
          origin_mode: 'mock',
          contribution_type: 'action',
-         last_update: Date.now(),
+         last_update: demoTs,
          summary_data: { [(f as any).type]: (f as any).value }
       }));
    }
@@ -489,7 +495,7 @@ export const selectUnifiedTimeline = (state: AppState): ChronoEvent[] => {
 
           events.push({
              id: `meas_${m.id}`,
-             timestamp: m.timestamp || Date.now(),
+             timestamp: m.timestamp || 1714172400000,
              type: 'measurement_received',
              memberId: owner,
              label: 'Recolha Geométrica',
@@ -509,7 +515,7 @@ export const selectUnifiedTimeline = (state: AppState): ChronoEvent[] => {
           const ts = new Date(a.createdAt).getTime();
           events.push({
              id: `ana_${a.id}`,
-             timestamp: !isNaN(ts) ? ts : Date.now(),
+             timestamp: !isNaN(ts) ? ts : 1714172400000,
              type: 'sync_success',
              memberId: owner,
              label: 'Sincronização Integrada',
@@ -526,10 +532,10 @@ export const selectUnifiedTimeline = (state: AppState): ChronoEvent[] => {
          if (activeId !== rootId && owner !== activeId) return;
          if (!canView(owner, 'context')) return;
 
-         const ts = new Date(c.updatedAt || Date.now()).getTime();
+         const ts = new Date(c.updatedAt || 1714172400000).getTime();
          events.push({
              id: `ctx_${c.id}`,
-             timestamp: !isNaN(ts) ? ts : Date.now(),
+             timestamp: !isNaN(ts) ? ts : 1714172400000,
              type: 'context_updated',
              memberId: owner,
              label: 'Contexto Interligado',
