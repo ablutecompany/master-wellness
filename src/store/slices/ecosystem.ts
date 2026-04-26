@@ -17,16 +17,52 @@ export const createEcosystemSlice: StateCreator<AppState, [], [], any> = (set, g
   processedEventIds: [],
   ecosystemConfig: {},
 
-  setEcosystemConfig: (appId: string, config: { enabled: boolean; influenceDisabled: boolean }) => {
+  setEcosystemConfig: (appId: string, config: { 
+    enabled: boolean; 
+    influenceDisabled: boolean;
+    participationDisabled?: boolean;
+    retentionDays?: number;
+  }) => {
     set(state => ({
       ecosystemConfig: {
         ...state.ecosystemConfig,
         [appId]: config
       }
     }));
-    
-    // Se desativar uma app, podemos querer limpar o bundle de contexto relacionado ou forçar refresh
     get().refreshContextBundle();
+  },
+
+  purgeEcosystemData: (appId: string) => {
+    const entry = ECOSYSTEM_REGISTRY.find(e => e.miniapp_id === appId);
+    if (!entry) return;
+
+    set(state => {
+      const nextMemory = { ...state.longitudinalMemory };
+      // Limpa a entrada do domínio se for a única app, ou tenta filtrar (simplificado aqui para domínio)
+      delete nextMemory[entry.domain];
+      return { longitudinalMemory: nextMemory };
+    });
+    get().refreshContextBundle();
+    console.warn(`[Shell] Dados da App ${appId} purgados por governação.`);
+  },
+
+  purgeDomainData: (domain: string) => {
+    set(state => {
+      const nextMemory = { ...state.longitudinalMemory };
+      delete nextMemory[domain];
+      return { longitudinalMemory: nextMemory };
+    });
+    get().refreshContextBundle();
+    console.warn(`[Shell] Dados do Domínio ${domain} purgados por governação.`);
+  },
+
+  resetDemoData: () => {
+    set({ 
+      longitudinalMemory: {}, 
+      processedEventIds: [],
+      lastContextBundle: null 
+    });
+    console.warn(`[Shell] Estados persistidos resetados (DEMO Reset).`);
   },
 
   refreshContextBundle: () => {

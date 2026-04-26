@@ -264,6 +264,14 @@ export const selectActiveFactsByDomain = (state: AppState, domain: ContextFact['
 
 export const selectLongitudinalMemory = (state: AppState) => state.longitudinalMemory || {};
 
+export const selectEcosystemConfig = (state: AppState) => state.ecosystemConfig || {};
+
+export const selectIsAppParticipationAllowed = (state: AppState, appId: string) => {
+  const config = (state.ecosystemConfig || {})[appId];
+  if (!config) return true;
+  return !config.participationDisabled;
+};
+
 export const selectContextualResults = (state: AppState) => {
    if (state.isDemoMode && state.demoAnalysis) {
       return (state.demoAnalysis.ecosystemFacts || []).map(f => ({
@@ -276,13 +284,21 @@ export const selectContextualResults = (state: AppState) => {
    }
 
    const memory = selectLongitudinalMemory(state);
-   // Converte o objeto de memória longitudinal em uma lista de itens formatados para UI
-   return Object.keys(memory).map(domain => ({
+   const config = state.ecosystemConfig || {};
+   const registry = state.miniAppRegistry || [];
+   
+   return Object.keys(memory)
+    .filter(domain => {
+      const appsInDomain = registry.filter(r => r.domain === domain);
+      if (appsInDomain.length === 0) return true;
+      return appsInDomain.some(app => !config[app.miniapp_id]?.participationDisabled);
+    })
+    .map(domain => ({
       domain,
       origin_mode: memory[domain].origin_mode || 'ecosystem',
       contribution_type: memory[domain].contribution_type || 'hybrid',
       ...memory[domain]
-   }));
+    }));
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

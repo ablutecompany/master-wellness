@@ -138,12 +138,25 @@ export interface AppState {
   lastContextBundle: import('./ecosystem-contracts').ContextBundle | null;
   longitudinalMemory: Record<string, any>; // Resumo por domínio (ex: { sleep: {...}, nutrition: {...} })
   processedEventIds: string[]; // Para deduplicação
-  ecosystemConfig: Record<string, { enabled: boolean; influenceDisabled: boolean }>; // Governação granular
+  ecosystemConfig: Record<string, { 
+    enabled: boolean; 
+    influenceDisabled: boolean;
+    participationDisabled?: boolean; 
+    retentionDays?: number;
+  }>; // Governação granular
 
   refreshContextBundle: () => void;
   ingestContributionEvent: (event: import('./ecosystem-contracts').ContributionEvent) => void;
   ingestSessionSummary: (summary: import('./ecosystem-contracts').SessionSummary) => void;
-  setEcosystemConfig: (appId: string, config: { enabled: boolean; influenceDisabled: boolean }) => void;
+  setEcosystemConfig: (appId: string, config: { 
+    enabled: boolean; 
+    influenceDisabled: boolean;
+    participationDisabled?: boolean;
+    retentionDays?: number;
+  }) => void;
+  purgeEcosystemData: (appId: string) => void;
+  purgeDomainData: (domain: string) => void;
+  resetDemoData: () => void;
 
   setIsDemoMode: (val: boolean) => void;
   setUser: (user: UserProfile | null) => void;

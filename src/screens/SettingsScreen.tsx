@@ -16,6 +16,10 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   const updateAuthenticatedProfile = useStore(state => state.updateAuthenticatedProfile);
   const ecosystemConfig = useStore(state => state.ecosystemConfig);
   const setEcosystemConfig = useStore(state => state.setEcosystemConfig);
+  const purgeEcosystemData = useStore(state => state.purgeEcosystemData);
+  const purgeDomainData = useStore(state => state.purgeDomainData);
+  const resetDemoData = useStore(state => state.resetDemoData);
+  const longitudinalMemory = useStore(state => state.longitudinalMemory);
 
   const handleUpdateLocation = (val: string) => {
     const updates = { location: val };
@@ -100,15 +104,27 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                       
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                         {app.influences_global_profile && (
-                          <TouchableOpacity 
-                            onPress={() => setEcosystemConfig(app.miniapp_id, { ...config, influenceDisabled: !config.influenceDisabled })}
-                            style={[styles.influenceBadge, config.influenceDisabled && styles.influenceDisabled]}
-                          >
-                            <Zap size={10} color={config.influenceDisabled ? 'rgba(255,255,255,0.3)' : '#00F2FF'} style={{ marginRight: 4 }} />
-                            <Typography style={[styles.influenceText, config.influenceDisabled && { color: 'rgba(255,255,255,0.3)' }]}>
-                              {config.influenceDisabled ? 'ISOLADO' : 'PERFIL'}
-                            </Typography>
-                          </TouchableOpacity>
+                          <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                            <TouchableOpacity 
+                              onPress={() => setEcosystemConfig(app.miniapp_id, { ...config, influenceDisabled: !config.influenceDisabled })}
+                              style={[styles.influenceBadge, config.influenceDisabled && styles.influenceDisabled]}
+                            >
+                              <Zap size={10} color={config.influenceDisabled ? 'rgba(255,255,255,0.3)' : '#00F2FF'} style={{ marginRight: 4 }} />
+                              <Typography style={[styles.influenceText, config.influenceDisabled && { color: 'rgba(255,255,255,0.3)' }]}>
+                                {config.influenceDisabled ? 'ISOLADO' : 'PERFIL'}
+                              </Typography>
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity 
+                              onPress={() => setEcosystemConfig(app.miniapp_id, { ...config, participationDisabled: !config.participationDisabled })}
+                              style={[styles.influenceBadge, config.participationDisabled && styles.influenceDisabled, { borderColor: config.participationDisabled ? 'rgba(255,255,255,0.1)' : 'rgba(160, 32, 240, 0.4)' }]}
+                            >
+                              <Brain size={10} color={config.participationDisabled ? 'rgba(255,255,255,0.3)' : '#A020F0'} style={{ marginRight: 4 }} />
+                              <Typography style={[styles.influenceText, { color: config.participationDisabled ? 'rgba(255,255,255,0.3)' : '#A020F0' }]}>
+                                {config.participationDisabled ? 'SEM AI' : 'PARTICIPA AI'}
+                              </Typography>
+                            </TouchableOpacity>
+                          </View>
                         )}
                         
                         <Switch 
@@ -122,6 +138,50 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                   );
                 })}
               </View>
+
+              {/* 0.1 GESTÃO DE DADOS E APAGAMENTO (Step Shell 6) */}
+              <Typography variant="caption" style={[styles.sectionLabel, { marginTop: 24 }]}>GESTÃO DE DADOS & APAGAMENTO</Typography>
+              <View style={styles.cardGroup}>
+                <View style={styles.govSubHeader}>
+                  <Typography variant="caption" style={styles.govSubHeaderText}>LIMPEZA POR DOMÍNIO</Typography>
+                </View>
+                {Object.keys(longitudinalMemory).map((domain, i) => (
+                  <View key={domain} style={[styles.govItem, i === Object.keys(longitudinalMemory).length - 1 && { borderBottomWidth: 0 }]}>
+                    <View>
+                      <Typography style={styles.menuTitle}>{domain.toUpperCase()}</Typography>
+                      <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                        {longitudinalMemory[domain].contributions_count || 0} contributos ativos
+                      </Typography>
+                    </View>
+                    <TouchableOpacity 
+                      style={styles.purgeBtn}
+                      onPress={() => purgeDomainData(domain)}
+                    >
+                      <Typography style={styles.purgeBtnText}>APAGAR</Typography>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                
+                {Object.keys(longitudinalMemory).length === 0 && (
+                  <View style={{ padding: 20, alignItems: 'center' }}>
+                    <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.2)' }}>Sem dados históricos armazenados.</Typography>
+                  </View>
+                )}
+
+                <View style={styles.divider} />
+                
+                <TouchableOpacity 
+                  style={[styles.govItem, { borderBottomWidth: 0, backgroundColor: 'rgba(255,51,102,0.05)' }]}
+                  onPress={resetDemoData}
+                >
+                  <View>
+                    <Typography style={[styles.menuTitle, { color: '#FF3366' }]}>Reset Total (Limpeza Ética)</Typography>
+                    <Typography variant="caption" style={{ color: 'rgba(255,51,102,0.4)' }}>Apaga toda a memória longitudinal e estados derivados.</Typography>
+                  </View>
+                  <ChevronRight size={20} color="#FF3366" />
+                </TouchableOpacity>
+              </View>
+
               <View style={styles.govFooterInfo}>
                 <Info size={12} color="rgba(255,255,255,0.2)" />
                 <Typography variant="caption" style={styles.govFooterText}>
@@ -384,5 +444,19 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: 'rgba(255,255,255,0.2)',
     lineHeight: 14,
+  },
+  purgeBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  purgeBtnText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.6)',
+    letterSpacing: 1,
   },
 });
