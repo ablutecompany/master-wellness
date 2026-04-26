@@ -103,8 +103,8 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                       </View>
                       
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                        {app.influences_global_profile && (
-                          <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                        <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                          {app.influences_global_profile && (
                             <TouchableOpacity 
                               onPress={() => setEcosystemConfig(app.miniapp_id, { ...config, influenceDisabled: !config.influenceDisabled })}
                               style={[styles.influenceBadge, config.influenceDisabled && styles.influenceDisabled]}
@@ -114,7 +114,9 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                                 {config.influenceDisabled ? 'ISOLADO' : 'PERFIL'}
                               </Typography>
                             </TouchableOpacity>
-                            
+                          )}
+                          
+                          {app.writes_longitudinal_memory && (
                             <TouchableOpacity 
                               onPress={() => setEcosystemConfig(app.miniapp_id, { ...config, participationDisabled: !config.participationDisabled })}
                               style={[styles.influenceBadge, config.participationDisabled && styles.influenceDisabled, { borderColor: config.participationDisabled ? 'rgba(255,255,255,0.1)' : 'rgba(160, 32, 240, 0.4)' }]}
@@ -124,8 +126,8 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                                 {config.participationDisabled ? 'SEM AI' : 'PARTICIPA AI'}
                               </Typography>
                             </TouchableOpacity>
-                          </View>
-                        )}
+                          )}
+                        </View>
                         
                         <Switch 
                           value={config.enabled}
