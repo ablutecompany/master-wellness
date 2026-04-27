@@ -23,6 +23,7 @@ import { Alert, Modal, SafeAreaView, Dimensions, TextInput, ImageBackground } fr
 import { BlurView } from '../components/Base';
 import { supabase } from '../services/supabase';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { FlatList } from 'react-native';
 
 export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const userName = useStore(Selectors.selectUserName);
@@ -48,6 +49,24 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     } else {
       useStore.getState().updateAuthenticatedProfile(updates);
     }
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // MODAIS DE SELEÇÃO
+  // ─────────────────────────────────────────────────────────────────────────────
+  const [pickerConfig, setPickerConfig] = React.useState<{
+    visible: boolean;
+    title: string;
+    options: any[];
+    onSelect: (val: any) => void;
+    currentValue?: any;
+    type?: 'date' | 'number' | 'choice';
+  }>({ visible: false, title: '', options: [], onSelect: () => {} });
+
+  const closePicker = () => setPickerConfig(prev => ({ ...prev, visible: false }));
+
+  const openPicker = (config: Omit<typeof pickerConfig, 'visible'>) => {
+    setPickerConfig({ ...config, visible: true });
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -135,71 +154,52 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   };
 
   const handleEditSex = () => {
-    const current = user?.sex || user?.genderIdentity || '';
-    const options = ['Homem', 'Mulher', 'Não indicar'];
+    const options = [
+      { label: 'Homem', value: 'M' },
+      { label: 'Mulher', value: 'F' },
+      { label: 'Não indicar', value: null }
+    ];
     
-    if (Platform.OS === 'web') {
-      const val = window.prompt(`Escolha o Sexo (${options.join(', ')}):`, current);
-      if (val !== null) {
-        const match = options.find(o => o.toLowerCase() === val.trim().toLowerCase());
-        if (match) updateProfileField({ sex: match, genderIdentity: match });
+    openPicker({
+      title: 'Sexo',
+      options,
+      currentValue: user?.sex,
+      onSelect: (val) => {
+        updateProfileField({ sex: val });
+        closePicker();
       }
-      return;
-    }
-
-    Alert.alert('Sexo', 'Selecione uma opção:', options.map(o => ({
-      text: o, onPress: () => updateProfileField({ sex: o, genderIdentity: o })
-    })));
+    });
   };
 
   const handleEditDateOfBirth = () => {
-    const current = user?.dateOfBirth || user?.birthDate || '';
-    const msg = 'Data de Nascimento (AAAA-MM-DD):';
-
-    if (Platform.OS === 'web') {
-      const val = window.prompt(msg, current);
-      if (val !== null) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(val.trim()) && val.trim() !== '') {
-          alert('Formato inválido. Usa AAAA-MM-DD.');
-          return;
-        }
-        updateProfileField({ dateOfBirth: val.trim(), birthDate: val.trim() });
+    const currentYear = new Date().getFullYear();
+    const years = Array.from({ length: 100 }, (_, i) => ({ label: String(currentYear - i), value: currentYear - i }));
+    
+    openPicker({
+      title: 'Ano de Nascimento',
+      options: years,
+      currentValue: user?.dateOfBirth ? new Date(user.dateOfBirth).getFullYear() : 1980,
+      onSelect: (year) => {
+        // Guardamos como 1 de Janeiro desse ano se for apenas o ano
+        const dob = `${year}-01-01`;
+        updateProfileField({ dateOfBirth: dob });
+        closePicker();
       }
-      return;
-    }
-
-    Alert.prompt('Data de Nascimento', msg, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salvar', onPress: (val) => {
-        if (val?.trim() && !/^\d{4}-\d{2}-\d{2}$/.test(val.trim())) {
-          Alert.alert('Erro', 'Formato inválido. Usa AAAA-MM-DD.');
-          return;
-        }
-        updateProfileField({ dateOfBirth: val?.trim() || '', birthDate: val?.trim() || '' });
-      }}
-    ], 'plain-text', current);
+    });
   };
 
   const handleEditHeight = () => {
-    const current = user?.height ? String(user.height) : '';
-    const msg = 'Altura (cm):';
-
-    if (Platform.OS === 'web') {
-      const val = window.prompt(msg, current);
-      if (val !== null && val.trim() !== '') {
-        const num = parseInt(val.trim(), 10);
-        if (!isNaN(num)) updateProfileField({ height: num });
+    const heights = Array.from({ length: 100 }, (_, i) => ({ label: `${140 + i} cm`, value: 140 + i }));
+    
+    openPicker({
+      title: 'Altura',
+      options: heights,
+      currentValue: user?.height || 170,
+      onSelect: (val) => {
+        updateProfileField({ height: val });
+        closePicker();
       }
-      return;
-    }
-
-    Alert.prompt('Altura', msg, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salvar', onPress: (val) => {
-        const num = parseInt(val?.trim() || '', 10);
-        if (!isNaN(num)) updateProfileField({ height: num });
-      }}
-    ], 'plain-text', current, 'numeric');
+    });
   };
 
   const handleEditWeight = () => {
@@ -239,47 +239,23 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
   const setupItems: Array<{ id: string, title: string, desc: string, icon: any, action: () => void }> = [];
 
-  if (!isProfileComplete) {
-    setupItems.push({
-      id: 'profile', title: 'Completar Perfil', desc: 'Idade e Altura são essenciais para bioanálises exatas.',
-      icon: <User size={14} color={theme.colors.primary} />,
-      action: () => {
-        const h = window.prompt("A sua altura em cm (ex: 175):");
-        if (h && !isNaN(Number(h))) {
-          const dob = window.prompt("A sua data de nascimento (YYYY-MM-DD):");
-          if (dob) {
-            if (isGuestMode) useStore.getState().updateGuestProfile({ height: Number(h), dateOfBirth: dob }); else useStore.getState().updateAuthenticatedProfile({ height: Number(h), dateOfBirth: dob });
-          }
-        }
+  setupItems.push({
+    id: 'household', 
+    title: 'Membros Agregados', 
+    desc: 'Gerir membros do agregado e perfis associados.',
+    icon: <Users size={14} color="#FFA500" />,
+    action: () => {
+      const name = window.prompt("Nome do novo membro:");
+      if (name && name.trim() !== '') {
+        const id = 'mem_' + Date.now();
+        useStore.getState().addHouseholdMember({
+          id, role: 'dependent', profile: { id, name: name.trim() },
+          permissions: { results: 'private', context: 'private' },
+          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+        });
       }
-    });
-  }
-
-  if (dependentsCount === 0) {
-    setupItems.push({
-      id: 'household', title: 'Criar Household', desc: 'Mapeie o seu agregado familiar e centralize exames.',
-      icon: <Users size={14} color="#FFA500" />,
-      action: () => {
-        const name = window.prompt("Nome do novo membro:");
-        if (name && name.trim() !== '') {
-          const id = 'mem_' + Date.now();
-          useStore.getState().addHouseholdMember({
-            id, role: 'dependent', profile: { id, name: name.trim() },
-            permissions: { results: 'private', context: 'private' },
-            createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
-          });
-        }
-      }
-    });
-  }
-
-  if (exportedContextsCount === 0) {
-    setupItems.push({
-      id: 'context', title: 'Ativar Mini-Apps', desc: 'Alimente o contexto comportamental para IA mais astuta.',
-      icon: <Globe size={14} color="#9D00FF" />,
-      action: () => navigation.navigate('Home', { screen: 'MiniApp' })
-    });
-  }
+    }
+  });
 
   return (
     <View style={styles.outerContainer}>
@@ -380,7 +356,9 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                 <View style={styles.groupRow}>
                   <TouchableOpacity style={styles.groupCell} onPress={handleEditSex}>
                     <Typography style={styles.cellLabel}>Sexo</Typography>
-                    <Typography style={styles.cellValue}>{user?.sex || user?.genderIdentity || '—'}</Typography>
+                    <Typography style={styles.cellValue}>
+                      {user?.sex === 'M' ? 'Homem' : user?.sex === 'F' ? 'Mulher' : 'Não indicado'}
+                    </Typography>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.groupCell} onPress={handleEditDateOfBirth}>
                     <Typography style={styles.cellLabel}>Idade</Typography>
@@ -394,7 +372,9 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.groupCell} onPress={handleEditWeight}>
                     <Typography style={styles.cellLabel}>Peso</Typography>
-                    <Typography style={styles.cellValue}>{user?.weight?.value ? `${user.weight.value} kg` : '—'}</Typography>
+                    <Typography style={styles.cellValue}>
+                      {user?.weight?.manualValue || user?.weight?.value ? `${user?.weight?.manualValue || user?.weight?.value} kg` : '—'}
+                    </Typography>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -469,6 +449,48 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
              <Typography style={{ color: 'white', textAlign: 'center' }}>Aponta o quadrado central para o QR code no telemóvel do Dono do Agregado.</Typography>
           </View>
         </SafeAreaView>
+      </Modal>
+
+      {/* REUSABLE PICKER MODAL */}
+      <Modal visible={pickerConfig.visible} animationType="fade" transparent>
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={closePicker}
+        >
+          <BlurView intensity={90} tint="dark" style={styles.pickerContent}>
+            <View style={styles.modalHandle} />
+            <Typography variant="h3" style={styles.pickerTitle}>{pickerConfig.title}</Typography>
+            
+            <View style={{ maxHeight: 300 }}>
+              <FlatList
+                data={pickerConfig.options}
+                keyExtractor={(item) => String(item.value)}
+                renderItem={({ item }) => (
+                  <TouchableOpacity 
+                    style={[
+                      styles.pickerOption,
+                      pickerConfig.currentValue === item.value && styles.pickerOptionActive
+                    ]}
+                    onPress={() => pickerConfig.onSelect(item.value)}
+                  >
+                    <Typography style={[
+                      styles.pickerOptionText,
+                      pickerConfig.currentValue === item.value && styles.pickerOptionTextActive
+                    ]}>
+                      {item.label}
+                    </Typography>
+                  </TouchableOpacity>
+                )}
+                showsVerticalScrollIndicator={false}
+              />
+            </View>
+
+            <TouchableOpacity style={styles.pickerCloseBtn} onPress={closePicker}>
+               <Typography style={styles.pickerCloseBtnText}>CANCELAR</Typography>
+            </TouchableOpacity>
+          </BlurView>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
@@ -655,5 +677,64 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderWidth: 1,
     borderColor: 'rgba(255, 69, 58, 0.2)',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'flex-end',
+  },
+  pickerContent: {
+    backgroundColor: '#0A0E14',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    padding: 32,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 32,
+    borderTopWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  pickerTitle: {
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 24,
+    fontWeight: '700',
+  },
+  pickerOption: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderRadius: 12,
+    marginBottom: 4,
+  },
+  pickerOptionActive: {
+    backgroundColor: 'rgba(0, 242, 255, 0.1)',
+  },
+  pickerOptionText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  pickerOptionTextActive: {
+    color: '#00F2FF',
+    fontWeight: '700',
+  },
+  pickerCloseBtn: {
+    marginTop: 20,
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    alignItems: 'center',
+  },
+  pickerCloseBtnText: {
+    color: 'rgba(255,255,255,0.4)',
+    fontWeight: '800',
+    letterSpacing: 1,
+    fontSize: 12,
   },
 });
