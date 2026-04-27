@@ -9,9 +9,12 @@ import { normalizeEvent, filterActiveFacts } from '../services/contributions-nor
  */
 
 // Cache global para estabilidade referencial absoluta em modo Demo
+let _lastDemoMeasRef = null;
 let _demoMeasurementsCache = null;
+
+let _lastDemoCtxRef = null;
 let _demoContextualCache = null;
-let _lastDemoDataRef = null;
+
 let _dataFreshnessCache = null;
 let _lastFreshnessInput = { measCount: 0, lastTs: 0, refNow: 0, mode: false };
 let _aiConfidenceCache = null;
@@ -72,11 +75,11 @@ export const canViewTargetData = (state: AppState, targetMemberId: string, scope
 
 export const selectMeasurements = (state: AppState) => {
   if (state.isDemoMode && state.demoAnalysis) {
-    if (_lastDemoDataRef === state.demoAnalysis && _demoMeasurementsCache) {
+    if (_lastDemoMeasRef === state.demoAnalysis && _demoMeasurementsCache) {
        return _demoMeasurementsCache;
     }
     
-    _lastDemoDataRef = state.demoAnalysis;
+    _lastDemoMeasRef = state.demoAnalysis;
     _demoMeasurementsCache = (state.demoAnalysis.measurements || []).map(m => ({
       id: m.id,
       memberId: 'demo-member',
@@ -317,11 +320,16 @@ export const selectIsAppParticipationAllowed = (state: AppState, appId: string) 
 
 export const selectContextualResults = (state: AppState) => {
    if (state.isDemoMode && state.demoAnalysis) {
-      if (_lastDemoDataRef === state.demoAnalysis && _demoContextualCache) {
+      if (_lastDemoCtxRef === state.demoAnalysis && _demoContextualCache) {
          return _demoContextualCache;
       }
-      _lastDemoDataRef = state.demoAnalysis;
-      _demoContextualCache = state.demoAnalysis.ecosystemFacts || [];
+      _lastDemoCtxRef = state.demoAnalysis;
+      _demoContextualCache = (state.demoAnalysis.ecosystemFacts || []).map(f => ({
+         ...f,
+         // Garantir campos para normalização em AnalysesScreen
+         last_update: f.timestamp || 1714172400000,
+         domain: f.domain || 'demo'
+      }));
       return _demoContextualCache;
    }
 

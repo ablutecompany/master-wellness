@@ -167,8 +167,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const urgencyFactor = Math.min(daysSince / 30, 1);
   const glowColor = urgencyFactor < 0.2 ? '#FFE600' : (urgencyFactor < 0.6 ? '#FF8C00' : '#FF0000');
   
-  // ── Switch Setup ──────────────────────────────────────────────────────────
-  const MAX_DRAG = 75; // Ajustado para curso equilibrado
+  // ── Switch Geometry Constants (DETERMINÍSTICO) ───────────────────────────
+  // A posição final da roda é calculada para garantir equilíbrio visual.
+  // KNOB_INSET define a distância ao topo (inicial) e ao fundo (final).
+  const CAPSULE_HEIGHT = 220; 
+  const KNOB_SIZE = 116; 
+  const KNOB_INSET = 12; 
+  const MAX_DRAG = CAPSULE_HEIGHT - KNOB_SIZE - (2 * KNOB_INSET); 
+  // ─────────────────────────────────────────────────────────────────────────────
+
   const switchAnim = useRef(new Animated.Value(0)).current; // 0 = UP, MAX_DRAG = DOWN
   const isOff = useRef(false);
 
@@ -213,7 +220,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     })
   ).current;
 
-  const DRAWER_DOWN = 590;
+  const DRAWER_DOWN = 650; // Aumentado para esconder mais o conteúdo
   const DRAWER_UP = 0;
   const lastDrawerY = useRef(DRAWER_DOWN);
   const drawerAnim = useRef(new Animated.Value(DRAWER_DOWN)).current;
@@ -235,7 +242,19 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   const drawerInnerOpacity = drawerAnim.interpolate({
     inputRange: [DRAWER_UP, DRAWER_DOWN],
-    outputRange: [1, 0.5],
+    outputRange: [1, 1], // Manter opaco para os ícones do rodapé
+    extrapolate: 'clamp',
+  });
+
+  const appContentOpacity = drawerAnim.interpolate({
+    inputRange: [DRAWER_UP, DRAWER_DOWN],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+
+  const footerIconsOpacity = drawerAnim.interpolate({
+    inputRange: [DRAWER_UP, DRAWER_DOWN],
+    outputRange: [0, 1],
     extrapolate: 'clamp',
   });
 
@@ -519,14 +538,14 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           {/* Núcleo Central (POLIDO: Mais Pequeno, Mais Alto, Mais Fino) */}
           <View style={{ 
             width: 116, 
-            height: 210, 
+            height: CAPSULE_HEIGHT, 
             borderRadius: 58, 
             overflow: 'hidden', 
             backgroundColor: 'rgba(5, 10, 20, 0.9)', 
             zIndex: 10, 
             borderWidth: 1.5, 
             borderColor: 'rgba(255,255,255,0.18)',
-            justifyContent: 'flex-start', // FIX: Forçar início no topo para posição zero correta
+            paddingTop: KNOB_INSET, // Inset determinístico inicial
             alignItems: 'center'
           }}>
             <Animated.View style={{ width: 116, height: 116, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
@@ -624,11 +643,28 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           <View {...drawerPanResponder.panHandlers} style={{ zIndex: 10, width: '100%', backgroundColor: 'transparent' }}>
             <View style={styles.drawerHandleArea}>
               <View style={styles.drawerHandle} />
-              <Typography variant="caption" style={styles.drawerTitle}>EXPLORAR MINI-APPS</Typography>
+              <Typography variant="caption" style={styles.drawerTitle}>APP PLACE</Typography>
+              
+              {/* Footer Icons: Apenas instaladas/favoritas quando colapsado */}
+              <Animated.View style={[styles.footerIconsRow, { opacity: footerIconsOpacity }]}>
+                {installedAppIds.length > 0 ? (
+                  installedAppIds.map(id => {
+                    const app = MINI_APP_CATALOG.find(a => a.id === id);
+                    if (!app) return null;
+                    return (
+                      <View key={id} style={styles.footerIconCircle}>
+                        <Typography style={{ fontSize: 14 }}>{app.iconEmoji}</Typography>
+                      </View>
+                    );
+                  })
+                ) : (
+                  <Typography style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', letterSpacing: 1 }}>SEM APPS INSTALADAS</Typography>
+                )}
+              </Animated.View>
             </View>
           </View>
 
-          <Animated.View style={{ flex: 1, width: '100%' }}>
+          <Animated.View style={{ flex: 1, width: '100%', opacity: appContentOpacity }}>
             <ScrollView
               style={{ flex: 1, width: '100%' }}
               contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
@@ -1576,5 +1612,23 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 2,
+  },
+  footerIconsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 15,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 40,
+  },
+  footerIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
   },
 });
