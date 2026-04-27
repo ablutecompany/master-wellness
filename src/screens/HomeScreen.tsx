@@ -168,7 +168,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const glowColor = urgencyFactor < 0.2 ? '#FFE600' : (urgencyFactor < 0.6 ? '#FF8C00' : '#FF0000');
   
   // ── Switch Setup ──────────────────────────────────────────────────────────
-  const MAX_DRAG = 60; // FIX: Reduzido de 100 para limitar o deslize (posição visual "objetivo")
+  const MAX_DRAG = 75; // Ajustado para curso equilibrado
   const switchAnim = useRef(new Animated.Value(0)).current; // 0 = UP, MAX_DRAG = DOWN
   const isOff = useRef(false);
 
@@ -229,7 +229,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   const drawerBgOpacity = drawerAnim.interpolate({
     inputRange: [DRAWER_UP, DRAWER_DOWN],
-    outputRange: [0.98, 0.05], // REFORÇADO: Quase opaco quando aberto
+    outputRange: [0.99, 0.05], // Praticamente opaco quando aberto
     extrapolate: 'clamp',
   });
 
@@ -454,10 +454,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   <Image 
                     source={require('../../assets/token_abl.png')} 
                     style={{ 
-                      width: 32, // Normalizado para caber no círculo
-                      height: 32, 
+                      width: 24,
+                      height: 24, 
                       tintColor: credits === 0 ? theme.colors.primary : '#fff',
-                      opacity: credits === 0 ? 0.7 : 0.85
+                      opacity: credits === 0 ? 0.7 : 0.95
                     }} 
                     resizeMode="contain"
                   />
@@ -494,11 +494,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             shadowColor: glowColor, 
             shadowOffset: { width: 0, height: 0 }, 
             shadowOpacity: 0.5, 
-            shadowRadius: 80 + (urgencyFactor * 60), 
-            elevation: 50,
+            shadowRadius: 100 + (urgencyFactor * 80), 
+            elevation: 60,
             transform: [{ scale: pulseAnim }],
             backgroundColor: glowColor,
-            opacity: 0.18
+            opacity: 0.22
           }} />
 
           {/* Segunda Camada de Aura para densidade central */}
@@ -624,7 +624,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           <View {...drawerPanResponder.panHandlers} style={{ zIndex: 10, width: '100%', backgroundColor: 'transparent' }}>
             <View style={styles.drawerHandleArea}>
               <View style={styles.drawerHandle} />
-              <Typography variant="caption" style={styles.drawerTitle}>APP PLACE</Typography>
+              <Typography variant="caption" style={styles.drawerTitle}>EXPLORAR MINI-APPS</Typography>
             </View>
           </View>
 
