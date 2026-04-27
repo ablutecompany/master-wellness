@@ -1030,10 +1030,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   edgeLabelContainer: {
-    width: 140, // Largura suficiente para o texto rodado não truncar
+    width: 140, 
     height: 42,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0, // Garantir que não colapse em mobile estreito
   },
   edgeLabel: {
     fontSize: 9,
@@ -1041,9 +1042,17 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     color: '#fff',
     transform: [{ rotate: '90deg' }],
-    width: 140, // Match do container para centramento perfeito
+    width: 140,
+    minWidth: 140, // Reforço de largura útil
     textAlign: 'center',
     opacity: 0.9,
+    // Estilos Web para evitar elipse/truncamento
+    ...Platform.select({
+      web: {
+        whiteSpace: 'nowrap',
+        wordBreak: 'keep-all',
+      } as any
+    })
   },
   // Bottom App Drawer trigger (always visible)
   drawerTrigger: {
