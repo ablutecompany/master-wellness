@@ -362,7 +362,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                     <Dna size={14} color="#A020F0" />
                   </View>
                   <Typography style={styles.bioValue}>
-                    {user?.sex === 'male' ? 'H' : user?.sex === 'female' ? 'M' : '?'}
+                    {user?.sex === 'male' ? 'Homem' : user?.sex === 'female' ? 'Mulher' : '?'}
                   </Typography>
                   <Typography variant="caption" style={styles.bioLabel}>Sexo</Typography>
                 </TouchableOpacity>
@@ -389,38 +389,58 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             </View>
 
             {/* MEMBROS AGREGADOS */}
-            {household && (
-              <View style={styles.menuSection}>
-                <Typography variant="caption" style={styles.sectionLabel}>MEMBROS AGREGADOS</Typography>
-                <View style={styles.cardGroup}>
-                  <View style={styles.hhHeader}>
-                    <Users size={16} color="#00F2FF" />
-                    <Typography style={styles.hhTitle}>{household.name.toUpperCase()}</Typography>
+            <View style={styles.menuSection}>
+              <Typography variant="caption" style={styles.sectionLabel}>MEMBROS AGREGADOS</Typography>
+              <View style={styles.cardGroup}>
+                <TouchableOpacity 
+                  style={[styles.groupItem, { borderBottomWidth: 0 }]} 
+                  onPress={() => {
+                    // Aqui futuramente abrirá a gestão de membros
+                    // Por agora mantemos a UI estável
+                    Alert.alert('Brevemente', 'Gestão de membros agregados estará disponível em breve.');
+                  }}
+                >
+                  <View style={styles.itemLeft}>
+                    <View style={[styles.iconBox, { backgroundColor: 'rgba(0, 242, 255, 0.1)' }]}>
+                      <Users size={14} color="#00F2FF" />
+                    </View>
+                    <View>
+                      <Typography style={styles.itemTitle}>Membros do Agregado</Typography>
+                      <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>Gerir membros e perfis associados</Typography>
+                    </View>
                   </View>
+                  <View style={styles.itemRight}>
+                    <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
+                  </View>
+                </TouchableOpacity>
 
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 10 }}>
-                    <TouchableOpacity 
-                      onPress={() => setActiveMember(null)}
-                      style={[styles.memberCard, !activeMemberId && styles.memberCardActive]}
-                    >
-                      <User size={16} color={!activeMemberId ? '#000' : '#fff'} />
-                      <Typography style={[styles.memberName, { color: !activeMemberId ? '#000' : '#fff' }]}>Eu</Typography>
-                    </TouchableOpacity>
-
-                    {household.members.map(m => (
+                {/* Lista horizontal rápida de troca de membro se houver household */}
+                {household && household.members.length > 0 && (
+                  <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.03)' }}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 10 }}>
                       <TouchableOpacity 
-                        key={m.id}
-                        onPress={() => setActiveMember(m.id)}
-                        style={[styles.memberCard, activeMemberId === m.id && styles.memberCardActive]}
+                        onPress={() => setActiveMember(null)}
+                        style={[styles.memberCard, !activeMemberId && styles.memberCardActive]}
                       >
-                        <User size={16} color={activeMemberId === m.id ? '#000' : '#fff'} />
-                        <Typography style={[styles.memberName, { color: activeMemberId === m.id ? '#000' : '#fff' }]}>{m.profile.name}</Typography>
+                        <User size={14} color={!activeMemberId ? '#000' : '#fff'} />
+                        <Typography style={[styles.memberName, { color: !activeMemberId ? '#000' : '#fff' }]}>Eu</Typography>
                       </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
+
+                      {household.members.map(m => (
+                        <TouchableOpacity 
+                          key={m.id}
+                          onPress={() => setActiveMember(m.id)}
+                          style={[styles.memberCard, activeMemberId === m.id && styles.memberCardActive]}
+                        >
+                          <User size={14} color={activeMemberId === m.id ? '#000' : '#fff'} />
+                          <Typography style={[styles.memberName, { color: activeMemberId === m.id ? '#000' : '#fff' }]}>{m.profile.name}</Typography>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
               </View>
-            )}
+            </View>
 
             {/* LOGOUT */}
             <View style={{ marginTop: 24 }}>
