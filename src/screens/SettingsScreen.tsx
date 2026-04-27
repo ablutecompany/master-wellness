@@ -14,13 +14,13 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   const isGuestMode = useStore(state => state.isGuestMode);
   const updateGuestProfile = useStore(state => state.updateGuestProfile);
   const updateAuthenticatedProfile = useStore(state => state.updateAuthenticatedProfile);
-  const ecosystemConfig = useStore(state => state.ecosystemConfig);
+  const ecosystemConfig = useStore(state => state.ecosystemConfig) || {};
   const setEcosystemConfig = useStore(state => state.setEcosystemConfig);
   const purgeEcosystemData = useStore(state => state.purgeEcosystemData);
   const purgeDomainData = useStore(state => state.purgeDomainData);
   const resetDemoData = useStore(state => state.resetDemoData);
-  const longitudinalMemory = useStore(state => state.longitudinalMemory);
-  const ecosystemLogs = useStore(state => state.ecosystemLogs);
+  const longitudinalMemory = useStore(state => state.longitudinalMemory) || {};
+  const ecosystemLogs = useStore(state => state.ecosystemLogs) || [];
 
   const handleUpdateLocation = (val: string) => {
     const updates = { location: val };
