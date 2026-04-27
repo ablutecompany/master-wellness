@@ -28,6 +28,9 @@ export const MINI_APP_CATALOG: MiniAppManifest[] = [
     rating: 4.9,
     reviewCount: 42,
     description: 'Introspeção guiada que conversa contigo para localizar fontes reais de stress, clarificar padrões e transformar cada sessão em passos concretos.',
+    publisher: 'ablute_ official',
+    screenshots: [], // Preparado para receber assets reais
+    releaseDate: '2024-04-20',
     consumedDomains: ['mental'],
     bridgeContractVersion: '1.4',
   },
@@ -48,6 +51,9 @@ export const MINI_APP_CATALOG: MiniAppManifest[] = [
     rating: 4.8,
     reviewCount: 31,
     description: 'Planeie refeições em família de acordo com requisitos nutricionais reais, restrições e participantes por refeição, ajustando quantidades e preferências. Automatize a lista de compras e encomende diretamente para casa.',
+    publisher: 'ablute_ official',
+    screenshots: [], // Preparado para receber assets reais
+    releaseDate: '2024-04-15',
     consumedDomains: ['nutrition'],
     bridgeContractVersion: '1.4',
   },

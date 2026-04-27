@@ -10,7 +10,8 @@ import { BlurView } from 'expo-blur';
 import { Video, ResizeMode } from 'expo-av';
 import { useStore } from '../store/useStore';
 import { getSemanticService } from '../services/semantic-output';
-import { MINI_APP_CATALOG } from '../miniapps/catalog';
+import { MINI_APP_CATALOG, CATEGORY_LABELS } from '../miniapps/catalog';
+import { MiniAppCategory } from '../miniapps/types';
 
 const RAW_BIOMARKERS = [
   { id: 'b1', name: 'NT-proBNP', value: '120', unit: 'pg/mL', source: 'ablute' },
@@ -731,17 +732,56 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       </View>
                       
                       {expandedAppId === app.id && (
-                        <Animated.View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
-                          <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 }}>
-                            {app.description}
-                          </Typography>
-                          <View style={{ flexDirection: 'row', marginTop: 12, gap: 12 }}>
-                            <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
-                              <Typography style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>VER {app.version}</Typography>
+                        <Animated.View style={styles.expandedCard}>
+                          {/* META INFO ROW */}
+                          <View style={styles.metaInfoRow}>
+                            <View style={styles.metaBadge}>
+                              <Star size={12} color="#FFD700" fill="#FFD700" />
+                              <Typography style={styles.metaBadgeText}>{app.rating || '0.0'}</Typography>
                             </View>
-                            <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
-                              <Typography style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>{app.developer}</Typography>
+                            <View style={styles.metaBadge}>
+                              <Typography style={[styles.metaBadgeText, { opacity: 0.5 }]}>VER {app.version}</Typography>
                             </View>
+                            <View style={styles.metaBadge}>
+                              <Typography style={[styles.metaBadgeText, { color: theme.colors.primary }]}>{CATEGORY_LABELS[app.category] || 'App'}</Typography>
+                            </View>
+                          </View>
+
+                          {/* SCREENSHOTS AREA */}
+                          <ScrollView 
+                            horizontal 
+                            showsHorizontalScrollIndicator={false} 
+                            style={styles.screenshotScroll}
+                            contentContainerStyle={{ gap: 12, paddingRight: 20 }}
+                          >
+                            {(app.screenshots && app.screenshots.length > 0) ? app.screenshots.map((ss, idx) => (
+                              <Image key={idx} source={{ uri: ss }} style={styles.screenshotImg} />
+                            )) : (
+                              // Fallback elegante se não houver imagens
+                              [1, 2].map((_, idx) => (
+                                <View key={idx} style={[styles.screenshotImg, { backgroundColor: 'rgba(255,255,255,0.02)', justifyContent: 'center', alignItems: 'center', borderStyle: 'dashed', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }]}>
+                                  <Typography style={{ color: 'rgba(255,255,255,0.1)', fontSize: 10 }}>SCREENSHOT {idx + 1}</Typography>
+                                </View>
+                              ))
+                            )}
+                          </ScrollView>
+
+                          {/* DESCRIPTION AREA */}
+                          <View style={styles.descContainer}>
+                            <Typography style={styles.expandedPublisher}>{app.publisher || app.developer}</Typography>
+                            <Typography style={styles.expandedDesc}>
+                              {app.description}
+                            </Typography>
+                          </View>
+
+                          {/* FOOTER ACTIONS */}
+                          <View style={styles.expandedFooter}>
+                            <TouchableOpacity 
+                              style={styles.closeExpandedBtn}
+                              onPress={() => setExpandedAppId(null)}
+                            >
+                              <Typography style={styles.closeExpandedText}>VER MENOS</Typography>
+                            </TouchableOpacity>
                           </View>
                         </Animated.View>
                       )}
@@ -1434,5 +1474,75 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1,
     fontSize: 15,
+  },
+  // Expanded Card Details
+  expandedCard: {
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+  },
+  metaInfoRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 20,
+    flexWrap: 'wrap',
+  },
+  metaBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.03)',
+  },
+  metaBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: 0.5,
+  },
+  screenshotScroll: {
+    marginBottom: 24,
+  },
+  screenshotImg: {
+    width: 200,
+    height: 120,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  descContainer: {
+    marginBottom: 24,
+  },
+  expandedPublisher: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.3)',
+    letterSpacing: 2,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+  expandedDesc: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 14,
+    lineHeight: 22,
+    fontWeight: '400',
+  },
+  expandedFooter: {
+    alignItems: 'center',
+    paddingTop: 10,
+  },
+  closeExpandedBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  closeExpandedText: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 2,
   },
 });
