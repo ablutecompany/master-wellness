@@ -672,10 +672,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
               showsVerticalScrollIndicator={false}
             >
-              <Typography variant="h3" style={styles.sectionTitle}>Catálogo de Mini-Apps</Typography>
+              <Typography variant="h3" style={styles.sectionTitle}>Catálogo de Mini-Apps (V1 LIVE)</Typography>
               <View style={styles.downloadList}>
                 {MINI_APP_CATALOG.map((app) => {
-                  const isInstalled = installedAppIds.includes(app.id);
+                  const isInstalled = (installedAppIds || []).includes(app.id);
                   return (
                     <View key={app.id} style={styles.downloadRow}>
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>

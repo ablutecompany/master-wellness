@@ -10,7 +10,7 @@ import { MiniAppManifest } from './types';
 //  3. Declare all permissions the app will use
 //  4. Set featured: true if it appears in the banner
 // ─────────────────────────────────────────────────────────────────────────────
-
+export const MINI_APP_CATALOG: MiniAppManifest[] = [
   {
     id: 'introspect',
     name: '_introspect',
