@@ -12,6 +12,11 @@ import { ContributionEvent, SessionSummary } from '../ecosystem-contracts';
 
 export const createEcosystemSlice: StateCreator<AppState, [], [], any> = (set, get) => ({
   ecosystemLogs: [],
+  ecosystemConfig: {},
+  longitudinalMemory: {},
+  processedEventIds: [],
+  lastContextBundle: null,
+  miniAppRegistry: ECOSYSTEM_REGISTRY,
 
   addEcosystemLog: (log: Omit<import('../state-types').EcosystemLog, 'id' | 'timestamp'>) => {
     const newLog: import('../state-types').EcosystemLog = {
