@@ -1,47 +1,36 @@
-import React, { useEffect } from 'react';
-import { StyleSheet, View, TouchableOpacity, ScrollView, Platform, Image } from 'react-native';
-import { Container, Typography } from '../components/Base';
+import React, { useEffect, useMemo, useState } from 'react';
+import { StyleSheet, View, TouchableOpacity, ScrollView, Platform, Image, Alert, Modal, SafeAreaView, Dimensions, FlatList } from 'react-native';
+import { Container, Typography, BlurView } from '../components/Base';
 import { theme } from '../theme';
 import { 
   ChevronRight, 
-  Camera, 
-  Globe, 
-  Activity, 
-  Users, 
-  Settings, 
-  LogOut,
-  ChevronLeft,
   X,
   User,
-  CreditCard
+  LogOut,
+  Activity,
+  Users,
+  Calendar,
+  Ruler,
+  Dna,
+  Settings
 } from 'lucide-react-native';
 import { GatingOverlay } from '../components/GatingOverlay';
 import { useStore } from '../store/useStore';
 import * as Selectors from '../store/selectors';
-
-import { Alert, Modal, SafeAreaView, Dimensions, TextInput, ImageBackground } from 'react-native';
-import { BlurView } from '../components/Base';
 import { supabase } from '../services/supabase';
-import { CameraView, useCameraPermissions } from 'expo-camera';
-import { FlatList } from 'react-native';
+
+const { width } = Dimensions.get('window');
 
 export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const userName = useStore(Selectors.selectUserName);
-  const credits = useStore(Selectors.selectCredits);
   const user = useStore(Selectors.selectUser);
   const isGuestMode = useStore(state => state.isGuestMode);
-  const updateGuestProfile = useStore(state => state.updateGuestProfile);
   const authAccount = useStore(state => state.authAccount);
   const household = useStore(Selectors.selectHousehold);
   const activeMemberId = useStore(Selectors.selectActiveMemberId);
   const setActiveMember = useStore(state => state.setActiveMember);
 
-  const [isScanningQRCode, setIsScanningQRCode] = React.useState(false);
-  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
-  const [hasScanned, setHasScanned] = React.useState(false);
-
   // ─────────────────────────────────────────────────────────────────────────────
-  // 0. EDIT HANDLERS (DIRECT)
+  // 1. DATA HANDLERS
   // ─────────────────────────────────────────────────────────────────────────────
   const updateProfileField = (updates: any) => {
     if (isGuestMode) {
@@ -51,90 +40,51 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     }
   };
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // MODAIS DE SELEÇÃO
-  // ─────────────────────────────────────────────────────────────────────────────
-  const [pickerConfig, setPickerConfig] = React.useState<{
-    visible: boolean;
-    title: string;
-    options: any[];
-    onSelect: (val: any) => void;
-    currentValue?: any;
-    type?: 'date' | 'number' | 'choice';
-  }>({ visible: false, title: '', options: [], onSelect: () => {} });
-
-  const closePicker = () => setPickerConfig(prev => ({ ...prev, visible: false }));
-
-  const openPicker = (config: Omit<typeof pickerConfig, 'visible'>) => {
-    setPickerConfig({ ...config, visible: true });
+  const calculateAge = (dobStr: string | undefined): number | null => {
+    if (!dobStr) return null;
+    const dob = new Date(dobStr);
+    if (isNaN(dob.getTime())) return null;
+    let age = new Date().getFullYear() - dob.getFullYear();
+    const m = new Date().getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && new Date().getDate() < dob.getDate())) {
+      age--;
+    }
+    return age >= 0 ? age : null;
   };
 
+  const userAge = calculateAge(user?.dateOfBirth);
+
   // ─────────────────────────────────────────────────────────────────────────────
-  // 1. BOOT & SYNC EFFECTS
+  // 2. MODAL STATE
   // ─────────────────────────────────────────────────────────────────────────────
+  const [modalConfig, setModalConfig] = useState<{
+    visible: boolean;
+    type: 'birthday' | 'height' | 'sex';
+    title: string;
+  }>({ visible: false, type: 'birthday', title: '' });
 
-  useEffect(() => {
-    let tz = user?.timezone;
-    if (!tz) {
-      try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { tz = 'UTC'; }
+  const [tempDate, setTempDate] = useState<{ year: number; month?: number; day?: number }>({ year: 2006 });
+  const [tempHeight, setTempHeight] = useState(175);
+
+  const openModal = (type: 'birthday' | 'height' | 'sex', title: string) => {
+    if (type === 'birthday') {
+      const current = user?.dateOfBirth ? new Date(user.dateOfBirth) : null;
+      setTempDate({ 
+        year: current ? current.getFullYear() : 2006,
+        month: user?.dateOfBirth && user.dateOfBirth.split('-').length > 1 ? current!.getMonth() + 1 : undefined,
+        day: user?.dateOfBirth && user.dateOfBirth.split('-').length > 2 ? current!.getDate() : undefined
+      });
+    } else if (type === 'height') {
+      setTempHeight(user?.height || 175);
     }
+    setModalConfig({ visible: true, type, title });
+  };
 
-    if (!user?.country || !user?.timezone) {
-       const fetchCountryAndSave = async (fallbackTz: string) => {
-         let countryCode = user?.country || '';
-         if (!countryCode) {
-           try {
-             // Fallback IP Geo
-             const res = await fetch('https://get.geojs.io/v1/ip/geo.json', { headers: { Accept: 'application/json' } });
-             if (res.ok) {
-               const data = await res.json();
-               countryCode = data.country || '';
-             }
-           } catch { }
-         }
+  const closeModal = () => setModalConfig(prev => ({ ...prev, visible: false }));
 
-         const updates: any = {};
-         if (!user?.timezone && fallbackTz) updates.timezone = fallbackTz;
-         // Assign countryCode even if empty, so it clears the "A detetar..." loop
-         if (user?.country === undefined) updates.country = countryCode;
-
-         if (Object.keys(updates).length > 0) {
-            if (useStore.getState().isGuestMode) { useStore.getState().updateGuestProfile(updates); } else { useStore.getState().updateAuthenticatedProfile(updates); }
-         }
-       };
-
-       if (!user?.country && Platform.OS === 'web' && 'geolocation' in navigator && (navigator as any).permissions) {
-         (navigator as any).permissions.query({ name: 'geolocation' }).then((result: any) => {
-           if (result.state === 'granted') {
-             navigator.geolocation.getCurrentPosition(
-               async (pos) => {
-                 try {
-                   const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
-                   const data = await res.json();
-                   const code = data.address?.country || '';
-                   const updates: any = {};
-                   if (!user?.timezone && tz) updates.timezone = tz;
-                   // Assign code even if empty, to halt loop
-                   if (user?.country === undefined) updates.country = code;
-                   if (Object.keys(updates).length > 0) {
-                      if (useStore.getState().isGuestMode) useStore.getState().updateGuestProfile(updates); else useStore.getState().updateAuthenticatedProfile(updates);
-                   }
-                 } catch { fetchCountryAndSave(tz || ''); }
-               },
-               () => fetchCountryAndSave(tz || ''),
-               { timeout: 5000 }
-             );
-           } else {
-             fetchCountryAndSave(tz || '');
-           }
-         }).catch(() => fetchCountryAndSave(tz || ''));
-       } else {
-          fetchCountryAndSave(tz || '');
-       }
-    }
-  }, [user?.timezone, user?.country, isGuestMode]);
-
-
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 3. EDIT ACTIONS
+  // ─────────────────────────────────────────────────────────────────────────────
   const handleEditName = () => {
     const current = user?.name || user?.fullName || '';
     const msg = 'Como gostarias de ser tratada?';
@@ -153,118 +103,153 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     ], 'plain-text', current);
   };
 
-  const handleEditSex = () => {
+  const saveBirthday = () => {
+    let dob = `${tempDate.year}`;
+    if (tempDate.month) {
+      dob += `-${String(tempDate.month).padStart(2, '0')}`;
+      if (tempDate.day) {
+        dob += `-${String(tempDate.day).padStart(2, '0')}`;
+      }
+    }
+    updateProfileField({ dateOfBirth: dob });
+    closeModal();
+  };
+
+  const saveHeight = () => {
+    updateProfileField({ height: tempHeight });
+    closeModal();
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 4. RENDER PICKERS
+  // ─────────────────────────────────────────────────────────────────────────────
+  const renderBirthdayPicker = () => {
+    const years = Array.from({ length: 100 }, (_, i) => 2024 - i);
+    const months = Array.from({ length: 12 }, (_, i) => i + 1);
+    const days = Array.from({ length: 31 }, (_, i) => i + 1);
+
+    return (
+      <View style={styles.pickerContainer}>
+        <View style={styles.pickerColumn}>
+          <Typography variant="caption" style={styles.pickerColLabel}>ANO</Typography>
+          <FlatList
+            data={years}
+            keyExtractor={item => `year-${item}`}
+            renderItem={({ item }) => (
+              <TouchableOpacity 
+                style={[styles.wheelItem, tempDate.year === item && styles.wheelItemActive]}
+                onPress={() => setTempDate({ ...tempDate, year: item })}
+              >
+                <Typography style={[styles.wheelText, tempDate.year === item && styles.wheelTextActive]}>{item}</Typography>
+              </TouchableOpacity>
+            )}
+            initialScrollIndex={years.indexOf(tempDate.year)}
+            getItemLayout={(_, index) => ({ length: 44, offset: 44 * index, index })}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
+
+        <View style={styles.pickerColumn}>
+          <Typography variant="caption" style={styles.pickerColLabel}>MÊS</Typography>
+          <FlatList
+            data={months}
+            keyExtractor={item => `month-${item}`}
+            renderItem={({ item }) => (
+              <TouchableOpacity 
+                style={[styles.wheelItem, tempDate.month === item && styles.wheelItemActive]}
+                onPress={() => setTempDate({ ...tempDate, month: item })}
+              >
+                <Typography style={[styles.wheelText, tempDate.month === item && styles.wheelTextActive]}>{item}</Typography>
+              </TouchableOpacity>
+            )}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
+
+        <View style={styles.pickerColumn}>
+          <Typography variant="caption" style={styles.pickerColLabel}>DIA</Typography>
+          <FlatList
+            data={days}
+            keyExtractor={item => `day-${item}`}
+            renderItem={({ item }) => (
+              <TouchableOpacity 
+                style={[styles.wheelItem, tempDate.day === item && styles.wheelItemActive]}
+                onPress={() => setTempDate({ ...tempDate, day: item })}
+              >
+                <Typography style={[styles.wheelText, tempDate.day === item && styles.wheelTextActive]}>{item}</Typography>
+              </TouchableOpacity>
+            )}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
+      </View>
+    );
+  };
+
+  const renderHeightPicker = () => {
+    const range = Array.from({ length: 100 }, (_, i) => 130 + i);
+    return (
+      <View style={styles.pickerContainer}>
+        <View style={{ flex: 1 }}>
+          <FlatList
+            data={range}
+            keyExtractor={item => `h-${item}`}
+            renderItem={({ item }) => (
+              <TouchableOpacity 
+                style={[styles.wheelItem, tempHeight === item && styles.wheelItemActive]}
+                onPress={() => setTempHeight(item)}
+              >
+                <Typography style={[styles.wheelText, tempHeight === item && styles.wheelTextActive]}>{item} cm</Typography>
+              </TouchableOpacity>
+            )}
+            initialScrollIndex={range.indexOf(tempHeight) !== -1 ? range.indexOf(tempHeight) : 45}
+            getItemLayout={(_, index) => ({ length: 44, offset: 44 * index, index })}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
+      </View>
+    );
+  };
+
+  const renderSexPicker = () => {
     const options = [
       { label: 'Homem', value: 'M' },
       { label: 'Mulher', value: 'F' },
       { label: 'Não indicar', value: null }
     ];
-    
-    openPicker({
-      title: 'Sexo',
-      options,
-      currentValue: user?.sex,
-      onSelect: (val) => {
-        updateProfileField({ sex: val });
-        closePicker();
-      }
-    });
+    return (
+      <View style={{ gap: 8, marginTop: 10 }}>
+        {options.map(opt => (
+          <TouchableOpacity 
+            key={String(opt.value)}
+            style={[styles.choiceBtn, user?.sex === opt.value && styles.choiceBtnActive]}
+            onPress={() => {
+              updateProfileField({ sex: opt.value });
+              closeModal();
+            }}
+          >
+            <Typography style={[styles.choiceText, user?.sex === opt.value && styles.choiceTextActive]}>{opt.label}</Typography>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
   };
 
-  const handleEditDateOfBirth = () => {
-    const currentYear = new Date().getFullYear();
-    const years = Array.from({ length: 100 }, (_, i) => ({ label: String(currentYear - i), value: currentYear - i }));
-    
-    openPicker({
-      title: 'Ano de Nascimento',
-      options: years,
-      currentValue: user?.dateOfBirth ? new Date(user.dateOfBirth).getFullYear() : 1980,
-      onSelect: (year) => {
-        // Guardamos como 1 de Janeiro desse ano se for apenas o ano
-        const dob = `${year}-01-01`;
-        updateProfileField({ dateOfBirth: dob });
-        closePicker();
-      }
-    });
-  };
-
-  const handleEditHeight = () => {
-    const heights = Array.from({ length: 100 }, (_, i) => ({ label: `${140 + i} cm`, value: 140 + i }));
-    
-    openPicker({
-      title: 'Altura',
-      options: heights,
-      currentValue: user?.height || 170,
-      onSelect: (val) => {
-        updateProfileField({ height: val });
-        closePicker();
-      }
-    });
-  };
-
-  const handleEditWeight = () => {
-    const weights = Array.from({ length: 220 }, (_, i) => ({ label: `${30 + i} kg`, value: 30 + i }));
-    const currentWeight = user?.weight?.manualValue || user?.weight?.value || 60;
-
-    openPicker({
-      title: 'Peso',
-      options: weights,
-      currentValue: Math.round(Number(currentWeight)),
-      onSelect: (val) => {
-        updateProfileField({ 
-          weight: { 
-            ...user?.weight, 
-            manualValue: val,
-            value: val,
-            source: 'manual' 
-          } 
-        });
-        closePicker();
-      }
-    });
-  };
-
-  const userAge = calculateAge(user?.dateOfBirth || (user as any)?.birthDate);
-
-  const isProfileComplete = Boolean(
-    (user?.fullName || user?.name) && (user?.fullName || user?.name) !== 'Convidada' &&
-    (user?.dateOfBirth || (user as any)?.birthDate) &&
-    user?.height
-  );
-
-  const measurementsCount = useStore.getState().measurements?.length || 0;
-  const exportedContextsCount = useStore.getState().exportedContexts?.length || 0;
-  const pendingInvitesCount = household?.invitations?.filter((i: any) => i.status === 'pending').length || 0;
-  const dependentsCount = household ? household.members.length : 0;
-
-  const setupItems: Array<{ id: string, title: string, desc: string, icon: any, action: () => void }> = [];
-
-  setupItems.push({
-    id: 'household', 
-    title: 'Membros Agregados', 
-    desc: 'Gerir membros do agregado e perfis associados.',
-    icon: <Users size={14} color="#FFA500" />,
-    action: () => {
-      const name = window.prompt("Nome do novo membro:");
-      if (name && name.trim() !== '') {
-        const id = 'mem_' + Date.now();
-        useStore.getState().addHouseholdMember({
-          id, role: 'dependent', profile: { id, name: name.trim() },
-          permissions: { results: 'private', context: 'private' },
-          createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
-        });
-      }
-    }
-  });
-
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 5. MAIN RENDER
+  // ─────────────────────────────────────────────────────────────────────────────
   return (
     <View style={styles.outerContainer}>
       <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
       
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.modalPanel}>
+          {/* HEADER */}
           <View style={styles.modalHeader}>
-            <Typography variant="h3" style={{ fontWeight: '700', color: '#fff' }}>O Meu Perfil</Typography>
+            <View>
+              <Typography variant="h3" style={{ fontWeight: '700', color: '#fff' }}>Perfil</Typography>
+              <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>CONFIGURAÇÃO BIOGRÁFICA</Typography>
+            </View>
             <TouchableOpacity 
               onPress={() => navigation.goBack()} 
               style={styles.closeBtnCircle}
@@ -277,251 +262,195 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
-            {/* Header / Avatar */}
-            <View style={styles.profileHero}>
-              <TouchableOpacity style={styles.avatarCircle} onPress={() => {}} disabled>
+            {/* HERO SECTION */}
+            <View style={styles.heroSection}>
+              <TouchableOpacity style={styles.avatarContainer} disabled>
                 {user?.avatarUrl ? (
-                  <Image source={{ uri: user.avatarUrl }} style={{ width: 80, height: 80, borderRadius: 40 }} />
+                  <Image source={{ uri: user.avatarUrl }} style={styles.avatarImg} />
                 ) : (
-                  <User size={36} color="white" />
+                  <User size={32} color="white" />
                 )}
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleEditName} style={{ alignItems: 'center', marginTop: 16 }}>
-                <Typography variant="h2" style={{ fontWeight: '700', color: '#fff' }}>
-                  {user?.name || user?.fullName || 'Utilizador'}
+              
+              <TouchableOpacity onPress={handleEditName} style={styles.nameBlock}>
+                <Typography variant="h2" style={styles.profileName}>
+                  {user?.name || user?.fullName || 'Convidada'}
                 </Typography>
-                <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>
-                  {user?.email || (authAccount?.email) || 'Sem email associado'}
+                <Typography variant="caption" style={styles.profileEmail}>
+                  {user?.email || authAccount?.email || 'MODO GUEST LOCAL'}
                 </Typography>
-                <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.15)', fontSize: 9, marginTop: 8, letterSpacing: 1 }}>
-                   BUILD V2.5-STABLE • UI-R2-FROSTED • {isGuestMode ? 'GUEST' : 'AUTH'}
+                <View style={styles.badgeRow}>
+                   <Typography style={styles.versionBadge}>BUILD 2.6 • STABLE</Typography>
+                   <Typography style={[styles.modeBadge, { backgroundColor: isGuestMode ? 'rgba(255,255,255,0.1)' : 'rgba(0, 242, 255, 0.1)' }]}>
+                     {isGuestMode ? 'CONVIDADA' : 'MEMBRO'}
+                   </Typography>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {/* DADOS BIOMÉTRICOS */}
+            <View style={styles.menuSection}>
+              <Typography variant="caption" style={styles.sectionLabel}>DADOS BIOMÉTRICOS</Typography>
+              <View style={styles.cardGroup}>
+                
+                {/* SEXO */}
+                <TouchableOpacity style={styles.groupItem} onPress={() => openModal('sex', 'Sexo')}>
+                  <View style={styles.itemLeft}>
+                    <View style={[styles.iconBox, { backgroundColor: 'rgba(160, 32, 240, 0.1)' }]}>
+                      <Dna size={14} color="#A020F0" />
+                    </View>
+                    <Typography style={styles.itemTitle}>Sexo</Typography>
+                  </View>
+                  <View style={styles.itemRight}>
+                    <Typography style={styles.itemValue}>
+                      {user?.sex === 'M' ? 'Homem' : user?.sex === 'F' ? 'Mulher' : 'Não indicado'}
+                    </Typography>
+                    <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
+                  </View>
+                </TouchableOpacity>
+
+                {/* IDADE / NASCIMENTO */}
+                <TouchableOpacity style={styles.groupItem} onPress={() => openModal('birthday', 'Data de Nascimento')}>
+                  <View style={styles.itemLeft}>
+                    <View style={[styles.iconBox, { backgroundColor: 'rgba(255, 149, 0, 0.1)' }]}>
+                      <Calendar size={14} color="#FF9500" />
+                    </View>
+                    <Typography style={styles.itemTitle}>Idade</Typography>
+                  </View>
+                  <View style={styles.itemRight}>
+                    <Typography style={styles.itemValue}>{userAge ? `${userAge} anos` : 'Definir'}</Typography>
+                    <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
+                  </View>
+                </TouchableOpacity>
+
+                {/* ALTURA */}
+                <TouchableOpacity style={styles.groupItem} onPress={() => openModal('height', 'Altura')}>
+                  <View style={styles.itemLeft}>
+                    <View style={[styles.iconBox, { backgroundColor: 'rgba(0, 242, 255, 0.1)' }]}>
+                      <Ruler size={14} color="#00F2FF" />
+                    </View>
+                    <Typography style={styles.itemTitle}>Altura</Typography>
+                  </View>
+                  <View style={styles.itemRight}>
+                    <Typography style={styles.itemValue}>{user?.height ? `${user.height} cm` : 'Definir'}</Typography>
+                    <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
+                  </View>
+                </TouchableOpacity>
+
+                {/* PESO */}
+                <TouchableOpacity style={[styles.groupItem, { borderBottomWidth: 0 }]} onPress={() => {}}>
+                  <View style={styles.itemLeft}>
+                    <View style={[styles.iconBox, { backgroundColor: 'rgba(255, 51, 102, 0.1)' }]}>
+                      <Activity size={14} color="#FF3366" />
+                    </View>
+                    <Typography style={styles.itemTitle}>Peso</Typography>
+                  </View>
+                  <View style={styles.itemRight}>
+                    <Typography style={styles.itemValue}>
+                      {user?.weight?.manualValue || user?.weight?.value ? `${user?.weight?.manualValue || user?.weight?.value} kg` : '—'}
+                    </Typography>
+                    <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* MEMBROS AGREGADOS */}
+            {household && (
+              <View style={styles.menuSection}>
+                <Typography variant="caption" style={styles.sectionLabel}>MEMBROS AGREGADOS</Typography>
+                <View style={styles.cardGroup}>
+                  <View style={styles.hhHeader}>
+                    <Users size={16} color="#00F2FF" />
+                    <Typography style={styles.hhTitle}>{household.name.toUpperCase()}</Typography>
+                  </View>
+
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 10 }}>
+                    <TouchableOpacity 
+                      onPress={() => setActiveMember(null)}
+                      style={[styles.memberCard, !activeMemberId && styles.memberCardActive]}
+                    >
+                      <User size={16} color={!activeMemberId ? '#000' : '#fff'} />
+                      <Typography style={[styles.memberName, { color: !activeMemberId ? '#000' : '#fff' }]}>Eu</Typography>
+                    </TouchableOpacity>
+
+                    {household.members.map(m => (
+                      <TouchableOpacity 
+                        key={m.id}
+                        onPress={() => setActiveMember(m.id)}
+                        style={[styles.memberCard, activeMemberId === m.id && styles.memberCardActive]}
+                      >
+                        <User size={16} color={activeMemberId === m.id ? '#000' : '#fff'} />
+                        <Typography style={[styles.memberName, { color: activeMemberId === m.id ? '#000' : '#fff' }]}>{m.profile.name}</Typography>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+
+                  <TouchableOpacity style={styles.addMemberRow} onPress={() => {}}>
+                    <Typography style={styles.addMemberText}>ADICIONAR MEMBRO</Typography>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {/* LOGOUT */}
+            <View style={{ marginTop: 24 }}>
+              <TouchableOpacity 
+                style={styles.logoutBtn}
+                onPress={async () => {
+                  if (isGuestMode) {
+                    useStore.getState().setGuestMode(false);
+                  } else {
+                    await supabase.auth.signOut();
+                    useStore.getState().setUser(null);
+                  }
+                  navigation.goBack();
+                }}
+              >
+                <LogOut size={18} color="#FF3B30" />
+                <Typography style={styles.logoutText}>
+                  {isGuestMode ? 'Sair do Modo Convidada' : 'Terminar Sessão'}
                 </Typography>
               </TouchableOpacity>
             </View>
 
-            {/* Maturidade / Setup Items */}
-            {setupItems.length > 0 && (
-              <View style={styles.maturityCard}>
-                <Typography variant="caption" style={styles.sectionLabel}>MATURIDADE DO ECOSSISTEMA</Typography>
-                <View style={{ gap: 8 }}>
-                  {setupItems.map(item => (
-                    <TouchableOpacity 
-                      key={item.id} 
-                      onPress={item.action}
-                      style={styles.setupRow}
-                    >
-                      <View style={styles.setupIconBox}>{item.icon}</View>
-                      <View style={{ flex: 1 }}>
-                        <Typography style={styles.setupTitle}>{item.title}</Typography>
-                        <Typography style={styles.setupDesc}>{item.desc}</Typography>
-                      </View>
-                      <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            {/* Household Selector */}
-            {household && (
-              <View style={styles.section}>
-                <Typography variant="caption" style={styles.sectionLabel}>{household.name.toUpperCase()}</Typography>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row' }}>
-                  <TouchableOpacity 
-                    onPress={() => setActiveMember(null)}
-                    style={[styles.memberTab, !activeMemberId && styles.memberTabActive]}>
-                      <Typography variant="caption" style={{ color: !activeMemberId ? '#000' : '#fff', fontWeight: '700' }}>Eu</Typography>
-                  </TouchableOpacity>
-                  {household.members.map(m => (
-                    <TouchableOpacity 
-                      key={m.id}
-                      onPress={() => setActiveMember(m.id)}
-                      style={[styles.memberTab, activeMemberId === m.id && styles.memberTabActive]}>
-                        <Typography variant="caption" style={{ color: activeMemberId === m.id ? '#000' : '#fff', fontWeight: '700' }}>{m.profile.name}</Typography>
-                    </TouchableOpacity>
-                  ))}
-                  <TouchableOpacity 
-                    onPress={() => {/* logic already in setupItems but here for completeness */}}
-                    style={styles.memberTabAdd}>
-                      <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.6)' }}>+ Membro</Typography>
-                  </TouchableOpacity>
-                </ScrollView>
-              </View>
-            )}
-
-            {/* Biometria */}
-            <View style={styles.section}>
-              <Typography variant="caption" style={styles.sectionLabel}>DADOS BIOMÉTRICOS</Typography>
-              <View style={styles.glassGroup}>
-                <View style={styles.groupRow}>
-                  <TouchableOpacity 
-                    style={styles.groupCell} 
-                    onPress={handleEditSex}
-                    activeOpacity={0.7}
-                  >
-                    <Typography style={styles.cellLabel}>Sexo</Typography>
-                    <Typography style={styles.cellValue}>
-                      {user?.sex === 'M' ? 'Homem' : user?.sex === 'F' ? 'Mulher' : 'Não indicado'}
-                    </Typography>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.groupCell} 
-                    onPress={handleEditDateOfBirth}
-                    activeOpacity={0.7}
-                  >
-                    <Typography style={styles.cellLabel}>Idade</Typography>
-                    <Typography style={styles.cellValue}>{userAge !== null ? `${userAge} anos` : '—'}</Typography>
-                  </TouchableOpacity>
-                </View>
-                <View style={styles.groupRow}>
-                  <TouchableOpacity 
-                    style={styles.groupCell} 
-                    onPress={handleEditHeight}
-                    activeOpacity={0.7}
-                  >
-                    <Typography style={styles.cellLabel}>Altura</Typography>
-                    <Typography style={styles.cellValue}>{user?.height ? `${user.height} cm` : '—'}</Typography>
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    style={styles.groupCell} 
-                    onPress={handleEditWeight}
-                    activeOpacity={0.7}
-                  >
-                    <Typography style={styles.cellLabel}>Peso</Typography>
-                    <Typography style={styles.cellValue}>
-                      {user?.weight?.manualValue || user?.weight?.value ? `${user?.weight?.manualValue || user?.weight?.value} kg` : '—'}
-                    </Typography>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-
-            {/* Logout */}
-            <TouchableOpacity 
-              style={styles.logoutAction}
-              onPress={async () => {
-                if (isGuestMode) {
-                  useStore.getState().setGuestMode(false);
-                  useStore.getState().clearSensitiveState();
-                } else {
-                  await supabase.auth.signOut();
-                  useStore.getState().setUser(null);
-                  useStore.getState().setSessionToken(null);
-                  useStore.getState().clearSensitiveState();
-                }
-              }}
-            >
-              <LogOut size={18} color="#FF453A" />
-              <Typography style={{ color: '#FF453A', marginLeft: 10, fontWeight: '600' }}>
-                {isGuestMode ? 'Sair do modo Guest' : 'Terminar Sessão'}
-              </Typography>
-            </TouchableOpacity>
-
-            <View style={{ height: 20 }} />
+            <View style={{ height: 60 }} />
           </ScrollView>
         </View>
       </SafeAreaView>
-      
+
       <GatingOverlay />
 
-      <Modal visible={isScanningQRCode} animationType="slide" transparent={false}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: 'black' }}>
-          <View style={{ padding: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-             <Typography style={{ color: 'white', fontSize: 18, fontWeight: 'bold' }}>Scan de Agregado</Typography>
-             <TouchableOpacity onPress={() => setIsScanningQRCode(false)} style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20 }}>
-                <Typography style={{ color: 'white' }}>Fechar</Typography>
-             </TouchableOpacity>
-          </View>
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <CameraView 
-               style={{ width: Dimensions.get('window').width, height: Dimensions.get('window').width }}
-               facing="back"
-               barcodeScannerSettings={{
-                 barcodeTypes: ["qr"]
-               }}
-               onBarcodeScanned={({ data }) => {
-                 if (hasScanned) return;
-                 setHasScanned(true);
-                 setIsScanningQRCode(false);
-                 setTimeout(() => {
-                   if (data && data.trim() !== '') {
-                     const finalCode = data.trim().startsWith('inv_') ? data.trim() : `inv_${data.trim()}`;
-                     useStore.getState().acceptHouseholdInvite(finalCode).then(ok => {
-                       if (ok) {
-                          if (Platform.OS === 'web') alert('Convite aceite por QR! Foste adicionado(a) ao agregado.');
-                          else Alert.alert('Sucesso', 'Foste adicionado(a) ao agregado.');
-                       } else {
-                          if (Platform.OS === 'web') alert('Falha ao aceder ao convite lido.');
-                          else Alert.alert('Erro', 'Convite QR inválido ou expirado.');
-                       }
-                     });
-                   }
-                 }, 500);
-               }}
-            />
-            <View style={{ position: 'absolute', width: 250, height: 250, borderWidth: 2, borderColor: theme.colors.primary, borderRadius: 10, backgroundColor: 'transparent' }} />
-          </View>
-          <View style={{ padding: 30, alignItems: 'center' }}>
-             <Typography style={{ color: 'white', textAlign: 'center' }}>Aponta o quadrado central para o QR code no telemóvel do Dono do Agregado.</Typography>
-          </View>
-        </SafeAreaView>
-      </Modal>
-
       {/* REUSABLE PICKER MODAL */}
-      <Modal visible={pickerConfig.visible} animationType="fade" transparent>
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
-          onPress={closePicker}
-        >
-          <BlurView intensity={90} tint="dark" style={styles.pickerContent}>
-            <View style={styles.modalHandle} />
-            <Typography variant="h3" style={styles.pickerTitle}>{pickerConfig.title}</Typography>
+      <Modal visible={modalConfig.visible} animationType="slide" transparent>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={closeModal}>
+          <BlurView intensity={95} tint="dark" style={styles.pickerSheet}>
+            <View style={styles.sheetHandle} />
+            <Typography variant="h3" style={styles.sheetTitle}>{modalConfig.title}</Typography>
             
-            <View style={{ maxHeight: 300 }}>
-              <FlatList
-                data={pickerConfig.options}
-                keyExtractor={(item) => String(item.value)}
-                renderItem={({ item }) => (
-                  <TouchableOpacity 
-                    style={[
-                      styles.pickerOption,
-                      pickerConfig.currentValue === item.value && styles.pickerOptionActive
-                    ]}
-                    onPress={() => pickerConfig.onSelect(item.value)}
-                  >
-                    <Typography style={[
-                      styles.pickerOptionText,
-                      pickerConfig.currentValue === item.value && styles.pickerOptionTextActive
-                    ]}>
-                      {item.label}
-                    </Typography>
-                  </TouchableOpacity>
-                )}
-                showsVerticalScrollIndicator={false}
-              />
+            <View style={styles.sheetContent}>
+              {modalConfig.type === 'birthday' && renderBirthdayPicker()}
+              {modalConfig.type === 'height' && renderHeightPicker()}
+              {modalConfig.type === 'sex' && renderSexPicker()}
             </View>
 
-            <TouchableOpacity style={styles.pickerCloseBtn} onPress={closePicker}>
-               <Typography style={styles.pickerCloseBtnText}>CANCELAR</Typography>
+            {(modalConfig.type === 'birthday' || modalConfig.type === 'height') && (
+              <TouchableOpacity 
+                style={styles.saveBtn} 
+                onPress={modalConfig.type === 'birthday' ? saveBirthday : saveHeight}
+              >
+                <Typography style={styles.saveBtnText}>CONFIRMAR</Typography>
+              </TouchableOpacity>
+            )}
+            
+            <TouchableOpacity style={styles.cancelBtn} onPress={closeModal}>
+               <Typography style={styles.cancelBtnText}>FECHAR</Typography>
             </TouchableOpacity>
           </BlurView>
         </TouchableOpacity>
       </Modal>
     </View>
   );
-};
-
-const calculateAge = (dobStr: string | undefined): number | null => {
-  if (!dobStr) return null;
-  const dob = new Date(dobStr);
-  if (isNaN(dob.getTime())) return null;
-  let age = new Date().getFullYear() - dob.getFullYear();
-  const m = new Date().getMonth() - dob.getMonth();
-  if (m < 0 || (m === 0 && new Date().getDate() < dob.getDate())) {
-    age--;
-  }
-  return age >= 0 ? age : null;
 };
 
 const styles = StyleSheet.create({
@@ -537,10 +466,10 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: Platform.OS === 'ios' ? 20 : 40,
     marginBottom: 20,
-    backgroundColor: 'rgba(10, 15, 25, 0.8)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
     borderRadius: 32,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255,255,255,0.08)',
     overflow: 'hidden',
   },
   modalHeader: {
@@ -561,155 +490,193 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scrollContent: {
-    paddingBottom: 20,
+    paddingHorizontal: 20,
+    paddingTop: 24,
   },
-  profileHero: {
+  heroSection: {
     alignItems: 'center',
-    paddingVertical: 32,
+    marginBottom: 32,
   },
-  avatarCircle: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: 'rgba(0, 242, 255, 0.1)',
-    borderWidth: 2,
-    borderColor: 'rgba(0, 242, 255, 0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-  },
-  maturityCard: {
-    marginHorizontal: 20,
-    marginBottom: 24,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 24,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-  },
-  setupRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    backgroundColor: 'rgba(255,255,255,0.02)',
-    borderRadius: 16,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.02)',
-  },
-  setupIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+  avatarContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 2,
+    borderColor: 'rgba(0, 242, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
+    marginBottom: 16,
   },
-  setupTitle: {
+  avatarImg: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+  },
+  nameBlock: {
+    alignItems: 'center',
+  },
+  profileName: {
     color: '#fff',
-    fontSize: 14,
+    fontWeight: '700',
+    fontSize: 22,
+  },
+  profileEmail: {
+    color: 'rgba(255,255,255,0.3)',
+    marginTop: 4,
     fontWeight: '600',
-    marginBottom: 2,
   },
-  setupDesc: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 11,
-    lineHeight: 14,
+  badgeRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
   },
-  section: {
-    marginHorizontal: 20,
+  versionBadge: {
+    fontSize: 8,
+    color: 'rgba(255,255,255,0.2)',
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  modeBadge: {
+    fontSize: 8,
+    color: '#00F2FF',
+    fontWeight: '900',
+    letterSpacing: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  menuSection: {
     marginBottom: 24,
   },
   sectionLabel: {
-    color: 'rgba(255,255,255,0.3)',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1.2,
+    color: 'rgba(255,255,255,0.25)',
+    fontSize: 9,
+    letterSpacing: 2,
     marginBottom: 12,
     marginLeft: 4,
-  },
-  glassGroup: {
-    gap: 12,
-  },
-  groupRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  groupCell: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-    ...Platform.select({ web: { cursor: 'pointer' } as any, default: {} }),
-  },
-  cellLabel: {
-    color: 'rgba(255,255,255,0.3)',
-    fontSize: 10,
-    fontWeight: '600',
-    marginBottom: 6,
+    fontWeight: '800',
     textTransform: 'uppercase',
   },
-  cellValue: {
+  cardGroup: {
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    overflow: 'hidden',
+  },
+  groupItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.03)',
+  },
+  itemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  iconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  itemTitle: {
     color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  itemRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  itemValue: {
+    color: '#00F2FF',
     fontSize: 15,
     fontWeight: '700',
   },
-  memberTab: {
+  hhHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: 'rgba(0, 242, 255, 0.05)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.05)',
+    gap: 10,
+  },
+  hhTitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#00F2FF',
+    letterSpacing: 1,
+  },
+  memberCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingVertical: 10,
+    borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.05)',
-    marginRight: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255,255,255,0.05)',
   },
-  memberTabActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
+  memberCardActive: {
+    backgroundColor: '#00F2FF',
+    borderColor: '#00F2FF',
   },
-  memberTabAdd: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.02)',
-    borderStyle: 'dashed',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+  memberName: {
+    fontSize: 13,
+    fontWeight: '700',
   },
-  logoutAction: {
+  addMemberRow: {
+    padding: 14,
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.03)',
+  },
+  addMemberText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: 'rgba(255,255,255,0.3)',
+    letterSpacing: 2,
+  },
+  logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 18,
-    backgroundColor: 'rgba(255, 69, 58, 0.1)',
-    borderRadius: 20,
-    marginHorizontal: 20,
-    marginTop: 10,
-    marginBottom: 20,
+    backgroundColor: 'rgba(255, 59, 48, 0.08)',
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255, 69, 58, 0.2)',
+    borderColor: 'rgba(255, 59, 48, 0.15)',
+    gap: 10,
+  },
+  logoutText: {
+    color: '#FF3B30',
+    fontWeight: '700',
+    fontSize: 15,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
-  pickerContent: {
+  pickerSheet: {
     backgroundColor: '#0A0E14',
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     padding: 32,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 32,
+    paddingBottom: Platform.OS === 'ios' ? 44 : 32,
     borderTopWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
   },
-  modalHandle: {
+  sheetHandle: {
     width: 40,
     height: 4,
     borderRadius: 2,
@@ -717,41 +684,89 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     marginBottom: 20,
   },
-  pickerTitle: {
+  sheetTitle: {
     color: '#fff',
     textAlign: 'center',
     marginBottom: 24,
     fontWeight: '700',
   },
-  pickerOption: {
-    paddingVertical: 16,
+  sheetContent: {
+    minHeight: 200,
+  },
+  pickerContainer: {
+    flexDirection: 'row',
+    height: 250,
+  },
+  pickerColumn: {
+    flex: 1,
+  },
+  pickerColLabel: {
+    textAlign: 'center',
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.2)',
+    fontWeight: '800',
+    marginBottom: 10,
+  },
+  wheelItem: {
+    height: 44,
+    justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 12,
-    marginBottom: 4,
   },
-  pickerOptionActive: {
-    backgroundColor: 'rgba(0, 242, 255, 0.1)',
+  wheelItemActive: {
+    backgroundColor: 'rgba(0, 242, 255, 0.05)',
   },
-  pickerOptionText: {
-    color: 'rgba(255,255,255,0.5)',
+  wheelText: {
+    color: 'rgba(255,255,255,0.3)',
     fontSize: 16,
+    fontWeight: '500',
+  },
+  wheelTextActive: {
+    color: '#00F2FF',
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  choiceBtn: {
+    paddingVertical: 18,
+    alignItems: 'center',
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+  },
+  choiceBtnActive: {
+    backgroundColor: 'rgba(0, 242, 255, 0.1)',
+    borderColor: '#00F2FF',
+  },
+  choiceText: {
+    color: 'rgba(255,255,255,0.5)',
     fontWeight: '600',
   },
-  pickerOptionTextActive: {
+  choiceTextActive: {
     color: '#00F2FF',
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  pickerCloseBtn: {
-    marginTop: 20,
+  saveBtn: {
+    marginTop: 24,
+    backgroundColor: '#00F2FF',
     paddingVertical: 16,
     borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.05)',
     alignItems: 'center',
   },
-  pickerCloseBtnText: {
-    color: 'rgba(255,255,255,0.4)',
+  saveBtnText: {
+    color: '#000',
     fontWeight: '800',
-    letterSpacing: 1,
-    fontSize: 12,
+    fontSize: 13,
+    letterSpacing: 2,
+  },
+  cancelBtn: {
+    marginTop: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  cancelBtnText: {
+    color: 'rgba(255,255,255,0.3)',
+    fontWeight: '800',
+    fontSize: 11,
+    letterSpacing: 1.5,
   },
 });
