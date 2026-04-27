@@ -656,7 +656,20 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         </Animated.View>
 
         <Animated.View style={{ flex: 1, width: '100%', opacity: drawerInnerOpacity, borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' }}>
-          <View {...drawerPanResponder.panHandlers} style={{ zIndex:              <View style={styles.downloadList}>
+          <View {...drawerPanResponder.panHandlers} style={{ zIndex: 10, width: '100%', backgroundColor: 'transparent' }}>
+            <View style={styles.drawerHandleArea}>
+              <View style={styles.drawerHandle} />
+              <Typography variant="caption" style={styles.drawerTitle}>APP PLACE</Typography>
+            </View>
+          </View>
+
+          <Animated.View style={{ flex: 1, width: '100%' }}>
+            <ScrollView
+              style={{ flex: 1, width: '100%' }}
+              contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.downloadList}>
                 <Typography variant="caption" style={styles.sectionHeader}>Disponíveis</Typography>
                 {MINI_APP_CATALOG.filter(app => app.availabilityStatus === 'available').map((app) => {
                   const isInstalled = (installedAppIds || []).includes(app.id);
@@ -823,36 +836,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                           >
                             <Typography style={styles.closeExpandedText}>FECHAR</Typography>
                           </TouchableOpacity>
-                        </Animated.View>
-                      )}
-                    </View>
-                  );
-                })}
-              </View>
-erWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }]}>
-                                  <Typography style={{ color: 'rgba(255,255,255,0.1)', fontSize: 10 }}>SCREENSHOT {idx + 1}</Typography>
-                                </View>
-                              ))
-                            )}
-                          </ScrollView>
-
-                          {/* DESCRIPTION AREA */}
-                          <View style={styles.descContainer}>
-                            <Typography style={styles.expandedPublisher}>{app.publisher || app.developer}</Typography>
-                            <Typography style={styles.expandedDesc}>
-                              {app.description}
-                            </Typography>
-                          </View>
-
-                          {/* FOOTER ACTIONS */}
-                          <View style={styles.expandedFooter}>
-                            <TouchableOpacity 
-                              style={styles.closeExpandedBtn}
-                              onPress={() => setExpandedAppId(null)}
-                            >
-                              <Typography style={styles.closeExpandedText}>VER MENOS</Typography>
-                            </TouchableOpacity>
-                          </View>
                         </Animated.View>
                       )}
                     </View>
