@@ -62,6 +62,15 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
     return null;
   };
 
+  const getPortugueseErrorMessage = (msg: string) => {
+    const m = msg.toLowerCase();
+    if (m.includes('invalid login credentials')) return 'Email ou palavra-passe incorretos.';
+    if (m.includes('user already registered')) return 'Esta conta já existe. Tente entrar.';
+    if (m.includes('email not confirmed')) return 'Por favor, confirme o seu email.';
+    if (m.includes('network error')) return 'Erro de rede. Verifique a sua ligação.';
+    return msg;
+  };
+
   // ── LOGIN ────────────────────────────────────────────────
   const handleLogin = async () => {
     setErrorMsg(null);
@@ -79,10 +88,15 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
         console.warn('[AUTH_DIAG] login error:', error.message);
         throw error;
       }
-      console.warn('[AUTH_DIAG] login success, waiting for session listener');
-      // setUser(data.user) REMOVED: App.tsx handles the session -> profile sync now.
+      console.warn('[AUTH_DIAG] login success, navigating...');
+      
+      // Explicit navigation fallback in case the App.tsx listener is slow
+      setTimeout(() => {
+        navigation.replace('Main');
+      }, 500);
+      
     } catch (error: any) {
-      setErrorMsg(error.message || 'Ocorreu um erro inesperado.');
+      setErrorMsg(getPortugueseErrorMessage(error.message || 'Ocorreu um erro inesperado.'));
     } finally {
       setLoading(false);
     }
@@ -111,16 +125,16 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
 
       console.warn('[AUTH_DIAG] register success', { hasSession: !!data.session });
 
-      // Supabase pode exigir confirmação por email
       if (data.session) {
-        // Confirmação desativada — login automático
-        if (data.user) setUser(data.user as any);
+        if (data.user) {
+          setUser(data.user as any);
+          navigation.replace('Main');
+        }
       } else {
-        // Confirmação por email ativada
         setSignUpDone(true);
       }
     } catch (error: any) {
-      setErrorMsg(error.message || 'Ocorreu um erro inesperado.');
+      setErrorMsg(getPortugueseErrorMessage(error.message || 'Ocorreu um erro inesperado.'));
     } finally {
       setLoading(false);
     }
@@ -177,6 +191,8 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          bounces={false}
+          style={{ backgroundColor: '#05070A' }}
         >
           {/* ── HEADER ── */}
           <View style={styles.header}>
@@ -205,7 +221,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
                 placeholder="Email"
                 placeholderTextColor="rgba(255,255,255,0.3)"
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(t) => { setEmail(t); setErrorMsg(null); }}
                 autoCapitalize="none"
                 keyboardType="email-address"
                 autoCorrect={false}
@@ -221,7 +237,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
                 placeholder={isSignUp ? 'Palavra-passe' : 'Palavra-passe'}
                 placeholderTextColor="rgba(255,255,255,0.3)"
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(t) => { setPassword(t); setErrorMsg(null); }}
                 secureTextEntry={!showPassword}
                 textContentType={isSignUp ? 'newPassword' : 'password'}
               />
@@ -249,7 +265,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
                   placeholder="Confirmar palavra-passe"
                   placeholderTextColor="rgba(255,255,255,0.3)"
                   value={confirmPassword}
-                  onChangeText={setConfirmPassword}
+                  onChangeText={(t) => { setConfirmPassword(t); setErrorMsg(null); }}
                   secureTextEntry={!showConfirm}
                   textContentType="newPassword"
                 />
@@ -265,7 +281,7 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
             {/* Erro visual explícito (Substitui Alert invisível na web) */}
             {errorMsg ? (
               <View style={{ backgroundColor: 'rgba(255,50,50,0.1)', padding: 12, borderRadius: 8, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(255,50,50,0.3)' }}>
-                <Typography variant="caption" style={{ color: '#ff6b6b', textAlign: 'center' }}>
+                <Typography variant="caption" style={{ color: '#ff6b6b', textAlign: 'center', fontWeight: 'bold' }}>
                   {errorMsg}
                 </Typography>
               </View>
@@ -325,20 +341,24 @@ export const LoginScreen = ({ navigation }: { navigation: any }) => {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#05070A',
+    flex: 1,
   },
   keyboardView: {
     flex: 1,
+    backgroundColor: '#05070A',
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: theme.spacing.xl,
     paddingVertical: 32,
+    backgroundColor: '#05070A',
   },
   content: {
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: theme.spacing.xl,
+    backgroundColor: '#05070A',
   },
   header: {
     alignItems: 'center',
@@ -380,10 +400,9 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 15,
     lineHeight: 20,
-    // Fixes mobile overflow: explicit 0 padding so the flex container handles spacing
     paddingVertical: 0,
     paddingHorizontal: 0,
-    minWidth: 0, // critical: allows flex child to shrink below its content width
+    minWidth: 0,
   },
   inputHint: {
     color: 'rgba(255,255,255,0.4)',

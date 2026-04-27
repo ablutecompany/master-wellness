@@ -137,9 +137,7 @@ export default function App() {
   const setAnalyses = useStore(state => state.setAnalyses);
   const hasHydrated = useStore(state => state.hasHydrated);
 
-  // Guard against concurrent syncProfile calls
   const isSyncingRef = React.useRef(false);
-  // Guard against listener firing during boot sequence
   const bootCompletedRef = React.useRef(false);
 
   const syncProfile = React.useCallback(async (session: Session | null, onDone?: (dest: 'Main' | 'Welcome') => void) => {
@@ -209,7 +207,6 @@ export default function App() {
         }
       }
 
-      // Try to initialize profile if /auth/me didn't return a record
       try {
         const initRes = await fetch(`${ENV.BACKEND_URL}/auth/initialize`, {
           method: 'POST',
@@ -246,19 +243,26 @@ export default function App() {
 
 
   useEffect(() => {
-    // Boot sequence: get session once, then set authReady exactly once
+    if (Platform.OS === 'web') {
+      const style = document.createElement('style');
+      style.textContent = `
+        html, body, #root { 
+          background-color: #010204 !important; 
+          margin: 0;
+          padding: 0;
+          overflow-x: hidden;
+        }
+      `;
+      document.head.append(style);
+    }
+
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
         setAuthAccount(session?.user ?? null);
         if (session) {
           setGuestMode(false);
           setSessionToken(session.access_token);
-          // syncProfile calls onDone which sets authDest+authReady — no extra setState cascade
           syncProfile(session, (dest) => {
-            // Defer NavigationContainer mount by one frame to let React settle
-            // all synchronous Zustand setState updates from syncProfile first.
-            // Without this, SafeAreaProvider mounts during a setState batch and
-            // triggers the React #185 cascade.
             requestAnimationFrame(() => {
               setAuthDest(dest);
               setAuthReady(true);
@@ -281,9 +285,8 @@ export default function App() {
         bootCompletedRef.current = true;
       });
 
-    // Auth listener: only for post-boot events (new sign-in, sign-out)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!bootCompletedRef.current) return; // ignore events during boot
+      if (!bootCompletedRef.current) return; 
 
       if (event === 'SIGNED_IN' && session) {
         console.warn('[AUTH_DIAG] listener: SIGNED_IN', { userId: session.user.id });
@@ -318,10 +321,8 @@ export default function App() {
     });
 
     return () => subscription.unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Show pre-navigation loading screen (no NavigationContainer = no cascade)
   if (!authReady || !hasHydrated) {
     return (
       <View style={{ flex: 1, backgroundColor: '#010204', justifyContent: 'center', alignItems: 'center' }}>
