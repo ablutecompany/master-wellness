@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, ScrollView, Platform, Image, Alert, Modal, SafeAreaView, Dimensions, FlatList } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, ScrollView, Platform, Image, Alert, Modal, SafeAreaView, Dimensions, FlatList, ActivityIndicator } from 'react-native';
 import { Container, Typography, BlurView } from '../components/Base';
 import { theme } from '../theme';
 import { 
@@ -28,6 +28,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const household = useStore(Selectors.selectHousehold);
   const activeMemberId = useStore(Selectors.selectActiveMemberId);
   const setActiveMember = useStore(state => state.setActiveMember);
+  const hasHydrated = useStore(state => state.hasHydrated);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 1. DATA HANDLERS
@@ -40,42 +41,57 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     }
   };
 
-  const calculateAge = (dobStr: string | undefined): number | null => {
-    if (!dobStr) return null;
+  const calculateAge = (dobStr: string | undefined, precision: string | undefined | null): string => {
+    if (!dobStr) return '—';
     const dob = new Date(dobStr);
-    if (isNaN(dob.getTime())) return null;
+    if (isNaN(dob.getTime())) return '—';
+    
     let age = new Date().getFullYear() - dob.getFullYear();
-    const m = new Date().getMonth() - dob.getMonth();
-    if (m < 0 || (m === 0 && new Date().getDate() < dob.getDate())) {
+    const m = new Date().getMonth() - (dob.getMonth() || 0);
+    if (m < 0 || (m === 0 && new Date().getDate() < (dob.getDate() || 1))) {
       age--;
     }
-    return age >= 0 ? age : null;
+    
+    if (age < 0) return '—';
+    
+    if (precision === 'day') return `${age} anos`;
+    return `aprox. ${age} anos`;
   };
 
-  const userAge = calculateAge(user?.dateOfBirth);
+  const ageDisplay = useMemo(() => calculateAge(user?.dateOfBirth, user?.dateOfBirthPrecision), [user?.dateOfBirth, user?.dateOfBirthPrecision]);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 2. MODAL STATE
   // ─────────────────────────────────────────────────────────────────────────────
   const [modalConfig, setModalConfig] = useState<{
     visible: boolean;
-    type: 'birthday' | 'height' | 'sex';
+    type: 'birthday' | 'height' | 'sex' | 'weight';
     title: string;
   }>({ visible: false, type: 'birthday', title: '' });
 
-  const [tempDate, setTempDate] = useState<{ year: number; month?: number; day?: number }>({ year: 2006 });
+  const [tempDate, setTempDate] = useState<{ year: number; month?: number | null; day?: number | null }>({ year: 2006 });
   const [tempHeight, setTempHeight] = useState(175);
+  const [tempWeight, setTempWeight] = useState(60);
 
-  const openModal = (type: 'birthday' | 'height' | 'sex', title: string) => {
+  const openModal = (type: 'birthday' | 'height' | 'sex' | 'weight', title: string) => {
     if (type === 'birthday') {
-      const current = user?.dateOfBirth ? new Date(user.dateOfBirth) : null;
-      setTempDate({ 
-        year: current ? current.getFullYear() : 2006,
-        month: user?.dateOfBirth && user.dateOfBirth.split('-').length > 1 ? current!.getMonth() + 1 : undefined,
-        day: user?.dateOfBirth && user.dateOfBirth.split('-').length > 2 ? current!.getDate() : undefined
-      });
+      const dob = user?.dateOfBirth;
+      const precision = user?.dateOfBirthPrecision;
+      if (dob) {
+        const parts = dob.split('-');
+        setTempDate({
+          year: parseInt(parts[0]) || 2006,
+          month: precision !== 'year' && parts[1] ? parseInt(parts[1]) : null,
+          day: precision === 'day' && parts[2] ? parseInt(parts[2]) : null
+        });
+      } else {
+        setTempDate({ year: 2006, month: null, day: null });
+      }
     } else if (type === 'height') {
       setTempHeight(user?.height || 175);
+    } else if (type === 'weight') {
+      const w = user?.weight?.manualValue || user?.weight?.value;
+      setTempWeight(w ? Math.round(w) : 60);
     }
     setModalConfig({ visible: true, type, title });
   };
@@ -85,33 +101,20 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   // ─────────────────────────────────────────────────────────────────────────────
   // 3. EDIT ACTIONS
   // ─────────────────────────────────────────────────────────────────────────────
-  const handleEditName = () => {
-    const current = user?.name || user?.fullName || '';
-    const msg = 'Como gostarias de ser tratada?';
-
-    if (Platform.OS === 'web') {
-      const val = window.prompt(msg, current);
-      if (val !== null && val.trim() !== '') {
-        updateProfileField({ name: val.trim(), fullName: val.trim() });
-      }
-      return;
-    }
-
-    Alert.prompt('Editar Nome', msg, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salvar', onPress: (val) => val?.trim() && updateProfileField({ name: val.trim(), fullName: val.trim() }) }
-    ], 'plain-text', current);
-  };
-
   const saveBirthday = () => {
     let dob = `${tempDate.year}`;
+    let precision: 'year' | 'month' | 'day' = 'year';
+    
     if (tempDate.month) {
       dob += `-${String(tempDate.month).padStart(2, '0')}`;
+      precision = 'month';
       if (tempDate.day) {
         dob += `-${String(tempDate.day).padStart(2, '0')}`;
+        precision = 'day';
       }
     }
-    updateProfileField({ dateOfBirth: dob });
+    
+    updateProfileField({ dateOfBirth: dob, dateOfBirthPrecision: precision });
     closeModal();
   };
 
@@ -120,16 +123,30 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     closeModal();
   };
 
+  const saveWeight = () => {
+    updateProfileField({ 
+      weight: { 
+        value: tempWeight, 
+        manualValue: tempWeight, 
+        source: 'manual', 
+        unit: 'kg', 
+        updatedAt: new Date().toISOString() 
+      } 
+    });
+    closeModal();
+  };
+
   // ─────────────────────────────────────────────────────────────────────────────
   // 4. RENDER PICKERS
   // ─────────────────────────────────────────────────────────────────────────────
   const renderBirthdayPicker = () => {
-    const years = Array.from({ length: 100 }, (_, i) => 2024 - i);
-    const months = Array.from({ length: 12 }, (_, i) => i + 1);
-    const days = Array.from({ length: 31 }, (_, i) => i + 1);
+    const years = Array.from({ length: 110 }, (_, i) => 2024 - i);
+    const months = [{ label: 'Não indicar', value: null }, ...Array.from({ length: 12 }, (_, i) => ({ label: String(i + 1), value: i + 1 }))];
+    const days = [{ label: 'Não indicar', value: null }, ...Array.from({ length: 31 }, (_, i) => ({ label: String(i + 1), value: i + 1 }))];
 
     return (
       <View style={styles.pickerContainer}>
+        {/* ANO */}
         <View style={styles.pickerColumn}>
           <Typography variant="caption" style={styles.pickerColLabel}>ANO</Typography>
           <FlatList
@@ -143,40 +160,54 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                 <Typography style={[styles.wheelText, tempDate.year === item && styles.wheelTextActive]}>{item}</Typography>
               </TouchableOpacity>
             )}
-            initialScrollIndex={years.indexOf(tempDate.year)}
+            initialScrollIndex={years.indexOf(tempDate.year) !== -1 ? years.indexOf(tempDate.year) : 18}
             getItemLayout={(_, index) => ({ length: 44, offset: 44 * index, index })}
             showsVerticalScrollIndicator={false}
           />
         </View>
 
+        {/* MÊS */}
         <View style={styles.pickerColumn}>
           <Typography variant="caption" style={styles.pickerColLabel}>MÊS</Typography>
           <FlatList
             data={months}
-            keyExtractor={item => `month-${item}`}
+            keyExtractor={item => `month-${item.value}`}
             renderItem={({ item }) => (
               <TouchableOpacity 
-                style={[styles.wheelItem, tempDate.month === item && styles.wheelItemActive]}
-                onPress={() => setTempDate({ ...tempDate, month: item })}
+                style={[styles.wheelItem, tempDate.month === item.value && styles.wheelItemActive]}
+                onPress={() => setTempDate({ ...tempDate, month: item.value, day: item.value === null ? null : tempDate.day })}
               >
-                <Typography style={[styles.wheelText, tempDate.month === item && styles.wheelTextActive]}>{item}</Typography>
+                <Typography style={[styles.wheelText, tempDate.month === item.value && styles.wheelTextActive, item.value === null && { fontSize: 10 }]}>
+                  {item.label}
+                </Typography>
               </TouchableOpacity>
             )}
             showsVerticalScrollIndicator={false}
           />
         </View>
 
+        {/* DIA */}
         <View style={styles.pickerColumn}>
           <Typography variant="caption" style={styles.pickerColLabel}>DIA</Typography>
           <FlatList
             data={days}
-            keyExtractor={item => `day-${item}`}
+            keyExtractor={item => `day-${item.value}`}
             renderItem={({ item }) => (
               <TouchableOpacity 
-                style={[styles.wheelItem, tempDate.day === item && styles.wheelItemActive]}
-                onPress={() => setTempDate({ ...tempDate, day: item })}
+                style={[styles.wheelItem, tempDate.day === item.value && styles.wheelItemActive]}
+                onPress={() => {
+                  if (tempDate.month === null) return;
+                  setTempDate({ ...tempDate, day: item.value });
+                }}
               >
-                <Typography style={[styles.wheelText, tempDate.day === item && styles.wheelTextActive]}>{item}</Typography>
+                <Typography style={[
+                  styles.wheelText, 
+                  tempDate.day === item.value && styles.wheelTextActive, 
+                  item.value === null && { fontSize: 10 },
+                  tempDate.month === null && { opacity: 0.1 }
+                ]}>
+                  {item.label}
+                </Typography>
               </TouchableOpacity>
             )}
             showsVerticalScrollIndicator={false}
@@ -187,7 +218,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   };
 
   const renderHeightPicker = () => {
-    const range = Array.from({ length: 100 }, (_, i) => 130 + i);
+    const range = Array.from({ length: 120 }, (_, i) => 130 + i);
     return (
       <View style={styles.pickerContainer}>
         <View style={{ flex: 1 }}>
@@ -211,11 +242,36 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     );
   };
 
+  const renderWeightPicker = () => {
+    const range = Array.from({ length: 221 }, (_, i) => 30 + i);
+    return (
+      <View style={styles.pickerContainer}>
+        <View style={{ flex: 1 }}>
+          <FlatList
+            data={range}
+            keyExtractor={item => `w-${item}`}
+            renderItem={({ item }) => (
+              <TouchableOpacity 
+                style={[styles.wheelItem, tempWeight === item && styles.wheelItemActive]}
+                onPress={() => setTempWeight(item)}
+              >
+                <Typography style={[styles.wheelText, tempWeight === item && styles.wheelTextActive]}>{item} kg</Typography>
+              </TouchableOpacity>
+            )}
+            initialScrollIndex={range.indexOf(tempWeight) !== -1 ? range.indexOf(tempWeight) : 30}
+            getItemLayout={(_, index) => ({ length: 44, offset: 44 * index, index })}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
+      </View>
+    );
+  };
+
   const renderSexPicker = () => {
     const options = [
-      { label: 'Homem', value: 'M' },
-      { label: 'Mulher', value: 'F' },
-      { label: 'Não indicar', value: null }
+      { label: 'Homem', value: 'male' },
+      { label: 'Mulher', value: 'female' },
+      { label: 'Não indicar', value: 'undisclosed' }
     ];
     return (
       <View style={{ gap: 8, marginTop: 10 }}>
@@ -238,13 +294,20 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   // ─────────────────────────────────────────────────────────────────────────────
   // 5. MAIN RENDER
   // ─────────────────────────────────────────────────────────────────────────────
+  if (!hasHydrated) {
+    return (
+      <View style={[styles.outerContainer, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator color="#00F2FF" size="large" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.outerContainer}>
       <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
       
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.modalPanel}>
-          {/* HEADER */}
           <View style={styles.modalHeader}>
             <View>
               <Typography variant="h3" style={{ fontWeight: '700', color: '#fff' }}>Perfil</Typography>
@@ -264,28 +327,28 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           >
             {/* HERO SECTION */}
             <View style={styles.heroSection}>
-              <TouchableOpacity style={styles.avatarContainer} disabled>
+              <View style={styles.avatarContainer}>
                 {user?.avatarUrl ? (
                   <Image source={{ uri: user.avatarUrl }} style={styles.avatarImg} />
                 ) : (
                   <User size={32} color="white" />
                 )}
-              </TouchableOpacity>
+              </View>
               
-              <TouchableOpacity onPress={handleEditName} style={styles.nameBlock}>
+              <View style={styles.nameBlock}>
                 <Typography variant="h2" style={styles.profileName}>
-                  {user?.name || user?.fullName || 'Convidada'}
+                  {user?.name || user?.fullName || (isGuestMode ? 'Convidada' : 'Utilizadora')}
                 </Typography>
                 <Typography variant="caption" style={styles.profileEmail}>
                   {user?.email || authAccount?.email || 'MODO GUEST LOCAL'}
                 </Typography>
                 <View style={styles.badgeRow}>
-                   <Typography style={styles.versionBadge}>BUILD 2.6 • STABLE</Typography>
+                   <Typography style={styles.versionBadge}>BUILD 2.7 • STABLE</Typography>
                    <Typography style={[styles.modeBadge, { backgroundColor: isGuestMode ? 'rgba(255,255,255,0.1)' : 'rgba(0, 242, 255, 0.1)' }]}>
                      {isGuestMode ? 'CONVIDADA' : 'MEMBRO'}
                    </Typography>
                 </View>
-              </TouchableOpacity>
+              </View>
             </View>
 
             {/* DADOS BIOMÉTRICOS */}
@@ -303,7 +366,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                   </View>
                   <View style={styles.itemRight}>
                     <Typography style={styles.itemValue}>
-                      {user?.sex === 'M' ? 'Homem' : user?.sex === 'F' ? 'Mulher' : 'Não indicado'}
+                      {user?.sex === 'male' ? 'Homem' : user?.sex === 'female' ? 'Mulher' : 'Não indicado'}
                     </Typography>
                     <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
                   </View>
@@ -318,7 +381,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                     <Typography style={styles.itemTitle}>Idade</Typography>
                   </View>
                   <View style={styles.itemRight}>
-                    <Typography style={styles.itemValue}>{userAge ? `${userAge} anos` : 'Definir'}</Typography>
+                    <Typography style={styles.itemValue}>{ageDisplay}</Typography>
                     <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
                   </View>
                 </TouchableOpacity>
@@ -332,13 +395,13 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                     <Typography style={styles.itemTitle}>Altura</Typography>
                   </View>
                   <View style={styles.itemRight}>
-                    <Typography style={styles.itemValue}>{user?.height ? `${user.height} cm` : 'Definir'}</Typography>
+                    <Typography style={styles.itemValue}>{user?.height ? `${user.height} cm` : '175 cm'}</Typography>
                     <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
                   </View>
                 </TouchableOpacity>
 
                 {/* PESO */}
-                <TouchableOpacity style={[styles.groupItem, { borderBottomWidth: 0 }]} onPress={() => {}}>
+                <TouchableOpacity style={[styles.groupItem, { borderBottomWidth: 0 }]} onPress={() => openModal('weight', 'Peso')}>
                   <View style={styles.itemLeft}>
                     <View style={[styles.iconBox, { backgroundColor: 'rgba(255, 51, 102, 0.1)' }]}>
                       <Activity size={14} color="#FF3366" />
@@ -347,7 +410,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                   </View>
                   <View style={styles.itemRight}>
                     <Typography style={styles.itemValue}>
-                      {user?.weight?.manualValue || user?.weight?.value ? `${user?.weight?.manualValue || user?.weight?.value} kg` : '—'}
+                      {user?.weight?.manualValue || user?.weight?.value ? `${Math.round(user.weight.manualValue || user.weight.value)} kg` : '60 kg'}
                     </Typography>
                     <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
                   </View>
@@ -385,10 +448,6 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                       </TouchableOpacity>
                     ))}
                   </ScrollView>
-
-                  <TouchableOpacity style={styles.addMemberRow} onPress={() => {}}>
-                    <Typography style={styles.addMemberText}>ADICIONAR MEMBRO</Typography>
-                  </TouchableOpacity>
                 </View>
               </View>
             )}
@@ -432,12 +491,17 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
               {modalConfig.type === 'birthday' && renderBirthdayPicker()}
               {modalConfig.type === 'height' && renderHeightPicker()}
               {modalConfig.type === 'sex' && renderSexPicker()}
+              {modalConfig.type === 'weight' && renderWeightPicker()}
             </View>
 
-            {(modalConfig.type === 'birthday' || modalConfig.type === 'height') && (
+            {modalConfig.type !== 'sex' && (
               <TouchableOpacity 
                 style={styles.saveBtn} 
-                onPress={modalConfig.type === 'birthday' ? saveBirthday : saveHeight}
+                onPress={() => {
+                  if (modalConfig.type === 'birthday') saveBirthday();
+                  else if (modalConfig.type === 'height') saveHeight();
+                  else if (modalConfig.type === 'weight') saveWeight();
+                }}
               >
                 <Typography style={styles.saveBtnText}>CONFIRMAR</Typography>
               </TouchableOpacity>
@@ -456,7 +520,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: '#05070A',
   },
   modalPanel: {
     flex: 1,
@@ -634,18 +698,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  addMemberRow: {
-    padding: 14,
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.03)',
-  },
-  addMemberText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: 'rgba(255,255,255,0.3)',
-    letterSpacing: 2,
-  },
   logoutBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -691,7 +743,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   sheetContent: {
-    minHeight: 200,
+    minHeight: 250,
   },
   pickerContainer: {
     flexDirection: 'row',

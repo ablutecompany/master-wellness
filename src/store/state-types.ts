@@ -9,7 +9,8 @@ export interface UserProfile {
   weight?: SourcedMetric<number>;
   height?: number;
   dateOfBirth?: string;
-  sex?: 'M' | 'F';
+  dateOfBirthPrecision?: 'year' | 'month' | 'day' | null;
+  sex?: 'male' | 'female' | 'undisclosed' | null;
   timezone?: string;
   country?: string;
   location?: string;
