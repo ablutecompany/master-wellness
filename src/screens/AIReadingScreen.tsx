@@ -132,7 +132,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         {/* CONTEXTUAL CTA */}
         <TouchableOpacity 
           style={styles.contextualCTA} 
-          onPress={() => (navigation as any).navigate('Dados')}
+          onPress={() => (navigation as any).navigate('Resultados')}
         >
           <BlurView intensity={20} style={styles.ctaBlur}>
             <FlaskConical size={16} color="#00F2FF" />

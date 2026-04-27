@@ -142,8 +142,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const userName = user?.name || (isGuestMode ? 'Guest' : (authAccount?.email?.split('@')[0] || 'Utilizador'));
 
   // ── Animation States ──────────────────────────────────────────────────────
-  const themesAnim = useRef(new Animated.Value(-width)).current;
-  const dataAnim = useRef(new Animated.Value(width)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const floatAnim1 = useRef(new Animated.Value(0)).current;
   const floatAnim2 = useRef(new Animated.Value(0)).current;
@@ -365,13 +363,13 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, { dx, dy }) => Math.abs(dx) > 10 || Math.abs(dy) > 10,
       onPanResponderRelease: (_, { x0, dx, dy }) => {
-        // Left Edge Swipe -> Themes
+        // Left Edge Swipe -> AI Reading
         if (x0 < 60 && dx > 80) {
-          Animated.spring(themesAnim, { toValue: 0, useNativeDriver: true }).start();
+          navigation.navigate('Leitura AI');
         }
-        // Right Edge Swipe -> Data
+        // Right Edge Swipe -> Results
         if (x0 > width - 60 && dx < -80) {
-          Animated.spring(dataAnim, { toValue: 0, useNativeDriver: true }).start();
+          navigation.navigate('Resultados');
         }
         // Bottom Swipe Up -> App Drawer
         if (dy < -60) {
@@ -557,98 +555,25 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         {/* ── LEFT EDGE HANDLE: THEMES ──────────────────────────────────────── */}
         <TouchableOpacity
           style={styles.leftEdgeHandle}
-          onPress={() => Animated.spring(themesAnim, { toValue: 0, useNativeDriver: true }).start()}
+          onPress={() => navigation.navigate('Leitura AI')}
         >
           <View style={styles.edgePill} />
-          <Typography variant="caption" style={styles.edgeLabel}>TEMAS</Typography>
+          <Typography variant="caption" style={styles.edgeLabel}>LEITURA AI</Typography>
         </TouchableOpacity>
 
-        {/* ── RIGHT EDGE HANDLE: BIODATA ────────────────────────────────────── */}
+        {/* ── RIGHT EDGE HANDLE: RESULTS ────────────────────────────────────── */}
         <TouchableOpacity
           style={styles.rightEdgeHandle}
-          onPress={() => Animated.spring(dataAnim, { toValue: 0, useNativeDriver: true }).start()}
+          onPress={() => navigation.navigate('Resultados')}
         >
           <View style={styles.edgePill} />
-          <Typography variant="caption" style={styles.edgeLabel}>DADOS</Typography>
+          <Typography variant="caption" style={styles.edgeLabel}>RESULTADOS</Typography>
         </TouchableOpacity>
 
         {/* Trigger inside drawer now handles interactions */}
       </View>
 
 
-      {/* ── SIDE PANEL: THEMES (LEFT) ─────────────────────────────────────── */}
-      <Animated.View style={[styles.sidePanel, styles.leftPanel, { transform: [{ translateX: themesAnim }] }]}>
-        <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill}>
-          <View style={styles.panelHeader}>
-            <View style={{ flex: 1 }}>
-              <Typography variant="h2" style={styles.panelTitle}>IA Interpretação</Typography>
-              {isDemoMode && (
-                <View style={{ backgroundColor: 'rgba(255,100,0,0.15)', alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, marginTop: 4 }}>
-                  <Typography style={{ color: '#FF6400', fontSize: 10, fontWeight: '800', letterSpacing: 1 }}>SIMULAÇÃO ATIVA</Typography>
-                </View>
-              )}
-            </View>
-            <TouchableOpacity onPress={() => Animated.spring(themesAnim, { toValue: -width, useNativeDriver: true }).start()}>
-              <X size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.panelScroll}>
-            {displayThemes.map((theme, i) => (
-              <ThemeCard key={i} {...theme} iconName={theme.iconName as any} />
-            ))}
-            
-            <TouchableOpacity 
-              style={styles.panelActionBtn} 
-              onPress={() => {
-                Animated.spring(themesAnim, { toValue: -width, useNativeDriver: true }).start();
-                navigation.navigate('Temas');
-              }}
-            >
-              <Typography style={styles.panelActionText}>EXPLORAR TODOS OS TEMAS</Typography>
-            </TouchableOpacity>
-          </ScrollView>
-        </BlurView>
-      </Animated.View>
-
-      {/* ── SIDE PANEL: DATA (RIGHT) ──────────────────────────────────────── */}
-      <Animated.View style={[styles.sidePanel, styles.rightPanel, { transform: [{ translateX: dataAnim }] }]}>
-        <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill}>
-          <View style={styles.panelHeader}>
-            <TouchableOpacity onPress={() => Animated.spring(dataAnim, { toValue: width, useNativeDriver: true }).start()}>
-              <X size={24} color="#fff" />
-            </TouchableOpacity>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Typography variant="h2" style={styles.panelTitle}>Bio-análise</Typography>
-              {isDemoMode && (
-                <View style={{ backgroundColor: 'rgba(255,100,0,0.15)', alignSelf: 'flex-end', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, marginTop: 4 }}>
-                  <Typography style={{ color: '#FF6400', fontSize: 10, fontWeight: '800', letterSpacing: 1 }}>SIMULAÇÃO ATIVA</Typography>
-                </View>
-              )}
-            </View>
-          </View>
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.panelScroll}>
-            {displayBiomarkers.map((item, i) => (
-              <View key={i} style={styles.bioRow}>
-                <Typography style={styles.bioName}>{item.name}</Typography>
-                <View style={styles.bioValueArea}>
-                  <Typography style={styles.bioVal}>{item.value}</Typography>
-                  <Typography variant="caption" style={styles.bioUnit}>{item.unit}</Typography>
-                </View>
-              </View>
-            ))}
-            
-            <TouchableOpacity 
-              style={styles.panelActionBtn} 
-              onPress={() => {
-                Animated.spring(dataAnim, { toValue: width, useNativeDriver: true }).start();
-                navigation.navigate('Dados');
-              }}
-            >
-              <Typography style={styles.panelActionText}>VER HISTÓRICO COMPLETO</Typography>
-            </TouchableOpacity>
-          </ScrollView>
-        </BlurView>
-      </Animated.View>
 
       {/* ── BOTTOM DRAWER: APPS ───────────────────────────────────────────── */}
       <Animated.View

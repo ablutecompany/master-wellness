@@ -46,16 +46,16 @@ function MainTabs() {
         tabBarInactiveTintColor: theme.colors.textMuted,
         tabBarIcon: ({ color, size }: { color: string, size: number }) => {
           if (route.name === 'Home') return <HomeIcon size={size} color={color} />;
-          if (route.name === 'Temas') return <Brain size={size} color={color} />;
-          if (route.name === 'Dados') return <Database size={size} color={color} />;
+          if (route.name === 'Leitura AI') return <Brain size={size} color={color} />;
+          if (route.name === 'Resultados') return <Database size={size} color={color} />;
           if (route.name === 'Apps') return <LayoutGrid size={size} color={color} />;
           return null;
         },
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Temas" component={AIReadingScreen} />
-      <Tab.Screen name="Dados" component={AnalysesScreen} />
+      <Tab.Screen name="Leitura AI" component={AIReadingScreen} />
+      <Tab.Screen name="Resultados" component={AnalysesScreen} />
       <Tab.Screen name="Apps" component={AppsScreen} />
     </Tab.Navigator>
   );
@@ -71,8 +71,8 @@ const linking = {
         path: '',
         screens: {
           Home: 'home',
-          Temas: 'temas',
-          Dados: 'dados',
+          'Leitura AI': 'leitura-ai',
+          Resultados: 'resultados',
           Apps: 'apps',
         }
       },

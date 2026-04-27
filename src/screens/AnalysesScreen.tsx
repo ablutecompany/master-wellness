@@ -269,7 +269,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
               {/* CONTEXTUAL CTA */}
               <TouchableOpacity 
                 style={styles.contextualCTA} 
-                onPress={() => navigation.navigate('Temas')}
+                onPress={() => navigation.navigate('Leitura AI')}
               >
                 <BlurView intensity={20} style={styles.ctaBlur}>
                   <Brain size={16} color="#00F2FF" />
