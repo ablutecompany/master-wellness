@@ -314,16 +314,31 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         analysisDate: new Date(1714172400000).toISOString(),
         source: 'demo' as const,
         measurements: [
+          // Urina
           { id: 'm1', type: 'urinalysis', marker: 'Glicose', value: '92', unit: 'mg/dL', timestamp: 1714172400000 },
           { id: 'm2', type: 'urinalysis', marker: 'Sódio', value: '138', unit: 'mEq/L', timestamp: 1714172400000 },
           { id: 'm3', type: 'urinalysis', marker: 'pH Urinário', value: '6.5', unit: 'pH', timestamp: 1714172400000 },
-          { id: 'm4', type: 'fecal', marker: 'Bristol', value: 'Tipo 4', unit: 'Escala', timestamp: 1714172400000 },
-          { id: 'm5', type: 'ecg', marker: 'Ritmo Cardíaco', value: '72', unit: 'bpm', timestamp: 1714172400000 },
-          { id: 'm6', type: 'ppg', marker: 'SpO2', value: '99', unit: '%', timestamp: 1714172400000 },
-          { id: 'm7', type: 'temp', marker: 'Temperatura', value: '36.6', unit: '°C', timestamp: 1714172400000 },
+          { id: 'm4', type: 'urinalysis', marker: 'Densidade', value: '1.018', unit: 'g/cm³', timestamp: 1714172400000 },
+          { id: 'm5', type: 'urinalysis', marker: 'Creatinina', value: '1.2', unit: 'g/L', timestamp: 1714172400000 },
+          { id: 'm6', type: 'urinalysis', marker: 'Nitritos', value: 'Negativo', unit: '', timestamp: 1714172400000 },
+          
+          // Fezes
+          { id: 'm10', type: 'fecal', marker: 'Escala Bristol', value: 'Tipo 4', unit: 'Ideal', timestamp: 1714172400000 },
+          { id: 'm11', type: 'fecal', marker: 'Regularidade', value: 'Elevada', unit: '', timestamp: 1714172400000 },
+          { id: 'm12', type: 'fecal', marker: 'Consistência', value: 'Normal', unit: '', timestamp: 1714172400000 },
+
+          // Fisiológicos
+          { id: 'm20', type: 'ecg', marker: 'Ritmo Cardíaco', value: '72', unit: 'bpm', timestamp: 1714172400000 },
+          { id: 'm21', type: 'ppg', marker: 'Saturação SpO2', value: '99', unit: '%', timestamp: 1714172400000 },
+          { id: 'm22', type: 'temp', marker: 'Temperatura', value: '36.6', unit: '°C', timestamp: 1714172400000 },
+          { id: 'm23', type: 'weight', marker: 'Peso Corporal', value: '74.2', unit: 'kg', timestamp: 1714172400000 },
+          { id: 'm24', type: 'impedance', marker: 'Gordura Corporal', value: '18.4', unit: '%', timestamp: 1714172400000 },
         ],
         ecosystemFacts: [
           { id: 'f1', type: 'sleep_duration_logged', value: '7h 30m', last_update: 1714172400000, domain: 'sleep', source: 'ecosystem' },
+          { id: 'f2', type: 'recovery_score', value: '88%', last_update: 1714172400000, domain: 'recovery', source: 'ecosystem' },
+          { id: 'f3', type: 'daily_steps', value: '10.240', last_update: 1714172400000, domain: 'activity', source: 'ecosystem' },
+          { id: 'f4', type: 'water_intake', value: '2.1L', last_update: 1714172400000, domain: 'nutrition', source: 'ecosystem' },
         ],
         createdAt: new Date(1714172400000).toISOString(),
       };

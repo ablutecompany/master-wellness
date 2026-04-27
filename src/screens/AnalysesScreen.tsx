@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity, Modal, Platform, Dimensions } from 'react-native';
+import { StyleSheet, View, ScrollView, TouchableOpacity, Modal, Platform, Dimensions, Alert } from 'react-native';
 import { Container, Typography, LinearGradient, BlurView } from '../components/Base';
 import { theme } from '../theme';
 import { 
@@ -75,9 +75,9 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
         value: displayValue,
         unit: displayUnit,
         timestamp: m.timestamp,
-        dateStr: date.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' }),
+        dateStr: isDemoMode ? 'SIMULAÇÃO' : date.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' }),
         source: 'ablute',
-        type: 'measurement',
+        type: m.type, // FIX: Usar o tipo real da medição (urinalysis, fecal, etc)
         category: m.type,
         origin: 'nfc',
         contribution_type: 'device'
@@ -222,10 +222,33 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             <X size={20} color="#fff" />
           </TouchableOpacity>
           <Typography variant="h2" style={styles.title}>Resultados</Typography>
-          <View style={styles.profileBadge}>
-             <Typography style={styles.profileInitial}>{user?.name?.[0] || '?'}</Typography>
-          </View>
+          
+          <TouchableOpacity 
+            onPress={() => {
+              if (Platform.OS === 'web') alert('O histórico biográfico consolidado está a ser processado para este membro.');
+              else Alert.alert('Histórico', 'O histórico biográfico consolidado está a ser processado para este membro.');
+            }} 
+            style={styles.backBtn}
+          >
+            <History size={20} color="rgba(255,255,255,0.6)" />
+          </TouchableOpacity>
         </View>
+
+        {isDemoMode && (
+          <View style={styles.demoBanner}>
+            <LinearGradient
+              colors={['rgba(0, 242, 255, 0.2)', 'rgba(0, 242, 255, 0.05)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.demoBannerGradient}
+            >
+              <Zap size={12} color="#00F2FF" />
+              <Typography style={styles.demoBannerText}>
+                MODO SIMULAÇÃO ATIVO ({allResults.length} REGISTOS)
+              </Typography>
+            </LinearGradient>
+          </View>
+        )}
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabContainer} contentContainerStyle={styles.tabScroll}>
           {renderTabButton('urina', 'Urina', Droplets)}
@@ -302,7 +325,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                 {isDemoMode ? 'MODO DEMO ATIVO • ' : ''}RESULTS V2.2 • {dataFreshness.temporalLabel.toUpperCase()}
               </Typography>
               <Typography variant="caption" style={[styles.markerText, { marginTop: 4, opacity: 0.5 }]}>
-                ANALYSES HOTFIX LIVE MARKER: cdbbdca
+                ANALYSES HOTFIX LIVE MARKER: HOTFIX_VER_02
               </Typography>
           </View>
         </ScrollView>
@@ -617,6 +640,26 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.4)',
     fontSize: 7,
     fontWeight: '800',
+  },
+  demoBanner: {
+    marginBottom: 16,
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 242, 255, 0.3)',
+  },
+  demoBannerGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+    gap: 8,
+  },
+  demoBannerText: {
+    color: '#00F2FF',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 1.5,
   },
   modalName: {
     color: '#fff',
