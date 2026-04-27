@@ -203,25 +203,25 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   };
 
   const handleEditWeight = () => {
-    const current = user?.weight?.value ? String(user.weight.value) : '';
-    const msg = 'Peso (kg):';
+    const weights = Array.from({ length: 220 }, (_, i) => ({ label: `${30 + i} kg`, value: 30 + i }));
+    const currentWeight = user?.weight?.manualValue || user?.weight?.value || 60;
 
-    if (Platform.OS === 'web') {
-      const val = window.prompt(msg, current);
-      if (val !== null && val.trim() !== '') {
-        const num = parseFloat(val.trim().replace(',', '.'));
-        if (!isNaN(num)) updateProfileField({ weight: { ...user?.weight, value: num, source: 'manual' } });
+    openPicker({
+      title: 'Peso',
+      options: weights,
+      currentValue: Math.round(Number(currentWeight)),
+      onSelect: (val) => {
+        updateProfileField({ 
+          weight: { 
+            ...user?.weight, 
+            manualValue: val,
+            value: val,
+            source: 'manual' 
+          } 
+        });
+        closePicker();
       }
-      return;
-    }
-
-    Alert.prompt('Peso', msg, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Salvar', onPress: (val) => {
-        const num = parseFloat(val?.trim().replace(',', '.') || '');
-        if (!isNaN(num)) updateProfileField({ weight: { ...user?.weight, value: num, source: 'manual' } });
-      }}
-    ], 'plain-text', current, 'numeric');
+    });
   };
 
   const userAge = calculateAge(user?.dateOfBirth || (user as any)?.birthDate);
@@ -354,23 +354,39 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
               <Typography variant="caption" style={styles.sectionLabel}>DADOS BIOMÉTRICOS</Typography>
               <View style={styles.glassGroup}>
                 <View style={styles.groupRow}>
-                  <TouchableOpacity style={styles.groupCell} onPress={handleEditSex}>
+                  <TouchableOpacity 
+                    style={styles.groupCell} 
+                    onPress={handleEditSex}
+                    activeOpacity={0.7}
+                  >
                     <Typography style={styles.cellLabel}>Sexo</Typography>
                     <Typography style={styles.cellValue}>
                       {user?.sex === 'M' ? 'Homem' : user?.sex === 'F' ? 'Mulher' : 'Não indicado'}
                     </Typography>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.groupCell} onPress={handleEditDateOfBirth}>
+                  <TouchableOpacity 
+                    style={styles.groupCell} 
+                    onPress={handleEditDateOfBirth}
+                    activeOpacity={0.7}
+                  >
                     <Typography style={styles.cellLabel}>Idade</Typography>
                     <Typography style={styles.cellValue}>{userAge !== null ? `${userAge} anos` : '—'}</Typography>
                   </TouchableOpacity>
                 </View>
                 <View style={styles.groupRow}>
-                  <TouchableOpacity style={styles.groupCell} onPress={handleEditHeight}>
+                  <TouchableOpacity 
+                    style={styles.groupCell} 
+                    onPress={handleEditHeight}
+                    activeOpacity={0.7}
+                  >
                     <Typography style={styles.cellLabel}>Altura</Typography>
                     <Typography style={styles.cellValue}>{user?.height ? `${user.height} cm` : '—'}</Typography>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.groupCell} onPress={handleEditWeight}>
+                  <TouchableOpacity 
+                    style={styles.groupCell} 
+                    onPress={handleEditWeight}
+                    activeOpacity={0.7}
+                  >
                     <Typography style={styles.cellLabel}>Peso</Typography>
                     <Typography style={styles.cellValue}>
                       {user?.weight?.manualValue || user?.weight?.value ? `${user?.weight?.manualValue || user?.weight?.value} kg` : '—'}
@@ -630,6 +646,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
+    ...Platform.select({ web: { cursor: 'pointer' } as any, default: {} }),
   },
   cellLabel: {
     color: 'rgba(255,255,255,0.3)',
