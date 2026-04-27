@@ -1,47 +1,62 @@
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, View, ScrollView, Platform, TouchableOpacity, LayoutAnimation } from 'react-native';
 import { Container, Typography, BlurView } from '../components/Base';
-import { theme } from '../theme';
 import { useStore } from '../store/useStore';
-import { selectAiConfidence, selectDailySynthesis, selectContextualResults, selectDataFreshness } from '../store/selectors';
-import { getSemanticService } from '../services/semantic-output';
-import { resolveNutritionActions, resolveMotionActions, resolveSleepActions } from '../services/ecosystem/actionInterpreter';
-import { Activity, Zap, Target, Heart, Moon, Brain, ChevronDown, ChevronUp, Info, AlertCircle, CheckCircle2, FlaskConical, X, ChevronRight } from 'lucide-react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { selectDailySynthesis, selectContextualResults, selectDataFreshness } from '../store/selectors';
+import { computeAIReadingFromData, AIReading } from '../services/semantic-output/ai-reading-engine';
+import { 
+  Activity, 
+  Zap, 
+  Target, 
+  Heart, 
+  Moon, 
+  ChevronDown, 
+  ChevronUp, 
+  FlaskConical, 
+  X, 
+  ShieldAlert, 
+  Clock, 
+  Info, 
+  CheckCircle2, 
+  Search,
+  Eye
+} from 'lucide-react-native';
 
 /**
  * @file AIReadingScreen.tsx
- * @description Superfície interpretativa da Shell (Leitura AI).
- * Reconstrói a visão semântica baseada em factos, histórico e contexto.
+ * @description Superfície interpretativa da Shell (Leitura AI R1).
+ * Implementa a nova estrutura UX: Síntese, Dimensões, Ações, Temas, Sinais e Referências.
  */
 
-const DimensionItem = ({ label, score, icon: Icon, color }: { label: string, score: number, icon: any, color: string }) => (
+const DimensionCard = ({ label, score, icon: Icon, color, explanation }: { label: string, score: number, icon: any, color: string, explanation: string }) => (
   <View style={styles.dimensionCard}>
-    <View style={[styles.dimensionIcon, { backgroundColor: `${color}15` }]}>
-      <Icon size={18} color={color} />
-    </View>
-    <View style={{ flex: 1, marginLeft: 12 }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-        <Typography style={styles.dimensionLabel}>{label}</Typography>
-        <Typography style={[styles.dimensionScore, { color }]}>{score}</Typography>
+    <View style={styles.dimensionMain}>
+      <View style={[styles.dimensionIcon, { backgroundColor: `${color}15` }]}>
+        <Icon size={18} color={color} />
       </View>
-      <View style={styles.progressBarBg}>
-        <View style={[styles.progressBarFill, { width: `${score}%`, backgroundColor: color }]} />
+      <View style={{ flex: 1, marginLeft: 12 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+          <Typography style={styles.dimensionLabel}>{label}</Typography>
+          <Typography style={[styles.dimensionScore, { color }]}>{score}</Typography>
+        </View>
+        <View style={styles.progressBarBg}>
+          <View style={[styles.progressBarFill, { width: `${score}%`, backgroundColor: color }]} />
+        </View>
       </View>
     </View>
+    <Typography variant="caption" style={styles.dimensionExplanation}>{explanation}</Typography>
   </View>
 );
 
-const ActionItem = ({ action }: { action: any }) => (
-  <View style={styles.actionItem}>
+const ActionCard = ({ action }: { action: any }) => (
+  <View style={styles.actionCard}>
     <View style={styles.actionHeader}>
-      <Zap size={14} color={action.priority === 'critical' ? '#FF3366' : '#00F2FF'} style={{ marginRight: 8 }} />
-      <Typography style={styles.actionType}>{action.action_type.replace('_', ' ').toUpperCase()}</Typography>
-      <View style={[styles.priorityBadge, { backgroundColor: action.priority === 'critical' ? 'rgba(255,51,102,0.1)' : 'rgba(255,255,255,0.05)' }]}>
-        <Typography style={[styles.priorityText, { color: action.priority === 'critical' ? '#FF3366' : 'rgba(255,255,255,0.4)' }]}>
+      <View style={[styles.priorityTag, { backgroundColor: action.priority === 'high' ? 'rgba(255, 51, 102, 0.1)' : 'rgba(255,255,255,0.05)' }]}>
+        <Typography style={[styles.priorityTagText, { color: action.priority === 'high' ? '#FF3366' : 'rgba(255,255,255,0.4)' }]}>
           {action.priority.toUpperCase()}
         </Typography>
       </View>
+      <Typography style={styles.actionTitle}>{action.title}</Typography>
     </View>
     <Typography style={styles.actionReason}>{action.reason}</Typography>
   </View>
@@ -51,48 +66,49 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   const store = useStore();
   const [expandedRefs, setExpandedRefs] = useState(false);
   
-  const { authAccount, isGuestMode, user, isDemoMode } = store;
-  const userName = user?.name || (isGuestMode ? 'Guest' : (authAccount?.email?.split('@')[0] || 'Utilizador'));
-  const BUILD_MARKER = 'AI READING V2 LIVE MARKER: a945b35';
-
-  const aiConfidence = selectAiConfidence(store);
-  const dailySynthesis = selectDailySynthesis(store);
-  const contextualResults = selectContextualResults(store);
-  const dataFreshness = selectDataFreshness(store);
-  const semanticBundle = getSemanticService().getBundle();
+  const { isDemoMode, analyses } = store;
+  const lastAnalysis = analyses[0];
   
-  // Interpreted Actions (Derived locally for UI)
-  const interpretedActions = useMemo(() => {
-    const nutri = resolveNutritionActions(store as any).actions;
-    const motion = resolveMotionActions(store as any).actions;
-    const sleep = resolveSleepActions(store as any).actions;
-    return [...nutri, ...motion, ...sleep].sort((a, b) => {
-        const pMap = { critical: 3, high: 2, medium: 1, low: 0 };
-        return pMap[b.priority as keyof typeof pMap] - pMap[a.priority as keyof typeof pMap];
-    });
-  }, [store.analyses, store.longitudinalMemory]);
+  // R1: Computação local estruturada seguindo o novo contrato
+  const reading: AIReading = useMemo(() => {
+    return computeAIReadingFromData(
+      lastAnalysis?.measurements || [],
+      lastAnalysis?.ecosystemFacts || [],
+      isDemoMode
+    );
+  }, [lastAnalysis, isDemoMode]);
 
   const toggleRefs = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedRefs(!expandedRefs);
   };
 
-  const families = useMemo(() => {
-    const lastAnalysis = store.analyses[0];
-    return [
-      { id: 'urina', label: 'Urina', active: lastAnalysis?.measurements.some(m => m.type === 'urinalysis') },
-      { id: 'fezes', label: 'Fezes', active: lastAnalysis?.measurements.some(m => m.type === 'fecal') },
-      { id: 'fisio', label: 'Fisiológicos', active: lastAnalysis?.measurements.some(m => ['ecg', 'ppg', 'temp', 'weight'].includes(m.type)) },
-      { id: 'ctx', label: 'Contextuais', active: contextualResults.length > 0 },
-    ];
-  }, [store.analyses, contextualResults]);
+  const getDimensionIcon = (id: string) => {
+    switch(id) {
+      case 'energy': return Zap;
+      case 'recovery': return Moon;
+      case 'hydration': return Activity;
+      case 'digestion': return Target;
+      case 'vitals': return Heart;
+      default: return Info;
+    }
+  };
 
-  const domains = semanticBundle.domains || {};
+  const getDimensionColor = (id: string) => {
+    switch(id) {
+      case 'energy': return '#FFD700';
+      case 'recovery': return '#A020F0';
+      case 'hydration': return '#00F2FF';
+      case 'digestion': return '#FF9500';
+      case 'vitals': return '#00FF9D';
+      default: return '#fff';
+    }
+  };
 
   return (
     <Container safe style={styles.container}>
       <View style={styles.atmosphere}>
-        <View style={[styles.aura, { backgroundColor: aiConfidence.color + '15' }]} />
+        <View style={[styles.aura, { backgroundColor: reading.dimensions[0]?.score > 70 ? '#00FF9D20' : '#FFD70015' }]} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
@@ -103,13 +119,12 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
               <Typography variant="h1" style={styles.title}>Leitura AI</Typography>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <View style={styles.statusBadge}>
-                  <View style={[styles.statusDot, { backgroundColor: aiConfidence.color }]} />
-                  <Typography style={styles.statusLabel}>{aiConfidence.label}</Typography>
+                  <Typography style={styles.statusLabel}>SÍNTESE DO MOMENTO</Typography>
                 </View>
                 {isDemoMode && (
-                  <View style={[styles.statusBadge, { borderColor: '#00F2FF', borderWidth: 1 }]}>
-                    <Zap size={10} color="#00F2FF" style={{ marginRight: 4 }} />
-                    <Typography style={[styles.statusLabel, { color: '#00F2FF' }]}>SIMULAÇÃO</Typography>
+                  <View style={styles.demoBadge}>
+                    <FlaskConical size={10} color="#00F2FF" style={{ marginRight: 4 }} />
+                    <Typography style={styles.demoLabel}>SIMULAÇÃO</Typography>
                   </View>
                 )}
               </View>
@@ -123,138 +138,147 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           </View>
         </View>
 
-        {/* BLOCK 1: Synthesis */}
+        {/* BLOCK 1: Síntese do momento */}
         <BlurView intensity={20} tint="dark" style={styles.synthesisCard}>
-          <Typography variant="h2" style={styles.synthesisTitle}>{dailySynthesis.title}</Typography>
-          <Typography style={styles.synthesisText}>
-            {semanticBundle.crossDomainSummary?.summary || 'A analisar base biográfica...'}
-          </Typography>
-          {dailySynthesis.positiveHighlight && (
-             <View style={styles.highlightRow}>
-                <CheckCircle2 size={14} color="#00FF9D" />
-                <Typography style={styles.highlightText}>{dailySynthesis.positiveHighlight}</Typography>
-             </View>
-          )}
+          <Typography variant="h2" style={styles.synthesisTitle}>{reading.summary.title}</Typography>
+          <Typography style={styles.synthesisText}>{reading.summary.text}</Typography>
         </BlurView>
 
-        {/* CONTEXTUAL CTA */}
-        <TouchableOpacity 
-          style={styles.contextualCTA} 
-          onPress={() => (navigation as any).navigate('Resultados')}
-        >
-          <BlurView intensity={20} style={styles.ctaBlur}>
-            <FlaskConical size={16} color="#00F2FF" />
-            <Typography style={styles.ctaText}>VER DADOS FACTUAIS (RESULTADOS)</Typography>
-            <ChevronRight size={14} color="#00F2FF" />
-          </BlurView>
-        </TouchableOpacity>
-
-        {/* BLOCK 2: Families Considered */}
-        <View style={styles.sectionHeader}>
-          <Typography style={styles.sectionTitle}>BASE FACTUAL CONSIDERADA</Typography>
-        </View>
-        <View style={styles.familiesRow}>
-          {families.map(f => (
-            <View key={f.id} style={[styles.familyChip, f.active ? styles.familyChipActive : null]}>
-              <Typography style={[styles.familyText, f.active ? styles.familyTextActive : null]}>
-                {f.label}
-              </Typography>
-              {f.active && <View style={[styles.activeDot, { backgroundColor: f.id === 'ctx' ? '#A020F0' : '#00F2FF' }]} />}
-            </View>
-          ))}
-        </View>
-
-        {/* BLOCK 3: Dimensions */}
+        {/* BLOCK 2: Dimensões interpretativas */}
         <View style={styles.sectionHeader}>
           <Typography style={styles.sectionTitle}>DIMENSÕES INTERPRETATIVAS</Typography>
         </View>
         <View style={styles.dimensionsGrid}>
-          <DimensionItem 
-            label="Performance" 
-            score={domains.performance?.score || 0} 
-            icon={Target} 
-            color="#00F2FF" 
-          />
-          <DimensionItem 
-            label="Energia" 
-            score={domains.energy?.score || 0} 
-            icon={Zap} 
-            color="#FFD700" 
-          />
-          <DimensionItem 
-            label="Recuperação" 
-            score={domains.recovery?.score || 0} 
-            icon={Moon} 
-            color="#A020F0" 
-          />
-          <DimensionItem 
-            label="Equilíbrio" 
-            score={domains.nutrition?.score || 0} 
-            icon={Heart} 
-            color="#00FF9D" 
-          />
+          {reading.dimensions.map(d => (
+            <DimensionCard 
+              key={d.id}
+              label={d.label}
+              score={d.score}
+              explanation={d.explanation}
+              icon={getDimensionIcon(d.id)}
+              color={getDimensionColor(d.id)}
+            />
+          ))}
         </View>
 
-        {/* BLOCK 4: Actions */}
+        {/* BLOCK 3: Ações úteis prioritárias */}
         <View style={styles.sectionHeader}>
-          <Typography style={styles.sectionTitle}>AÇÕES & AJUSTES ÚTEIS</Typography>
+          <Typography style={styles.sectionTitle}>AÇÕES ÚTEIS PRIORITÁRIAS</Typography>
         </View>
-        {interpretedActions.length > 0 ? (
-          <View style={styles.actionsList}>
-            {interpretedActions.map((action, i) => (
-              <ActionItem key={i} action={action} />
+        <View style={styles.actionsList}>
+          {reading.priorityActions.length > 0 ? (
+            reading.priorityActions.map((action, i) => (
+              <ActionCard key={i} action={action} />
+            ))
+          ) : (
+            <Typography style={styles.emptyText}>Sem ações críticas sugeridas no momento.</Typography>
+          )}
+        </View>
+
+        {/* BLOCK 4: Temas em destaque */}
+        {reading.highlightedThemes.length > 0 && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Typography style={styles.sectionTitle}>TEMAS EM DESTAQUE</Typography>
+            </View>
+            {reading.highlightedThemes.map(theme => (
+              <BlurView key={theme.id} intensity={10} tint="dark" style={styles.themeCard}>
+                <Typography style={styles.themeTitle}>{theme.title}</Typography>
+                <Typography style={styles.themeText}>{theme.explanation}</Typography>
+                {theme.action && (
+                  <View style={styles.themeActionRow}>
+                    <CheckCircle2 size={12} color="#00FF9D" />
+                    <Typography style={styles.themeActionText}>{theme.action}</Typography>
+                  </View>
+                )}
+              </BlurView>
             ))}
-          </View>
-        ) : (
-          <Typography style={styles.emptyText}>Sem ações críticas sugeridas no momento.</Typography>
+          </>
         )}
 
-        {/* BLOCK 5: References */}
+        {/* BLOCK 5: Sinais a acompanhar */}
+        {reading.watchSignals.length > 0 && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Typography style={styles.sectionTitle}>SINAIS A ACOMPANHAR</Typography>
+            </View>
+            {reading.watchSignals.map((signal, i) => (
+              <View key={i} style={styles.watchCard}>
+                <View style={styles.watchHeader}>
+                  <Eye size={14} color="#A020F0" style={{ marginRight: 8 }} />
+                  <Typography style={styles.watchTitle}>{signal.title}</Typography>
+                </View>
+                <Typography style={styles.watchText}>{signal.explanation}</Typography>
+                <Typography variant="caption" style={styles.watchReason}>{signal.reasonToRepeat}</Typography>
+              </View>
+            ))}
+          </>
+        )}
+
+        {/* BLOCK 6: Referências & fundamentação */}
         <TouchableOpacity 
           style={styles.refsHeader} 
           onPress={toggleRefs}
           activeOpacity={0.7}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <FlaskConical size={14} color="rgba(255,255,255,0.4)" style={{ marginRight: 8 }} />
+          <View>
             <Typography style={styles.refsTitle}>REFERÊNCIAS & FUNDAMENTAÇÃO</Typography>
+            <Typography variant="caption" style={styles.refsSubtitle}>Dados usados, frescura, confiança e limites.</Typography>
           </View>
           {expandedRefs ? <ChevronUp size={16} color="rgba(255,255,255,0.4)" /> : <ChevronDown size={16} color="rgba(255,255,255,0.4)" />}
         </TouchableOpacity>
 
         {expandedRefs && (
           <View style={styles.refsContent}>
-            <Typography style={styles.refsSubtitle}>RATIONALE DA LEITURA</Typography>
-            <Typography style={styles.refsText}>
-              {aiConfidence.rationale}
-            </Typography>
-            
-            <View style={styles.refFactorBox}>
-              <Typography style={styles.refFactorTitle}>SINAIS POSITIVOS</Typography>
-              {aiConfidence.factors.positive.map((f, i) => (
-                <Typography key={i} style={styles.refFactorItem}>• {f}</Typography>
-              ))}
-              {aiConfidence.factors.positive.length === 0 && <Typography style={styles.refFactorItem}>Nenhum sinal positivo consolidado.</Typography>}
+            <View style={styles.refGrid}>
+              <View style={styles.refItem}>
+                <Typography variant="caption" style={styles.refLabel}>FAMÍLIAS USADAS</Typography>
+                <Typography style={styles.refValue}>{reading.references.usedDataFamilies.join(', ') || '—'}</Typography>
+              </View>
+              <View style={styles.refItem}>
+                <Typography variant="caption" style={styles.refLabel}>FRESCURA</Typography>
+                <Typography style={styles.refValue}>Recente</Typography>
+              </View>
+              <View style={styles.refItem}>
+                <Typography variant="caption" style={styles.refLabel}>CONFIANÇA</Typography>
+                <Typography style={styles.refValue}>Média-Alta</Typography>
+              </View>
+              <View style={styles.refItem}>
+                <Typography variant="caption" style={styles.refLabel}>ORIGEM</Typography>
+                <Typography style={styles.refValue}>{reading.references.origins.join(' / ')}</Typography>
+              </View>
             </View>
 
             <View style={styles.refFactorBox}>
-              <Typography style={styles.refFactorTitle}>LIMITAÇÕES / GAP</Typography>
-              {aiConfidence.factors.negative.map((f, i) => (
-                <Typography key={i} style={styles.refFactorItem}>• {f}</Typography>
-              ))}
+              <Typography style={styles.refFactorTitle}>PRINCIPAIS SINAIS CONSIDERADOS</Typography>
+              <View style={styles.signalsRow}>
+                {reading.references.usedSignals.map((s, i) => (
+                  <View key={i} style={styles.signalChip}>
+                    <Typography style={styles.signalChipText}>{s}</Typography>
+                  </View>
+                ))}
+              </View>
             </View>
 
-            <View style={styles.disclaimer}>
-              <Typography style={styles.disclaimerText}>
-                Esta leitura é interpretativa e baseada em biometrias cruzadas. Não substitui aconselhamento clínico ou diagnóstico médico profissional.
-              </Typography>
+            <View style={styles.refFactorBox}>
+              <Typography style={styles.refFactorTitle}>LIMITAÇÕES</Typography>
+              {reading.references.limitations.map((l, i) => (
+                <Typography key={i} style={styles.refFactorItem}>• {l}</Typography>
+              ))}
             </View>
           </View>
         )}
 
-        <View style={{ marginTop: 40, alignItems: 'center', opacity: 0.4 }}>
+        {/* BLOCK 7: Limites da leitura */}
+        <View style={styles.limitsBox}>
+          {reading.readingLimits.map((limit, i) => (
+            <Typography key={i} style={styles.limitText}>{limit}</Typography>
+          ))}
+        </View>
+
+        <View style={{ marginTop: 40, alignItems: 'center', opacity: 0.3 }}>
           <Typography variant="caption" style={styles.markerText}>
-            {isDemoMode ? 'MODO DEMO ATIVO • ' : ''}AI READING V2.2 • {dataFreshness.temporalLabel.toUpperCase()}
+            AI READING R1 • CONTRACT v1.0 • {isDemoMode ? 'SIMULAÇÃO' : 'REAL'}
           </Typography>
         </View>
 
@@ -297,32 +321,38 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
     backgroundColor: 'rgba(255,255,255,0.05)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
     alignSelf: 'flex-start',
   },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-  },
   statusLabel: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  demoBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderColor: '#00F2FF',
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  demoLabel: {
+    color: '#00F2FF',
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 1,
   },
   synthesisCard: {
     padding: 24,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: 'rgba(255,255,255,0.08)',
     marginBottom: 32,
     backgroundColor: 'rgba(255,255,255,0.02)',
   },
@@ -336,20 +366,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
     fontSize: 15,
     lineHeight: 22,
-    marginBottom: 16,
-  },
-  highlightRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 255, 157, 0.05)',
-    padding: 10,
-    borderRadius: 12,
-  },
-  highlightText: {
-    color: '#00FF9D',
-    fontSize: 13,
-    fontWeight: '600',
-    marginLeft: 8,
   },
   sectionHeader: {
     marginBottom: 16,
@@ -360,53 +376,20 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1.5,
   },
-  familiesRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 32,
-  },
-  familyChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  familyChipActive: {
-    borderColor: 'rgba(255,255,255,0.2)',
-    backgroundColor: 'rgba(255,255,255,0.06)',
-  },
-  familyText: {
-    color: 'rgba(255,255,255,0.3)',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  familyTextActive: {
-    color: '#ffffff',
-  },
-  activeDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#00F2FF',
-    marginLeft: 6,
-  },
   dimensionsGrid: {
     gap: 12,
     marginBottom: 32,
   },
   dimensionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     padding: 16,
     borderRadius: 20,
     backgroundColor: 'rgba(255,255,255,0.02)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
+  },
+  dimensionMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   dimensionIcon: {
     width: 40,
@@ -434,11 +417,16 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 2,
   },
+  dimensionExplanation: {
+    marginTop: 12,
+    color: 'rgba(255,255,255,0.4)',
+    lineHeight: 16,
+  },
   actionsList: {
     gap: 12,
     marginBottom: 32,
   },
-  actionItem: {
+  actionCard: {
     padding: 16,
     borderRadius: 20,
     backgroundColor: 'rgba(0, 242, 255, 0.03)',
@@ -449,119 +437,185 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
+    gap: 8,
   },
-  actionType: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 1,
-    flex: 1,
+  priorityTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
-  priorityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  priorityText: {
-    fontSize: 9,
+  priorityTagText: {
+    fontSize: 8,
     fontWeight: '900',
   },
-  actionReason: {
+  actionTitle: {
     color: '#ffffff',
     fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '500',
+    fontWeight: '700',
+    flex: 1,
   },
-  emptyText: {
-    color: 'rgba(255,255,255,0.3)',
-    fontStyle: 'italic',
-    textAlign: 'center',
-    marginBottom: 32,
+  actionReason: {
+    color: 'rgba(255,255,255,0.6)',
     fontSize: 13,
+    lineHeight: 18,
+  },
+  themeCard: {
+    padding: 20,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    marginBottom: 16,
+  },
+  themeTitle: {
+    color: '#00F2FF',
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  themeText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  themeActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(0, 255, 157, 0.05)',
+    padding: 8,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  themeActionText: {
+    color: '#00FF9D',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  watchCard: {
+    padding: 16,
+    borderRadius: 20,
+    backgroundColor: 'rgba(160, 32, 240, 0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(160, 32, 240, 0.1)',
+    marginBottom: 12,
+  },
+  watchHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  watchTitle: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  watchText: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 8,
+  },
+  watchReason: {
+    color: '#A020F0',
+    fontWeight: '600',
   },
   refsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 20,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.05)',
-    marginTop: 16,
+    marginTop: 20,
   },
   refsTitle: {
-    color: 'rgba(255,255,255,0.3)',
+    color: 'rgba(255,255,255,0.4)',
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1,
   },
-  refsContent: {
-    paddingBottom: 40,
-  },
   refsSubtitle: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '700',
-    marginBottom: 8,
+    color: 'rgba(255,255,255,0.2)',
+    marginTop: 2,
   },
-  refsText: {
-    color: 'rgba(255,255,255,0.6)',
-    fontSize: 13,
-    lineHeight: 20,
+  refsContent: {
+    paddingBottom: 24,
+  },
+  refGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 16,
     marginBottom: 20,
   },
-  refFactorBox: {
-    marginBottom: 16,
+  refItem: {
+    width: '45%',
   },
-  refFactorTitle: {
-    color: '#00F2FF',
-    fontSize: 11,
+  refLabel: {
+    color: 'rgba(255,255,255,0.2)',
+    fontSize: 8,
     fontWeight: '800',
-    marginBottom: 8,
+    marginBottom: 4,
     letterSpacing: 0.5,
   },
-  refFactorItem: {
+  refValue: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  refFactorBox: {
+    marginBottom: 20,
+  },
+  refFactorTitle: {
+    color: 'rgba(255,255,255,0.3)',
+    fontSize: 10,
+    fontWeight: '800',
+    marginBottom: 12,
+    letterSpacing: 0.5,
+  },
+  signalsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  signalChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  signalChipText: {
     color: 'rgba(255,255,255,0.5)',
+    fontSize: 11,
+  },
+  refFactorItem: {
+    color: 'rgba(255,255,255,0.4)',
     fontSize: 12,
     lineHeight: 18,
     marginBottom: 4,
   },
-  disclaimer: {
+  limitsBox: {
     marginTop: 20,
-    padding: 16,
+    padding: 20,
     backgroundColor: 'rgba(255,255,255,0.02)',
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
+    gap: 8,
   },
-  disclaimerText: {
+  limitText: {
     color: 'rgba(255,255,255,0.3)',
     fontSize: 11,
     lineHeight: 16,
     textAlign: 'center',
   },
-  contextualCTA: {
-    marginTop: -16,
-    marginBottom: 32,
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 242, 255, 0.2)',
-  },
-  ctaBlur: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    gap: 12,
-  },
-  ctaText: {
-    color: '#00F2FF',
+  emptyText: {
+    color: 'rgba(255,255,255,0.3)',
+    fontStyle: 'italic',
+    textAlign: 'center',
     fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: 1,
-    flex: 1,
   },
   markerText: {
-    color: 'rgba(0, 242, 255, 0.5)',
     fontSize: 8,
     fontWeight: '700',
     letterSpacing: 1,
