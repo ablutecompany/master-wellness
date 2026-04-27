@@ -157,15 +157,31 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   const daysSince = useMemo(() => {
     const lastAnalysisDate = user?.lastAnalysisDate;
-    if (!lastAnalysisDate) return 7;
+    if (!lastAnalysisDate) return 14; // Default para demonstrar aura se não houver data
     return Math.floor((Date.now() - new Date(lastAnalysisDate).getTime()) / (1000 * 60 * 60 * 24));
   }, [user?.lastAnalysisDate]);
 
   const daysSinceText = daysSince === 0 ? 'ANÁLISE HOJE' : `HÁ ${daysSince} DIAS`;
 
-  // Luz Envolvente: Amarelo -> Vermelho conforme urgência (0-30 dias)
-  const urgencyFactor = Math.min(daysSince / 30, 1);
-  const glowColor = urgencyFactor < 0.2 ? '#FFE600' : (urgencyFactor < 0.6 ? '#FF8C00' : '#FF0000');
+  // ── Dynamic Glow Logic ──────────────────────────────────────────────────
+  const avgScore = useMemo(() => {
+    // Se estiver em demo, usamos o score da demo. Se não, média dos domínios.
+    if (isDemoMode) return 94; 
+    const semanticBundle = getSemanticService().getBundle();
+    const vals = Object.values(semanticBundle.domains || {}).map(d => d.score);
+    if (vals.length === 0) return 85; // Fallback "Bom"
+    return vals.reduce((a, b) => a + b, 0) / vals.length;
+  }, [isDemoMode, analyses]);
+
+  const glowColor = useMemo(() => {
+    if (avgScore >= 80) return '#FFE600'; // Amarelo Vivo / Dourado (BOM)
+    if (avgScore >= 60) return '#FFBF00'; // Amarelo-Âmbar
+    if (avgScore >= 40) return '#FF8C00'; // Laranja
+    return '#FF0000'; // Vermelho Vivo (MAU)
+  }, [avgScore]);
+
+  const glowRadiusFactor = Math.min(daysSince, 30) / 30;
+  const dynamicGlowRadius = 120 + (glowRadiusFactor * 100); 
   
   // ── Switch Geometry Constants (DETERMINÍSTICO) ───────────────────────────
   // A posição final da roda é calculada para garantir equilíbrio visual.
@@ -504,93 +520,42 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         {/* RECUPERADO: Melhor centrado e ligeiramente mais alto */}
         <Animated.View style={[styles.centerContainer, { transform: [{ translateY: Animated.add(centerContentY, -100) }] }]}>
           
-          {/* Luz Envolvente (Auras) - RE-IMAGINADO: Brilho Orgânico e Difuso */}
+          {/* Luz Envolvente (Auras) - RECUPERADO: Brilho Orgânico e Difuso */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 100, 
-            height: 180, 
-            borderRadius: 50, 
+            width: 120, 
+            height: 120, 
+            borderRadius: 60, 
             shadowColor: glowColor, 
             shadowOffset: { width: 0, height: 0 }, 
-            shadowOpacity: 0.5, 
-            shadowRadius: 100 + (urgencyFactor * 80), 
-            elevation: 60,
+            shadowOpacity: 0.6, 
+            shadowRadius: dynamicGlowRadius, 
+            elevation: 80,
             transform: [{ scale: pulseAnim }],
             backgroundColor: glowColor,
-            opacity: 0.22
+            opacity: 0.18
           }} />
 
           {/* Segunda Camada de Aura para densidade central */}
           <Animated.View style={{ 
             position: 'absolute', 
             width: 80, 
-            height: 140, 
+            height: 80, 
             borderRadius: 40, 
             shadowColor: glowColor, 
             shadowOffset: { width: 0, height: 0 }, 
-            shadowOpacity: 0.3, 
+            shadowOpacity: 0.4, 
             shadowRadius: 40, 
-            elevation: 30,
+            elevation: 40,
             backgroundColor: glowColor,
-            opacity: 0.1
+            opacity: 0.12
           }} />
 
-          {/* Núcleo Central (POLIDO: Mais Pequeno, Mais Alto, Mais Fino) */}
-          <View style={{ 
-            width: 116, 
-            height: CAPSULE_HEIGHT, 
-            borderRadius: 58, 
-            overflow: 'hidden', 
-            backgroundColor: 'rgba(5, 10, 20, 0.9)', 
-            zIndex: 10, 
-            borderWidth: 1.5, 
-            borderColor: 'rgba(255,255,255,0.18)',
-            paddingTop: KNOB_INSET, // Inset determinístico inicial
-            alignItems: 'center'
-          }}>
+          {/* Núcleo Central (POLIDO & ESCULTURAL) */}
+          <View style={styles.capsuleShell}>
             <Animated.View style={{ width: 116, height: 116, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
-              <View style={[styles.pulseContainer, { width: 116, height: 116, borderRadius: 58, marginBottom: 0, backgroundColor: 'transparent' }]} pointerEvents="box-none">
-                {/* Outer halo video */}
-                <View style={{ position: 'absolute', width: 116, height: 116, borderRadius: 58, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
-                  <Video
-                    source={require('../../assets/video (2).mp4')}
-                    style={{ position: 'absolute', width: 116, height: 116, opacity: 0.8 }}
-                    resizeMode={ResizeMode.COVER}
-                    shouldPlay
-                    isLooping
-                    isMuted
-                    pointerEvents="none"
-                  />
-                </View>
-
-                {/* Inner primary holographic content */}
-                <View style={{ position: 'absolute', width: 104, height: 104, borderRadius: 52, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
-                  <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
-                  <Video
-                    source={require('../../assets/video (3).mp4')}
-                    style={{ position: 'absolute', width: 104, height: 104, opacity: 0.75 }}
-                    resizeMode={ResizeMode.COVER}
-                    shouldPlay
-                    isLooping
-                    isMuted
-                    pointerEvents="none"
-                  />
-                  
-                  <LinearGradient
-                    colors={['rgba(0, 242, 255, 0.18)', 'rgba(0, 212, 170, 0.1)']}
-                    style={StyleSheet.absoluteFillObject}
-                    pointerEvents="none"
-                  />
-
-                  {/* Labels inside the core */}
-                  <View style={{ alignItems: 'center', zIndex: 100 }}>
-                    <Typography style={[styles.centerLabel, { fontSize: 10, marginBottom: 0, opacity: 1, letterSpacing: 3 }]}>BIO-ANÁLISE</Typography>
-                    <Typography style={[styles.centerSub, { fontSize: 6, color: glowColor, opacity: 0.9 }]}>{daysSinceText.toUpperCase()}</Typography>
-                  </View>
-
-                  {/* Inner diffuse mask */}
-                  <View style={[StyleSheet.absoluteFill, { borderRadius: 52, borderWidth: 8, borderColor: 'rgba(5,10,20,0.5)' }]} pointerEvents="none" />
-                </View>
+              <View style={styles.wheelKnob}>
+                 <BioAnalysisOrbitalCore daysSinceText={daysSinceText} glowColor={glowColor} />
               </View>
             </Animated.View>
 
@@ -645,20 +610,23 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               <View style={styles.drawerHandle} />
               <Typography variant="caption" style={styles.drawerTitle}>APP PLACE</Typography>
               
-              {/* Footer Icons: Apenas instaladas/favoritas quando colapsado */}
+              {/* Footer Icons: Estilo Antigo (Maiores, com Label) */}
               <Animated.View style={[styles.footerIconsRow, { opacity: footerIconsOpacity }]}>
                 {installedAppIds.length > 0 ? (
                   installedAppIds.map(id => {
                     const app = MINI_APP_CATALOG.find(a => a.id === id);
                     if (!app) return null;
                     return (
-                      <View key={id} style={styles.footerIconCircle}>
-                        <Typography style={{ fontSize: 14 }}>{app.iconEmoji}</Typography>
+                      <View key={id} style={styles.footerIconWrapper}>
+                        <View style={styles.footerIconCircle}>
+                           <Typography style={{ fontSize: 24 }}>{app.iconEmoji}</Typography>
+                        </View>
+                        <Typography style={styles.footerIconLabel}>{app.name.replace(/_/g, '').toUpperCase()}</Typography>
                       </View>
                     );
                   })
                 ) : (
-                  <Typography style={{ fontSize: 10, color: 'rgba(255,255,255,0.2)', letterSpacing: 1 }}>SEM APPS INSTALADAS</Typography>
+                  <Typography style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', letterSpacing: 2, fontWeight: '800' }}>APP PLACE VAZIO</Typography>
                 )}
               </Animated.View>
             </View>
@@ -1615,20 +1583,180 @@ const styles = StyleSheet.create({
   },
   footerIconsRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 15,
+    gap: 32,
+    marginTop: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    height: 40,
+    height: 100,
+  },
+  footerIconWrapper: {
+    alignItems: 'center',
+    width: 80,
   },
   footerIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.04)',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.1)',
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  footerIconLabel: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: 'rgba(255,255,255,0.5)',
+    letterSpacing: 1.5,
+    textAlign: 'center',
+    lineHeight: 12,
+  },
+  capsuleShell: {
+    width: 116, 
+    height: 220, 
+    borderRadius: 58, 
+    overflow: 'hidden', 
+    backgroundColor: 'rgba(10, 15, 30, 0.95)', 
+    zIndex: 10, 
+    borderWidth: 1.5, 
+    borderColor: 'rgba(255,255,255,0.22)',
+    paddingTop: 12,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+  },
+  wheelKnob: {
+    width: 116, 
+    height: 116, 
+    borderRadius: 58, 
+    backgroundColor: 'transparent',
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  orbitalCore: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  lensBase: {
+    width: 104,
+    height: 104,
+    borderRadius: 52,
+    backgroundColor: '#000',
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
   },
+  particle: {
+    position: 'absolute',
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: '#00F2FF',
+    shadowColor: '#00F2FF',
+    shadowRadius: 4,
+    shadowOpacity: 0.8,
+  },
+  orbitalRing: {
+    position: 'absolute',
+    borderWidth: 1,
+    borderColor: '#00F2FF',
+  },
+  coreTextContainer: {
+    position: 'absolute',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  coreTitle: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#fff',
+    letterSpacing: 3,
+    opacity: 0.8,
+    marginBottom: 2,
+  },
+  coreSubtitle: {
+    fontSize: 7,
+    fontWeight: '800',
+    letterSpacing: 1,
+    opacity: 0.9,
+  }
 });
+
+// ── COMPONENTE LOCAL: BioAnalysisOrbitalCore ───────────────────────────
+const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: string, glowColor: string }) => {
+  const rotation = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(rotation, {
+        toValue: 1,
+        duration: 30000,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
+
+  const spin = rotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const reverseSpin = rotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['360deg', '0deg'],
+  });
+
+  return (
+    <View style={styles.orbitalCore}>
+      {/* Deep Atmosphere */}
+      <View style={styles.lensBase}>
+         <LinearGradient
+           colors={['rgba(5, 10, 20, 0.4)', 'rgba(0, 0, 0, 0.95)']}
+           style={StyleSheet.absoluteFillObject}
+         />
+         
+         {/* Video subtle texture fallback */}
+         <Video
+            source={require('../../assets/video (3).mp4')}
+            style={{ position: 'absolute', width: 120, height: 120, opacity: 0.4 }}
+            resizeMode={ResizeMode.COVER}
+            shouldPlay
+            isLooping
+            isMuted
+            pointerEvents="none"
+          />
+      </View>
+
+      {/* Orbit 1: Fast & Small */}
+      <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ rotate: spin }] }]}>
+         <View style={[styles.particle, { top: 20, left: 40 }]} />
+         <View style={[styles.particle, { bottom: 25, right: 35, opacity: 0.4 }]} />
+         <View style={[styles.orbitalRing, { width: 84, height: 84, borderRadius: 42, opacity: 0.1, alignSelf: 'center', marginTop: 16 }]} />
+      </Animated.View>
+
+      {/* Orbit 2: Slow & Large */}
+      <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ rotate: reverseSpin }] }]}>
+         <View style={[styles.particle, { top: 50, left: 15, width: 2, height: 2, backgroundColor: '#fff' }]} />
+         <View style={[styles.orbitalRing, { width: 98, height: 98, borderRadius: 49, opacity: 0.05, alignSelf: 'center', marginTop: 9 }]} />
+      </Animated.View>
+
+      {/* Central Labeling */}
+      <View style={styles.coreTextContainer}>
+         <Typography style={styles.coreTitle}>BIO-ANÁLISE</Typography>
+         <Typography style={[styles.coreSubtitle, { color: glowColor }]}>{daysSinceText}</Typography>
+      </View>
+
+      {/* Outer Glossy Rim */}
+      <View style={[StyleSheet.absoluteFill, { borderRadius: 58, borderWidth: 6, borderColor: 'rgba(255,255,255,0.03)' }]} pointerEvents="none" />
+    </View>
+  );
+};
