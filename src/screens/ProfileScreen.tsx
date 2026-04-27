@@ -305,20 +305,20 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             <View style={styles.profileHero}>
               <TouchableOpacity style={styles.avatarCircle} onPress={() => {}} disabled>
                 {user?.avatarUrl ? (
-                  <Image source={{ uri: user.avatarUrl }} style={{ width: 70, height: 70, borderRadius: 35 }} />
+                  <Image source={{ uri: user.avatarUrl }} style={{ width: 80, height: 80, borderRadius: 40 }} />
                 ) : (
-                  <User size={35} color="white" />
+                  <User size={36} color="white" />
                 )}
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleEditName} style={{ alignItems: 'center', marginTop: 12 }}>
+              <TouchableOpacity onPress={handleEditName} style={{ alignItems: 'center', marginTop: 16 }}>
                 <Typography variant="h2" style={{ fontWeight: '700', color: '#fff' }}>
                   {user?.name || user?.fullName || 'Utilizador'}
                 </Typography>
-                <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
+                <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>
                   {user?.email || (authAccount?.email) || 'Sem email associado'}
                 </Typography>
-                <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.2)', fontSize: 8, marginTop: 4 }}>
-                   BUILD V2.5-STABLE | UI-R1-STABLE-2026 | {isGuestMode ? 'GUEST' : 'AUTH'}
+                <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.15)', fontSize: 9, marginTop: 8, letterSpacing: 1 }}>
+                   BUILD V2.5-STABLE • UI-R2-FROSTED • {isGuestMode ? 'GUEST' : 'AUTH'}
                 </Typography>
               </TouchableOpacity>
             </View>
@@ -367,7 +367,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                   <TouchableOpacity 
                     onPress={() => {/* logic already in setupItems but here for completeness */}}
                     style={styles.memberTabAdd}>
-                      <Typography variant="caption" style={{ color: '#fff' }}>+ Adicionar</Typography>
+                      <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.6)' }}>+ Membro</Typography>
                   </TouchableOpacity>
                 </ScrollView>
               </View>
@@ -384,17 +384,17 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.groupCell} onPress={handleEditDateOfBirth}>
                     <Typography style={styles.cellLabel}>Idade</Typography>
-                    <Typography style={styles.cellValue}>{userAge !== null ? `${userAge}a` : '—'}</Typography>
+                    <Typography style={styles.cellValue}>{userAge !== null ? `${userAge} anos` : '—'}</Typography>
                   </TouchableOpacity>
                 </View>
                 <View style={styles.groupRow}>
                   <TouchableOpacity style={styles.groupCell} onPress={handleEditHeight}>
                     <Typography style={styles.cellLabel}>Altura</Typography>
-                    <Typography style={styles.cellValue}>{user?.height ? `${user.height}cm` : '—'}</Typography>
+                    <Typography style={styles.cellValue}>{user?.height ? `${user.height} cm` : '—'}</Typography>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.groupCell} onPress={handleEditWeight}>
                     <Typography style={styles.cellLabel}>Peso</Typography>
-                    <Typography style={styles.cellValue}>{user?.weight?.value ? `${user.weight.value}kg` : '—'}</Typography>
+                    <Typography style={styles.cellValue}>{user?.weight?.value ? `${user.weight.value} kg` : '—'}</Typography>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -421,7 +421,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
               </Typography>
             </TouchableOpacity>
 
-            <View style={{ height: 40 }} />
+            <View style={{ height: 20 }} />
           </ScrollView>
         </View>
       </SafeAreaView>
@@ -494,9 +494,12 @@ const styles = StyleSheet.create({
   modalPanel: {
     flex: 1,
     marginHorizontal: 16,
+    maxWidth: 500,
+    alignSelf: 'center',
+    width: '100%',
     marginTop: Platform.OS === 'ios' ? 20 : 40,
     marginBottom: 20,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(10, 15, 25, 0.8)',
     borderRadius: 32,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
@@ -520,21 +523,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scrollContent: {
-    paddingBottom: 40,
+    paddingBottom: 20,
   },
   profileHero: {
     alignItems: 'center',
-    paddingVertical: 30,
+    paddingVertical: 32,
   },
   avatarCircle: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
     backgroundColor: 'rgba(0, 242, 255, 0.1)',
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: 'rgba(0, 242, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
   },
   maturityCard: {
     marginHorizontal: 20,
@@ -545,39 +552,108 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
   },
+  setupRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderRadius: 16,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.02)',
+  },
+  setupIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  setupTitle: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  setupDesc: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 11,
+    lineHeight: 14,
+  },
   section: {
     marginHorizontal: 20,
     marginBottom: 24,
   },
   sectionLabel: {
-    borderColor: theme.colors.cardBorder,
-    overflow: 'hidden',
+    color: 'rgba(255,255,255,0.3)',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    marginBottom: 12,
+    marginLeft: 4,
   },
-  groupItem: {
+  glassGroup: {
+    gap: 12,
+  },
+  groupRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: theme.spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    gap: 12,
   },
-  inlineInput: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'right',
+  groupCell: {
     flex: 1,
-    padding: 0,
-    margin: 0,
-    minWidth: 120,
+    padding: 16,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
-  groupLabel: {
-    color: theme.colors.textMuted,
-    fontSize: 14,
+  cellLabel: {
+    color: 'rgba(255,255,255,0.3)',
+    fontSize: 10,
+    fontWeight: '600',
+    marginBottom: 6,
+    textTransform: 'uppercase',
   },
-  groupValueRow: {
+  cellValue: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  memberTab: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  memberTabActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  memberTabAdd: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  logoutAction: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-  }
+    justifyContent: 'center',
+    padding: 18,
+    backgroundColor: 'rgba(255, 69, 58, 0.1)',
+    borderRadius: 20,
+    marginHorizontal: 20,
+    marginTop: 10,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 69, 58, 0.2)',
+  },
 });
