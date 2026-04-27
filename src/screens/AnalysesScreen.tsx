@@ -260,7 +260,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
       </View>
 
       <GatingOverlay
-        isBlocked={isGuestMode}
+        isBlocked={isGuestMode && !isDemoMode}
         message="Inicie sessão para gerir o seu histórico biográfico completo."
         actionLabel="Voltar"
         onAction={() => navigation.navigate('Home')}
