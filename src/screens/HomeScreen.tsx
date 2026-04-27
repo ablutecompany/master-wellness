@@ -227,7 +227,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   const drawerBgOpacity = drawerAnim.interpolate({
     inputRange: [DRAWER_UP, DRAWER_DOWN],
-    outputRange: [1, 0.10],
+    outputRange: [0.98, 0.05], // REFORÇADO: Quase opaco quando aberto
     extrapolate: 'clamp',
   });
 
@@ -246,7 +246,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const drawerPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (evt, gestureState) => Math.abs(gestureState.dy) > 10,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Capturar apenas se o movimento vertical for significativo
+        return Math.abs(gestureState.dy) > 10;
+      },
       onPanResponderMove: (_, { dy }) => {
         let newY = lastDrawerY.current + dy;
         if (newY < DRAWER_UP) newY = DRAWER_UP;
@@ -256,12 +259,22 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       onPanResponderRelease: (_, { dy, vy }) => {
         let finalY = lastDrawerY.current + dy;
         let toValue = DRAWER_DOWN;
-        if (vy < -0.5 || finalY < (DRAWER_DOWN + DRAWER_UP) / 2) toValue = DRAWER_UP;
-        else toValue = DRAWER_DOWN;
+
+        // Se estiver aberto (UP) e puxar para baixo (dy > 0), fechar (DOWN)
+        if (lastDrawerY.current === DRAWER_UP) {
+          if (dy > 80 || vy > 0.5) toValue = DRAWER_DOWN;
+          else toValue = DRAWER_UP;
+        } 
+        // Se estiver fechado (DOWN) e puxar para cima (dy < 0), abrir (UP)
+        else {
+          if (dy < -80 || vy < -0.5) toValue = DRAWER_UP;
+          else toValue = DRAWER_DOWN;
+        }
 
         Animated.spring(drawerAnim, {
           toValue,
-          bounciness: 0,
+          bounciness: 2,
+          speed: 12,
           useNativeDriver: false,
         }).start(() => {
           lastDrawerY.current = toValue;
@@ -638,7 +651,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         style={[styles.appDrawer, { transform: [{ translateY: drawerAnim }] }]}
       >
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: drawerBgOpacity }]}>
-          <BlurView intensity={65} tint="dark" style={styles.drawerContent} />
+          <BlurView intensity={90} tint="dark" style={styles.drawerContent} />
         </Animated.View>
 
         <Animated.View style={{ flex: 1, width: '100%', opacity: drawerInnerOpacity, borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' }}>
@@ -699,7 +712,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                           {isInstalled ? (
                             <TouchableOpacity 
                               style={[styles.actionBtn, { backgroundColor: 'rgba(255,255,255,0.08)' }]}
-                              onPress={() => launchApp(app)}
+                              onPress={() => {
+                                launchApp(app);
+                                navigation.navigate('MiniApp', { app });
+                              }}
                             >
                               <Typography style={styles.actionText}>ABRIR</Typography>
                             </TouchableOpacity>
