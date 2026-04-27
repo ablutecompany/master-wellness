@@ -225,7 +225,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   const drawerInnerOpacity = drawerAnim.interpolate({
     inputRange: [DRAWER_UP, DRAWER_DOWN],
-    outputRange: [1, 0.25],
+    outputRange: [1, 0.5],
     extrapolate: 'clamp',
   });
 
@@ -405,11 +405,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           isLooping
           isMuted
         />
-        {/* Base darkening layer - RECUPERADO: Mais escuro para atmosfera profunda */}
-        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.85)' }]} pointerEvents="none" />
+        {/* Base darkening layer - REFORÇADO: Mais profundo para destacar o holograma */}
+        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.92)' }]} pointerEvents="none" />
 
-        {/* Floating nuances - RECUPERADO: Mais sutis */}
-        <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: Animated.multiply(floatAnim1, 0.4) }]} pointerEvents="none">
+        {/* Floating nuances - SUAVIZADO: Apenas sugestão atmosférica */}
+        <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: Animated.multiply(floatAnim1, 0.3) }]} pointerEvents="none">
           <LinearGradient
             colors={['rgba(0,0,0,0.9)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.9)']}
             start={{ x: 0, y: 0 }}
@@ -484,44 +484,59 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
         {/* ── CENTRAL VISUAL (The HoloPulse) ────────────────────────────────── */}
         {/* RECUPERADO: Melhor centrado e ligeiramente mais alto */}
-        <Animated.View style={[styles.centerContainer, { transform: [{ translateY: Animated.add(centerContentY, -85) }] }]}>
+        <Animated.View style={[styles.centerContainer, { transform: [{ translateY: Animated.add(centerContentY, -100) }] }]}>
           
-          {/* Luz Envolvente (Auras) - RECUPERAÇÃO: Irradia do núcleo, mais difusa */}
+          {/* Luz Envolvente (Auras) - RE-IMAGINADO: Brilho Orgânico e Difuso */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 120, 
-            height: 230, 
-            borderRadius: 60, 
+            width: 100, 
+            height: 180, 
+            borderRadius: 50, 
             shadowColor: glowColor, 
             shadowOffset: { width: 0, height: 0 }, 
-            shadowOpacity: 0.4, 
-            shadowRadius: 60 + (urgencyFactor * 40), 
-            elevation: 40,
+            shadowOpacity: 0.5, 
+            shadowRadius: 80 + (urgencyFactor * 60), 
+            elevation: 50,
             transform: [{ scale: pulseAnim }],
             backgroundColor: glowColor,
-            opacity: 0.12
+            opacity: 0.18
           }} />
 
-          {/* Núcleo Central (REFINADO: Mais Contido e Elegante) */}
+          {/* Segunda Camada de Aura para densidade central */}
+          <Animated.View style={{ 
+            position: 'absolute', 
+            width: 80, 
+            height: 140, 
+            borderRadius: 40, 
+            shadowColor: glowColor, 
+            shadowOffset: { width: 0, height: 0 }, 
+            shadowOpacity: 0.3, 
+            shadowRadius: 40, 
+            elevation: 30,
+            backgroundColor: glowColor,
+            opacity: 0.1
+          }} />
+
+          {/* Núcleo Central (POLIDO: Mais Pequeno, Mais Alto, Mais Fino) */}
           <View style={{ 
-            width: 124, 
-            height: 224, 
-            borderRadius: 62, 
+            width: 116, 
+            height: 210, 
+            borderRadius: 58, 
             overflow: 'hidden', 
-            backgroundColor: 'rgba(5, 10, 20, 0.85)', 
+            backgroundColor: 'rgba(5, 10, 20, 0.9)', 
             zIndex: 10, 
-            borderWidth: 1, 
-            borderColor: 'rgba(255,255,255,0.15)',
-            justifyContent: 'flex-start',
+            borderWidth: 1.5, 
+            borderColor: 'rgba(255,255,255,0.18)',
+            justifyContent: 'center', // Centramento vertical fixado
             alignItems: 'center'
           }}>
-            <Animated.View style={{ width: 124, height: 124, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
-              <View style={[styles.pulseContainer, { width: 124, height: 124, borderRadius: 62, marginBottom: 0, backgroundColor: 'transparent' }]} pointerEvents="box-none">
+            <Animated.View style={{ width: 116, height: 116, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
+              <View style={[styles.pulseContainer, { width: 116, height: 116, borderRadius: 58, marginBottom: 0, backgroundColor: 'transparent' }]} pointerEvents="box-none">
                 {/* Outer halo video */}
-                <View style={{ position: 'absolute', width: 124, height: 124, borderRadius: 62, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
+                <View style={{ position: 'absolute', width: 116, height: 116, borderRadius: 58, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
                   <Video
                     source={require('../../assets/video (2).mp4')}
-                    style={{ position: 'absolute', width: 124, height: 124, opacity: 0.8 }}
+                    style={{ position: 'absolute', width: 116, height: 116, opacity: 0.8 }}
                     resizeMode={ResizeMode.COVER}
                     shouldPlay
                     isLooping
@@ -531,11 +546,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 </View>
 
                 {/* Inner primary holographic content */}
-                <View style={{ position: 'absolute', width: 112, height: 112, borderRadius: 56, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
-                  <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
+                <View style={{ position: 'absolute', width: 104, height: 104, borderRadius: 52, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
+                  <BlurView intensity={30} tint="dark" style={StyleSheet.absoluteFill} />
                   <Video
                     source={require('../../assets/video (3).mp4')}
-                    style={{ position: 'absolute', width: 112, height: 112, opacity: 0.75 }}
+                    style={{ position: 'absolute', width: 104, height: 104, opacity: 0.75 }}
                     resizeMode={ResizeMode.COVER}
                     shouldPlay
                     isLooping
@@ -544,19 +559,19 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   />
                   
                   <LinearGradient
-                    colors={['rgba(0, 242, 255, 0.15)', 'rgba(0, 212, 170, 0.08)']}
+                    colors={['rgba(0, 242, 255, 0.18)', 'rgba(0, 212, 170, 0.1)']}
                     style={StyleSheet.absoluteFillObject}
                     pointerEvents="none"
                   />
 
                   {/* Labels inside the core */}
                   <View style={{ alignItems: 'center', zIndex: 100 }}>
-                    <Typography style={[styles.centerLabel, { fontSize: 11, marginBottom: 1, opacity: 0.95 }]}>BIO-ANÁLISE</Typography>
-                    <Typography style={[styles.centerSub, { fontSize: 7, color: glowColor, opacity: 0.85 }]}>{daysSinceText.toUpperCase()}</Typography>
+                    <Typography style={[styles.centerLabel, { fontSize: 10, marginBottom: 0, opacity: 1, letterSpacing: 3 }]}>BIO-ANÁLISE</Typography>
+                    <Typography style={[styles.centerSub, { fontSize: 6, color: glowColor, opacity: 0.9 }]}>{daysSinceText.toUpperCase()}</Typography>
                   </View>
 
                   {/* Inner diffuse mask */}
-                  <View style={[StyleSheet.absoluteFill, { borderRadius: 56, borderWidth: 8, borderColor: 'rgba(5,10,20,0.4)' }]} pointerEvents="none" />
+                  <View style={[StyleSheet.absoluteFill, { borderRadius: 52, borderWidth: 8, borderColor: 'rgba(5,10,20,0.5)' }]} pointerEvents="none" />
                 </View>
               </View>
             </Animated.View>
@@ -578,7 +593,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           style={styles.leftEdgeHandle}
           onPress={() => navigation.navigate('Leitura AI')}
         >
-          <Typography variant="caption" style={styles.edgeLabel}>LEITURA AI</Typography>
+          <Typography variant="caption" style={styles.edgeLabel} numberOfLines={1}>LEITURA AI</Typography>
         </TouchableOpacity>
 
         {/* ── RIGHT EDGE HANDLE: RESULTS ────────────────────────────────────── */}
@@ -586,7 +601,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           style={styles.rightEdgeHandle}
           onPress={() => navigation.navigate('Resultados')}
         >
-          <Typography variant="caption" style={styles.edgeLabel}>RESULTADOS</Typography>
+          <Typography variant="caption" style={styles.edgeLabel} numberOfLines={1}>RESULTADOS</Typography>
         </TouchableOpacity>
 
         {/* Trigger inside drawer now handles interactions */}
@@ -954,31 +969,31 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     top: '40%',
-    width: 32,
-    height: 80,
-    backgroundColor: 'rgba(115, 188, 255, 0.08)',
-    borderTopRightRadius: 16,
-    borderBottomRightRadius: 16,
+    width: 42,
+    height: 100,
+    backgroundColor: 'rgba(115, 188, 255, 0.06)',
+    borderTopRightRadius: 20,
+    borderBottomRightRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderLeftWidth: 0,
-    borderColor: 'rgba(115, 188, 255, 0.2)',
+    borderColor: 'rgba(115, 188, 255, 0.15)',
   },
   rightEdgeHandle: {
     position: 'absolute',
     right: 0,
     top: '40%',
-    width: 32,
-    height: 80,
-    backgroundColor: 'rgba(0, 212, 170, 0.08)',
-    borderTopLeftRadius: 16,
-    borderBottomLeftRadius: 16,
+    width: 42,
+    height: 100,
+    backgroundColor: 'rgba(0, 212, 170, 0.06)',
+    borderTopLeftRadius: 20,
+    borderBottomLeftRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderRightWidth: 0,
-    borderColor: 'rgba(0, 212, 170, 0.2)',
+    borderColor: 'rgba(0, 212, 170, 0.15)',
   },
   edgePill: {
     width: 3,
@@ -988,14 +1003,16 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   edgeLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '900',
-    letterSpacing: 2,
+    letterSpacing: 1.5,
     color: '#fff',
     writingDirection: 'ltr',
     transform: [{ rotate: '90deg' }],
-    marginTop: 8,
-    opacity: 0.8,
+    marginTop: 0,
+    opacity: 0.9,
+    width: 100,
+    textAlign: 'center',
   },
   // Bottom App Drawer trigger (always visible)
   drawerTrigger: {
@@ -1110,7 +1127,7 @@ const styles = StyleSheet.create({
   },
   drawerTitle: {
     letterSpacing: 4,
-    color: 'rgba(255,255,255,0.4)',
+    color: 'rgba(255,255,255,0.8)',
     fontWeight: '800',
   },
   appGrid: {
