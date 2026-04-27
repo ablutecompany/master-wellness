@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
-import { StyleSheet, View, TouchableOpacity, Animated, PanResponder, useWindowDimensions, ScrollView, Platform, SafeAreaView, Modal, TextInput, Image, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Animated, PanResponder, useWindowDimensions, ScrollView, Platform, SafeAreaView, Modal, TextInput, Image, ActivityIndicator, Alert } from 'react-native';
 import { Container, Typography } from '../components/Base';
 import { theme } from '../theme';
 import { BrandLogo } from '../components/BrandLogo';
@@ -126,6 +126,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const { width, height } = useWindowDimensions();
   const [showControl, setShowControl] = useState(false);
   const [showNfcModal, setShowNfcModal] = useState(false);
+  const [showTokensModal, setShowTokensModal] = useState(false);
   const [expandedAppId, setExpandedAppId] = useState<string | null>(null);
 
   // Real Store State
@@ -138,6 +139,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const isDemoMode = useStore(state => state.isDemoMode);
   const setIsDemoMode = useStore(state => state.setIsDemoMode);
   const setDemoAnalysis = useStore(state => state.setDemoAnalysis);
+  const installedAppIds = useStore(state => state.installedAppIds) || [];
+  const installApp = useStore(state => state.installApp);
+  const launchApp = useStore(state => state.launchApp);
 
   const isAuthenticated = !!authAccount || isGuestMode;
   const userName = user?.name || (isGuestMode ? 'Guest' : (authAccount?.email?.split('@')[0] || 'Utilizador'));
@@ -162,7 +166,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const glowColor = urgencyFactor < 0.2 ? '#FFE600' : (urgencyFactor < 0.6 ? '#FF8C00' : '#FF0000');
   
   // ── Switch Setup ──────────────────────────────────────────────────────────
-  const MAX_DRAG = 100;
+  const MAX_DRAG = 60; // FIX: Reduzido de 100 para limitar o deslize (posição visual "objetivo")
   const switchAnim = useRef(new Animated.Value(0)).current; // 0 = UP, MAX_DRAG = DOWN
   const isOff = useRef(false);
 
@@ -464,20 +468,17 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           <View style={styles.headerRight}>
             <View style={styles.topIconRow}>
               <TouchableOpacity 
-                style={styles.tokenIconOnly} 
-                onPress={() => {
-                  if (Platform.OS === 'web') alert(`Saldo atual: ${credits ?? 0} tokens para bio-análise.`);
-                  else Alert.alert('Créditos', `Tens ${credits ?? 0} tokens disponíveis.`);
-                }}
+                style={styles.iconCircle} 
+                onPress={() => setShowTokensModal(true)}
               >
                 <Animated.View style={{ transform: [{ scale: credits === 0 ? nudgeAnim : 1 }] }}>
                   <Image 
                     source={require('../../assets/token_abl.png')} 
                     style={{ 
-                      width: 55, 
-                      height: 55, 
+                      width: 32, // Normalizado para caber no círculo
+                      height: 32, 
                       tintColor: credits === 0 ? theme.colors.primary : '#fff',
-                      opacity: credits === 0 ? 0.9 : 1
+                      opacity: credits === 0 ? 0.7 : 0.85
                     }} 
                     resizeMode="contain"
                   />
@@ -649,13 +650,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
             <Animated.View style={{ paddingHorizontal: 24, paddingBottom: 20 }}>
               <View style={styles.appGrid}>
-                {MINI_APP_CATALOG.filter(app => (useStore.getState().installedAppIds || []).includes(app.id)).map(app => (
+                {MINI_APP_CATALOG.filter(app => (installedAppIds || []).includes(app.id)).map(app => (
                   <TouchableOpacity 
                     key={app.id} 
                     style={styles.appItem}
-                    onPress={() => {
-                      // No future favorites logic yet, just launch
-                    }}
+                    onPress={() => launchApp(app)}
                   >
                     <View style={[styles.appIconContainer, { backgroundColor: app.iconBg }]}>
                       <Typography style={{ fontSize: 24 }}>{app.iconEmoji}</Typography>
@@ -673,49 +672,66 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
               showsVerticalScrollIndicator={false}
             >
-              <Typography variant="h3" style={styles.sectionTitle}>Disponíveis para Download</Typography>
+              <Typography variant="h3" style={styles.sectionTitle}>Catálogo de Mini-Apps</Typography>
               <View style={styles.downloadList}>
-                {[
-                  { id: 'sleep', name: 'Sleep+', desc: 'Otimização de Ciclos', icon: <Moon size={24} color="#00F2FF" />, fullDesc: 'Analisa as variações de pH urinário ao acordar para sugerir ajustes no timing do sono e otimizar a recuperação metabólica noturna.' },
-                  { id: 'hydra', name: 'HydraTrack', desc: 'Gestão de Água', icon: <Droplet size={24} color="#00F2FF" />, fullDesc: 'Mapeia a densidade da urina em tempo real para prever estados de desidratação celular antes do sintoma de sede aparecer.' },
-                  { id: 'mind', name: 'Mind', desc: 'Foco e Meditação', icon: <Brain size={24} color="#00F2FF" />, fullDesc: 'Utiliza marcadores de stress fisiológico detetados na bio-análise para sugerir protocolos de respiração e foco adaptados ao teu estado mental.' },
-                  { id: 'fasting', name: 'Fasting', desc: 'Jejum Intermitente', icon: <Activity size={24} color="#00F2FF" />, fullDesc: 'Acompanha a cetose e o equilíbrio eletrolítico durante o jejum, garantindo que o protocolo é seguro e eficaz para o teu metabolismo.' },
-                  { id: 'cardio', name: 'CardioSync', desc: 'Saúde Cardiovascular', icon: <Heart size={24} color="#00F2FF" />, fullDesc: 'Cruza dados de pressão arterial e ritmo cardíaco com resultados de biomarcadores para monitorizar a tua eficiência cardiovascular.' },
-                  { id: 'macro', name: 'MacroTrack', desc: 'Nutrição Detalhada', icon: <Target size={24} color="#00F2FF" />, fullDesc: 'Otimiza a tua ingestão de macronutrientes com base na utilização real que o teu corpo está a fazer dos nutrientes, detetada via análise.' },
-                ].map((app) => (
-                  <View key={app.id} style={styles.downloadRow}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <View style={styles.rowIcon}>
-                        <View style={{ opacity: 0.6 }}>{app.icon}</View>
+                {MINI_APP_CATALOG.map((app) => {
+                  const isInstalled = installedAppIds.includes(app.id);
+                  return (
+                    <View key={app.id} style={styles.downloadRow}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={[styles.rowIcon, { backgroundColor: app.iconBg }]}>
+                          <Typography style={{ fontSize: 20 }}>{app.iconEmoji}</Typography>
+                        </View>
+                        <View style={styles.rowInfo}>
+                          <Typography style={styles.rowTitle}>{app.name}</Typography>
+                          <Typography variant="caption" style={styles.rowDesc}>{app.tagline}</Typography>
+                        </View>
+                        <View style={styles.rowActions}>
+                          <TouchableOpacity 
+                            style={styles.actionBtn}
+                            onPress={() => setExpandedAppId(expandedAppId === app.id ? null : app.id)}
+                          >
+                            <Typography style={styles.actionText}>
+                              {expandedAppId === app.id ? 'VER MENOS' : 'INFO'}
+                            </Typography>
+                          </TouchableOpacity>
+                          
+                          {isInstalled ? (
+                            <TouchableOpacity 
+                              style={[styles.actionBtn, { backgroundColor: 'rgba(255,255,255,0.08)' }]}
+                              onPress={() => launchApp(app)}
+                            >
+                              <Typography style={styles.actionText}>ABRIR</Typography>
+                            </TouchableOpacity>
+                          ) : (
+                            <TouchableOpacity 
+                              style={[styles.actionBtn, styles.installBtn]}
+                              onPress={() => installApp(app.id)}
+                            >
+                              <Typography style={[styles.actionText, styles.installText]}>INSTALAR</Typography>
+                            </TouchableOpacity>
+                          )}
+                        </View>
                       </View>
-                      <View style={styles.rowInfo}>
-                        <Typography style={styles.rowTitle}>{app.name}</Typography>
-                        <Typography variant="caption" style={styles.rowDesc}>{app.desc}</Typography>
-                      </View>
-                      <View style={styles.rowActions}>
-                        <TouchableOpacity 
-                          style={styles.actionBtn}
-                          onPress={() => setExpandedAppId(expandedAppId === app.id ? null : app.id)}
-                        >
-                          <Typography style={styles.actionText}>
-                            {expandedAppId === app.id ? 'VER MENOS' : '+ INFO'}
+                      
+                      {expandedAppId === app.id && (
+                        <Animated.View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
+                          <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 }}>
+                            {app.description}
                           </Typography>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.actionBtn, styles.installBtn]}>
-                          <Typography style={[styles.actionText, styles.installText]}>INSTALAR</Typography>
-                        </TouchableOpacity>
-                      </View>
+                          <View style={{ flexDirection: 'row', marginTop: 12, gap: 12 }}>
+                            <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+                              <Typography style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>VER {app.version}</Typography>
+                            </View>
+                            <View style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+                              <Typography style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>{app.developer}</Typography>
+                            </View>
+                          </View>
+                        </Animated.View>
+                      )}
                     </View>
-                    
-                    {expandedAppId === app.id && (
-                      <Animated.View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' }}>
-                        <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 }}>
-                          {app.fullDesc}
-                        </Typography>
-                      </Animated.View>
-                    )}
-                  </View>
-                ))}
+                  );
+                })}
               </View>
             </ScrollView>
           </Animated.View>
@@ -799,6 +815,45 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
+
+      {/* ── TOKENS INFORMATION MODAL ────────────────────────────────────── */}
+      <Modal visible={showTokensModal} transparent animationType="fade" onRequestClose={() => setShowTokensModal(false)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowTokensModal(false)}>
+          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+            <BlurView intensity={80} tint="dark" style={[styles.modalContent, { alignItems: 'center' }]}>
+              
+              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255, 255, 255, 0.05)', justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
+                <Image 
+                  source={require('../../assets/token_abl.png')} 
+                  style={{ width: 40, height: 40 }} 
+                  resizeMode="contain"
+                />
+              </View>
+              
+              <Typography variant="h2" style={{ textAlign: 'center', color: '#fff', marginBottom: 12 }}>Créditos</Typography>
+              
+              <Typography style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 20, marginBottom: 24 }}>
+                Os créditos serão usados para análises, interpretações e ações avançadas dentro do ecossistema ablute_.
+              </Typography>
+
+              <View style={{ width: '100%', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 16, marginBottom: 24, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+                <Typography style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: 2, marginBottom: 4 }}>SALDO ATUAL</Typography>
+                <Typography style={{ fontSize: 24, color: '#00F2FF', fontWeight: '800' }}>{credits ?? 0} TOKENS</Typography>
+              </View>
+              
+              <TouchableOpacity
+                style={[styles.saveBtn, { width: '100%' }]}
+                onPress={() => setShowTokensModal(false)}
+              >
+                <Typography style={styles.saveBtnText}>FECHAR</Typography>
+              </TouchableOpacity>
+            </BlurView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ── FOOTER PADDING FOR GESTURES ──────────────────────────────────── */}
+      <View style={{ height: 20 }} />
 
     </Container>
   );

@@ -59,11 +59,11 @@ export const PERMISSION_LABELS: Record<Permission, { label: string; desc: string
 
 export const CATEGORY_LABELS: Record<MiniAppCategory, string> = {
   'female-health': 'Saúde Feminina',
-  sleep: 'Sono',
-  nutrition: 'Nutrição',
-  mental: 'Mental',
-  fitness: 'Fitness',
-  longevity: 'Longevidade',
+  'sleep': 'Sono',
+  'nutrition': 'Nutrição Personalizada',
+  'mental': 'Autoconhecimento',
+  'fitness': 'Fitness',
+  'longevity': 'Longevidade',
 };
 
 export interface MiniAppManifest {

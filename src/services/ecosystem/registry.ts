@@ -12,48 +12,26 @@ import { MiniAppRegistryEntry } from '../../store/ecosystem-contracts';
  */
 export const ECOSYSTEM_REGISTRY: MiniAppRegistryEntry[] = [
   {
-    miniapp_id: 'femmhealth',
-    domain: 'female-health',
+    miniapp_id: 'introspect',
+    domain: 'introspection',
     contract_version: '1.0.0',
-    allowed_input_scopes: ['profile:read', 'biological:urinalysis:read', 'lifecycle:menstrual:read'],
-    allowed_output_scopes: ['lifecycle:menstrual:write', 'symptoms:write'],
+    allowed_input_scopes: ['profile:read', 'behavioral:read', 'mental:read'],
+    allowed_output_scopes: ['mental:stress_pattern:write', 'mental:reflection:write'],
     writes_longitudinal_memory: true,
     influences_global_profile: false,
     requires_consents: true,
     supports_offline_fallback: false
   },
   {
-    miniapp_id: 'nutri-menu',
+    miniapp_id: 'meal-planner',
     domain: 'nutrition',
-    contract_version: '1.2.0',
-    allowed_input_scopes: ['profile:read', 'biological:urinalysis:read', 'metabolic:read'],
-    allowed_output_scopes: ['nutrition:intake:write', 'preferences:nutrition:write'],
+    contract_version: '1.1.0',
+    allowed_input_scopes: ['profile:read', 'biological:urinalysis:read', 'nutrition:read'],
+    allowed_output_scopes: ['nutrition:meal_plan:write', 'nutrition:intake:write'],
     writes_longitudinal_memory: true,
     influences_global_profile: true,
     requires_consents: true,
     supports_offline_fallback: true
-  },
-  {
-    miniapp_id: 'sleep-deep',
-    domain: 'sleep',
-    contract_version: '1.2.0',
-    allowed_input_scopes: ['profile:read', 'biological:heart_rate:read', 'biological:hrv:read'],
-    allowed_output_scopes: ['sleep:summary:write', 'sleep:events:write'],
-    writes_longitudinal_memory: true,
-    influences_global_profile: false,
-    requires_consents: true,
-    supports_offline_fallback: false
-  },
-  {
-    miniapp_id: 'longevity-secrets',
-    domain: 'longevity',
-    contract_version: '1.1.0',
-    allowed_input_scopes: ['profile:read', 'biological:all:read', 'activity:read'],
-    allowed_output_scopes: ['longevity:protocol:write'],
-    writes_longitudinal_memory: true,
-    influences_global_profile: true,
-    requires_consents: true,
-    supports_offline_fallback: false
   }
 ];
 
