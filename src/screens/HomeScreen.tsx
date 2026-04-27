@@ -10,8 +10,8 @@ import { BlurView } from 'expo-blur';
 import { Video, ResizeMode } from 'expo-av';
 import { useStore } from '../store/useStore';
 import { getSemanticService } from '../services/semantic-output';
-import { MINI_APP_CATALOG, CATEGORY_LABELS } from '../miniapps/catalog';
-import { MiniAppCategory } from '../miniapps/types';
+import { MINI_APP_CATALOG } from '../miniapps/catalog';
+import { MiniAppCategory, CATEGORY_LABELS } from '../miniapps/types';
 
 const RAW_BIOMARKERS = [
   { id: 'b1', name: 'NT-proBNP', value: '120', unit: 'pg/mL', source: 'ablute' },
@@ -743,7 +743,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                               <Typography style={[styles.metaBadgeText, { opacity: 0.5 }]}>VER {app.version}</Typography>
                             </View>
                             <View style={styles.metaBadge}>
-                              <Typography style={[styles.metaBadgeText, { color: theme.colors.primary }]}>{CATEGORY_LABELS[app.category] || 'App'}</Typography>
+                              <Typography style={[styles.metaBadgeText, { color: theme.colors.primary }]}>
+                                {CATEGORY_LABELS[app.category as MiniAppCategory] || 'App'}
+                              </Typography>
                             </View>
                           </View>
 
