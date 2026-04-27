@@ -89,12 +89,12 @@ export function computeAIReadingFromData(
   const bristol = getMeasurement(measurements, 'fecal', 'Bristol');
   const sleepH = getSleepHours(ecosystemFacts);
 
-  const hasData = measurements.length > 0 || ecosystemFacts.length > 0;
-  const hasHRV = hrv > 0;
-  const hasSleep = sleepH > 0;
-  const hasUrine = measurements.some(m => m.type === 'urinalysis');
-  const hasFecal = measurements.some(m => m.type === 'fecal');
-  const hasVitals = hr > 0 || spo2 > 0 || temp > 0;
+  const hasData = measurements.length > 0 || ecosystemFacts.length > 0 || isDemo;
+  const hasHRV = hrv > 0 || isDemo;
+  const hasSleep = sleepH > 0 || isDemo;
+  const hasUrine = measurements.some(m => m.type === 'urinalysis') || isDemo;
+  const hasFecal = measurements.some(m => m.type === 'fecal') || isDemo;
+  const hasVitals = (hr > 0 || spo2 > 0 || temp > 0) || isDemo;
 
   // 2. Lógica de Síntese
   let summaryTitle = 'Sinais coerentes entre categorias';
@@ -266,7 +266,7 @@ export function computeAIReadingFromData(
     summary: { title: summaryTitle, text: summaryText, confidence: 0.85, mode: isDemo ? 'simulation' : 'real' },
     dimensions,
     priorityActions,
-    highlightedThemes: themes.slice(0, 4), // Mostrar os 4 temas mais relevantes
+    highlightedThemes: themes.slice(0, 8), // Mostrar os 8 temas mais relevantes
     watchSignals: [
       { title: 'Repetir análise para confirmar tendência', explanation: 'Um ponto isolado não define o seu estado biológico.', reasonToRepeat: 'Validar estabilidade cardiovascular' }
     ],
