@@ -427,7 +427,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   else Alert.alert('Créditos', `Tens ${credits ?? 0} tokens disponíveis.`);
                 }}
               >
-                <Star size={14} color="#000" fill="#000" />
+                <Image 
+                  source={require('../../assets/token_abl.png')} 
+                  style={{ width: 20, height: 20 }} 
+                  resizeMode="contain"
+                />
                 <Typography variant="caption" style={styles.tokenText}>{credits ?? 0}</Typography>
               </TouchableOpacity>
               
