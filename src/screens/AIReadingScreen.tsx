@@ -54,6 +54,21 @@ const ActionCard = ({ action }: { action: any }) => {
     medium: 'MÉDIA',
     low: 'BAIXA'
   };
+
+  const getDomainIcon = (domain: string) => {
+    switch(domain) {
+      case 'energy': return Zap;
+      case 'recovery': return Moon;
+      case 'hydration': return Activity;
+      case 'gut': return Target;
+      case 'vitals': return Heart;
+      case 'nutrition': return FlaskConical;
+      case 'stress': return ShieldAlert;
+      default: return Info;
+    }
+  };
+
+  const Icon = getDomainIcon(action.domain);
   
   return (
     <View style={styles.actionCard}>
@@ -63,6 +78,7 @@ const ActionCard = ({ action }: { action: any }) => {
             {priorityMap[action.priority] || action.priority.toUpperCase()}
           </Typography>
         </View>
+        <Icon size={14} color="rgba(255,255,255,0.4)" style={{ marginLeft: 4 }} />
         <Typography style={styles.actionTitle}>{action.title}</Typography>
       </View>
       <Typography style={styles.actionReason}>{action.reason}</Typography>
@@ -191,8 +207,20 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
             </View>
             {reading.highlightedThemes.map(theme => (
               <BlurView key={theme.id} intensity={10} tint="dark" style={styles.themeCard}>
-                <Typography style={styles.themeTitle}>{theme.title}</Typography>
+                <View style={styles.themeHeaderRow}>
+                  <Typography style={styles.themeTitle}>{theme.title}</Typography>
+                  <View style={[styles.statusMiniBadge, { backgroundColor: theme.status === 'optimal' ? 'rgba(0, 255, 157, 0.1)' : 'rgba(255, 149, 0, 0.1)' }]}>
+                    <Typography style={[styles.statusMiniText, { color: theme.status === 'optimal' ? '#00FF9D' : '#FF9500' }]}>
+                      {theme.status === 'optimal' ? 'ÓPTIMO' : 'CAUTELA'}
+                    </Typography>
+                  </View>
+                </View>
                 <Typography style={styles.themeText}>{theme.explanation}</Typography>
+                
+                {theme.limitation && (
+                  <Typography variant="caption" style={styles.themeLimitation}>• {theme.limitation}</Typography>
+                )}
+
                 {theme.action && (
                   <View style={styles.themeActionRow}>
                     <CheckCircle2 size={12} color="#00FF9D" />
@@ -281,6 +309,26 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                 <Typography key={i} style={styles.refFactorItem}>• {l}</Typography>
               ))}
             </View>
+
+            {reading.references.themeDataLinks && (
+              <View style={styles.refFactorBox}>
+                <Typography style={styles.refFactorTitle}>VINCULAÇÃO DADOS → TEMAS</Typography>
+                {Object.entries(reading.references.themeDataLinks).map(([themeId, signals]) => {
+                  const theme = reading.highlightedThemes.find(t => t.id === themeId);
+                  if (!theme) return null;
+                  return (
+                    <View key={themeId} style={{ marginBottom: 8 }}>
+                      <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.6)', fontWeight: '700' }}>
+                        {theme.title.toUpperCase()}
+                      </Typography>
+                      <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                        Suportado por: {signals.join(', ')}
+                      </Typography>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
           </View>
         )}
 
@@ -296,7 +344,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
         <View style={{ marginTop: 40, alignItems: 'center', opacity: 0.3 }}>
           <Typography variant="caption" style={styles.markerText}>
-            AI READING R1 • CONTRACT v1.0 • {isDemoMode ? 'SIMULAÇÃO' : 'REAL'}
+            AI READING R2 • CONTRACT v1.1 • {isDemoMode ? 'SIMULAÇÃO' : 'REAL'}
           </Typography>
         </View>
 
@@ -645,5 +693,27 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  themeHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+    gap: 12,
+  },
+  statusMiniBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  statusMiniText: {
+    fontSize: 8,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  themeLimitation: {
+    color: 'rgba(255,255,255,0.3)',
+    marginBottom: 12,
+    fontStyle: 'italic',
   },
 });
