@@ -48,19 +48,27 @@ const DimensionCard = ({ label, score, icon: Icon, color, explanation }: { label
   </View>
 );
 
-const ActionCard = ({ action }: { action: any }) => (
-  <View style={styles.actionCard}>
-    <View style={styles.actionHeader}>
-      <View style={[styles.priorityTag, { backgroundColor: action.priority === 'high' ? 'rgba(255, 51, 102, 0.1)' : 'rgba(255,255,255,0.05)' }]}>
-        <Typography style={[styles.priorityTagText, { color: action.priority === 'high' ? '#FF3366' : 'rgba(255,255,255,0.4)' }]}>
-          {action.priority.toUpperCase()}
-        </Typography>
+const ActionCard = ({ action }: { action: any }) => {
+  const priorityMap: Record<string, string> = {
+    high: 'ALTA',
+    medium: 'MÉDIA',
+    low: 'BAIXA'
+  };
+  
+  return (
+    <View style={styles.actionCard}>
+      <View style={styles.actionHeader}>
+        <View style={[styles.priorityTag, { backgroundColor: action.priority === 'high' ? 'rgba(255, 51, 102, 0.1)' : 'rgba(255,255,255,0.05)' }]}>
+          <Typography style={[styles.priorityTagText, { color: action.priority === 'high' ? '#FF3366' : 'rgba(255,255,255,0.4)' }]}>
+            {priorityMap[action.priority] || action.priority.toUpperCase()}
+          </Typography>
+        </View>
+        <Typography style={styles.actionTitle}>{action.title}</Typography>
       </View>
-      <Typography style={styles.actionTitle}>{action.title}</Typography>
+      <Typography style={styles.actionReason}>{action.reason}</Typography>
     </View>
-    <Typography style={styles.actionReason}>{action.reason}</Typography>
-  </View>
-);
+  );
+};
 
 export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const store = useStore();
@@ -118,9 +126,6 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
             <View>
               <Typography variant="h1" style={styles.title}>Leitura AI</Typography>
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                <View style={styles.statusBadge}>
-                  <Typography style={styles.statusLabel}>SÍNTESE DO MOMENTO</Typography>
-                </View>
                 {isDemoMode && (
                   <View style={styles.demoBadge}>
                     <FlaskConical size={10} color="#00F2FF" style={{ marginRight: 4 }} />
@@ -139,6 +144,9 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         </View>
 
         {/* BLOCK 1: Síntese do momento */}
+        <View style={styles.sectionHeader}>
+          <Typography style={styles.sectionTitle}>SÍNTESE DO MOMENTO</Typography>
+        </View>
         <BlurView intensity={20} tint="dark" style={styles.synthesisCard}>
           <Typography variant="h2" style={styles.synthesisTitle}>{reading.summary.title}</Typography>
           <Typography style={styles.synthesisText}>{reading.summary.text}</Typography>
@@ -146,7 +154,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
         {/* BLOCK 2: Dimensões interpretativas */}
         <View style={styles.sectionHeader}>
-          <Typography style={styles.sectionTitle}>DIMENSÕES INTERPRETATIVAS</Typography>
+          <Typography style={styles.sectionTitle}>DIMENSÕES DA LEITURA</Typography>
         </View>
         <View style={styles.dimensionsGrid}>
           {reading.dimensions.map(d => (
@@ -161,9 +169,9 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           ))}
         </View>
 
-        {/* BLOCK 3: Ações úteis prioritárias */}
+        {/* BLOCK 3: Ações recomendadas */}
         <View style={styles.sectionHeader}>
-          <Typography style={styles.sectionTitle}>AÇÕES ÚTEIS PRIORITÁRIAS</Typography>
+          <Typography style={styles.sectionTitle}>AÇÕES RECOMENDADAS</Typography>
         </View>
         <View style={styles.actionsList}>
           {reading.priorityActions.length > 0 ? (
@@ -237,11 +245,18 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
               </View>
               <View style={styles.refItem}>
                 <Typography variant="caption" style={styles.refLabel}>FRESCURA</Typography>
-                <Typography style={styles.refValue}>Recente</Typography>
+                <Typography style={styles.refValue}>
+                  {reading.references.freshness === 'recent' ? 'Recente' : 
+                   reading.references.freshness === 'caution' ? 'Atenção' :
+                   reading.references.freshness === 'stale' ? 'Desatualizada' : 'Indisponível'}
+                </Typography>
               </View>
               <View style={styles.refItem}>
                 <Typography variant="caption" style={styles.refLabel}>CONFIANÇA</Typography>
-                <Typography style={styles.refValue}>Média-Alta</Typography>
+                <Typography style={styles.refValue}>
+                  {reading.references.confidence === 'high' ? 'Alta' :
+                   reading.references.confidence === 'medium' ? 'Média' : 'Baixa'}
+                </Typography>
               </View>
               <View style={styles.refItem}>
                 <Typography variant="caption" style={styles.refLabel}>ORIGEM</Typography>
