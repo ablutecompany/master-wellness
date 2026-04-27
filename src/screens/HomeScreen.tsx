@@ -656,54 +656,46 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         </Animated.View>
 
         <Animated.View style={{ flex: 1, width: '100%', opacity: drawerInnerOpacity, borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' }}>
-          <View {...drawerPanResponder.panHandlers} style={{ zIndex: 10, width: '100%', backgroundColor: 'transparent' }}>
-            <View style={styles.drawerHandleArea}>
-              <View style={styles.drawerHandle} />
-              <Typography variant="caption" style={styles.drawerTitle}>APP PLACE</Typography>
-            </View>
-
-            <Animated.View style={{ paddingHorizontal: 24, paddingBottom: 20 }}>
-              <View style={styles.appGrid}>
-                {MINI_APP_CATALOG.filter(app => (installedAppIds || []).includes(app.id)).map(app => (
-                  <TouchableOpacity 
-                    key={app.id} 
-                    style={styles.appItem}
-                    onPress={() => launchApp(app)}
-                  >
-                    <View style={[styles.appIconContainer, { backgroundColor: app.iconBg }]}>
-                      <Typography style={{ fontSize: 24 }}>{app.iconEmoji}</Typography>
-                    </View>
-                    <Typography variant="caption" style={styles.appName}>{app.name.toUpperCase()}</Typography>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </Animated.View>
-          </View>
-
-          <Animated.View style={{ flex: 1, width: '100%' }}>
-            <ScrollView
-              style={{ flex: 1, width: '100%' }}
-              contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100 }}
-              showsVerticalScrollIndicator={false}
-            >
-              <Typography variant="h3" style={styles.sectionTitle}>Catálogo de Mini-Apps (V1 LIVE)</Typography>
-              <View style={styles.downloadList}>
-                {MINI_APP_CATALOG.map((app) => {
+          <View {...drawerPanResponder.panHandlers} style={{ zIndex:              <View style={styles.downloadList}>
+                <Typography variant="caption" style={styles.sectionHeader}>Disponíveis</Typography>
+                {MINI_APP_CATALOG.filter(app => app.availabilityStatus === 'available').map((app) => {
                   const isInstalled = (installedAppIds || []).includes(app.id);
                   return (
-                    <View key={app.id} style={styles.downloadRow}>
+                    <TouchableOpacity 
+                      key={app.id} 
+                      style={[styles.downloadRow, isInstalled && styles.downloadRowInstalled]}
+                      activeOpacity={isInstalled ? 0.7 : 1}
+                      onPress={() => {
+                        if (isInstalled) {
+                          launchApp(app);
+                          navigation.navigate('MiniApp', { app });
+                        }
+                      }}
+                    >
                       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <View style={[styles.rowIcon, { backgroundColor: app.iconBg }]}>
-                          <Typography style={{ fontSize: 20 }}>{app.iconEmoji}</Typography>
+                        <View style={[
+                          styles.rowIcon, 
+                          { backgroundColor: isInstalled ? app.iconBg : 'rgba(255,255,255,0.03)' }
+                        ]}>
+                          <Typography style={{ 
+                            fontSize: 20, 
+                            opacity: isInstalled ? 1 : 0.4,
+                            // Filtro monocromático simulado via opacity e cor de fundo
+                          }}>
+                            {app.iconEmoji}
+                          </Typography>
                         </View>
                         <View style={styles.rowInfo}>
-                          <Typography style={styles.rowTitle}>{app.name}</Typography>
+                          <Typography style={[styles.rowTitle, !isInstalled && { opacity: 0.7 }]}>{app.name}</Typography>
                           <Typography variant="caption" style={styles.rowDesc}>{app.tagline}</Typography>
                         </View>
                         <View style={styles.rowActions}>
                           <TouchableOpacity 
                             style={styles.actionBtn}
-                            onPress={() => setExpandedAppId(expandedAppId === app.id ? null : app.id)}
+                            onPress={(e) => {
+                              e.stopPropagation(); // Prevenir abertura da app
+                              setExpandedAppId(expandedAppId === app.id ? null : app.id);
+                            }}
                           >
                             <Typography style={styles.actionText}>
                               {expandedAppId === app.id ? 'VER MENOS' : 'INFO'}
@@ -713,7 +705,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                           {isInstalled ? (
                             <TouchableOpacity 
                               style={[styles.actionBtn, { backgroundColor: 'rgba(255,255,255,0.08)' }]}
-                              onPress={() => {
+                              onPress={(e) => {
+                                e.stopPropagation();
                                 launchApp(app);
                                 navigation.navigate('MiniApp', { app });
                               }}
@@ -723,7 +716,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                           ) : (
                             <TouchableOpacity 
                               style={[styles.actionBtn, styles.installBtn]}
-                              onPress={() => installApp(app.id)}
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                installApp(app.id);
+                              }}
                             >
                               <Typography style={[styles.actionText, styles.installText]}>INSTALAR</Typography>
                             </TouchableOpacity>
@@ -743,8 +739,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                               <Typography style={[styles.metaBadgeText, { opacity: 0.5 }]}>VER {app.version}</Typography>
                             </View>
                             <View style={styles.metaBadge}>
-                              <Typography style={[styles.metaBadgeText, { color: theme.colors.primary }]}>
-                                {CATEGORY_LABELS[app.category as MiniAppCategory] || 'App'}
+                              <Typography style={[styles.metaBadgeText, { color: app.accentColor || theme.colors.primary }]}>
+                                {CATEGORY_LABELS[app.category] || 'App'}
                               </Typography>
                             </View>
                           </View>
@@ -762,6 +758,78 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                               // Fallback elegante se não houver imagens
                               [1, 2].map((_, idx) => (
                                 <View key={idx} style={[styles.screenshotImg, { backgroundColor: 'rgba(255,255,255,0.02)', justifyContent: 'center', alignItems: 'center', borderStyle: 'dashed', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }]}>
+                                  <Typography style={{ color: 'rgba(255,255,255,0.1)', fontSize: 10 }}>SCREENSHOT {idx + 1}</Typography>
+                                </View>
+                              ))
+                            )}
+                          </ScrollView>
+
+                          {/* DESCRIPTION AREA */}
+                          <View style={styles.descContainer}>
+                            <Typography style={styles.expandedPublisher}>{app.publisher || app.developer}</Typography>
+                            <Typography style={styles.expandedDesc}>
+                              {app.description}
+                            </Typography>
+                          </View>
+
+                          {/* FOOTER ACTIONS */}
+                          <View style={styles.expandedFooter}>
+                            <TouchableOpacity 
+                              style={styles.closeExpandedBtn}
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                setExpandedAppId(null);
+                              }}
+                            >
+                              <Typography style={styles.closeExpandedText}>VER MENOS</Typography>
+                            </TouchableOpacity>
+                          </View>
+                        </Animated.View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+
+                <Typography variant="caption" style={[styles.sectionHeader, { marginTop: 40 }]}>Brevemente disponíveis</Typography>
+                {MINI_APP_CATALOG.filter(app => app.availabilityStatus === 'coming_soon').map((app) => {
+                  return (
+                    <View key={app.id} style={[styles.downloadRow, { opacity: 0.6 }]}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={[styles.rowIcon, { backgroundColor: 'rgba(255,255,255,0.02)' }]}>
+                          <Typography style={{ fontSize: 20, opacity: 0.3 }}>{app.iconEmoji}</Typography>
+                        </View>
+                        <View style={styles.rowInfo}>
+                          <Typography style={[styles.rowTitle, { opacity: 0.5 }]}>{app.name}</Typography>
+                          <Typography variant="caption" style={styles.rowDesc}>{app.tagline}</Typography>
+                        </View>
+                        <View style={styles.rowActions}>
+                          <TouchableOpacity 
+                            style={styles.actionBtn}
+                            onPress={() => setExpandedAppId(expandedAppId === app.id ? null : app.id)}
+                          >
+                            <Typography style={styles.actionText}>INFO</Typography>
+                          </TouchableOpacity>
+                          <View style={[styles.actionBtn, { backgroundColor: 'rgba(255,255,255,0.03)' }]}>
+                            <Typography style={[styles.actionText, { opacity: 0.4 }]}>BREVEMENTE</Typography>
+                          </View>
+                        </View>
+                      </View>
+                      {expandedAppId === app.id && (
+                        <Animated.View style={styles.expandedCard}>
+                          <Typography style={styles.expandedDesc}>{app.description}</Typography>
+                          <TouchableOpacity 
+                            style={[styles.closeExpandedBtn, { alignSelf: 'center', marginTop: 10 }]}
+                            onPress={() => setExpandedAppId(null)}
+                          >
+                            <Typography style={styles.closeExpandedText}>FECHAR</Typography>
+                          </TouchableOpacity>
+                        </Animated.View>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+erWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }]}>
                                   <Typography style={{ color: 'rgba(255,255,255,0.1)', fontSize: 10 }}>SCREENSHOT {idx + 1}</Typography>
                                 </View>
                               ))
@@ -1307,17 +1375,31 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   downloadList: {
-    gap: 16,
+    gap: 12,
     paddingBottom: 40,
+  },
+  sectionHeader: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 2,
+    opacity: 0.4,
+    marginBottom: 16,
+    marginLeft: 8,
+    textTransform: 'uppercase',
   },
   downloadRow: {
     flexDirection: 'column',
     padding: 16,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.02)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-    marginBottom: 12,
+    borderColor: 'rgba(255,255,255,0.04)',
+    marginBottom: 8,
+  },
+  downloadRowInstalled: {
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   rowIcon: {
     width: 48,

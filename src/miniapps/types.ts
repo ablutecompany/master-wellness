@@ -86,6 +86,8 @@ export interface MiniAppManifest {
   publisher?: string;      // Ex: 'ablute_ official'
   screenshots?: string[];  // Array de URLs de imagens/screenshots
   releaseDate?: string;    // ISO date string
+  availabilityStatus?: 'available' | 'coming_soon';
+  accentColor?: string;
 
   // ──────────────────────────────────────────
   // V1.4.0 Manifesto Semântico (Contract Requirements)
