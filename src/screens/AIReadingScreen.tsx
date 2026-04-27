@@ -270,6 +270,9 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         )}
 
         {/* BLOCK 7: Limites da leitura */}
+        <View style={styles.sectionHeader}>
+          <Typography style={styles.sectionTitle}>LIMITES DA LEITURA</Typography>
+        </View>
         <View style={styles.limitsBox}>
           {reading.readingLimits.map((limit, i) => (
             <Typography key={i} style={styles.limitText}>{limit}</Typography>

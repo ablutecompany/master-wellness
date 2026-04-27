@@ -124,7 +124,7 @@ const MOCK_THEMES = [
 ];
 
 export const HomeScreen = ({ navigation }: { navigation: any }) => {
-  console.log('[HOME_BOOT] V22B-AI Initializing...');
+  console.log('[HOME_BOOT] R1-AI Initializing...');
   const { width, height } = useWindowDimensions();
   const [showControl, setShowControl] = useState(false);
   const [showNfcModal, setShowNfcModal] = useState(false);
