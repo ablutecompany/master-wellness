@@ -199,7 +199,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 
       <View style={styles.cardFooter}>
          <Typography variant="caption" style={styles.cardSource}>
-           {item.source === 'ablute' ? 'SINAL BIOLÓGICO' : item.source === 'ecosystem' ? 'CONTEXTO IA' : 'SENSOR'}
+           {isDemoMode ? 'SIMULAÇÃO' : (item.source === 'ablute' ? 'SINAL BIOLÓGICO' : item.source === 'ecosystem' ? 'CONTEXTO IA' : 'SENSOR')}
          </Typography>
          <ChevronRight size={12} color="rgba(255,255,255,0.2)" />
       </View>
@@ -225,12 +225,13 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           
           <TouchableOpacity 
             onPress={() => {
-              if (Platform.OS === 'web') alert('O histórico biográfico consolidado está a ser processado para este membro.');
-              else Alert.alert('Histórico', 'O histórico biográfico consolidado está a ser processado para este membro.');
+              const msg = 'O histórico biográfico consolidado está a ser processado para este membro.';
+              if (Platform.OS === 'web') window.alert(msg);
+              else Alert.alert('Histórico', msg);
             }} 
-            style={styles.backBtn}
+            style={[styles.backBtn, { backgroundColor: 'rgba(0, 242, 255, 0.1)' }]}
           >
-            <History size={20} color="rgba(255,255,255,0.6)" />
+            <History size={20} color="#00F2FF" />
           </TouchableOpacity>
         </View>
 

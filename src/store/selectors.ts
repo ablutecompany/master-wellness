@@ -84,7 +84,7 @@ export const selectMeasurements = (state: AppState) => {
       marker: m.marker,
       value: m.value,
       unit: m.unit,
-      timestamp: m.timestamp
+      timestamp: m.timestamp || 1714172400000
     }));
     return _demoMeasurementsCache;
   }

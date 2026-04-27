@@ -101,9 +101,17 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <View>
               <Typography variant="h1" style={styles.title}>Leitura AI</Typography>
-              <View style={styles.statusBadge}>
-                <View style={[styles.statusDot, { backgroundColor: aiConfidence.color }]} />
-                <Typography style={styles.statusLabel}>{aiConfidence.label}</Typography>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <View style={styles.statusBadge}>
+                  <View style={[styles.statusDot, { backgroundColor: aiConfidence.color }]} />
+                  <Typography style={styles.statusLabel}>{aiConfidence.label}</Typography>
+                </View>
+                {isDemoMode && (
+                  <View style={[styles.statusBadge, { borderColor: '#00F2FF', borderWidth: 1 }]}>
+                    <Zap size={10} color="#00F2FF" style={{ marginRight: 4 }} />
+                    <Typography style={[styles.statusLabel, { color: '#00F2FF' }]}>SIMULAÇÃO</Typography>
+                  </View>
+                )}
               </View>
             </View>
             <TouchableOpacity 
