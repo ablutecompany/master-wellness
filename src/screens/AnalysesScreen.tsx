@@ -63,21 +63,47 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
     // Biomarcadores e Fisiológicos (do store principal)
     storeMeasurements.forEach(m => {
       const date = new Date(m.timestamp);
+      
+      // Suporte a estrutura flat (demo) ou nested (real)
+      const displayMarker = m.marker || (typeof m.value === 'object' ? m.value?.marker : null) || m.type.toUpperCase();
+      const displayValue = typeof m.value === 'object' ? (m.value.displayValue || m.value.value || '---') : String(m.value || '---');
+      const displayUnit = m.unit || (typeof m.value === 'object' ? m.value?.unit : '') || '';
+
       formatted.push({
         id: m.id,
-        name: m.value?.marker || m.type.toUpperCase(),
-        value: typeof m.value === 'object' ? (m.value.displayValue || m.value.value || '---') : String(m.value),
-        unit: m.value?.unit || '',
+        name: displayMarker,
+        value: displayValue,
+        unit: displayUnit,
         timestamp: m.timestamp,
-        dateStr: date.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
-        source: m.type === 'urinalysis' || m.type === 'fecal' ? 'ablute' : 'health_kit',
-        type: m.type,
-        marker: m.value?.marker
+        dateStr: date.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' }),
+        source: 'ablute',
+        type: 'measurement',
+        category: m.type,
+        origin: 'nfc',
+        contribution_type: 'device'
       });
     });
 
     // Dados Contextuais (do Ecossistema)
-    contextualResults.forEach(ctx => {
+    contextualResults.forEach((ctx: any) => {
+      if (isDemoMode) {
+        // Handle raw facts from demo scenario
+        formatted.push({
+          id: `demo_ctx_${ctx.id}`,
+          name: (ctx.type || 'SINAL').replace(/_/g, ' ').toUpperCase(),
+          value: String(ctx.value || '---'),
+          unit: '',
+          timestamp: ctx.last_update || 1714172400000,
+          dateStr: 'DEMO',
+          source: 'ecosystem',
+          type: 'contextual',
+          category: ctx.domain || 'demo',
+          origin: 'mock',
+          contribution_type: 'action'
+        });
+        return;
+      }
+
       const summary = ctx.summary_data || {};
       Object.keys(summary).forEach(key => {
         formatted.push({
@@ -276,7 +302,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                 {isDemoMode ? 'MODO DEMO ATIVO • ' : ''}RESULTS V2.2 • {dataFreshness.temporalLabel.toUpperCase()}
               </Typography>
               <Typography variant="caption" style={[styles.markerText, { marginTop: 4, opacity: 0.5 }]}>
-                ANALYSES HOTFIX LIVE MARKER: 1b2b177
+                ANALYSES HOTFIX LIVE MARKER: cdbbdca
               </Typography>
           </View>
         </ScrollView>

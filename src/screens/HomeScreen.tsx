@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { StyleSheet, View, TouchableOpacity, Animated, PanResponder, useWindowDimensions, ScrollView, Platform, SafeAreaView, Modal, TextInput, Image, ActivityIndicator } from 'react-native';
 import { Container, Typography } from '../components/Base';
 import { theme } from '../theme';
@@ -300,21 +300,21 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         id: 'demo-001',
         memberId: 'guest-001',
         label: 'Análise Demonstrativa',
-        analysisDate: new Date().toISOString(),
+        analysisDate: new Date(1714172400000).toISOString(),
         source: 'demo' as const,
         measurements: [
-          { id: 'm1', type: 'urinalysis', marker: 'Glicose', value: '92', unit: 'mg/dL', recordedAt: new Date().toISOString() },
-          { id: 'm2', type: 'urinalysis', marker: 'Sódio', value: '138', unit: 'mEq/L', recordedAt: new Date().toISOString() },
-          { id: 'm3', type: 'urinalysis', marker: 'pH Urinário', value: '6.5', unit: 'pH', recordedAt: new Date().toISOString() },
-          { id: 'm4', type: 'fecal', marker: 'Bristol', value: 'Tipo 4', unit: 'Escala', recordedAt: new Date().toISOString() },
-          { id: 'm5', type: 'ecg', marker: 'Ritmo Cardíaco', value: '72', unit: 'bpm', recordedAt: new Date().toISOString() },
-          { id: 'm6', type: 'ppg', marker: 'SpO2', value: '99', unit: '%', recordedAt: new Date().toISOString() },
-          { id: 'm7', type: 'temp', marker: 'Temperatura', value: '36.6', unit: '°C', recordedAt: new Date().toISOString() },
+          { id: 'm1', type: 'urinalysis', marker: 'Glicose', value: '92', unit: 'mg/dL', timestamp: 1714172400000 },
+          { id: 'm2', type: 'urinalysis', marker: 'Sódio', value: '138', unit: 'mEq/L', timestamp: 1714172400000 },
+          { id: 'm3', type: 'urinalysis', marker: 'pH Urinário', value: '6.5', unit: 'pH', timestamp: 1714172400000 },
+          { id: 'm4', type: 'fecal', marker: 'Bristol', value: 'Tipo 4', unit: 'Escala', timestamp: 1714172400000 },
+          { id: 'm5', type: 'ecg', marker: 'Ritmo Cardíaco', value: '72', unit: 'bpm', timestamp: 1714172400000 },
+          { id: 'm6', type: 'ppg', marker: 'SpO2', value: '99', unit: '%', timestamp: 1714172400000 },
+          { id: 'm7', type: 'temp', marker: 'Temperatura', value: '36.6', unit: '°C', timestamp: 1714172400000 },
         ],
         ecosystemFacts: [
-          { id: 'f1', type: 'sleep_duration_logged', value: '7h 30m', last_update: Date.now(), domain: 'sleep', source: 'ecosystem' },
+          { id: 'f1', type: 'sleep_duration_logged', value: '7h 30m', last_update: 1714172400000, domain: 'sleep', source: 'ecosystem' },
         ],
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(1714172400000).toISOString(),
       };
       setDemoAnalysis(demoData);
       getSemanticService().loadAnalysis(demoData);

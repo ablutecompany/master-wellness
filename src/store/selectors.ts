@@ -8,6 +8,17 @@ import { normalizeEvent, filterActiveFacts } from '../services/contributions-nor
  * Objetivo: Desacoplar os componentes da estrutura interna do store.
  */
 
+// Cache global para estabilidade referencial absoluta em modo Demo
+let _demoMeasurementsCache = null;
+let _demoContextualCache = null;
+let _lastDemoDataRef = null;
+let _dataFreshnessCache = null;
+let _lastFreshnessInput = { measCount: 0, lastTs: 0, refNow: 0, mode: false };
+let _aiConfidenceCache = null;
+let _lastAiConfidenceInput = { measCount: 0, expCount: 0, freshStatus: '', mode: false };
+let _dailySynthesisCache = null;
+let _lastDailySynthesisInput = { aiLevel: '', freshStatus: '' };
+
 // ─────────────────────────────────────────────────────────────────────────────
 // A) Profile Selectors
 // ─────────────────────────────────────────────────────────────────────────────
@@ -58,15 +69,24 @@ export const canViewTargetData = (state: AppState, targetMemberId: string, scope
 // ─────────────────────────────────────────────────────────────────────────────
 // C) Measurement Selectors
 // ─────────────────────────────────────────────────────────────────────────────
+
 export const selectMeasurements = (state: AppState) => {
   if (state.isDemoMode && state.demoAnalysis) {
-    return state.demoAnalysis.measurements.map(m => ({
+    if (_lastDemoDataRef === state.demoAnalysis && _demoMeasurementsCache) {
+       return _demoMeasurementsCache;
+    }
+    
+    _lastDemoDataRef = state.demoAnalysis;
+    _demoMeasurementsCache = (state.demoAnalysis.measurements || []).map(m => ({
       id: m.id,
-      memberId: state.demoAnalysis!.memberId,
-      type: m.type as any,
-      value: { marker: m.marker, value: m.value, unit: m.unit },
-      timestamp: new Date(m.recordedAt || 0).getTime()
+      memberId: 'demo-member',
+      type: m.type,
+      marker: m.marker,
+      value: m.value,
+      unit: m.unit,
+      timestamp: m.timestamp
     }));
+    return _demoMeasurementsCache;
   }
 
   const allMeasurements = state.measurements || [];
@@ -129,11 +149,11 @@ export interface DataFreshnessBundle {
   temporalLabel: string;
 }
 
-const formatTemporalLabel = (ts: number | null): string => {
+const formatTemporalLabel = (ts: number | null, referenceNow: number): string => {
    if (!ts || isNaN(ts)) return 'Sem sincronizações';
    const date = new Date(ts);
-   const now = new Date();
-   const diffMs = now.getTime() - date.getTime();
+   const now = new Date(referenceNow);
+   const diffMs = referenceNow - date.getTime();
    const daysDiff = Math.floor(diffMs / (1000 * 3600 * 24));
    
    const hh = date.getHours().toString().padStart(2, '0');
@@ -190,17 +210,35 @@ export const selectDataFreshness = (state: AppState, forcedMemberId?: string): D
   // Use state-bound reference for "now" to avoid floating references in loops
   // Fallback to a fixed stable timestamp if lastContextBundle is not yet available
   const referenceNow = state.lastContextBundle?.timestamp || 1714172400000;
+  
+  // Cache check
+  if (_dataFreshnessCache && 
+      _lastFreshnessInput.measCount === myMeas.length && 
+      _lastFreshnessInput.lastTs === latestTs && 
+      _lastFreshnessInput.refNow === referenceNow &&
+      _lastFreshnessInput.mode === state.isDemoMode) {
+     return _dataFreshnessCache;
+  }
+
   const diffMs = referenceNow - latestTs;
   const daysDiff = Math.floor(diffMs / (1000 * 3600 * 24));
-  const tLabel = formatTemporalLabel(latestTs);
+  const tLabel = formatTemporalLabel(latestTs, referenceNow);
+
+  let result: DataFreshnessBundle;
 
   if (daysDiff < 3) {
-      return { status: 'recent', label: 'Última sincronização recente', color: '#00D4AA', daysSince: daysDiff, actionLabel: 'Explorar Análise', actionIntent: 'analyze', temporalLabel: tLabel };
+      result = { status: 'recent', label: 'Última sincronização recente', color: '#00D4AA', daysSince: daysDiff, actionLabel: 'Explorar Análise', actionIntent: 'analyze', temporalLabel: tLabel };
   } else if (daysDiff <= 14) {
-      return { status: 'stale', label: 'Sinais desatualizados', color: '#FFA500', daysSince: daysDiff, actionLabel: 'Sincronizar Novamente', actionIntent: 're_sync', temporalLabel: tLabel };
+      result = { status: 'stale', label: 'Sinais desatualizados', color: '#FFA500', daysSince: daysDiff, actionLabel: 'Sincronizar Novamente', actionIntent: 're_sync', temporalLabel: tLabel };
   } else {
-      return { status: 'very_stale', label: 'Sinais muito antigos', color: '#FF6060', daysSince: daysDiff, actionLabel: 'Sincronizar Urgente', actionIntent: 're_sync', temporalLabel: tLabel };
+      result = { status: 'very_stale', label: 'Sinais muito antigos', color: '#FF6060', daysSince: daysDiff, actionLabel: 'Sincronizar Urgente', actionIntent: 're_sync', temporalLabel: tLabel };
   }
+
+  // Update cache
+  _dataFreshnessCache = result;
+  _lastFreshnessInput = { measCount: myMeas.length, lastTs: latestTs, refNow: referenceNow, mode: state.isDemoMode };
+  
+  return result;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -279,14 +317,12 @@ export const selectIsAppParticipationAllowed = (state: AppState, appId: string) 
 
 export const selectContextualResults = (state: AppState) => {
    if (state.isDemoMode && state.demoAnalysis) {
-      const demoTs = state.demoAnalysis.generatedAt || 1714172400000;
-      return (state.demoAnalysis.ecosystemFacts || []).map(f => ({
-         domain: (f as any).domain || 'demo',
-         origin_mode: 'mock',
-         contribution_type: 'action',
-         last_update: demoTs,
-         summary_data: { [(f as any).type]: (f as any).value }
-      }));
+      if (_lastDemoDataRef === state.demoAnalysis && _demoContextualCache) {
+         return _demoContextualCache;
+      }
+      _lastDemoDataRef = state.demoAnalysis;
+      _demoContextualCache = state.demoAnalysis.ecosystemFacts || [];
+      return _demoContextualCache;
    }
 
    const memory = selectLongitudinalMemory(state);
@@ -372,6 +408,15 @@ export const selectAiConfidence = (state: AppState, forcedMemberId?: string): Ai
   const hasStaleData = freshness.status === 'stale';
   const signalCount = myMeas.length;
   const hasContext = exported.length > 0;
+
+  // Cache check
+  if (_aiConfidenceCache &&
+      _lastAiConfidenceInput.measCount === signalCount &&
+      _lastAiConfidenceInput.expCount === exported.length &&
+      _lastAiConfidenceInput.freshStatus === freshness.status &&
+      _lastAiConfidenceInput.mode === state.isDemoMode) {
+     return _aiConfidenceCache;
+  }
   
   const positive: string[] = [];
   const negative: string[] = [];
@@ -384,8 +429,10 @@ export const selectAiConfidence = (state: AppState, forcedMemberId?: string): Ai
   if (signalCount > 0 && signalCount < 3) negative.push('Poucos sinais recolhidos');
   if (!hasContext) negative.push('Sem ligação a apps externas de contexto');
 
+  let result: AiConfidenceBundle;
+
   if (signalCount === 0) {
-      return {
+      result = {
          level: 'insuficiente',
          label: 'Base Mínima Insuficiente',
          color: 'rgba(255,255,255,0.4)',
@@ -393,10 +440,8 @@ export const selectAiConfidence = (state: AppState, forcedMemberId?: string): Ai
          factors: { positive, negative: ['Ausência total de histórico biométrico', ...negative] },
          recommendedAction: { label: 'Iniciar Sincronização', intent: 'sync_now' }
       };
-  }
-  
-  if (freshness.status === 'very_stale') {
-      return {
+  } else if (freshness.status === 'very_stale') {
+      result = {
          level: 'limitada',
          label: 'Leitura Obsoleta Limitada',
          color: '#FF6060',
@@ -404,10 +449,8 @@ export const selectAiConfidence = (state: AppState, forcedMemberId?: string): Ai
          factors: { positive, negative },
          recommendedAction: { label: 'Sincronizar Novos Dados', intent: 'sync_now' }
       };
-  }
-
-  if (signalCount < 3) {
-      return {
+  } else if (signalCount < 3) {
+      result = {
          level: 'limitada',
          label: 'Leitura Fisiológica Limitada',
          color: '#FFA500',
@@ -415,11 +458,8 @@ export const selectAiConfidence = (state: AppState, forcedMemberId?: string): Ai
          factors: { positive, negative },
          recommendedAction: { label: 'Completar Perfil Base', intent: 'complete_profile' }
       };
-  }
-  
-  // They have some good data, now evaluate peak confidence
-  if (hasFreshData && hasContext && signalCount >= 4) {
-      return {
+  } else if (hasFreshData && hasContext && signalCount >= 4) {
+      result = {
          level: 'robusta',
          label: 'Leitura Integral Robusta',
          color: '#00D4AA',
@@ -427,11 +467,9 @@ export const selectAiConfidence = (state: AppState, forcedMemberId?: string): Ai
          factors: { positive, negative },
          recommendedAction: { label: 'Explorar Análise', intent: 'explore_analysis' }
       };
-  }
-  
-  if (hasFreshData || hasStaleData) {
+  } else if (hasFreshData || hasStaleData) {
       if (hasContext) {
-          return {
+          result = {
              level: 'contextual',
              label: 'Leitura Híbrida',
              color: '#00F2FF',
@@ -440,7 +478,7 @@ export const selectAiConfidence = (state: AppState, forcedMemberId?: string): Ai
              recommendedAction: { label: 'Atualizar Sinais Base', intent: 'sync_now' }
           };
       } else {
-          return {
+          result = {
              level: 'limitada',
              label: 'Leitura Isolada',
              color: '#FFA500',
@@ -449,17 +487,22 @@ export const selectAiConfidence = (state: AppState, forcedMemberId?: string): Ai
              recommendedAction: { label: 'Atrair Contexto Externo', intent: 'open_context' }
           };
       }
+  } else {
+      result = {
+          level: 'insuficiente',
+          label: 'Qualidade Inconclusiva',
+          color: 'rgba(255,255,255,0.4)',
+          rationale: 'Base biológica e/ou de contexto está inacessível. Recomendada nova sincronização prévia.',
+          factors: { positive, negative },
+          recommendedAction: { label: 'Sincronizar Cargas', intent: 'sync_now' }
+      };
   }
 
-  // Fallback
-  return {
-      level: 'insuficiente',
-      label: 'Qualidade Inconclusiva',
-      color: 'rgba(255,255,255,0.4)',
-      rationale: 'Base biológica e/ou de contexto está inacessível. Recomendada nova sincronização prévia.',
-      factors: { positive, negative },
-      recommendedAction: { label: 'Sincronizar Cargas', intent: 'sync_now' }
-  };
+  // Update cache
+  _aiConfidenceCache = result;
+  _lastAiConfidenceInput = { measCount: signalCount, expCount: exported.length, freshStatus: freshness.status, mode: state.isDemoMode };
+  
+  return result;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -614,53 +657,62 @@ export const selectDailySynthesis = (state: AppState, forcedMemberId?: string): 
    const aiConfidence = selectAiConfidence(state, forcedMemberId);
    const freshness = selectDataFreshness(state, forcedMemberId);
    
+   // Cache check
+   if (_dailySynthesisCache &&
+       _lastDailySynthesisInput.aiLevel === aiConfidence.level &&
+       _lastDailySynthesisInput.freshStatus === freshness.status) {
+      return _dailySynthesisCache;
+   }
+
+   let result: DailySynthesis;
+
    if (aiConfidence.level === 'insuficiente' && freshness.status === 'no_access') {
-       return {
+       result = {
            status: 'restricted',
            title: 'Acesso Fechado',
            positiveHighlight: null,
            negativeHighlight: 'O membro ocultou os seus biomarcadores base.',
            action: { label: 'Gerir Permissões', intent: 'manage_permissions' }
        };
-   }
-
-   if (freshness.status === 'no_data' || aiConfidence.level === 'insuficiente') {
-       return {
+   } else if (freshness.status === 'no_data' || aiConfidence.level === 'insuficiente') {
+       result = {
            status: 'critical',
            title: 'Sinais Inexistentes',
            positiveHighlight: aiConfidence.factors.positive[0] || null,
            negativeHighlight: aiConfidence.factors.negative[0] || 'Sem dados gravados na pool ativa.',
            action: { label: 'Iniciar Recolha', intent: 'sync_now' }
        };
-   }
-
-   if (freshness.status === 'very_stale' || aiConfidence.level === 'limitada') {
-       return {
+   } else if (freshness.status === 'very_stale' || aiConfidence.level === 'limitada') {
+       result = {
            status: 'needs_attention',
            title: 'Atenção Fisiológica',
            positiveHighlight: aiConfidence.factors.positive[0] || null,
            negativeHighlight: aiConfidence.factors.negative[0] || 'Base degradada precisa de cuidado orgânico.',
            action: { label: 'Re-Sincronizar', intent: 'sync_now' }
        };
-   }
-
-   if (aiConfidence.level === 'contextual') {
-       return {
+   } else if (aiConfidence.level === 'contextual') {
+       result = {
            status: 'good',
            title: 'Estabilidade Assistida',
            positiveHighlight: aiConfidence.factors.positive[0] || 'Atividade orgânica saudável assente no contexto.',
            negativeHighlight: aiConfidence.factors.negative[0] || null,
            action: { label: 'Avaliar Período', intent: 'open_timeline' }
        };
+   } else {
+       result = {
+           status: 'excellent',
+           title: 'Ecossistema Maduro',
+           positiveHighlight: aiConfidence.factors.positive[0] || 'Base está atualizada e altamente robusta.',
+           negativeHighlight: null,
+           action: { label: 'Abrir Resumo', intent: 'open_timeline' }
+       };
    }
 
-   return {
-       status: 'excellent',
-       title: 'Ecossistema Maduro',
-       positiveHighlight: aiConfidence.factors.positive[0] || 'Base está atualizada e altamente robusta.',
-       negativeHighlight: null,
-       action: { label: 'Abrir Resumo', intent: 'open_timeline' }
-   };
+   // Update cache
+   _dailySynthesisCache = result;
+   _lastDailySynthesisInput = { aiLevel: aiConfidence.level, freshStatus: freshness.status };
+   
+   return result;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
