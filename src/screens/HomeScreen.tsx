@@ -10,6 +10,7 @@ import { BlurView } from 'expo-blur';
 import { Video, ResizeMode } from 'expo-av';
 import { useStore } from '../store/useStore';
 import { getSemanticService } from '../services/semantic-output';
+import { MINI_APP_CATALOG } from '../miniapps/catalog';
 
 const RAW_BIOMARKERS = [
   { id: 'b1', name: 'NT-proBNP', value: '120', unit: 'pg/mL', source: 'ablute' },
@@ -211,10 +212,13 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const lastDrawerY = useRef(DRAWER_DOWN);
   const drawerAnim = useRef(new Animated.Value(DRAWER_DOWN)).current;
 
-  // Force sync drawer position on hot reload so user sees exact bottom state
+  // Force sync positions on hot reload/mount
   React.useEffect(() => {
     drawerAnim.setValue(DRAWER_DOWN);
     lastDrawerY.current = DRAWER_DOWN;
+    // FIX 1: Garantir posição zero do núcleo no load
+    switchAnim.setValue(0);
+    isOff.current = false;
   }, [DRAWER_DOWN]);
 
   const drawerBgOpacity = drawerAnim.interpolate({
@@ -641,14 +645,18 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
             <Animated.View style={{ paddingHorizontal: 24, paddingBottom: 20 }}>
               <View style={styles.appGrid}>
-                {[
-                  { id: '1', name: 'Nutri', icon: <Utensils size={24} color="#00F2FF" /> },
-                  { id: '2', name: 'Female', icon: <Zap size={24} color="#00D4AA" /> },
-                  { id: '3', name: 'MySup', icon: <Activity size={24} color="#FFD700" /> },
-                ].map(app => (
-                  <TouchableOpacity key={app.id} style={styles.appItem}>
-                    <View style={styles.appIconContainer}>{app.icon}</View>
-                    <Typography variant="caption" style={styles.appName}>{app.name}</Typography>
+                {MINI_APP_CATALOG.filter(app => (useStore.getState().installedAppIds || []).includes(app.id)).map(app => (
+                  <TouchableOpacity 
+                    key={app.id} 
+                    style={styles.appItem}
+                    onPress={() => {
+                      // No future favorites logic yet, just launch
+                    }}
+                  >
+                    <View style={[styles.appIconContainer, { backgroundColor: app.iconBg }]}>
+                      <Typography style={{ fontSize: 24 }}>{app.iconEmoji}</Typography>
+                    </View>
+                    <Typography variant="caption" style={styles.appName}>{app.name.toUpperCase()}</Typography>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -1017,17 +1025,21 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.25)',
     marginBottom: 4,
   },
+  edgeLabelContainer: {
+    width: 140, // Largura suficiente para o texto rodado não truncar
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   edgeLabel: {
     fontSize: 9,
     fontWeight: '900',
     letterSpacing: 1.5,
     color: '#fff',
-    writingDirection: 'ltr',
     transform: [{ rotate: '90deg' }],
-    marginTop: 0,
-    opacity: 0.9,
-    width: 100,
+    width: 140, // Match do container para centramento perfeito
     textAlign: 'center',
+    opacity: 0.9,
   },
   // Bottom App Drawer trigger (always visible)
   drawerTrigger: {
