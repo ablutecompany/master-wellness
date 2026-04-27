@@ -417,7 +417,18 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       <View {...mainPanResponder.panHandlers} style={styles.mainView}>
         {/* ── HEADER ──────────────────────────────────────────────────────── */}
         <View style={styles.header}>
-          <BrandLogo size="medium" />
+          <View style={styles.headerLeft}>
+            <BrandLogo size="medium" />
+            <TouchableOpacity 
+              style={[styles.demoPill, isDemoMode && styles.demoPillActive]} 
+              onPress={() => setIsDemoMode(!isDemoMode)}
+            >
+              <Typography variant="caption" style={[styles.demoText, isDemoMode && styles.demoTextActive]}>
+                {isDemoMode ? 'DEMO ON' : 'DEMO'}
+              </Typography>
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.headerRight}>
             <View style={styles.topIconRow}>
               <TouchableOpacity 
@@ -435,15 +446,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 <Typography variant="caption" style={styles.tokenText}>{credits ?? 0}</Typography>
               </TouchableOpacity>
               
-              <TouchableOpacity 
-                style={[styles.demoPill, isDemoMode && styles.demoPillActive]} 
-                onPress={() => setIsDemoMode(!isDemoMode)}
-              >
-                <Typography variant="caption" style={[styles.demoText, isDemoMode && styles.demoTextActive]}>
-                  {isDemoMode ? 'DEMO ON' : 'DEMO'}
-                </Typography>
-              </TouchableOpacity>
-              
               <TouchableOpacity style={styles.iconCircle} onPress={() => navigation.navigate('Settings')}>
                 <SlidersHorizontal size={20} color="#fff" />
               </TouchableOpacity>
@@ -458,10 +460,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 </TouchableOpacity>
               )}
             </View>
-            <TouchableOpacity style={styles.evalBadge} onPress={() => navigation.navigate('Profile')}>
-              <Typography variant="caption" style={styles.evalText}>{isAuthenticated ? userName.toUpperCase() : 'NÃO AUTENTICADO'}</Typography>
-              <Typography variant="caption" style={styles.evalVal}>{isAuthenticated ? (user?.lastAnalysisDate ? 'ANÁLISE OK' : 'SEM ANÁLISES') : 'FAZER LOGIN'}</Typography>
-            </TouchableOpacity>
           </View>
         </View>
 
@@ -828,6 +826,10 @@ const styles = StyleSheet.create({
     marginTop: 20,
     zIndex: 100,
   },
+  headerLeft: {
+    alignItems: 'flex-start',
+    gap: 8,
+  },
   headerRight: {
     alignItems: 'flex-end',
     gap: 12,
@@ -871,13 +873,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.05)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
-    height: 32,
-    paddingHorizontal: 12,
-    borderRadius: 16,
+    height: 24,
+    paddingHorizontal: 10,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 4,
-    alignSelf: 'center',
+    marginTop: 4,
   },
   demoPillActive: {
     backgroundColor: 'rgba(255, 100, 0, 0.15)',
@@ -907,28 +908,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 12,
     letterSpacing: 2,
-  },
-  evalBadge: {
-    backgroundColor: 'rgba(115, 188, 255, 0.1)',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(115, 188, 255, 0.2)',
-    alignItems: 'flex-end',
-  },
-  evalText: {
-    fontSize: 9,
-    color: '#73BCFF',
-    fontWeight: '800',
-    letterSpacing: 1,
-    opacity: 0.6,
-  },
-  evalVal: {
-    fontSize: 10,
-    color: '#fff',
-    fontWeight: '800',
-    marginTop: 2,
   },
   centerContainer: {
     flex: 1,
