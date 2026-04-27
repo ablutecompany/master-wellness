@@ -455,8 +455,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   <Image 
                     source={require('../../assets/token_abl.png')} 
                     style={{ 
-                      width: 22, 
-                      height: 22, 
+                      width: 55, 
+                      height: 55, 
                       tintColor: credits === 0 ? theme.colors.primary : '#fff',
                       opacity: credits === 0 ? 0.9 : 1
                     }} 
