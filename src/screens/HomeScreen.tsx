@@ -146,6 +146,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const floatAnim1 = useRef(new Animated.Value(0)).current;
   const floatAnim2 = useRef(new Animated.Value(0)).current;
   const arrowAnim = useRef(new Animated.Value(0)).current;
+  const nudgeAnim = useRef(new Animated.Value(0)).current;
 
   const daysSince = useMemo(() => {
     const lastAnalysisDate = user?.lastAnalysisDate;
@@ -158,10 +159,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   // Luz Envolvente: Amarelo -> Vermelho conforme urgência (0-30 dias)
   const urgencyFactor = Math.min(daysSince / 30, 1);
   const glowColor = urgencyFactor < 0.2 ? '#FFE600' : (urgencyFactor < 0.6 ? '#FF8C00' : '#FF0000');
-  const glowExpansion = 0.9 + (urgencyFactor * 0.4); 
-
+  
   // ── Switch Setup ──────────────────────────────────────────────────────────
-  const switchAnim = useRef(new Animated.Value(0)).current; // 0 = UP, 160 = DOWN
+  const MAX_DRAG = 100;
+  const switchAnim = useRef(new Animated.Value(0)).current; // 0 = UP, MAX_DRAG = DOWN
   const isOff = useRef(false);
 
   const switchPanResponder = useRef(
@@ -175,17 +176,17 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         switchAnim.stopAnimation();
       },
       onPanResponderMove: (_, gestureState) => {
-        let newY = (isOff.current ? 160 : 0) + gestureState.dy;
+        let newY = (isOff.current ? MAX_DRAG : 0) + gestureState.dy;
         if (newY < 0) newY = 0;
-        if (newY > 160) newY = 160;
+        if (newY > MAX_DRAG) newY = MAX_DRAG;
         switchAnim.setValue(newY);
       },
       onPanResponderRelease: (_, gestureState) => {
-        let newY = (isOff.current ? 160 : 0) + gestureState.dy;
+        let newY = (isOff.current ? MAX_DRAG : 0) + gestureState.dy;
         let toValue = 0;
         // Se passar da métrica ou tiver pull rápido para baixo
-        if (newY > 60 || gestureState.vy > 0.4) {
-          toValue = 160;
+        if (newY > 40 || gestureState.vy > 0.4) {
+          toValue = MAX_DRAG;
           isOff.current = true;
         } else {
           toValue = 0;
@@ -197,7 +198,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           bounciness: 4,
           speed: 14,
         }).start(({ finished }) => {
-          if (finished && toValue === 160) {
+          if (finished && toValue === MAX_DRAG) {
             setShowNfcModal(true);
           }
         });
@@ -289,7 +290,19 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         Animated.timing(arrowAnim, { toValue: 0, duration: 1000, useNativeDriver: true }),
       ])
     ).start();
-  }, []);
+
+    // Zero Credits Alert Animation
+    if (credits === 0) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(nudgeAnim, { toValue: 1.15, duration: 800, useNativeDriver: true }),
+          Animated.timing(nudgeAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+        ])
+      ).start();
+    } else {
+      nudgeAnim.setValue(1);
+    }
+  }, [credits]);
   
   // ── DEMO Logic ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -432,18 +445,24 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           <View style={styles.headerRight}>
             <View style={styles.topIconRow}>
               <TouchableOpacity 
-                style={styles.tokenChip} 
+                style={styles.tokenIconOnly} 
                 onPress={() => {
                   if (Platform.OS === 'web') alert(`Saldo atual: ${credits ?? 0} tokens para bio-análise.`);
                   else Alert.alert('Créditos', `Tens ${credits ?? 0} tokens disponíveis.`);
                 }}
               >
-                <Image 
-                  source={require('../../assets/token_abl.png')} 
-                  style={{ width: 20, height: 20 }} 
-                  resizeMode="contain"
-                />
-                <Typography variant="caption" style={styles.tokenText}>{credits ?? 0}</Typography>
+                <Animated.View style={{ transform: [{ scale: credits === 0 ? nudgeAnim : 1 }] }}>
+                  <Image 
+                    source={require('../../assets/token_abl.png')} 
+                    style={{ 
+                      width: 22, 
+                      height: 22, 
+                      tintColor: credits === 0 ? theme.colors.primary : '#fff',
+                      opacity: credits === 0 ? 0.9 : 1
+                    }} 
+                    resizeMode="contain"
+                  />
+                </Animated.View>
               </TouchableOpacity>
               
               <TouchableOpacity style={styles.iconCircle} onPress={() => navigation.navigate('Settings')}>
@@ -465,44 +484,44 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
         {/* ── CENTRAL VISUAL (The HoloPulse) ────────────────────────────────── */}
         {/* RECUPERADO: Melhor centrado e ligeiramente mais alto */}
-        <Animated.View style={[styles.centerContainer, { transform: [{ translateY: Animated.add(centerContentY, -40) }] }]}>
+        <Animated.View style={[styles.centerContainer, { transform: [{ translateY: Animated.add(centerContentY, -85) }] }]}>
           
-          {/* Luz Envolvente (Auras) - RECUPERAÇÃO: Irradia do núcleo, sem gap */}
+          {/* Luz Envolvente (Auras) - RECUPERAÇÃO: Irradia do núcleo, mais difusa */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 150, 
-            height: 270, 
-            borderRadius: 75, 
+            width: 120, 
+            height: 230, 
+            borderRadius: 60, 
             shadowColor: glowColor, 
             shadowOffset: { width: 0, height: 0 }, 
-            shadowOpacity: 0.9, 
-            shadowRadius: 25 + (urgencyFactor * 15), 
-            elevation: 30,
+            shadowOpacity: 0.4, 
+            shadowRadius: 60 + (urgencyFactor * 40), 
+            elevation: 40,
             transform: [{ scale: pulseAnim }],
             backgroundColor: glowColor,
-            opacity: 0.15
+            opacity: 0.12
           }} />
 
-          {/* Núcleo Central (RECUPERADO: Mais Pequeno, Compacto e Elegante) */}
+          {/* Núcleo Central (REFINADO: Mais Contido e Elegante) */}
           <View style={{ 
-            width: 140, 
-            height: 260, 
-            borderRadius: 70, 
+            width: 124, 
+            height: 224, 
+            borderRadius: 62, 
             overflow: 'hidden', 
-            backgroundColor: 'rgba(5, 10, 20, 0.75)', 
+            backgroundColor: 'rgba(5, 10, 20, 0.85)', 
             zIndex: 10, 
             borderWidth: 1, 
-            borderColor: 'rgba(255,255,255,0.12)',
-            justifyContent: 'flex-start', // Foco no círculo superior
+            borderColor: 'rgba(255,255,255,0.15)',
+            justifyContent: 'flex-start',
             alignItems: 'center'
           }}>
-            <Animated.View style={{ width: 140, height: 140, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
-              <View style={[styles.pulseContainer, { width: 140, height: 140, borderRadius: 70, marginBottom: 0, backgroundColor: 'transparent' }]} pointerEvents="box-none">
+            <Animated.View style={{ width: 124, height: 124, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
+              <View style={[styles.pulseContainer, { width: 124, height: 124, borderRadius: 62, marginBottom: 0, backgroundColor: 'transparent' }]} pointerEvents="box-none">
                 {/* Outer halo video */}
-                <View style={{ position: 'absolute', width: 140, height: 140, borderRadius: 70, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
+                <View style={{ position: 'absolute', width: 124, height: 124, borderRadius: 62, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
                   <Video
                     source={require('../../assets/video (2).mp4')}
-                    style={{ position: 'absolute', width: 140, height: 140, opacity: 0.8 }}
+                    style={{ position: 'absolute', width: 124, height: 124, opacity: 0.8 }}
                     resizeMode={ResizeMode.COVER}
                     shouldPlay
                     isLooping
@@ -512,11 +531,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 </View>
 
                 {/* Inner primary holographic content */}
-                <View style={{ position: 'absolute', width: 128, height: 128, borderRadius: 64, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
-                  <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+                <View style={{ position: 'absolute', width: 112, height: 112, borderRadius: 56, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
+                  <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
                   <Video
                     source={require('../../assets/video (3).mp4')}
-                    style={{ position: 'absolute', width: 128, height: 128, opacity: 0.7 }}
+                    style={{ position: 'absolute', width: 112, height: 112, opacity: 0.75 }}
                     resizeMode={ResizeMode.COVER}
                     shouldPlay
                     isLooping
@@ -525,19 +544,19 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   />
                   
                   <LinearGradient
-                    colors={['rgba(0, 242, 255, 0.1)', 'rgba(0, 212, 170, 0.05)']}
+                    colors={['rgba(0, 242, 255, 0.15)', 'rgba(0, 212, 170, 0.08)']}
                     style={StyleSheet.absoluteFillObject}
                     pointerEvents="none"
                   />
 
-                  {/* Labels inside the core (RECUPERADO) */}
+                  {/* Labels inside the core */}
                   <View style={{ alignItems: 'center', zIndex: 100 }}>
-                    <Typography style={[styles.centerLabel, { fontSize: 13, marginBottom: 2, opacity: 0.9 }]}>BIO-ANÁLISE</Typography>
-                    <Typography style={[styles.centerSub, { fontSize: 8, color: glowColor, opacity: 0.8 }]}>{daysSinceText.toUpperCase()}</Typography>
+                    <Typography style={[styles.centerLabel, { fontSize: 11, marginBottom: 1, opacity: 0.95 }]}>BIO-ANÁLISE</Typography>
+                    <Typography style={[styles.centerSub, { fontSize: 7, color: glowColor, opacity: 0.85 }]}>{daysSinceText.toUpperCase()}</Typography>
                   </View>
 
                   {/* Inner diffuse mask */}
-                  <View style={[StyleSheet.absoluteFill, { borderRadius: 64, borderWidth: 10, borderColor: 'rgba(5,10,20,0.3)' }]} pointerEvents="none" />
+                  <View style={[StyleSheet.absoluteFill, { borderRadius: 56, borderWidth: 8, borderColor: 'rgba(5,10,20,0.4)' }]} pointerEvents="none" />
                 </View>
               </View>
             </Animated.View>
@@ -559,7 +578,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           style={styles.leftEdgeHandle}
           onPress={() => navigation.navigate('Leitura AI')}
         >
-          <View style={styles.edgePill} />
           <Typography variant="caption" style={styles.edgeLabel}>LEITURA AI</Typography>
         </TouchableOpacity>
 
@@ -568,7 +586,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           style={styles.rightEdgeHandle}
           onPress={() => navigation.navigate('Resultados')}
         >
-          <View style={styles.edgePill} />
           <Typography variant="caption" style={styles.edgeLabel}>RESULTADOS</Typography>
         </TouchableOpacity>
 
@@ -848,26 +865,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tokenChip: {
-    flexDirection: 'row',
+  tokenIconOnly: {
+    padding: 8,
+    marginRight: 4,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFD700',
-    paddingHorizontal: 12,
-    height: 32,
-    borderRadius: 16,
-    marginRight: 8,
-    alignSelf: 'center',
-    gap: 6,
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  tokenText: {
-    color: '#000',
-    fontWeight: '900',
-    fontSize: 13,
+    ...Platform.select({ web: { cursor: 'pointer' } as any, default: {} }),
   },
   demoPill: {
     backgroundColor: 'rgba(255,255,255,0.05)',

@@ -250,7 +250,9 @@ export default function App() {
           background-color: #010204 !important; 
           margin: 0;
           padding: 0;
-          overflow-x: hidden;
+          overflow: hidden;
+          overscroll-behavior-y: none;
+          touch-action: pan-x pan-y;
         }
       `;
       document.head.append(style);
