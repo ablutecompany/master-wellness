@@ -546,7 +546,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             zIndex: 10, 
             borderWidth: 1.5, 
             borderColor: 'rgba(255,255,255,0.18)',
-            justifyContent: 'center', // Centramento vertical fixado
+            justifyContent: 'flex-start', // FIX: Forçar início no topo para posição zero correta
             alignItems: 'center'
           }}>
             <Animated.View style={{ width: 116, height: 116, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
@@ -612,7 +612,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           style={styles.leftEdgeHandle}
           onPress={() => navigation.navigate('Leitura AI')}
         >
-          <Typography variant="caption" style={styles.edgeLabel} numberOfLines={1}>LEITURA AI</Typography>
+          <View style={styles.edgeLabelContainer}>
+            <Typography variant="caption" style={styles.edgeLabel}>LEITURA AI</Typography>
+          </View>
         </TouchableOpacity>
 
         {/* ── RIGHT EDGE HANDLE: RESULTS ────────────────────────────────────── */}
@@ -620,7 +622,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           style={styles.rightEdgeHandle}
           onPress={() => navigation.navigate('Resultados')}
         >
-          <Typography variant="caption" style={styles.edgeLabel} numberOfLines={1}>RESULTADOS</Typography>
+          <View style={styles.edgeLabelContainer}>
+            <Typography variant="caption" style={styles.edgeLabel}>RESULTADOS</Typography>
+          </View>
         </TouchableOpacity>
 
         {/* Trigger inside drawer now handles interactions */}
