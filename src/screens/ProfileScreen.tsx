@@ -354,67 +354,37 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             {/* DADOS BIOMÉTRICOS */}
             <View style={styles.menuSection}>
               <Typography variant="caption" style={styles.sectionLabel}>DADOS BIOMÉTRICOS</Typography>
-              <View style={styles.cardGroup}>
+              <View style={styles.biometricRow}>
                 
                 {/* SEXO */}
-                <TouchableOpacity style={styles.groupItem} onPress={() => openModal('sex', 'Sexo')}>
-                  <View style={styles.itemLeft}>
-                    <View style={[styles.iconBox, { backgroundColor: 'rgba(160, 32, 240, 0.1)' }]}>
-                      <Dna size={14} color="#A020F0" />
-                    </View>
-                    <Typography style={styles.itemTitle}>Sexo</Typography>
+                <TouchableOpacity style={styles.bioCard} onPress={() => openModal('sex', 'Sexo')}>
+                  <View style={[styles.iconBox, { backgroundColor: 'rgba(160, 32, 240, 0.1)' }]}>
+                    <Dna size={14} color="#A020F0" />
                   </View>
-                  <View style={styles.itemRight}>
-                    <Typography style={styles.itemValue}>
-                      {user?.sex === 'male' ? 'Homem' : user?.sex === 'female' ? 'Mulher' : 'Não indicado'}
-                    </Typography>
-                    <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
-                  </View>
+                  <Typography style={styles.bioValue}>
+                    {user?.sex === 'male' ? 'H' : user?.sex === 'female' ? 'M' : '?'}
+                  </Typography>
+                  <Typography variant="caption" style={styles.bioLabel}>Sexo</Typography>
                 </TouchableOpacity>
 
                 {/* IDADE / NASCIMENTO */}
-                <TouchableOpacity style={styles.groupItem} onPress={() => openModal('birthday', 'Data de Nascimento')}>
-                  <View style={styles.itemLeft}>
-                    <View style={[styles.iconBox, { backgroundColor: 'rgba(255, 149, 0, 0.1)' }]}>
-                      <Calendar size={14} color="#FF9500" />
-                    </View>
-                    <Typography style={styles.itemTitle}>Idade</Typography>
+                <TouchableOpacity style={styles.bioCard} onPress={() => openModal('birthday', 'Data de Nascimento')}>
+                  <View style={[styles.iconBox, { backgroundColor: 'rgba(255, 149, 0, 0.1)' }]}>
+                    <Calendar size={14} color="#FF9500" />
                   </View>
-                  <View style={styles.itemRight}>
-                    <Typography style={styles.itemValue}>{ageDisplay}</Typography>
-                    <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
-                  </View>
-                </TouchableOpacity>
-
-                {/* PESO */}
-                <TouchableOpacity style={styles.groupItem} onPress={() => openModal('weight', 'Peso')}>
-                  <View style={styles.itemLeft}>
-                    <View style={[styles.iconBox, { backgroundColor: 'rgba(255, 51, 102, 0.1)' }]}>
-                      <Activity size={14} color="#FF3366" />
-                    </View>
-                    <Typography style={styles.itemTitle}>Peso</Typography>
-                  </View>
-                  <View style={styles.itemRight}>
-                    <Typography style={styles.itemValue}>
-                      {user?.weight?.manualValue || user?.weight?.value ? `${Math.round(user.weight.manualValue || user.weight.value)} kg` : '60 kg'}
-                    </Typography>
-                    <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
-                  </View>
+                  <Typography style={styles.bioValue}>{ageDisplay.split(' ')[0]}</Typography>
+                  <Typography variant="caption" style={styles.bioLabel}>Anos</Typography>
                 </TouchableOpacity>
 
                 {/* ALTURA */}
-                <TouchableOpacity style={[styles.groupItem, { borderBottomWidth: 0 }]} onPress={() => openModal('height', 'Altura')}>
-                  <View style={styles.itemLeft}>
-                    <View style={[styles.iconBox, { backgroundColor: 'rgba(0, 242, 255, 0.1)' }]}>
-                      <Ruler size={14} color="#00F2FF" />
-                    </View>
-                    <Typography style={styles.itemTitle}>Altura</Typography>
+                <TouchableOpacity style={styles.bioCard} onPress={() => openModal('height', 'Altura')}>
+                  <View style={[styles.iconBox, { backgroundColor: 'rgba(0, 242, 255, 0.1)' }]}>
+                    <Ruler size={14} color="#00F2FF" />
                   </View>
-                  <View style={styles.itemRight}>
-                    <Typography style={styles.itemValue}>{user?.height ? `${user.height} cm` : '175 cm'}</Typography>
-                    <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
-                  </View>
+                  <Typography style={styles.bioValue}>{user?.height || 175}</Typography>
+                  <Typography variant="caption" style={styles.bioLabel}>cm</Typography>
                 </TouchableOpacity>
+
               </View>
             </View>
 
@@ -628,6 +598,35 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
     overflow: 'hidden',
+  },
+  biometricRow: {
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'space-between',
+  },
+  bioCard: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    padding: 16,
+    alignItems: 'center',
+    gap: 4,
+    minHeight: 100,
+    justifyContent: 'center',
+  },
+  bioValue: {
+    color: '#00F2FF',
+    fontSize: 18,
+    fontWeight: '800',
+    marginTop: 4,
+  },
+  bioLabel: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
   groupItem: {
     flexDirection: 'row',
