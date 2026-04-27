@@ -386,22 +386,8 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                   </View>
                 </TouchableOpacity>
 
-                {/* ALTURA */}
-                <TouchableOpacity style={styles.groupItem} onPress={() => openModal('height', 'Altura')}>
-                  <View style={styles.itemLeft}>
-                    <View style={[styles.iconBox, { backgroundColor: 'rgba(0, 242, 255, 0.1)' }]}>
-                      <Ruler size={14} color="#00F2FF" />
-                    </View>
-                    <Typography style={styles.itemTitle}>Altura</Typography>
-                  </View>
-                  <View style={styles.itemRight}>
-                    <Typography style={styles.itemValue}>{user?.height ? `${user.height} cm` : '175 cm'}</Typography>
-                    <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
-                  </View>
-                </TouchableOpacity>
-
                 {/* PESO */}
-                <TouchableOpacity style={[styles.groupItem, { borderBottomWidth: 0 }]} onPress={() => openModal('weight', 'Peso')}>
+                <TouchableOpacity style={styles.groupItem} onPress={() => openModal('weight', 'Peso')}>
                   <View style={styles.itemLeft}>
                     <View style={[styles.iconBox, { backgroundColor: 'rgba(255, 51, 102, 0.1)' }]}>
                       <Activity size={14} color="#FF3366" />
@@ -412,6 +398,20 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                     <Typography style={styles.itemValue}>
                       {user?.weight?.manualValue || user?.weight?.value ? `${Math.round(user.weight.manualValue || user.weight.value)} kg` : '60 kg'}
                     </Typography>
+                    <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
+                  </View>
+                </TouchableOpacity>
+
+                {/* ALTURA */}
+                <TouchableOpacity style={[styles.groupItem, { borderBottomWidth: 0 }]} onPress={() => openModal('height', 'Altura')}>
+                  <View style={styles.itemLeft}>
+                    <View style={[styles.iconBox, { backgroundColor: 'rgba(0, 242, 255, 0.1)' }]}>
+                      <Ruler size={14} color="#00F2FF" />
+                    </View>
+                    <Typography style={styles.itemTitle}>Altura</Typography>
+                  </View>
+                  <View style={styles.itemRight}>
+                    <Typography style={styles.itemValue}>{user?.height ? `${user.height} cm` : '175 cm'}</Typography>
                     <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
                   </View>
                 </TouchableOpacity>
