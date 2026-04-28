@@ -161,14 +161,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [expandedAppId, setExpandedAppId] = useState<string | null>(null);
   const [demoDaysCounter, setDemoDaysCounter] = useState(0);
 
-  const incrementDemoDays = useCallback(() => {
-    if (!isDemoMode) return;
-    setDemoDaysCounter(prev => {
-      const next = prev + 2;
-      return next > 30 ? 0 : next;
-    });
-  }, [isDemoMode]);
-
   // Real Store State
   const user = useStore(state => state.user);
   const authAccount = useStore(state => state.authAccount);
@@ -185,6 +177,14 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   const isAuthenticated = !!authAccount || isGuestMode;
   const userName = user?.name || (isGuestMode ? 'Guest' : (authAccount?.email?.split('@')[0] || 'Utilizador'));
+
+  const incrementDemoDays = useCallback(() => {
+    if (!isDemoMode) return;
+    setDemoDaysCounter(prev => {
+      const next = prev + 2;
+      return next > 30 ? 0 : next;
+    });
+  }, [isDemoMode]);
 
   // ── Animation States ──────────────────────────────────────────────────────
   const pulseAnim = useRef(new Animated.Value(1)).current;
