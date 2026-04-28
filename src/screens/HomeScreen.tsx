@@ -193,24 +193,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   // ── Dynamic Glow Logic (Lowest-Link Priority with Identity Colors) ─────────────────────────
   const glowColor = useMemo(() => {
-    let domains: Array<{ id: string, title: string, score: number }> = [];
-    
-    if (isDemoMode) {
-      domains = MOCK_THEMES.filter(t => t.score !== undefined).map(t => ({
-        id: t.title.toLowerCase(),
-        title: t.title,
-        score: t.score as number
-      }));
-    } else {
-      const semanticBundle = getSemanticService().getBundle();
-      domains = Object.values(semanticBundle.domains || {}).map(d => ({
-        id: d.id,
-        title: d.name || d.id,
-        score: typeof d.score === 'number' ? d.score : 85
-      }));
-    }
+    const semanticBundle = getSemanticService().getBundle();
+    const domains = Object.values(semanticBundle.domains || {}).map(d => ({
+      id: d.id,
+      title: d.name || d.id,
+      score: typeof d.score === 'number' ? d.score : 85
+    }));
 
-    if (domains.length === 0) return '#00F2FF'; 
+    // Se não houver dados nenhuns (ex: sem demo e sem histórico), o anel fica apagado.
+    if (domains.length === 0) return 'rgba(255, 255, 255, 0.05)'; 
     if (domains.length === 1) return getThemeColor(domains[0].id);
 
     const sortedVals = [...domains].sort((a, b) => a.score - b.score);
