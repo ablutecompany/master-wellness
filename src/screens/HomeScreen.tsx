@@ -164,22 +164,39 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   const daysSinceText = daysSince === 0 ? 'HOJE' : `${daysSince} DIAS`;
 
-  // ── Dynamic Glow Logic ──────────────────────────────────────────────────
-  const avgScore = useMemo(() => {
-    // Se estiver em demo, usamos o score da demo. Se não, média dos domínios.
-    if (isDemoMode) return 94; 
-    const semanticBundle = getSemanticService().getBundle();
-    const vals = Object.values(semanticBundle.domains || {}).map(d => d.score);
-    if (vals.length === 0) return 85; // Fallback "Bom"
-    return vals.reduce((a, b) => a + b, 0) / vals.length;
+  // ── Dynamic Glow Logic (Lowest-Link Priority) ─────────────────────────
+  const colorScore = useMemo(() => {
+    let vals: number[] = [];
+    
+    if (isDemoMode) {
+      vals = MOCK_THEMES.map(t => t.score).filter(s => s !== undefined) as number[];
+    } else {
+      const semanticBundle = getSemanticService().getBundle();
+      vals = Object.values(semanticBundle.domains || {}).map(d => d.score).filter(s => typeof s === 'number');
+    }
+
+    if (vals.length === 0) return 85; 
+    if (vals.length === 1) return vals[0];
+
+    const sortedVals = [...vals].sort((a, b) => a - b);
+    const lowest = sortedVals[0];
+    const secondLowest = sortedVals[1];
+
+    // Se a diferença entre os dois mais baixos for <= 10 pontos, misturamos
+    if ((secondLowest - lowest) <= 10) {
+      return (lowest + secondLowest) / 2;
+    }
+
+    // Se há um que se destaca isolado para baixo, ele domina a cor
+    return lowest;
   }, [isDemoMode, analyses]);
 
   const glowColor = useMemo(() => {
     // Degrade contínuo exato: 100 = Amarelo (255, 230, 0), 0 = Vermelho Vivo (255, 0, 0)
-    const score = Math.max(0, Math.min(100, avgScore));
+    const score = Math.max(0, Math.min(100, colorScore));
     const g = Math.round((score / 100) * 230); // Interpola o canal Verde (G) de 0 até 230
     return `rgb(255, ${g}, 0)`;
-  }, [avgScore]);
+  }, [colorScore]);
 
   const glowRadiusFactor = Math.min(daysSince, 30) / 30;
   const dynamicGlowRadius = 120 + (glowRadiusFactor * 100); 
