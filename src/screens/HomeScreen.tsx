@@ -432,24 +432,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   return (
     <Container safe style={styles.container}>
       {/* ── FULL SCREEN BACKGROUND ───────────────────────────────── */}
-      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#020305' }]}>
-        {/* Fundo preto com nuances suaves de cinzas transitório */}
-        
-        {/* Floating nuances */}
-        <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: Animated.multiply(floatAnim1, 0.4) }]} pointerEvents="none">
-          <LinearGradient
-            colors={['rgba(255,255,255,0.03)', 'transparent']}
-            style={StyleSheet.absoluteFillObject}
-          />
-        </Animated.View>
-        
-        <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: Animated.multiply(floatAnim2, 0.3) }]} pointerEvents="none">
-          <LinearGradient
-            colors={['transparent', 'rgba(255, 255, 255, 0.02)']}
-            style={StyleSheet.absoluteFillObject}
-          />
-        </Animated.View>
-      </View>
+      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#000000' }]} />
 
       <View {...mainPanResponder.panHandlers} style={styles.mainView}>
         {/* ── HEADER ──────────────────────────────────────────────────────── */}
