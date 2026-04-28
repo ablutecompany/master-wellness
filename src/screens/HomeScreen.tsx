@@ -500,7 +500,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             height: 220 + 120 * glowRadiusFactor, 
             borderRadius: 200, 
             backgroundColor: glowColor,
-            opacity: 0.02,
+            opacity: 0.06,
             transform: [{ scale: pulseAnim }],
             ...(Platform.OS === 'web' ? { filter: `blur(${5 + 75 * glowRadiusFactor}px)` } as any : {
                shadowColor: glowColor, shadowOpacity: 0.4, shadowRadius: 5 + 75 * glowRadiusFactor, elevation: 30
@@ -514,7 +514,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             height: 220 + 80 * glowRadiusFactor, 
             borderRadius: 140, 
             backgroundColor: glowColor,
-            opacity: 0.04,
+            opacity: 0.12,
             transform: [{ scale: pulseAnim }],
             ...(Platform.OS === 'web' ? { filter: `blur(${5 + 45 * glowRadiusFactor}px)` } as any : {
                shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 5 + 45 * glowRadiusFactor, elevation: 20
@@ -528,7 +528,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             height: 220 + 40 * glowRadiusFactor, 
             borderRadius: 100, 
             backgroundColor: glowColor,
-            opacity: 0.08,
+            opacity: 0.22,
             transform: [{ scale: pulseAnim }],
             ...(Platform.OS === 'web' ? { filter: `blur(${2 + 25 * glowRadiusFactor}px)` } as any : {
                shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 2 + 25 * glowRadiusFactor, elevation: 15
@@ -542,7 +542,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             height: 220 + 15 * glowRadiusFactor, 
             borderRadius: 70, 
             backgroundColor: glowColor,
-            opacity: 0.15,
+            opacity: 0.40,
             transform: [{ scale: pulseAnim }],
             ...(Platform.OS === 'web' ? { filter: `blur(${2 + 10 * glowRadiusFactor}px)` } as any : {
                shadowColor: glowColor, shadowOpacity: 0.6, shadowRadius: 2 + 10 * glowRadiusFactor, elevation: 5
@@ -554,16 +554,16 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             {/* NOVO: Fundo em vídeo visível na calha/trilho da cápsula */}
             <Video
               source={require('../../assets/video (4).mp4')}
-              style={[StyleSheet.absoluteFillObject, { opacity: 0.6 }]}
+              style={[StyleSheet.absoluteFillObject, { opacity: 0.3 }]}
               resizeMode={ResizeMode.COVER}
-              rate={0.05}
+              rate={0.02}
               shouldPlay
               isLooping
               isMuted
               pointerEvents="none"
             />
             {/* Camada para criar contraste atrás da roda */}
-            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.4)' }]} pointerEvents="none" />
+            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.8)' }]} pointerEvents="none" />
 
             <Animated.View style={{ width: 116, height: 116, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
               <View style={styles.wheelKnob}>
