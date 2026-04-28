@@ -436,35 +436,16 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         {/* Fundo preto com nuances suaves de cinzas transitório */}
         
         {/* Floating nuances */}
-        <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: Animated.multiply(floatAnim1, 0.6) }]} pointerEvents="none">
+        <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: Animated.multiply(floatAnim1, 0.4) }]} pointerEvents="none">
           <LinearGradient
-            colors={['rgba(255,255,255,0.04)', 'transparent']}
+            colors={['rgba(255,255,255,0.03)', 'transparent']}
             style={StyleSheet.absoluteFillObject}
           />
         </Animated.View>
         
-        <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: Animated.multiply(floatAnim2, 0.4) }]} pointerEvents="none">
+        <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: Animated.multiply(floatAnim2, 0.3) }]} pointerEvents="none">
           <LinearGradient
             colors={['transparent', 'rgba(255, 255, 255, 0.02)']}
-            style={StyleSheet.absoluteFillObject}
-          />
-        </Animated.View>
-      </View>
-
-        {/* Floating nuances - SUAVIZADO: Apenas sugestão atmosférica */}
-        <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: Animated.multiply(floatAnim1, 0.3) }]} pointerEvents="none">
-          <LinearGradient
-            colors={['rgba(0,0,0,0.9)', 'rgba(0,0,0,0.1)', 'rgba(0,0,0,0.9)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFillObject}
-          />
-        </Animated.View>
-        <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: Animated.multiply(floatAnim2, 0.4) }]} pointerEvents="none">
-          <LinearGradient
-            colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.95)', 'rgba(0,0,0,0.2)']}
-            start={{ x: 1, y: 0 }}
-            end={{ x: 0, y: 1 }}
             style={StyleSheet.absoluteFillObject}
           />
         </Animated.View>
