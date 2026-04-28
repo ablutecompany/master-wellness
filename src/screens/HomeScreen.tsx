@@ -269,7 +269,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         if (newY > 40 || gestureState.vy > 0.4) {
           toValue = MAX_DRAG;
           isOff.current = true;
-          setDemoDaysCounter(0);
         } else {
           toValue = 0;
           isOff.current = false;
@@ -943,7 +942,18 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 Vamos iniciar a ligação com o dispositivo onde fará exames. Certifique-se que está nas proximidades e aproxima o seu telemóvel da zona indicada no equipamento ablute_
               </Typography>
 
-              <TouchableOpacity style={[styles.saveBtn, { width: '100%' }]} onPress={() => {}}>
+              <TouchableOpacity 
+                style={[styles.saveBtn, { width: '100%' }]} 
+                onPress={() => {
+                  if (isDemoMode) {
+                    setDemoDaysCounter(0);
+                  }
+                  // Simula o fecho do modal após "emparelhar" na demo
+                  setShowNfcModal(false);
+                  isOff.current = false;
+                  Animated.spring(switchAnim, { toValue: 0, useNativeDriver: true }).start();
+                }}
+              >
                 <Typography style={styles.saveBtnText}>ATIVAR NFC E EMPARELHAR</Typography>
               </TouchableOpacity>
 
