@@ -175,10 +175,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   }, [isDemoMode, analyses]);
 
   const glowColor = useMemo(() => {
-    if (avgScore >= 80) return '#FFE600'; // Amarelo Vivo / Dourado (BOM)
-    if (avgScore >= 60) return '#FFBF00'; // Amarelo-Âmbar
-    if (avgScore >= 40) return '#FF8C00'; // Laranja
-    return '#FF0000'; // Vermelho Vivo (MAU)
+    // Degrade contínuo exato: 100 = Amarelo (255, 230, 0), 0 = Vermelho Vivo (255, 0, 0)
+    const score = Math.max(0, Math.min(100, avgScore));
+    const g = Math.round((score / 100) * 230); // Interpola o canal Verde (G) de 0 até 230
+    return `rgb(255, ${g}, 0)`;
   }, [avgScore]);
 
   const glowRadiusFactor = Math.min(daysSince, 30) / 30;
