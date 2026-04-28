@@ -159,6 +159,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [showNfcModal, setShowNfcModal] = useState(false);
   const [showTokensModal, setShowTokensModal] = useState(false);
   const [expandedAppId, setExpandedAppId] = useState<string | null>(null);
+  const [demoDaysCounter, setDemoDaysCounter] = useState(0);
+
+  const incrementDemoDays = useCallback(() => {
+    if (!isDemoMode) return;
+    setDemoDaysCounter(prev => {
+      const next = prev + 2;
+      return next > 30 ? 0 : next;
+    });
+  }, [isDemoMode]);
 
   // Real Store State
   const user = useStore(state => state.user);
@@ -185,10 +194,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const nudgeAnim = useRef(new Animated.Value(0)).current;
 
   const daysSince = useMemo(() => {
+    if (isDemoMode) return demoDaysCounter;
     const lastAnalysisDate = user?.lastAnalysisDate;
     if (!lastAnalysisDate) return 14; // Default para demonstrar aura se não houver data
     return Math.floor((Date.now() - new Date(lastAnalysisDate).getTime()) / (1000 * 60 * 60 * 24));
-  }, [user?.lastAnalysisDate]);
+  }, [user?.lastAnalysisDate, isDemoMode, demoDaysCounter]);
 
   const daysSinceText = daysSince === 0 ? 'HOJE' : `${daysSince} DIAS`;
 
@@ -259,6 +269,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         if (newY > 40 || gestureState.vy > 0.4) {
           toValue = MAX_DRAG;
           isOff.current = true;
+          setDemoDaysCounter(0);
         } else {
           toValue = 0;
           isOff.current = false;
@@ -479,10 +490,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         {/* ── HEADER ──────────────────────────────────────────────────────── */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <BrandLogo size="medium" />
+            <TouchableOpacity onPress={incrementDemoDays} activeOpacity={0.8}>
+              <BrandLogo size="medium" />
+            </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.demoPill, isDemoMode && styles.demoPillActive]} 
-              onPress={() => setIsDemoMode(!isDemoMode)}
+              onPress={() => {
+                setIsDemoMode(!isDemoMode);
+                incrementDemoDays();
+              }}
             >
               <Typography variant="caption" style={[styles.demoText, isDemoMode && styles.demoTextActive]}>
                 {isDemoMode ? 'DEMO ON' : 'DEMO'}
