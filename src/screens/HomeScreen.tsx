@@ -552,56 +552,56 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           {/* Camada 4 - Glow Máximo/Externo */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 116 + 120 * glowRadiusFactor, 
-            height: 220 + 120 * glowRadiusFactor, 
-            borderRadius: 200, 
+            width: 116 + 350 * glowRadiusFactor, 
+            height: 220 + 350 * glowRadiusFactor, 
+            borderRadius: 300, 
             backgroundColor: glowColor,
-            opacity: 0.06,
+            opacity: 0.05,
             transform: [{ scale: pulseAnim }],
-            ...(Platform.OS === 'web' ? { filter: `blur(${5 + 75 * glowRadiusFactor}px)` } as any : {
-               shadowColor: glowColor, shadowOpacity: 0.4, shadowRadius: 5 + 75 * glowRadiusFactor, elevation: 30
+            ...(Platform.OS === 'web' ? { filter: `blur(${5 + 250 * glowRadiusFactor}px)` } as any : {
+               shadowColor: glowColor, shadowOpacity: 0.4, shadowRadius: 5 + 250 * glowRadiusFactor, elevation: 30
             })
           }} />
 
           {/* Camada 3 - Glow Intermédio-Largo */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 116 + 80 * glowRadiusFactor, 
-            height: 220 + 80 * glowRadiusFactor, 
-            borderRadius: 140, 
+            width: 116 + 220 * glowRadiusFactor, 
+            height: 220 + 220 * glowRadiusFactor, 
+            borderRadius: 200, 
             backgroundColor: glowColor,
-            opacity: 0.12,
+            opacity: 0.10,
             transform: [{ scale: pulseAnim }],
-            ...(Platform.OS === 'web' ? { filter: `blur(${5 + 45 * glowRadiusFactor}px)` } as any : {
-               shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 5 + 45 * glowRadiusFactor, elevation: 20
+            ...(Platform.OS === 'web' ? { filter: `blur(${5 + 150 * glowRadiusFactor}px)` } as any : {
+               shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 5 + 150 * glowRadiusFactor, elevation: 20
             })
           }} />
 
           {/* Camada 2 - Glow Intermédio-Próximo */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 116 + 40 * glowRadiusFactor, 
-            height: 220 + 40 * glowRadiusFactor, 
-            borderRadius: 100, 
+            width: 116 + 100 * glowRadiusFactor, 
+            height: 220 + 100 * glowRadiusFactor, 
+            borderRadius: 120, 
             backgroundColor: glowColor,
-            opacity: 0.22,
+            opacity: 0.20,
             transform: [{ scale: pulseAnim }],
-            ...(Platform.OS === 'web' ? { filter: `blur(${2 + 25 * glowRadiusFactor}px)` } as any : {
-               shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 2 + 25 * glowRadiusFactor, elevation: 15
+            ...(Platform.OS === 'web' ? { filter: `blur(${2 + 70 * glowRadiusFactor}px)` } as any : {
+               shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 2 + 70 * glowRadiusFactor, elevation: 15
             })
           }} />
 
           {/* Camada 1 - Glow Base junto à cápsula */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 116 + 15 * glowRadiusFactor, 
-            height: 220 + 15 * glowRadiusFactor, 
-            borderRadius: 70, 
+            width: 116 + 40 * glowRadiusFactor, 
+            height: 220 + 40 * glowRadiusFactor, 
+            borderRadius: 80, 
             backgroundColor: glowColor,
-            opacity: 0.40,
+            opacity: 0.35,
             transform: [{ scale: pulseAnim }],
-            ...(Platform.OS === 'web' ? { filter: `blur(${2 + 10 * glowRadiusFactor}px)` } as any : {
-               shadowColor: glowColor, shadowOpacity: 0.6, shadowRadius: 2 + 10 * glowRadiusFactor, elevation: 5
+            ...(Platform.OS === 'web' ? { filter: `blur(${2 + 25 * glowRadiusFactor}px)` } as any : {
+               shadowColor: glowColor, shadowOpacity: 0.6, shadowRadius: 2 + 25 * glowRadiusFactor, elevation: 5
             })
           }} />
 
