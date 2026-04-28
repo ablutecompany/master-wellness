@@ -124,6 +124,33 @@ const MOCK_THEMES = [
   }
 ];
 
+const getThemeColor = (idOrTitle: string) => {
+  const t = idOrTitle.toLowerCase();
+  if (t.includes('energia') || t === 'energy') return '#FFD700'; // Amarelo
+  if (t.includes('recuperação') || t === 'recovery') return '#A020F0'; // Roxo
+  if (t.includes('hidratação') || t === 'hydration' || t.includes('urinário')) return '#00F2FF'; // Cyan
+  if (t.includes('intestinal') || t === 'digestion' || t.includes('digestão')) return '#FF9500'; // Laranja
+  if (t.includes('vitals') || t.includes('performance') || t.includes('resistência') || t.includes('idade muscular') || t.includes('potencial')) return '#00FF9D'; // Verde
+  return '#FFD700'; 
+};
+
+const blendHexColors = (color1: string, color2: string, weight: number = 0.5) => {
+  const d2h = (d: number) => d.toString(16).padStart(2, '0');
+  const h2d = (h: string) => parseInt(h, 16);
+  
+  const c1 = color1.replace('#', '');
+  const c2 = color2.replace('#', '');
+  
+  const r1 = h2d(c1.substring(0, 2)), g1 = h2d(c1.substring(2, 4)), b1 = h2d(c1.substring(4, 6));
+  const r2 = h2d(c2.substring(0, 2)), g2 = h2d(c2.substring(2, 4)), b2 = h2d(c2.substring(4, 6));
+  
+  const r = Math.round(r1 * weight + r2 * (1 - weight));
+  const g = Math.round(g1 * weight + g2 * (1 - weight));
+  const b = Math.round(b1 * weight + b2 * (1 - weight));
+  
+  return `#${d2h(r)}${d2h(g)}${d2h(b)}`;
+};
+
 export const HomeScreen = ({ navigation }: { navigation: any }) => {
   console.log('[HOME_BOOT] R1-AI Initializing...');
   const { width, height } = useWindowDimensions();
@@ -164,39 +191,43 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   const daysSinceText = daysSince === 0 ? 'HOJE' : `${daysSince} DIAS`;
 
-  // ── Dynamic Glow Logic (Lowest-Link Priority) ─────────────────────────
-  const colorScore = useMemo(() => {
-    let vals: number[] = [];
+  // ── Dynamic Glow Logic (Lowest-Link Priority with Identity Colors) ─────────────────────────
+  const glowColor = useMemo(() => {
+    let domains: Array<{ id: string, title: string, score: number }> = [];
     
     if (isDemoMode) {
-      vals = MOCK_THEMES.map(t => t.score).filter(s => s !== undefined) as number[];
+      domains = MOCK_THEMES.filter(t => t.score !== undefined).map(t => ({
+        id: t.title.toLowerCase(),
+        title: t.title,
+        score: t.score as number
+      }));
     } else {
       const semanticBundle = getSemanticService().getBundle();
-      vals = Object.values(semanticBundle.domains || {}).map(d => d.score).filter(s => typeof s === 'number');
+      domains = Object.values(semanticBundle.domains || {}).map(d => ({
+        id: d.id,
+        title: d.name || d.id,
+        score: typeof d.score === 'number' ? d.score : 85
+      }));
     }
 
-    if (vals.length === 0) return 85; 
-    if (vals.length === 1) return vals[0];
+    if (domains.length === 0) return '#00F2FF'; 
+    if (domains.length === 1) return getThemeColor(domains[0].id);
 
-    const sortedVals = [...vals].sort((a, b) => a - b);
+    const sortedVals = [...domains].sort((a, b) => a.score - b.score);
     const lowest = sortedVals[0];
     const secondLowest = sortedVals[1];
 
-    // Se a diferença entre os dois mais baixos for <= 10 pontos, misturamos
-    if ((secondLowest - lowest) <= 10) {
-      return (lowest + secondLowest) / 2;
+    const c1 = getThemeColor(lowest.id);
+    const c2 = getThemeColor(secondLowest.id);
+
+    // Se a diferença entre os dois mais baixos for <= 10 pontos, misturamos a cor deles
+    if ((secondLowest.score - lowest.score) <= 10) {
+      return blendHexColors(c1, c2, 0.5);
     }
 
-    // Se há um que se destaca isolado para baixo, ele domina a cor
-    return lowest;
+    // Se há um que se destaca isolado para baixo, a cor dele domina totalmente
+    return c1;
   }, [isDemoMode, analyses]);
-
-  const glowColor = useMemo(() => {
-    // Degrade contínuo exato: 100 = Amarelo (255, 230, 0), 0 = Vermelho Vivo (255, 0, 0)
-    const score = Math.max(0, Math.min(100, colorScore));
-    const g = Math.round((score / 100) * 230); // Interpola o canal Verde (G) de 0 até 230
-    return `rgb(255, ${g}, 0)`;
-  }, [colorScore]);
 
   const glowRadiusFactor = Math.min(daysSince, 30) / 30;
   const dynamicGlowRadius = 120 + (glowRadiusFactor * 100); 
