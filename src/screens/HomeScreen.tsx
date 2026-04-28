@@ -646,7 +646,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                     return (
                       <View key={id} style={styles.footerIconWrapper}>
                         <View style={styles.footerIconCircle}>
-                           <Typography style={{ fontSize: 24 }}>{app.iconEmoji}</Typography>
+                           {(() => {
+                             const IconComp = { Brain, Utensils, Moon, Activity }[app.iconName || 'Activity'] || Activity;
+                             return <IconComp size={26} color={app.iconColor || '#fff'} strokeWidth={1.5} />;
+                           })()}
                         </View>
                         <Typography style={styles.footerIconLabel}>{app.name.replace(/_/g, '').toUpperCase()}</Typography>
                       </View>
@@ -686,13 +689,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                           styles.rowIcon, 
                           { backgroundColor: isInstalled ? app.iconBg : 'rgba(255,255,255,0.03)' }
                         ]}>
-                          <Typography style={{ 
-                            fontSize: 20, 
-                            opacity: isInstalled ? 1 : 0.4,
-                            // Filtro monocromático simulado via opacity e cor de fundo
-                          }}>
-                            {app.iconEmoji}
-                          </Typography>
+                           {(() => {
+                             const IconComp = { Brain, Utensils, Moon, Activity }[app.iconName || 'Activity'] || Activity;
+                             return <IconComp size={22} color={isInstalled ? app.iconColor : 'rgba(255,255,255,0.4)'} strokeWidth={1.5} />;
+                           })()}
                         </View>
                         <View style={styles.rowInfo}>
                           <Typography style={[styles.rowTitle, !isInstalled && { opacity: 0.7 }]}>{app.name}</Typography>

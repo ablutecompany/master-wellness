@@ -74,6 +74,7 @@ export interface MiniAppManifest {
   developerVerified: boolean;
   category: MiniAppCategory;
   iconEmoji: string;
+  iconName?: string;     // Added for Lucide icon support
   iconColor: string;     // accent/primary colour
   iconBg: string;        // icon background colour
   url: string;           // HTTPS URL of the web app
