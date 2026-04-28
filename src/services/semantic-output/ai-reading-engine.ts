@@ -266,10 +266,10 @@ export function computeAIReadingFromData(
     summary: { title: summaryTitle, text: summaryText, confidence: 0.85, mode: isDemo ? 'simulation' : 'real' },
     dimensions,
     priorityActions,
-    highlightedThemes: themes.slice(0, 8), // Mostrar os 8 temas mais relevantes
-    watchSignals: [
+    highlightedThemes: themes.slice(0, 8),
+    watchSignals: hasData ? [
       { title: 'Repetir análise para confirmar tendência', explanation: 'Um ponto isolado não define o seu estado biológico.', reasonToRepeat: 'Validar estabilidade cardiovascular' }
-    ],
+    ] : [],
     references: {
       usedDataFamilies: families,
       usedSignals: measurements.map(m => m.marker || m.type),
