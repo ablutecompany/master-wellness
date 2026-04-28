@@ -161,7 +161,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     return Math.floor((Date.now() - new Date(lastAnalysisDate).getTime()) / (1000 * 60 * 60 * 24));
   }, [user?.lastAnalysisDate]);
 
-  const daysSinceText = daysSince === 0 ? 'ANÁLISE HOJE' : `HÁ ${daysSince} DIAS`;
+  const daysSinceText = daysSince === 0 ? 'HOJE' : `HÁ ${daysSince} DIAS`;
 
   // ── Dynamic Glow Logic ──────────────────────────────────────────────────
   const avgScore = useMemo(() => {
@@ -1703,18 +1703,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10,
   },
-  coreTitle: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#fff',
-    letterSpacing: 3,
-    opacity: 0.8,
-    marginBottom: 2,
-  },
-  coreSubtitle: {
+  coreTopText: {
     fontSize: 7,
     fontWeight: '800',
-    letterSpacing: 1,
+    color: '#fff',
+    letterSpacing: 1.5,
+    opacity: 0.6,
+    marginBottom: 2,
+  },
+  coreMainText: {
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 2,
     opacity: 0.9,
   }
 });
@@ -1768,8 +1768,8 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
 
       {/* Central Labeling */}
       <View style={styles.coreTextContainer}>
-         <Typography style={styles.coreTitle}>BIO-ANÁLISE</Typography>
-         <Typography style={[styles.coreSubtitle, { color: glowColor }]}>{daysSinceText}</Typography>
+         <Typography style={styles.coreTopText}>ÚLTIMA ANÁLISE</Typography>
+         <Typography style={[styles.coreMainText, { color: glowColor }]}>{daysSinceText}</Typography>
       </View>
 
       {/* Outer Glossy Rim */}
