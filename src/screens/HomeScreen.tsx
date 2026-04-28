@@ -1808,7 +1808,7 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
                fill="none"
                stroke="none"
             />
-            <SvgText fill="#fff" fontSize="7" fontWeight="800" letterSpacing="1.5" opacity="0.6">
+            <SvgText fill="#fff" fontSize="8" fontWeight="800" letterSpacing="1.5" opacity="0.6">
                <TextPath href="#arcPath" startOffset="50%" textAnchor="middle">
                   ÚLTIMA ANÁLISE
                </TextPath>
@@ -1818,7 +1818,7 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
 
       {/* Central Labeling */}
       <View style={styles.coreTextContainer}>
-         <Typography style={[styles.coreMainText, { color: glowColor, marginTop: 10 }]}>{daysSinceText}</Typography>
+         <Typography style={[styles.coreMainText, { color: glowColor }]}>{daysSinceText}</Typography>
       </View>
 
       {/* Outer Glossy Rim */}
