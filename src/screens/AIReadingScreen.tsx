@@ -122,7 +122,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
     switch(id) {
       case 'energy': return '#FFD700';
       case 'recovery': return '#A020F0';
-      case 'hydration': return '#00F2FF';
+      case 'hydration': return '#37ECFD';
       case 'digestion': return '#FF9500';
       case 'vitals': return '#00FF9D';
       default: return '#fff';

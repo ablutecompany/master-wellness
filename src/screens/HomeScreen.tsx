@@ -130,7 +130,7 @@ const getThemeColor = (idOrTitle: string) => {
   const t = idOrTitle.toLowerCase();
   if (t.includes('energia') || t === 'energy') return '#FFD700'; // Amarelo
   if (t.includes('recuperação') || t === 'recovery') return '#A020F0'; // Roxo
-  if (t.includes('hidratação') || t === 'hydration' || t.includes('urinário')) return '#00F2FF'; // Cyan
+  if (t.includes('hidratação') || t === 'hydration' || t.includes('urinário')) return '#37ECFD'; // Cyan (Especificado pelo User)
   if (t.includes('intestinal') || t === 'digestion' || t.includes('digestão')) return '#FF9500'; // Laranja
   if (t.includes('vitals') || t.includes('performance') || t.includes('resistência') || t.includes('idade muscular') || t.includes('potencial')) return '#00FF9D'; // Verde
   return '#FFD700'; 
