@@ -125,6 +125,7 @@ const MOCK_THEMES = [
 ];
 
 const getThemeColor = (idOrTitle: string) => {
+  if (!idOrTitle) return '#FFD700'; // fallback
   const t = idOrTitle.toLowerCase();
   if (t.includes('energia') || t === 'energy') return '#FFD700'; // Amarelo
   if (t.includes('recuperação') || t === 'recovery') return '#A020F0'; // Roxo
@@ -195,8 +196,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const glowColor = useMemo(() => {
     const semanticBundle = getSemanticService().getBundle();
     const domains = Object.values(semanticBundle.domains || {}).map(d => ({
-      id: d.id,
-      title: d.name || d.id,
+      id: d.domain,
+      title: d.label || d.domain,
       score: typeof d.score === 'number' ? d.score : 85
     }));
 
