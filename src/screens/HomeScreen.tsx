@@ -236,7 +236,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     })
   ).current;
 
-  const DRAWER_DOWN = 650; // Aumentado para esconder mais o conteúdo
+  const DRAWER_DOWN = height - 190; // Ajustado dinamicamente para garantir que o rodapé fica totalmente visível
   const DRAWER_UP = 0;
   const lastDrawerY = useRef(DRAWER_DOWN);
   const drawerAnim = useRef(new Animated.Value(DRAWER_DOWN)).current;
@@ -252,7 +252,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   const drawerBgOpacity = drawerAnim.interpolate({
     inputRange: [DRAWER_UP, DRAWER_DOWN],
-    outputRange: [0.99, 0.05], // Praticamente opaco quando aberto
+    outputRange: [0.99, 0], // Totalmente transparente quando colapsado
     extrapolate: 'clamp',
   });
 
@@ -431,19 +431,25 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   return (
     <Container safe style={styles.container}>
-      {/* ── FULL SCREEN BACKGROUND VIDEO ───────────────────────────────── */}
-      <View style={StyleSheet.absoluteFillObject}>
-        <Video
-          source={require('../../assets/video (4).mp4')}
-          style={StyleSheet.absoluteFillObject}
-          resizeMode={ResizeMode.COVER}
-          rate={0.05}
-          shouldPlay
-          isLooping
-          isMuted
-        />
-        {/* Base darkening layer - REFORÇADO: Mais profundo para destacar o holograma */}
-        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.92)' }]} pointerEvents="none" />
+      {/* ── FULL SCREEN BACKGROUND ───────────────────────────────── */}
+      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#020305' }]}>
+        {/* Fundo preto com nuances suaves de cinzas transitório */}
+        
+        {/* Floating nuances */}
+        <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: Animated.multiply(floatAnim1, 0.6) }]} pointerEvents="none">
+          <LinearGradient
+            colors={['rgba(255,255,255,0.04)', 'transparent']}
+            style={StyleSheet.absoluteFillObject}
+          />
+        </Animated.View>
+        
+        <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: Animated.multiply(floatAnim2, 0.4) }]} pointerEvents="none">
+          <LinearGradient
+            colors={['transparent', 'rgba(255, 255, 255, 0.02)']}
+            style={StyleSheet.absoluteFillObject}
+          />
+        </Animated.View>
+      </View>
 
         {/* Floating nuances - SUAVIZADO: Apenas sugestão atmosférica */}
         <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: Animated.multiply(floatAnim1, 0.3) }]} pointerEvents="none">
@@ -1753,9 +1759,10 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
          
          {/* Video subtle texture fallback */}
          <Video
-            source={require('../../assets/video (3).mp4')}
-            style={{ position: 'absolute', width: 120, height: 120, opacity: 0.4 }}
+            source={require('../../assets/video (4).mp4')}
+            style={{ position: 'absolute', width: 120, height: 120, opacity: 0.6 }}
             resizeMode={ResizeMode.COVER}
+            rate={0.05}
             shouldPlay
             isLooping
             isMuted
