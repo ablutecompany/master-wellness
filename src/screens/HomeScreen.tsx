@@ -8,6 +8,7 @@ import { Utensils, Star, Zap, SlidersHorizontal, Activity, Database, Smartphone,
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Video, ResizeMode } from 'expo-av';
+import Svg, { Path, Text as SvgText, TextPath } from 'react-native-svg';
 import { useStore } from '../store/useStore';
 import { getSemanticService } from '../services/semantic-output';
 import { MINI_APP_CATALOG } from '../miniapps/catalog';
@@ -161,7 +162,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     return Math.floor((Date.now() - new Date(lastAnalysisDate).getTime()) / (1000 * 60 * 60 * 24));
   }, [user?.lastAnalysisDate]);
 
-  const daysSinceText = daysSince === 0 ? 'HOJE' : `HÁ ${daysSince} DIAS`;
+  const daysSinceText = daysSince === 0 ? 'HOJE' : `${daysSince} DIAS`;
 
   // ── Dynamic Glow Logic ──────────────────────────────────────────────────
   const avgScore = useMemo(() => {
@@ -1749,10 +1750,26 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
          <View style={[styles.orbitalRing, { width: 98, height: 98, borderRadius: 49, opacity: 0.05, alignSelf: 'center', marginTop: 9 }]} />
       </Animated.View>
 
+      {/* Curved Text - ÚLTIMA ANÁLISE */}
+      <View style={[StyleSheet.absoluteFillObject, { zIndex: 10 }]}>
+         <Svg width="116" height="116" viewBox="0 0 116 116">
+            <Path
+               id="arcPath"
+               d="M 16 58 A 42 42 0 0 1 100 58"
+               fill="none"
+               stroke="none"
+            />
+            <SvgText fill="#fff" fontSize="7" fontWeight="800" letterSpacing="1.5" opacity="0.6">
+               <TextPath href="#arcPath" startOffset="50%" textAnchor="middle">
+                  ÚLTIMA ANÁLISE
+               </TextPath>
+            </SvgText>
+         </Svg>
+      </View>
+
       {/* Central Labeling */}
       <View style={styles.coreTextContainer}>
-         <Typography style={styles.coreTopText}>ÚLTIMA ANÁLISE</Typography>
-         <Typography style={[styles.coreMainText, { color: glowColor }]}>{daysSinceText}</Typography>
+         <Typography style={[styles.coreMainText, { color: glowColor, marginTop: 10 }]}>{daysSinceText}</Typography>
       </View>
 
       {/* Outer Glossy Rim */}
