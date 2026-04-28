@@ -1755,7 +1755,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '900',
     letterSpacing: 2,
-    opacity: 0.9,
   }
 });
 
@@ -1835,7 +1834,18 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
 
       {/* Central Labeling */}
       <View style={styles.coreTextContainer}>
-         <Typography style={[styles.coreMainText, { color: glowColor }]}>{daysSinceText}</Typography>
+         <Typography 
+           style={[
+             styles.coreMainText, 
+             { 
+               color: daysSinceText === 'HOJE' ? '#888888' : glowColor,
+               textShadowColor: daysSinceText === 'HOJE' ? 'transparent' : glowColor,
+               textShadowRadius: daysSinceText === 'HOJE' ? 0 : 6
+             }
+           ]}
+         >
+           {daysSinceText}
+         </Typography>
       </View>
 
       {/* Outer Glossy Rim */}
