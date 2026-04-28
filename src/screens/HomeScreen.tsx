@@ -1739,15 +1739,15 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
 
       {/* Orbit 1: Fast & Small */}
       <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ rotate: spin }] }]}>
-         <View style={[styles.particle, { top: 20, left: 40 }]} />
-         <View style={[styles.particle, { bottom: 25, right: 35, opacity: 0.4 }]} />
-         <View style={[styles.orbitalRing, { width: 84, height: 84, borderRadius: 42, opacity: 0.1, alignSelf: 'center', marginTop: 16 }]} />
+         <View style={[styles.particle, { top: 20, left: 40, backgroundColor: glowColor, shadowColor: glowColor, opacity: 1 }]} />
+         <View style={[styles.particle, { bottom: 25, right: 35, opacity: 0.7 }]} />
+         <View style={[styles.orbitalRing, { width: 84, height: 84, borderRadius: 42, opacity: 0.3, alignSelf: 'center', marginTop: 16 }]} />
       </Animated.View>
 
       {/* Orbit 2: Slow & Large */}
       <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ rotate: reverseSpin }] }]}>
-         <View style={[styles.particle, { top: 50, left: 15, width: 2, height: 2, backgroundColor: '#fff' }]} />
-         <View style={[styles.orbitalRing, { width: 98, height: 98, borderRadius: 49, opacity: 0.05, alignSelf: 'center', marginTop: 9 }]} />
+         <View style={[styles.particle, { top: 50, left: 15, width: 3, height: 3, backgroundColor: '#fff', opacity: 0.9 }]} />
+         <View style={[styles.orbitalRing, { width: 98, height: 98, borderRadius: 49, opacity: 0.15, alignSelf: 'center', marginTop: 9 }]} />
       </Animated.View>
 
       {/* Curved Text - ÚLTIMA ANÁLISE */}
