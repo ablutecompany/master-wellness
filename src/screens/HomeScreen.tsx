@@ -236,7 +236,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     })
   ).current;
 
-  const DRAWER_DOWN = height - 190; // Ajustado dinamicamente para garantir que o rodapé fica totalmente visível
+  const DRAWER_DOWN = height - 170; // Ajustado para os ícones reduzidos
   const DRAWER_UP = 0;
   const lastDrawerY = useRef(DRAWER_DOWN);
   const drawerAnim = useRef(new Animated.Value(DRAWER_DOWN)).current;
@@ -567,6 +567,20 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
           {/* Núcleo Central (POLIDO & ESCULTURAL) */}
           <View style={styles.capsuleShell}>
+            {/* NOVO: Fundo em vídeo visível na calha/trilho da cápsula */}
+            <Video
+              source={require('../../assets/video (4).mp4')}
+              style={[StyleSheet.absoluteFillObject, { opacity: 0.6 }]}
+              resizeMode={ResizeMode.COVER}
+              rate={0.05}
+              shouldPlay
+              isLooping
+              isMuted
+              pointerEvents="none"
+            />
+            {/* Camada para criar contraste atrás da roda */}
+            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.4)' }]} pointerEvents="none" />
+
             <Animated.View style={{ width: 116, height: 116, transform: [{ translateY: switchAnim }], zIndex: 9999 }} {...switchPanResponder.panHandlers}>
               <View style={styles.wheelKnob}>
                  <BioAnalysisOrbitalCore daysSinceText={daysSinceText} glowColor={glowColor} />
@@ -635,7 +649,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                         <View style={styles.footerIconCircle}>
                            {(() => {
                              const IconComp = { Brain, Utensils, Moon, Activity }[app.iconName || 'Activity'] || Activity;
-                             return <IconComp size={36} color={app.iconColor || '#fff'} strokeWidth={1.2} />;
+                             return <IconComp size={22} color={app.iconColor || '#fff'} strokeWidth={1.2} />;
                            })()}
                         </View>
                         <Typography style={styles.footerIconLabel}>{app.name.replace(/_/g, '').toUpperCase()}</Typography>
@@ -1605,12 +1619,12 @@ const styles = StyleSheet.create({
   },
   footerIconWrapper: {
     alignItems: 'center',
-    width: 90,
+    width: 60,
   },
   footerIconCircle: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: 'rgba(255,255,255,0.04)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1737,18 +1751,6 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
            colors={['rgba(5, 10, 20, 0.4)', 'rgba(0, 0, 0, 0.95)']}
            style={StyleSheet.absoluteFillObject}
          />
-         
-         {/* Video subtle texture fallback */}
-         <Video
-            source={require('../../assets/video (4).mp4')}
-            style={{ position: 'absolute', width: 120, height: 120, opacity: 0.6 }}
-            resizeMode={ResizeMode.COVER}
-            rate={0.05}
-            shouldPlay
-            isLooping
-            isMuted
-            pointerEvents="none"
-          />
       </View>
 
       {/* Orbit 1: Fast & Small */}
