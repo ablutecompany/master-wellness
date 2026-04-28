@@ -520,61 +520,61 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         {/* RECUPERADO: Melhor centrado e ligeiramente mais alto */}
         <Animated.View style={[styles.centerContainer, { transform: [{ translateY: Animated.add(centerContentY, -100) }] }]}>
           
-          {/* Luz Envolvente (Auras) - Degradê Ultra Suave e Sem Linhas Rígidas */}
+          {/* Luz Envolvente (Auras) - Degradê Expansivo Ultra Suave e Sem Linhas Rígidas */}
           
           {/* Camada 4 - Glow Máximo/Externo */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 116 + 120 * glowRadiusFactor, 
-            height: 220 + 120 * glowRadiusFactor, 
-            borderRadius: 100, 
+            width: 116 + 280 * glowRadiusFactor, 
+            height: 220 + 280 * glowRadiusFactor, 
+            borderRadius: 200, 
             backgroundColor: glowColor,
-            opacity: 0.03,
+            opacity: 0.02,
             transform: [{ scale: pulseAnim }],
-            ...(Platform.OS === 'web' ? { filter: 'blur(40px)' } as any : {
-               shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 50, elevation: 20
+            ...(Platform.OS === 'web' ? { filter: 'blur(100px)' } as any : {
+               shadowColor: glowColor, shadowOpacity: 0.4, shadowRadius: 80, elevation: 30
             })
           }} />
 
           {/* Camada 3 - Glow Intermédio-Largo */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 116 + 80 * glowRadiusFactor, 
-            height: 220 + 80 * glowRadiusFactor, 
-            borderRadius: 80, 
+            width: 116 + 160 * glowRadiusFactor, 
+            height: 220 + 160 * glowRadiusFactor, 
+            borderRadius: 140, 
             backgroundColor: glowColor,
-            opacity: 0.06,
+            opacity: 0.04,
             transform: [{ scale: pulseAnim }],
-            ...(Platform.OS === 'web' ? { filter: 'blur(30px)' } as any : {
-               shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 30, elevation: 15
+            ...(Platform.OS === 'web' ? { filter: 'blur(60px)' } as any : {
+               shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 50, elevation: 20
             })
           }} />
 
           {/* Camada 2 - Glow Intermédio-Próximo */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 116 + 40 * glowRadiusFactor, 
-            height: 220 + 40 * glowRadiusFactor, 
-            borderRadius: 70, 
+            width: 116 + 80 * glowRadiusFactor, 
+            height: 220 + 80 * glowRadiusFactor, 
+            borderRadius: 100, 
             backgroundColor: glowColor,
-            opacity: 0.12,
+            opacity: 0.08,
             transform: [{ scale: pulseAnim }],
-            ...(Platform.OS === 'web' ? { filter: 'blur(20px)' } as any : {
-               shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 20, elevation: 10
+            ...(Platform.OS === 'web' ? { filter: 'blur(30px)' } as any : {
+               shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 30, elevation: 15
             })
           }} />
 
           {/* Camada 1 - Glow Base junto à cápsula */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 116 + 10 * glowRadiusFactor, 
-            height: 220 + 10 * glowRadiusFactor, 
-            borderRadius: 60, 
+            width: 116 + 30 * glowRadiusFactor, 
+            height: 220 + 30 * glowRadiusFactor, 
+            borderRadius: 70, 
             backgroundColor: glowColor,
-            opacity: 0.20,
+            opacity: 0.15,
             transform: [{ scale: pulseAnim }],
-            ...(Platform.OS === 'web' ? { filter: 'blur(10px)' } as any : {
-               shadowColor: glowColor, shadowOpacity: 0.6, shadowRadius: 10, elevation: 5
+            ...(Platform.OS === 'web' ? { filter: 'blur(15px)' } as any : {
+               shadowColor: glowColor, shadowOpacity: 0.6, shadowRadius: 15, elevation: 5
             })
           }} />
 
@@ -648,7 +648,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                         <View style={styles.footerIconCircle}>
                            {(() => {
                              const IconComp = { Brain, Utensils, Moon, Activity }[app.iconName || 'Activity'] || Activity;
-                             return <IconComp size={26} color={app.iconColor || '#fff'} strokeWidth={1.5} />;
+                             return <IconComp size={36} color={app.iconColor || '#fff'} strokeWidth={1.2} />;
                            })()}
                         </View>
                         <Typography style={styles.footerIconLabel}>{app.name.replace(/_/g, '').toUpperCase()}</Typography>
@@ -1618,12 +1618,12 @@ const styles = StyleSheet.create({
   },
   footerIconWrapper: {
     alignItems: 'center',
-    width: 80,
+    width: 90,
   },
   footerIconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 76,
+    height: 76,
+    borderRadius: 38,
     backgroundColor: 'rgba(255,255,255,0.04)',
     justifyContent: 'center',
     alignItems: 'center',
