@@ -11,6 +11,7 @@ import { Video, ResizeMode } from 'expo-av';
 import Svg, { Path, Text as SvgText, TextPath } from 'react-native-svg';
 import { useStore } from '../store/useStore';
 import { getSemanticService } from '../services/semantic-output';
+import { computeAIReadingFromData } from '../services/semantic-output/ai-reading-engine';
 import { MINI_APP_CATALOG } from '../miniapps/catalog';
 import { MiniAppCategory, CATEGORY_LABELS } from '../miniapps/types';
 import { DEMO_ANALYSIS_SNAPSHOT } from '../data/demo-snapshot';
@@ -204,12 +205,14 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   // ── Dynamic Glow Logic (Lowest-Link Priority with Identity Colors) ─────────────────────────
   const glowColor = useMemo(() => {
-    const semanticBundle = getSemanticService().getBundle();
-    const domains = Object.values(semanticBundle.domains || {}).map(d => ({
-      id: d.domain,
-      title: d.label || d.domain,
-      score: typeof d.score === 'number' ? d.score : 85
-    }));
+    const lastAnalysis = analyses[0];
+    const reading = computeAIReadingFromData(
+      lastAnalysis?.measurements || [],
+      lastAnalysis?.ecosystemFacts || [],
+      isDemoMode
+    );
+    
+    const domains = reading.dimensions;
 
     // Se não houver dados nenhuns (ex: sem demo e sem histórico), o anel fica apagado.
     if (domains.length === 0) return 'rgba(255, 255, 255, 0.05)'; 
