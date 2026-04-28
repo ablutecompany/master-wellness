@@ -130,7 +130,7 @@ const getThemeColor = (idOrTitle: string) => {
   const t = idOrTitle.toLowerCase();
   if (t.includes('energia') || t === 'energy') return '#FFD700'; // Amarelo
   if (t.includes('recuperação') || t === 'recovery') return '#A020F0'; // Roxo
-  if (t.includes('hidratação') || t === 'hydration' || t.includes('urinário')) return '#33FFFF'; // Ciano Mais Claro
+  if (t.includes('hidratação') || t === 'hydration' || t.includes('urinário')) return '#00F2FF'; // Cyan
   if (t.includes('intestinal') || t === 'digestion' || t.includes('digestão')) return '#FF9500'; // Laranja
   if (t.includes('vitals') || t.includes('performance') || t.includes('resistência') || t.includes('idade muscular') || t.includes('potencial')) return '#00FF9D'; // Verde
   return '#FFD700'; 
@@ -220,18 +220,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
     const sortedVals = [...domains].sort((a, b) => a.score - b.score);
     const lowest = sortedVals[0];
-    const secondLowest = sortedVals[1];
 
-    const c1 = getThemeColor(lowest.id);
-    const c2 = getThemeColor(secondLowest.id);
-
-    // Se a diferença entre os dois mais baixos for <= 10 pontos, misturamos a cor deles
-    if ((secondLowest.score - lowest.score) <= 10) {
-      return blendHexColors(c1, c2, 0.5);
-    }
-
-    // Se há um que se destaca isolado para baixo, a cor dele domina totalmente
-    return c1;
+    // Devolvemos a cor do elo mais fraco sem misturas para garantir
+    // correspondência exata com o ícone no ecrã de Leitura AI
+    return getThemeColor(lowest.id);
   }, [isDemoMode, analyses]);
 
   const glowRadiusFactor = Math.min(daysSince, 30) / 30;
