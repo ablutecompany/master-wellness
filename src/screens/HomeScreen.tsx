@@ -520,35 +520,62 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         {/* RECUPERADO: Melhor centrado e ligeiramente mais alto */}
         <Animated.View style={[styles.centerContainer, { transform: [{ translateY: Animated.add(centerContentY, -100) }] }]}>
           
-          {/* Luz Envolvente (Auras) - RECUPERADO: Brilho Orgânico e Difuso (Forma de Cápsula) */}
+          {/* Luz Envolvente (Auras) - Degradê Ultra Suave e Sem Linhas Rígidas */}
+          
+          {/* Camada 4 - Glow Máximo/Externo */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 116, 
-            height: 220, 
-            borderRadius: 58, 
-            shadowColor: glowColor, 
-            shadowOffset: { width: 0, height: 0 }, 
-            shadowOpacity: 0.6, 
-            shadowRadius: dynamicGlowRadius, 
-            elevation: 80,
-            transform: [{ scale: pulseAnim }],
+            width: 116 + 120 * glowRadiusFactor, 
+            height: 220 + 120 * glowRadiusFactor, 
+            borderRadius: 100, 
             backgroundColor: glowColor,
-            opacity: 0.18
+            opacity: 0.03,
+            transform: [{ scale: pulseAnim }],
+            ...(Platform.OS === 'web' ? { filter: 'blur(40px)' } as any : {
+               shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 50, elevation: 20
+            })
           }} />
 
-          {/* Segunda Camada de Aura para densidade central */}
+          {/* Camada 3 - Glow Intermédio-Largo */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 116, 
-            height: 220, 
-            borderRadius: 58, 
-            shadowColor: glowColor, 
-            shadowOffset: { width: 0, height: 0 }, 
-            shadowOpacity: 0.4, 
-            shadowRadius: 40, 
-            elevation: 40,
+            width: 116 + 80 * glowRadiusFactor, 
+            height: 220 + 80 * glowRadiusFactor, 
+            borderRadius: 80, 
             backgroundColor: glowColor,
-            opacity: 0.12
+            opacity: 0.06,
+            transform: [{ scale: pulseAnim }],
+            ...(Platform.OS === 'web' ? { filter: 'blur(30px)' } as any : {
+               shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 30, elevation: 15
+            })
+          }} />
+
+          {/* Camada 2 - Glow Intermédio-Próximo */}
+          <Animated.View style={{ 
+            position: 'absolute', 
+            width: 116 + 40 * glowRadiusFactor, 
+            height: 220 + 40 * glowRadiusFactor, 
+            borderRadius: 70, 
+            backgroundColor: glowColor,
+            opacity: 0.12,
+            transform: [{ scale: pulseAnim }],
+            ...(Platform.OS === 'web' ? { filter: 'blur(20px)' } as any : {
+               shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 20, elevation: 10
+            })
+          }} />
+
+          {/* Camada 1 - Glow Base junto à cápsula */}
+          <Animated.View style={{ 
+            position: 'absolute', 
+            width: 116 + 10 * glowRadiusFactor, 
+            height: 220 + 10 * glowRadiusFactor, 
+            borderRadius: 60, 
+            backgroundColor: glowColor,
+            opacity: 0.20,
+            transform: [{ scale: pulseAnim }],
+            ...(Platform.OS === 'web' ? { filter: 'blur(10px)' } as any : {
+               shadowColor: glowColor, shadowOpacity: 0.6, shadowRadius: 10, elevation: 5
+            })
           }} />
 
           {/* Núcleo Central (POLIDO & ESCULTURAL) */}
