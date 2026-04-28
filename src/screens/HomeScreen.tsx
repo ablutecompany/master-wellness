@@ -1853,8 +1853,10 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
          </Typography>
       </View>
 
-      {/* Outer Glossy Rim */}
-      <View style={[StyleSheet.absoluteFill, { borderRadius: 58, borderWidth: 6, borderColor: 'rgba(255,255,255,0.03)' }]} pointerEvents="none" />
+      {/* Outer Sharp Rim to delineate the wheel */}
+      <View style={[StyleSheet.absoluteFill, { borderRadius: 58, borderWidth: 1, borderColor: 'rgba(255,255,255,0.5)' }]} pointerEvents="none" />
+      {/* Inner Glossy Rim */}
+      <View style={[StyleSheet.absoluteFill, { borderRadius: 58, borderWidth: 4, borderColor: 'rgba(255,255,255,0.1)' }]} pointerEvents="none" />
     </View>
   );
 };
