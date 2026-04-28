@@ -512,56 +512,56 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           {/* Camada 4 - Glow Máximo/Externo */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 116 + 280 * glowRadiusFactor, 
-            height: 220 + 280 * glowRadiusFactor, 
+            width: 116 + 120 * glowRadiusFactor, 
+            height: 220 + 120 * glowRadiusFactor, 
             borderRadius: 200, 
             backgroundColor: glowColor,
             opacity: 0.02,
             transform: [{ scale: pulseAnim }],
-            ...(Platform.OS === 'web' ? { filter: 'blur(100px)' } as any : {
-               shadowColor: glowColor, shadowOpacity: 0.4, shadowRadius: 80, elevation: 30
+            ...(Platform.OS === 'web' ? { filter: `blur(${5 + 75 * glowRadiusFactor}px)` } as any : {
+               shadowColor: glowColor, shadowOpacity: 0.4, shadowRadius: 5 + 75 * glowRadiusFactor, elevation: 30
             })
           }} />
 
           {/* Camada 3 - Glow Intermédio-Largo */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 116 + 160 * glowRadiusFactor, 
-            height: 220 + 160 * glowRadiusFactor, 
+            width: 116 + 80 * glowRadiusFactor, 
+            height: 220 + 80 * glowRadiusFactor, 
             borderRadius: 140, 
             backgroundColor: glowColor,
             opacity: 0.04,
             transform: [{ scale: pulseAnim }],
-            ...(Platform.OS === 'web' ? { filter: 'blur(60px)' } as any : {
-               shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 50, elevation: 20
+            ...(Platform.OS === 'web' ? { filter: `blur(${5 + 45 * glowRadiusFactor}px)` } as any : {
+               shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 5 + 45 * glowRadiusFactor, elevation: 20
             })
           }} />
 
           {/* Camada 2 - Glow Intermédio-Próximo */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 116 + 80 * glowRadiusFactor, 
-            height: 220 + 80 * glowRadiusFactor, 
+            width: 116 + 40 * glowRadiusFactor, 
+            height: 220 + 40 * glowRadiusFactor, 
             borderRadius: 100, 
             backgroundColor: glowColor,
             opacity: 0.08,
             transform: [{ scale: pulseAnim }],
-            ...(Platform.OS === 'web' ? { filter: 'blur(30px)' } as any : {
-               shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 30, elevation: 15
+            ...(Platform.OS === 'web' ? { filter: `blur(${2 + 25 * glowRadiusFactor}px)` } as any : {
+               shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 2 + 25 * glowRadiusFactor, elevation: 15
             })
           }} />
 
           {/* Camada 1 - Glow Base junto à cápsula */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 116 + 30 * glowRadiusFactor, 
-            height: 220 + 30 * glowRadiusFactor, 
+            width: 116 + 15 * glowRadiusFactor, 
+            height: 220 + 15 * glowRadiusFactor, 
             borderRadius: 70, 
             backgroundColor: glowColor,
             opacity: 0.15,
             transform: [{ scale: pulseAnim }],
-            ...(Platform.OS === 'web' ? { filter: 'blur(15px)' } as any : {
-               shadowColor: glowColor, shadowOpacity: 0.6, shadowRadius: 15, elevation: 5
+            ...(Platform.OS === 'web' ? { filter: `blur(${2 + 10 * glowRadiusFactor}px)` } as any : {
+               shadowColor: glowColor, shadowOpacity: 0.6, shadowRadius: 2 + 10 * glowRadiusFactor, elevation: 5
             })
           }} />
 
