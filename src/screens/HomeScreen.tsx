@@ -520,12 +520,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         {/* RECUPERADO: Melhor centrado e ligeiramente mais alto */}
         <Animated.View style={[styles.centerContainer, { transform: [{ translateY: Animated.add(centerContentY, -100) }] }]}>
           
-          {/* Luz Envolvente (Auras) - RECUPERADO: Brilho Orgânico e Difuso */}
+          {/* Luz Envolvente (Auras) - RECUPERADO: Brilho Orgânico e Difuso (Forma de Cápsula) */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 120, 
-            height: 120, 
-            borderRadius: 60, 
+            width: 116, 
+            height: 220, 
+            borderRadius: 58, 
             shadowColor: glowColor, 
             shadowOffset: { width: 0, height: 0 }, 
             shadowOpacity: 0.6, 
@@ -539,9 +539,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
           {/* Segunda Camada de Aura para densidade central */}
           <Animated.View style={{ 
             position: 'absolute', 
-            width: 80, 
-            height: 80, 
-            borderRadius: 40, 
+            width: 116, 
+            height: 220, 
+            borderRadius: 58, 
             shadowColor: glowColor, 
             shadowOffset: { width: 0, height: 0 }, 
             shadowOpacity: 0.4, 
