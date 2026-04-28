@@ -1752,6 +1752,16 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
            colors={['rgba(5, 10, 20, 0.4)', 'rgba(0, 0, 0, 0.95)']}
            style={StyleSheet.absoluteFillObject}
          />
+         <Video
+            source={require('../../assets/video (3).mp4')}
+            style={[StyleSheet.absoluteFillObject, { opacity: 0.5 }]}
+            resizeMode={ResizeMode.COVER}
+            rate={0.5}
+            shouldPlay
+            isLooping
+            isMuted
+            pointerEvents="none"
+         />
       </View>
 
       {/* Orbit 1: Fast & Small */}
