@@ -488,8 +488,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         </View>
 
         {/* ── CENTRAL VISUAL (The HoloPulse) ────────────────────────────────── */}
-        {/* Descido para ficar perfeitamente alinhado com as abas laterais */}
-        <Animated.View style={[styles.centerContainer, { transform: [{ translateY: centerContentY }] }]}>
+        {/* Descido parcialmente para equilíbrio visual entre o topo e as abas laterais */}
+        <Animated.View style={[styles.centerContainer, { transform: [{ translateY: Animated.add(centerContentY, -60) }] }]}>
           
           {/* Luz Envolvente (Auras) - Degradê Expansivo Ultra Suave e Sem Linhas Rígidas */}
           
