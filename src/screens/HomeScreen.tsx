@@ -552,8 +552,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             backgroundColor: glowColor,
             opacity: 0.05 + 0.25 * glowRadiusFactor,
             transform: [{ scale: pulseAnim }],
-            ...(Platform.OS === 'web' ? { filter: `blur(${5 + 250 * glowRadiusFactor}px)` } as any : {
-               shadowColor: glowColor, shadowOpacity: 0.4, shadowRadius: 5 + 250 * glowRadiusFactor, elevation: 30
+            ...(Platform.OS === 'web' ? { filter: `blur(${40 + 250 * glowRadiusFactor}px)` } as any : {
+               shadowColor: glowColor, shadowOpacity: 0.4, shadowRadius: 40 + 250 * glowRadiusFactor, elevation: 30
             })
           }} />
 
@@ -566,8 +566,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             backgroundColor: glowColor,
             opacity: 0.10 + 0.35 * glowRadiusFactor,
             transform: [{ scale: pulseAnim }],
-            ...(Platform.OS === 'web' ? { filter: `blur(${5 + 150 * glowRadiusFactor}px)` } as any : {
-               shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 5 + 150 * glowRadiusFactor, elevation: 20
+            ...(Platform.OS === 'web' ? { filter: `blur(${25 + 150 * glowRadiusFactor}px)` } as any : {
+               shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 25 + 150 * glowRadiusFactor, elevation: 20
             })
           }} />
 
@@ -580,8 +580,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             backgroundColor: glowColor,
             opacity: 0.20 + 0.40 * glowRadiusFactor,
             transform: [{ scale: pulseAnim }],
-            ...(Platform.OS === 'web' ? { filter: `blur(${2 + 70 * glowRadiusFactor}px)` } as any : {
-               shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 2 + 70 * glowRadiusFactor, elevation: 15
+            ...(Platform.OS === 'web' ? { filter: `blur(${15 + 70 * glowRadiusFactor}px)` } as any : {
+               shadowColor: glowColor, shadowOpacity: 0.5, shadowRadius: 15 + 70 * glowRadiusFactor, elevation: 15
             })
           }} />
 
@@ -594,8 +594,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             backgroundColor: glowColor,
             opacity: 0.35 + 0.45 * glowRadiusFactor,
             transform: [{ scale: pulseAnim }],
-            ...(Platform.OS === 'web' ? { filter: `blur(${2 + 25 * glowRadiusFactor}px)` } as any : {
-               shadowColor: glowColor, shadowOpacity: 0.6, shadowRadius: 2 + 25 * glowRadiusFactor, elevation: 5
+            ...(Platform.OS === 'web' ? { filter: `blur(${8 + 25 * glowRadiusFactor}px)` } as any : {
+               shadowColor: glowColor, shadowOpacity: 0.6, shadowRadius: 8 + 25 * glowRadiusFactor, elevation: 5
             })
           }} />
 
