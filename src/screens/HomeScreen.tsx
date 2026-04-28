@@ -488,8 +488,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         </View>
 
         {/* ── CENTRAL VISUAL (The HoloPulse) ────────────────────────────────── */}
-        {/* RECUPERADO: Melhor centrado e ligeiramente mais alto */}
-        <Animated.View style={[styles.centerContainer, { transform: [{ translateY: Animated.add(centerContentY, -100) }] }]}>
+        {/* Descido para ficar perfeitamente alinhado com as abas laterais */}
+        <Animated.View style={[styles.centerContainer, { transform: [{ translateY: centerContentY }] }]}>
           
           {/* Luz Envolvente (Auras) - Degradê Expansivo Ultra Suave e Sem Linhas Rígidas */}
           
@@ -572,7 +572,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             </Animated.View>
 
             {/* Setas Animadas para orientar o utilizador (REPOSICIONADAS) */}
-            <View style={{ position: 'absolute', bottom: 20, left: 0, right: 0, alignItems: 'center' }}>
+            <View style={{ position: 'absolute', top: 130, left: 0, right: 0, alignItems: 'center' }}>
               <Animated.View style={{ transform: [{ translateY: arrowAnim }], opacity: 0.7 }}>
                 <ChevronDown size={18} color={glowColor} strokeWidth={3} />
                 <View style={{ marginTop: -10 }}>
