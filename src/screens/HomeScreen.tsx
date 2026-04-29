@@ -15,6 +15,7 @@ import { computeAIReadingFromData } from '../services/semantic-output/ai-reading
 import { MINI_APP_CATALOG } from '../miniapps/catalog';
 import { MiniAppCategory, CATEGORY_LABELS } from '../miniapps/types';
 import { DEMO_ANALYSIS_SNAPSHOT } from '../data/demo-snapshot';
+import { DEMO_BIOMARKER_PERSONAS, generateDemoAnalysisFromPersona } from '../data/demo-scenarios';
 
 const RAW_BIOMARKERS = [
   { id: 'b1', name: 'NT-proBNP', value: '120', unit: 'pg/mL', source: 'ablute' },
@@ -170,6 +171,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const analyses = useStore(state => state.analyses);
   const credits = useStore(state => state.credits);
   const isDemoMode = useStore(state => state.isDemoMode);
+  const currentDemoPersonaIndex = useStore(state => state.currentDemoPersonaIndex);
+  const cycleDemoPersona = useStore(state => state.cycleDemoPersona);
   const setIsDemoMode = useStore(state => state.setIsDemoMode);
   const setDemoAnalysis = useStore(state => state.setDemoAnalysis);
   const installedAppIds = useStore(state => state.installedAppIds) || [];
@@ -215,6 +218,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   // ── Dynamic Glow Logic (Lowest-Link Priority with Identity Colors) ─────────────────────────
   const glowColor = useMemo(() => {
+    if (isDemoMode) {
+      const persona = DEMO_BIOMARKER_PERSONAS[currentDemoPersonaIndex % DEMO_BIOMARKER_PERSONAS.length];
+      const score = persona.aiMeanScore;
+      if (score >= 80) return '#FFD700'; // amarelo/dourado vivo
+      if (score >= 60) return '#FFBF00'; // amarelo-âmbar
+      if (score >= 40) return '#FF9500'; // laranja
+      return '#FF3B30'; // vermelho vivo
+    }
+
     const lastAnalysis = analyses[0];
     const reading = computeAIReadingFromData(
       lastAnalysis?.measurements || [],
@@ -234,7 +246,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     // Devolvemos a cor do elo mais fraco sem misturas para garantir
     // correspondência exata com o ícone no ecrã de Leitura AI
     return getThemeColor(lowest.id);
-  }, [isDemoMode, analyses]);
+  }, [isDemoMode, currentDemoPersonaIndex, analyses]);
 
   const glowRadiusFactor = Math.min(daysSince, 30) / 30;
   const dynamicGlowRadius = 120 + (glowRadiusFactor * 100); 
@@ -420,13 +432,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   
   useEffect(() => {
     if (isDemoMode) {
-      setDemoAnalysis(DEMO_ANALYSIS_SNAPSHOT);
-      getSemanticService().loadAnalysis(DEMO_ANALYSIS_SNAPSHOT);
+      const persona = DEMO_BIOMARKER_PERSONAS[currentDemoPersonaIndex % DEMO_BIOMARKER_PERSONAS.length];
+      const newDemoAnalysis = generateDemoAnalysisFromPersona(persona);
+      setDemoAnalysis(newDemoAnalysis);
+      getSemanticService().loadAnalysis(newDemoAnalysis);
     } else {
       setDemoAnalysis(null);
       getSemanticService().loadAnalysis(null);
     }
-  }, [isDemoMode]);
+  }, [isDemoMode, currentDemoPersonaIndex]);
 
   const displayBiomarkers = useMemo(() => isDemoMode ? [
     { id: 'd1', name: 'Glicose (Demo)', value: '92', unit: 'mg/dL', source: 'ablute' },
@@ -500,8 +514,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             <TouchableOpacity 
               style={[styles.demoPill, isDemoMode && styles.demoPillActive]} 
               onPress={() => {
-                setIsDemoMode(!isDemoMode);
+                if (!isDemoMode) {
+                  setIsDemoMode(true);
+                } else {
+                  cycleDemoPersona();
+                }
                 incrementDemoDays();
+              }}
+              onLongPress={() => {
+                if (isDemoMode) setIsDemoMode(false);
               }}
             >
               <Typography variant="caption" style={[styles.demoText, isDemoMode && styles.demoTextActive]}>

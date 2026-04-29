@@ -144,6 +144,7 @@ export interface AppState {
   grantedPermissions: Record<string, Permission[]>;
   demoAnalysis: Analysis | null;
   isDemoMode: boolean;
+  currentDemoPersonaIndex: number;
 
   // Ecossistema (Step Shell 2 & 3)
   miniAppRegistry: import('./ecosystem-contracts').MiniAppRegistryEntry[];
@@ -172,6 +173,7 @@ export interface AppState {
   resetDemoData: () => void;
 
   setIsDemoMode: (val: boolean) => void;
+  cycleDemoPersona: () => void;
   setUser: (user: UserProfile | null) => void;
   setAuthAccount: (account: any | null) => void;
   setProfileStatus: (status: ProfileStatus) => void;
