@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
+  Linking,
 } from 'react-native';
 import { Star, Plus, ExternalLink, ArrowLeft } from 'lucide-react-native';
 // expo-blur and expo-linear-gradient: web-safe fallbacks to avoid silent crashes
@@ -149,10 +150,12 @@ export const AppsScreen = ({ navigation }: { navigation: any }) => {
 
   const handleOpen = (app: MiniAppManifest) => {
     launchApp(app);
+    if (!app.url) return;
+    
     if (Platform.OS === 'web') {
-      setInlineApp(app);
+      window.open(app.url, '_blank', 'noopener,noreferrer');
     } else {
-      navigation?.navigate('MiniApp', { app });
+      Linking.openURL(app.url).catch((err) => console.log('Error opening app', err));
     }
   };
 
@@ -331,7 +334,16 @@ export const AppsScreen = ({ navigation }: { navigation: any }) => {
             {filteredCatalog.map((app) => {
               const installed = isAppInstalled(app.id);
               return (
-                <View key={app.id} style={styles.catalogCardWrapper}>
+                <TouchableOpacity 
+                  key={app.id} 
+                  style={styles.catalogCardWrapper}
+                  activeOpacity={installed ? 0.7 : 1}
+                  onPress={() => {
+                    if (installed) {
+                      handleOpen(app);
+                    }
+                  }}
+                >
                   <BlurView intensity={12} tint="dark" style={styles.catalogCard}>
                     {/* Left: icon */}
                     <View style={[styles.catalogIcon, { backgroundColor: app.iconBg, borderColor: app.iconColor + '25' }]}>
@@ -371,7 +383,10 @@ export const AppsScreen = ({ navigation }: { navigation: any }) => {
                     {installed ? (
                       <TouchableOpacity
                         style={[styles.ctaBtn, styles.openBtn, { borderColor: app.iconColor + '50' }]}
-                        onPress={() => handleOpen(app)}
+                        onPress={(e: any) => {
+                          e?.stopPropagation?.();
+                          handleOpen(app);
+                        }}
                         activeOpacity={0.75}
                       >
                         <Typography style={[styles.ctaText, { color: app.iconColor }]}>ABRIR</Typography>
@@ -380,7 +395,10 @@ export const AppsScreen = ({ navigation }: { navigation: any }) => {
                     ) : (
                       <TouchableOpacity
                         style={[styles.ctaBtn, styles.addBtn]}
-                        onPress={() => handleAdd(app)}
+                        onPress={(e: any) => {
+                          e?.stopPropagation?.();
+                          handleAdd(app);
+                        }}
                         activeOpacity={0.75}
                       >
                         <Plus size={12} color="#05070A" />
@@ -388,7 +406,7 @@ export const AppsScreen = ({ navigation }: { navigation: any }) => {
                       </TouchableOpacity>
                     )}
                   </BlurView>
-                </View>
+                </TouchableOpacity>
               );
             })}
           </View>

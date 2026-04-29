@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useMemo, useCallback } from 'react';
-import { StyleSheet, View, TouchableOpacity, Animated, PanResponder, useWindowDimensions, ScrollView, Platform, SafeAreaView, Modal, TextInput, Image, ActivityIndicator, Alert } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Animated, PanResponder, useWindowDimensions, ScrollView, Platform, SafeAreaView, Modal, TextInput, Image, ActivityIndicator, Alert, Linking } from 'react-native';
 import { Container, Typography } from '../components/Base';
 import { theme } from '../theme';
 import { BrandLogo } from '../components/BrandLogo';
@@ -178,6 +178,16 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   const isAuthenticated = !!authAccount || isGuestMode;
   const userName = user?.name || (isGuestMode ? 'Guest' : (authAccount?.email?.split('@')[0] || 'Utilizador'));
+
+  const handleOpenApp = (app: any) => {
+    launchApp(app);
+    if (!app.url) return;
+    if (Platform.OS === 'web') {
+      window.open(app.url, '_blank', 'noopener,noreferrer');
+    } else {
+      Linking.openURL(app.url).catch(err => console.log('Error opening app', err));
+    }
+  };
 
   const incrementDemoDays = useCallback(() => {
     if (!isDemoMode) return;
@@ -679,7 +689,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                     const app = MINI_APP_CATALOG.find(a => a.id === id);
                     if (!app) return null;
                     return (
-                      <View key={id} style={styles.footerIconWrapper}>
+                      <TouchableOpacity 
+                        key={id} 
+                        style={styles.footerIconWrapper}
+                        onPress={() => handleOpenApp(app)}
+                        activeOpacity={0.7}
+                      >
                         <View style={styles.footerIconCircle}>
                            {(() => {
                              const IconComp = { Brain, Utensils, Moon, Activity }[app.iconName || 'Activity'] || Activity;
@@ -687,7 +702,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                            })()}
                         </View>
                         <Typography style={styles.footerIconLabel}>{app.name.replace(/_/g, '').toUpperCase()}</Typography>
-                      </View>
+                      </TouchableOpacity>
                     );
                   })
                 ) : (
@@ -714,8 +729,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                       activeOpacity={isInstalled ? 0.7 : 1}
                       onPress={() => {
                         if (isInstalled) {
-                          launchApp(app);
-                          navigation.navigate('MiniApp', { app });
+                          handleOpenApp(app);
                         }
                       }}
                     >
@@ -751,8 +765,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                               style={[styles.actionBtn, { backgroundColor: 'rgba(255,255,255,0.08)' }]}
                               onPress={(e) => {
                                 e.stopPropagation();
-                                launchApp(app);
-                                navigation.navigate('MiniApp', { app });
+                                handleOpenApp(app);
                               }}
                             >
                               <Typography style={styles.actionText}>ABRIR</Typography>
