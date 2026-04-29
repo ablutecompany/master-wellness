@@ -1,9 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { StyleSheet, View, ScrollView, Platform, TouchableOpacity, LayoutAnimation } from 'react-native';
 import { Container, Typography, BlurView } from '../components/Base';
 import { useStore } from '../store/useStore';
 import { selectDailySynthesis, selectContextualResults, selectDataFreshness } from '../store/selectors';
 import { computeAIReadingFromData, AIReading } from '../services/semantic-output/ai-reading-engine';
+import { normalizeAIReadingResponse } from '../services/semantic-output/ai-reading-adapter';
+import { generateInsights, cancelPendingInsights } from '../services/ai-gateway/client';
 import { 
   Activity, 
   Zap, 
@@ -86,6 +88,15 @@ const ActionCard = ({ action }: { action: any }) => {
   );
 };
 
+// ── Feature Flag ───────────────────────────────────────────────────────────────
+// Default OFF. Set EXPO_PUBLIC_ENABLE_OPENAI_READING=true in .env.local to test.
+const ENABLE_OPENAI_READING = (
+  typeof process !== 'undefined' &&
+  (process.env as any)?.EXPO_PUBLIC_ENABLE_OPENAI_READING === 'true'
+);
+
+type ReadingSource = 'local' | 'openai' | 'fallback';
+
 export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const store = useStore();
   const [expandedRefs, setExpandedRefs] = useState(false);
@@ -93,14 +104,88 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   const { isDemoMode, analyses } = store;
   const lastAnalysis = analyses[0];
   
-  // R1: Computação local estruturada seguindo o novo contrato
-  const reading: AIReading = useMemo(() => {
+  // ── Motor local (sempre calculado primeiro) ─────────────────────────────────
+  const localReading: AIReading = useMemo(() => {
     return computeAIReadingFromData(
       lastAnalysis?.measurements || [],
       lastAnalysis?.ecosystemFacts || [],
       isDemoMode
     );
   }, [lastAnalysis, isDemoMode]);
+
+  // ── Estado OpenAI controlado ────────────────────────────────────────────────
+  const [aiReading, setAiReading] = useState<AIReading | null>(null);
+  const [readingSource, setReadingSource] = useState<ReadingSource>('local');
+  const [isRefining, setIsRefining] = useState(false);
+
+  // Stable key to prevent calling OpenAI repeatedly on the same data
+  const analysisKey = lastAnalysis?.id ?? 'none';
+
+  useEffect(() => {
+    // Reset AI state when analysis changes
+    setAiReading(null);
+    setReadingSource('local');
+    setIsRefining(false);
+
+    if (!ENABLE_OPENAI_READING) {
+      if (__DEV__) console.log('[AI_READING] AI_READING_OPENAI_SKIPPED_FLAG_OFF');
+      return;
+    }
+
+    if (!lastAnalysis) return;
+
+    // Cancel any previous in-flight request
+    cancelPendingInsights();
+
+    let cancelled = false;
+    setIsRefining(true);
+
+    if (__DEV__) console.log('[AI_READING] AI_READING_OPENAI_REQUEST', { analysisId: lastAnalysis.id, isDemo: isDemoMode });
+
+    generateInsights(lastAnalysis)
+      .then((response) => {
+        if (cancelled) return;
+
+        // Race protection: generateInsights returns null if superseded
+        if (!response) {
+          setIsRefining(false);
+          return;
+        }
+
+        if (response.ok) {
+          try {
+            const normalized = normalizeAIReadingResponse(response.insight);
+            // Override mode to match current context
+            normalized.summary.mode = isDemoMode ? 'simulation' : 'real';
+            setAiReading(normalized);
+            setReadingSource('openai');
+            if (__DEV__) console.log('[AI_READING] AI_READING_OPENAI_SUCCESS');
+          } catch (normErr) {
+            if (__DEV__) console.warn('[AI_READING] AI_READING_OPENAI_FALLBACK (normalize error)', normErr);
+            setReadingSource('fallback');
+          }
+        } else {
+          if (__DEV__) console.warn('[AI_READING] AI_READING_OPENAI_FALLBACK (backend error)', response.error);
+          setReadingSource('fallback');
+        }
+
+        setIsRefining(false);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        if (__DEV__) console.warn('[AI_READING] AI_READING_OPENAI_FALLBACK (exception)', err);
+        setReadingSource('fallback');
+        setIsRefining(false);
+      });
+
+    return () => {
+      cancelled = true;
+      cancelPendingInsights();
+    };
+  }, [analysisKey, isDemoMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Leitura efetiva: OpenAI se disponível, local como fallback ──────────────
+  const reading: AIReading = aiReading ?? localReading;
 
   const toggleRefs = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -141,11 +226,16 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <View>
               <Typography variant="h1" style={styles.title}>Leitura AI</Typography>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
                 {isDemoMode && (
                   <View style={styles.demoBadge}>
                     <FlaskConical size={10} color="#00F2FF" style={{ marginRight: 4 }} />
                     <Typography style={styles.demoLabel}>SIMULAÇÃO</Typography>
+                  </View>
+                )}
+                {isRefining && (
+                  <View style={[styles.demoBadge, { borderColor: '#A020F0' }]}>
+                    <Typography style={[styles.demoLabel, { color: '#A020F0' }]}>A refinar leitura…</Typography>
                   </View>
                 )}
               </View>
@@ -290,6 +380,12 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                 <Typography variant="caption" style={styles.refLabel}>ORIGEM</Typography>
                 <Typography style={styles.refValue}>{reading.references.origins.join(' / ')}</Typography>
               </View>
+              <View style={styles.refItem}>
+                <Typography variant="caption" style={styles.refLabel}>MOTOR</Typography>
+                <Typography style={styles.refValue}>
+                  {readingSource === 'openai' ? 'Assistido por IA' : readingSource === 'fallback' ? 'Fallback local aplicado' : 'Motor local'}
+                </Typography>
+              </View>
             </View>
 
             <View style={styles.refFactorBox}>
@@ -344,7 +440,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
         <View style={{ marginTop: 40, alignItems: 'center', opacity: 0.3 }}>
           <Typography variant="caption" style={styles.markerText}>
-            AI READING R2 • CONTRACT v1.1 • {isDemoMode ? 'SIMULAÇÃO' : 'REAL'}
+            AI READING R3 • CONTRACT v2.0 • {readingSource.toUpperCase()} • {isDemoMode ? 'SIMULAÇÃO' : 'REAL'}
           </Typography>
         </View>
 

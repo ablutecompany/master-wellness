@@ -239,7 +239,7 @@ export function computeAIReadingFromData(
     .map(t => ({
       title: t.action!,
       reason: t.explanation.split('.')[0] + '.',
-      priority: t.status === 'caution' ? 'high' : 'medium',
+      priority: (t.status === 'caution' ? 'high' : 'medium') as 'low' | 'medium' | 'high',
       supportingFacts: t.supportingFacts,
       domain: t.id,
       evidenceStrength: t.confidence

@@ -9,23 +9,11 @@ import { Analysis } from '../../store/types';
 
 // ── Backend canonical response shapes ──────────────────────────────────────────
 
-export interface AiInsight {
-  headline: string;
-  summary: string;
-  domains: {
-    energia_disponibilidade: string;
-    recuperacao_resiliencia: string;
-    digestao_trato_intestinal: string;
-    ritmo_renovacao: string;
-  };
-  suggestions: string[];
-}
-
 export interface AiGatewaySuccess {
   ok: true;
   provider: string;
   model: string;
-  insight: AiInsight;
+  insight: any; // O payload bruto R2, normalizado depois pelo adapter
   meta: {
     execMillis: number;
     tokensUsed: number | null;
@@ -82,11 +70,17 @@ export async function generateInsights(
   const body = buildRequestFromAnalysis(analysis);
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
     const res = await fetch(`${AI_GATEWAY_BASE_URL}/ai-gateway/generate-insights`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     // Race protection: if a newer request was fired, discard this result
     if (requestId !== activeRequestId) return null;
