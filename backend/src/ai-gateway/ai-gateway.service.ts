@@ -13,7 +13,7 @@ export class AiGatewayService {
   private readonly openai: OpenAI;
   private readonly model: string;
   private readonly logger = new Logger(AiGatewayService.name);
-  private readonly PROMPT_VERSION = '1.0.0-canonical';
+  private readonly PROMPT_VERSION = '2.0.0-canonical-r2';
 
   constructor(
     private readonly configService: ConfigService,
@@ -30,27 +30,93 @@ export class AiGatewayService {
   private readonly insightsSchema = {
     type: 'object' as const,
     properties: {
-      headline: { type: 'string' as const },
-      summary: { type: 'string' as const },
-      domains: {
+      summary: {
         type: 'object' as const,
         properties: {
-          energia_disponibilidade: { type: 'string' as const },
-          recuperacao_resiliencia: { type: 'string' as const },
-          digestao_trato_intestinal: { type: 'string' as const },
-          ritmo_renovacao: { type: 'string' as const },
+          title: { type: 'string' as const },
+          text: { type: 'string' as const },
+          confidence: { type: 'string' as const, enum: ['low', 'medium', 'high'] }
         },
-        required: [
-          'energia_disponibilidade',
-          'recuperacao_resiliencia',
-          'digestao_trato_intestinal',
-          'ritmo_renovacao',
-        ],
-        additionalProperties: false,
+        required: ['title', 'text', 'confidence'],
+        additionalProperties: false
       },
-      suggestions: { type: 'array' as const, items: { type: 'string' as const } },
+      dimensions: {
+        type: 'array' as const,
+        items: {
+          type: 'object' as const,
+          properties: {
+            id: { type: 'string' as const, enum: ['energy_availability', 'recovery_load', 'hydration_urinary_balance', 'intestinal_state', 'vital_signs_physiological_balance'] },
+            label: { type: 'string' as const },
+            score: { type: 'number' as const },
+            explanation: { type: 'string' as const },
+            supportingFacts: { type: 'array' as const, items: { type: 'string' as const } },
+            confidence: { type: 'string' as const, enum: ['low', 'medium', 'high'] }
+          },
+          required: ['id', 'label', 'score', 'explanation', 'supportingFacts', 'confidence'],
+          additionalProperties: false
+        }
+      },
+      highlightedThemes: {
+        type: 'array' as const,
+        items: {
+          type: 'object' as const,
+          properties: {
+            id: { type: 'string' as const },
+            title: { type: 'string' as const },
+            status: { type: 'string' as const, enum: ['stable', 'attention', 'insufficient_data'] },
+            explanation: { type: 'string' as const },
+            supportingFacts: { type: 'array' as const, items: { type: 'string' as const } },
+            suggestedAction: { type: 'string' as const },
+            confidence: { type: 'string' as const, enum: ['low', 'medium', 'high'] },
+            limitations: { type: 'array' as const, items: { type: 'string' as const } }
+          },
+          required: ['id', 'title', 'status', 'explanation', 'supportingFacts', 'confidence', 'limitations'],
+          additionalProperties: false
+        }
+      },
+      priorityActions: {
+        type: 'array' as const,
+        items: {
+          type: 'object' as const,
+          properties: {
+            title: { type: 'string' as const },
+            reason: { type: 'string' as const },
+            priority: { type: 'string' as const, enum: ['low', 'medium', 'high'] },
+            supportingFacts: { type: 'array' as const, items: { type: 'string' as const } },
+            domain: { type: 'string' as const, enum: ['hydration', 'recovery', 'nutrition', 'stress', 'monitoring', 'general'] }
+          },
+          required: ['title', 'reason', 'priority', 'supportingFacts', 'domain'],
+          additionalProperties: false
+        }
+      },
+      watchSignals: {
+        type: 'array' as const,
+        items: {
+          type: 'object' as const,
+          properties: {
+            title: { type: 'string' as const },
+            explanation: { type: 'string' as const },
+            reasonToRepeat: { type: 'string' as const }
+          },
+          required: ['title', 'explanation', 'reasonToRepeat'],
+          additionalProperties: false
+        }
+      },
+      references: {
+        type: 'object' as const,
+        properties: {
+          usedDataFamilies: { type: 'array' as const, items: { type: 'string' as const } },
+          usedSignals: { type: 'array' as const, items: { type: 'string' as const } },
+          freshness: { type: 'string' as const, enum: ['fresh', 'usable_with_warning', 'stale', 'unavailable'] },
+          confidence: { type: 'string' as const, enum: ['low', 'medium', 'high'] },
+          limitations: { type: 'array' as const, items: { type: 'string' as const } }
+        },
+        required: ['usedDataFamilies', 'usedSignals', 'freshness', 'confidence', 'limitations'],
+        additionalProperties: false
+      },
+      readingLimits: { type: 'array' as const, items: { type: 'string' as const } }
     },
-    required: ['headline', 'summary', 'domains', 'suggestions'],
+    required: ['summary', 'dimensions', 'highlightedThemes', 'priorityActions', 'watchSignals', 'references', 'readingLimits'],
     additionalProperties: false,
   };
 
@@ -85,42 +151,45 @@ export class AiGatewayService {
 
     const prompt = [
       `És um motor de interpretação de dados biológicos para a plataforma ablute_ wellness.`,
-      `Recebes dados de análises laboratoriais e fisiológicas de um utilizador e devolves uma leitura estruturada em JSON.`,
+      `Recebes dados de análises laboratoriais e fisiológicas de um utilizador e devolves uma leitura estruturada em JSON (Leitura AI R2).`,
       ``,
       `REGRAS OBRIGATÓRIAS:`,
-      `- Escreve em português de Portugal, tom técnico e contido.`,
+      `- Escreve em português de Portugal (PT-PT), tom técnico, contido e elegante.`,
       `- Usa a 3.ª pessoa ou construções impessoais. Nunca uses "você" ou "deves".`,
-      `- Não faças diagnósticos. Não uses frases do tipo "tens X condição" ou "sofres de Y".`,
-      `- Não faças prognósticos nem promessas de resultados.`,
-      `- Não uses linguagem alarmista. Valores fora dos parâmetros são referidos com precisão, sem dramatismo.`,
-      `- Não uses linguagem vaga: proibido "optimização", "biohacking", "potencial", "elevar".`,
-      `- Não contradijas os dados recebidos. Se um marcador vier como "negativo" ou "normal", não o interpretes como problemático.`,
-      `- Se os dados de um domínio forem insuficientes ou ausentes, afirma isso claramente: "Dados insuficientes para interpretação deste domínio."`,
-      `- Não menciones que os dados são uma demonstração ou simulação.`,
-      `- As sugestões devem ser práticas, curtas e não farmacológicas por defeito. Nunca recomandes medicamentos, suplementos ou intervenções clínicas.`,
-      `- Máximo de 4 sugestões. Só inclui mais de 2 se os dados justificarem claramente.`,
+      `- Não faças diagnósticos nem prescrições. Não uses frases do tipo "tens X condição" ou "sofres de Y".`,
+      `- Não cries causalidades inventadas sem suporte explícito nos dados.`,
+      `- Sem linguagem de marketing ("potencial", "otimizar", "biohacking").`,
+      `- Sem inglês user-facing. Usa sempre os labels exatos em PT-PT.`,
+      `- Sem pseudo-ciência. Baseia-te apenas em mecanismos fisiológicos documentados.`,
+      `- Sem menção direta a "sangue oculto nas fezes" (usa termos como integridade gastrointestinal).`,
+      `- Sê prudente quando há poucos dados. Explicita essa limitação se aplicável.`,
+      `- Não contradijas os dados. Se um marcador for negativo/normal, o status não é problemático.`,
+      `- As ações sugeridas (priorityActions) devem ser práticas e não farmacológicas por defeito. Máximo 3 ações.`,
+      `- Máximo de 5 temas em destaque (highlightedThemes).`,
+      `- Para campos string não obrigatórios ou ausentes num contexto estruturado, usa "".`,
       ``,
-      `CAMPOS OBRIGATÓRIOS:`,
-      `- headline: frase curta e forte (10-15 palavras), síntese de leitura global.`,
-      `- summary: 2-3 frases coerentes que lêem o conjunto de marcadores disponíveis.`,
-      `- domains.energia_disponibilidade: 1-2 frases sobre energia metabólica e disponibilidade funcional deduzida dos dados.`,
-      `- domains.recuperacao_resiliencia: 1-2 frases sobre capacidade de recuperação autonómica e resiliência fisiológica.`,
-      `- domains.digestao_trato_intestinal: 1-2 frases sobre padrões digestivos e integridade gastrointestinal deduzida.`,
-      `- domains.ritmo_renovacao: 1-2 frases sobre ciclos de regeneração, sono registado (se disponível) e renovação celular.`,
-      `- suggestions: lista de strings com sugestões práticas e não farmacológicas.`,
+      `EIXOS/DOMÍNIOS A AVALIAR (Usa exatamente estes labels na UI):`,
+      `1. Energia & disponibilidade (id: energy_availability)`,
+      `2. Recuperação & carga (id: recovery_load)`,
+      `3. Hidratação & equilíbrio urinário (id: hydration_urinary_balance)`,
+      `4. Estado intestinal (id: intestinal_state)`,
+      `5. Sinais vitais & equilíbrio fisiológico (id: vital_signs_physiological_balance)`,
+      `6. Nutrição orientada por sinais (usado em priorityActions ou themes)`,
+      `7. Stress, foco & autorregulação (usado em priorityActions ou themes)`,
+      `8. Sinais a acompanhar (usado em watchSignals)`,
       ``,
-      `FALLBACK SEMÂNTICO:`,
-      `- Sem dados de sono: escreve "Sem dados de sono disponíveis para avaliar ritmo de renovação."`,
-      `- Sem dados fisiológicos (ECG, PPG, temperatura): escreve "Dados fisiológicos não disponíveis para este domínio."`,
-      `- Sem medições urinárias: escreve "Análise urinária ausente — domínio digestivo com dados insuficientes."`,
-      `- Menos de 2 marcadores: o headline deve reflectir a escassez de dados sem criar uma leitura falsa.`,
+      `CAMPOS DO SCHEMA:`,
+      `- summary.title: frase curta e forte (máx 15 palavras).`,
+      `- summary.text: 2-3 frases coerentes sintetizando a leitura global.`,
+      `- dimensions: Array apenas com os 5 eixos principais (1 a 5 descritos acima). Atribui um 'score' de 0 a 100 baseado na adequação fisiológica.`,
+      `- highlightedThemes: Temas de maior relevância atual (inclui eixos 1-7). Define status (stable | attention | insufficient_data) e suggestedAction ("" se não houver).`,
+      `- priorityActions: Máximo 3 sugestões de ação não farmacológicas, indicando 'domain' e 'priority'.`,
+      `- watchSignals: Aspectos a observar em análises futuras (eixo 8).`,
+      `- references / readingLimits: Preenche conforme o contexto analítico fornecido e limites do modelo.`,
       ``,
-      `LIMITES — O QUE NÃO DEVES AFIRMAR:`,
-      `- Não afirmes que o utilizador está saudável ou doente.`,
-      `- Não uses "bom" ou "mau" sem referência ao contexto clínico específico.`,
-      `- Não atribuas causas aos valores (ex: "o pH baixo deve-se a...").`,
-      `- Não afirmes que uma tendência se vai manter ou inverter.`,
-      `- Não cries interpretações cruzadas entre domínios sem suporte nos dados.`,
+      `FALLBACK E LIMITES:`,
+      `- Se faltarem dados vitais/sono/urina, reflete essa ausência na confidence (baixa) ou status (insufficient_data).`,
+      `- limits: Inclui sempre avisos de que não é diagnóstico clínico.`,
       ``,
       `Contexto da análise (JSON):`,
       JSON.stringify(dto, null, 2),
@@ -134,7 +203,7 @@ export class AiGatewayService {
         text: {
           format: {
             type: 'json_schema',
-            name: 'Insights',
+            name: 'InsightsR2',
             strict: true,
             schema: this.insightsSchema,
           },
@@ -175,8 +244,8 @@ export class AiGatewayService {
         throw new AiGatewayError('PARSE_FAILED', `O texto de ${source} não é JSON válido`);
       }
 
-      // Validação mínima dos campos obrigatórios
-      const required = ['headline', 'summary', 'domains', 'suggestions'];
+      // Validação mínima dos campos obrigatórios do R2
+      const required = ['summary', 'dimensions', 'highlightedThemes', 'priorityActions', 'watchSignals', 'references', 'readingLimits'];
       const missing = required.filter((k) => !(k in parsed));
       if (missing.length > 0) {
         this.logger.error(`Campos em falta no insight (${source}): ${missing.join(', ')}`);
@@ -197,7 +266,7 @@ export class AiGatewayService {
               model: response.model || this.model,
               promptVersion: this.PROMPT_VERSION,
               outputJson: parsed as any,
-              summaryText: parsed.summary || null,
+              summaryText: parsed.summary?.text || null,
             },
           });
           this.logger.log(`Insight persistido na DB para análise ${dto.analysisId}`);
