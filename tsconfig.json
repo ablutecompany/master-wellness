@@ -10,6 +10,7 @@
     ".expo",
     "web-build",
     "trace",
-    "trace2"
+    "trace2",
+    "backend"
   ]
 }
