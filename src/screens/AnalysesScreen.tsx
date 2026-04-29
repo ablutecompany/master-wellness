@@ -150,58 +150,28 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
       onPress={() => setActiveTab(id)}
       style={[styles.tabButton, activeTab === id && styles.tabButtonActive]}
     >
-      <Icon size={16} color={activeTab === id ? '#00F2FF' : 'rgba(255,255,255,0.4)'} />
+      <Icon size={14} color={activeTab === id ? '#00F2FF' : 'rgba(255,255,255,0.4)'} />
       <Typography style={[styles.tabLabel, activeTab === id && styles.tabLabelActive]}>
         {label}
       </Typography>
     </TouchableOpacity>
   );
 
-  const renderResultCard = (item: FormattedResult, isSmall = false) => (
+  const renderResultRow = (item: FormattedResult) => (
     <TouchableOpacity 
       key={item.id} 
-      style={[styles.resultCard, isSmall && styles.resultCardSmall]}
+      style={styles.resultRow}
       onPress={() => setSelectedItem(item)}
     >
-      <View style={styles.cardHeader}>
-        <View style={styles.cardIconBox}>
-          {item.source === 'ablute' ? <FlaskConical size={14} color="#00F2FF" /> : 
-           item.source === 'ecosystem' ? <LayoutGrid size={14} color="#A020F0" /> :
-           <Activity size={14} color="rgba(255,255,255,0.6)" />}
-        </View>
-        <Typography variant="caption" style={styles.cardDate}>{item.dateStr}</Typography>
+      <View style={styles.rowLeft}>
+        <Typography style={styles.rowName} numberOfLines={1}>{item.name}</Typography>
+        {item.type === 'contextual' && (
+           <Typography variant="caption" style={styles.rowCategory}>{item.category?.toUpperCase()}</Typography>
+        )}
       </View>
-      
-      <View style={styles.cardMain}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-          <Typography style={styles.cardName} numberOfLines={1}>{item.name}</Typography>
-          {item.type === 'contextual' && (
-            <View style={styles.semanticBadges}>
-              <View style={styles.domainBadge}>
-                <Typography style={styles.domainBadgeText}>{item.category?.toUpperCase()}</Typography>
-              </View>
-              <View style={[styles.originBadge, { borderColor: item.origin === 'real' ? '#00FF9D' : '#A020F0' }]}>
-                <Typography style={[styles.originBadgeText, { color: item.origin === 'real' ? '#00FF9D' : '#A020F0' }]}>
-                  {item.origin?.toUpperCase()}
-                </Typography>
-              </View>
-              <View style={styles.typeBadge}>
-                <Typography style={styles.typeBadgeText}>{item.contribution_type?.toUpperCase()}</Typography>
-              </View>
-            </View>
-          )}
-        </View>
-        <View style={styles.valueRow}>
-          <Typography style={styles.cardValue}>{item.value}</Typography>
-          <Typography variant="caption" style={styles.cardUnit}>{item.unit}</Typography>
-        </View>
-      </View>
-
-      <View style={styles.cardFooter}>
-         <Typography variant="caption" style={styles.cardSource}>
-           {isDemoMode ? 'SIMULAÇÃO' : (item.source === 'ablute' ? 'SINAL BIOLÓGICO' : item.source === 'ecosystem' ? 'CONTEXTO IA' : 'SENSOR')}
-         </Typography>
-         <ChevronRight size={12} color="rgba(255,255,255,0.2)" />
+      <View style={styles.rowRight}>
+        <Typography style={styles.rowValue}>{item.value}</Typography>
+        {!!item.unit && <Typography style={styles.rowUnit}>{item.unit}</Typography>}
       </View>
     </TouchableOpacity>
   );
@@ -221,42 +191,43 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.backBtn}>
             <X size={20} color="#fff" />
           </TouchableOpacity>
-          <Typography variant="h2" style={styles.title}>Resultados</Typography>
           
+          <View style={styles.titleWrapper}>
+            <Typography variant="h2" style={styles.title}>Bioanálise</Typography>
+            {isDemoMode && (
+              <View style={styles.demoPill}>
+                <Zap size={10} color="#00F2FF" />
+                <Typography style={styles.demoPillText}>SIMULAÇÃO</Typography>
+              </View>
+            )}
+          </View>
+          
+          <View style={{ width: 40 }} />
+        </View>
+
+        <View style={styles.secondaryRow}>
+          <Typography style={styles.dateText}>
+            {isDemoMode ? 'SIMULAÇÃO' : (filteredResults[0]?.dateStr || new Date().toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' }))}
+          </Typography>
           <TouchableOpacity 
             onPress={() => {
               const msg = 'O histórico biográfico consolidado está a ser processado para este membro.';
               if (Platform.OS === 'web') window.alert(msg);
               else Alert.alert('Histórico', msg);
             }} 
-            style={[styles.backBtn, { backgroundColor: 'rgba(0, 242, 255, 0.1)' }]}
+            style={styles.historyShortcut}
           >
-            <History size={20} color="#00F2FF" />
+            <History size={12} color="rgba(255,255,255,0.4)" />
+            <Typography style={styles.historyText}>Histórico</Typography>
           </TouchableOpacity>
         </View>
 
-        {isDemoMode && (
-          <View style={styles.demoBanner}>
-            <LinearGradient
-              colors={['rgba(0, 242, 255, 0.2)', 'rgba(0, 242, 255, 0.05)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.demoBannerGradient}
-            >
-              <Zap size={12} color="#00F2FF" />
-              <Typography style={styles.demoBannerText}>
-                MODO SIMULAÇÃO ATIVO ({allResults.length} REGISTOS)
-              </Typography>
-            </LinearGradient>
-          </View>
-        )}
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabContainer} contentContainerStyle={styles.tabScroll}>
+        <View style={styles.tabContainer}>
           {renderTabButton('urina', 'Urina', Droplets)}
           {renderTabButton('fezes', 'Fezes', Database)}
-          {renderTabButton('fisiologicos', 'Fisiológicos', Heart)}
+          {renderTabButton('fisiologicos', 'Fisiológico', Heart)}
           {renderTabButton('contextuais', 'Contexto', LayoutGrid)}
-        </ScrollView>
+        </View>
       </View>
 
       <GatingOverlay
@@ -283,37 +254,10 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             />
           ) : (
             <>
-              {/* SECÇÃO RECENTE */}
-              <View style={styles.groupHeader}>
-                <Clock size={14} color="#00F2FF" />
-                <Typography style={styles.groupTitle}>RECENTE</Typography>
+              {/* LISTA DE RESULTADOS (LINHAS COMPACTAS) */}
+              <View style={styles.resultsList}>
+                {filteredResults.map(r => renderResultRow(r))}
               </View>
-              {recent.map(r => renderResultCard(r))}
-
-              {/* CONTEXTUAL CTA */}
-              <TouchableOpacity 
-                style={styles.contextualCTA} 
-                onPress={() => navigation.navigate('Leitura AI')}
-              >
-                <BlurView intensity={20} style={styles.ctaBlur}>
-                  <Brain size={16} color="#00F2FF" />
-                  <Typography style={styles.ctaText}>VER INTERPRETAÇÃO IA</Typography>
-                  <ChevronRight size={14} color="#00F2FF" />
-                </BlurView>
-              </TouchableOpacity>
-
-              {/* SECÇÃO HISTÓRICO */}
-              {historical.length > 0 && (
-                <>
-                  <View style={[styles.groupHeader, { marginTop: 40 }]}>
-                    <History size={14} color="rgba(255,255,255,0.4)" />
-                    <Typography style={styles.groupTitle}>HISTÓRICO</Typography>
-                  </View>
-                  <View style={styles.historyGrid}>
-                    {historical.map(r => renderResultCard(r, true))}
-                  </View>
-                </>
-              )}
             </>
           )}
 
@@ -402,143 +346,126 @@ const styles = StyleSheet.create({
     color: '#fff',
     letterSpacing: -0.5,
   },
-  profileBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#00F2FF20',
-    borderWidth: 1,
-    borderColor: '#00F2FF40',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  profileInitial: {
-    color: '#00F2FF',
-    fontWeight: '800',
-    fontSize: 14,
-  },
-  tabContainer: {
-    marginBottom: -1, // Overlap border
-  },
-  tabScroll: {
-    paddingRight: 40,
-    gap: 16,
-    paddingBottom: 12,
-  },
-  tabButton: {
+  titleWrapper: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderWidth: 1,
-    borderColor: 'transparent',
+    justifyContent: 'center',
     gap: 8,
   },
+  demoPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0, 242, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 242, 255, 0.3)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  demoPillText: {
+    color: '#00F2FF',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  secondaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+  dateText: {
+    color: 'rgba(255,255,255,0.5)',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  historyShortcut: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  historyText: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: -1,
+  },
+  tabButton: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 2,
+    borderColor: 'transparent',
+    gap: 4,
+  },
   tabButtonActive: {
-    backgroundColor: 'rgba(0,242,255,0.1)',
-    borderColor: 'rgba(0,242,255,0.3)',
+    borderColor: '#00F2FF',
   },
   tabLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 10,
+    fontWeight: '700',
     color: 'rgba(255,255,255,0.4)',
+    textTransform: 'uppercase',
   },
   tabLabelActive: {
     color: '#00F2FF',
   },
   scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 32,
+    paddingHorizontal: 20,
+    paddingTop: 24,
     paddingBottom: 100,
   },
-  groupHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  resultsList: {
     gap: 8,
-    marginBottom: 20,
-    opacity: 0.6,
   },
-  groupTitle: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 2,
-    color: '#fff',
-  },
-  resultCard: {
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-    marginBottom: 16,
-  },
-  resultCardSmall: {
-    padding: 16,
-    borderRadius: 20,
-  },
-  cardHeader: {
+  resultRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
-  cardIconBox: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+  rowLeft: {
+    flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
   },
-  cardDate: {
-    color: 'rgba(255,255,255,0.3)',
-    fontSize: 10,
+  rowName: {
+    color: '#fff',
+    fontSize: 14,
     fontWeight: '600',
   },
-  cardMain: {
-    marginBottom: 16,
+  rowCategory: {
+    color: 'rgba(255,255,255,0.3)',
+    fontSize: 10,
+    marginTop: 2,
   },
-  cardName: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  valueRow: {
+  rowRight: {
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: 4,
   },
-  cardValue: {
+  rowValue: {
     color: '#00F2FF',
-    fontSize: 28,
-    fontWeight: '900',
-  },
-  cardUnit: {
-    color: 'rgba(255,255,255,0.4)',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.04)',
-  },
-  cardSource: {
-    fontSize: 9,
+    fontSize: 20,
     fontWeight: '800',
-    letterSpacing: 1,
-    color: 'rgba(255,255,255,0.25)',
   },
-  historyGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+  rowUnit: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 12,
+    fontWeight: '600',
   },
   footer: {
     marginTop: 40,
@@ -558,27 +485,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontWeight: '700',
     letterSpacing: 1,
-  },
-  contextualCTA: {
-    marginTop: 8,
-    marginBottom: 24,
-    borderRadius: 16,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(0, 242, 255, 0.2)',
-  },
-  ctaBlur: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    gap: 12,
-  },
-  ctaText: {
-    color: '#00F2FF',
-    fontSize: 13,
-    fontWeight: '800',
-    letterSpacing: 1,
-    flex: 1,
   },
   // MODAL
   modalOverlay: {
