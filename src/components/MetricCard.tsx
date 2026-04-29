@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { Typography, BlurView } from './Base';
@@ -106,7 +105,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ definition, observation,
         {/* 2. Valor Principal e Unidade */}
         <View style={styles.valueRow}>
           <Typography 
-            style={[styles.value, isNoValueState && styles.valueMuted]}
+            style={[styles.value, isNoValueState ? styles.valueMuted : {}]}
             numberOfLines={1}
           >
             {displayValue}
@@ -125,8 +124,8 @@ export const MetricCard: React.FC<MetricCardProps> = ({ definition, observation,
         <Typography 
           style={[
             styles.stateText, 
-            status === 'demo_value' && styles.demoText,
-            status === 'error' && styles.errorText
+            status === 'demo_value' ? styles.demoText : {},
+            status === 'error' ? styles.errorText : {}
           ]}
         >
           {stateText}

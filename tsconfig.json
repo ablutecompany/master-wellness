@@ -11,6 +11,8 @@
     "web-build",
     "trace",
     "trace2",
-    "backend"
+    "backend",
+    "backend/**/*",
+    "build"
   ]
 }

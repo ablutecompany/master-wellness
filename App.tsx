@@ -1,11 +1,10 @@
-// @ts-nocheck
 import React, { useEffect } from 'react';
 import { Platform, View, Text, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { ENV } from './src/config/env';
 
 import { NavigationContainer, DarkTheme, createNavigationContainerRef } from '@react-navigation/native';
-export const navigationRef = createNavigationContainerRef();
+export const navigationRef = createNavigationContainerRef<any>();
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { theme } from './src/theme';
@@ -83,17 +82,17 @@ const linking = {
   },
 };
 
-class ErrorBoundary extends React.Component {
-  constructor(props) {
+class ErrorBoundary extends React.Component<any, any> {
+  constructor(props: any) {
     super(props);
     this.state = { hasError: false, errorStr: '', componentStack: '' };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(error: any) {
     return { hasError: true, errorStr: error?.toString() || 'Unknown Error' };
   }
 
-  componentDidCatch(error, errorInfo) {
+  componentDidCatch(error: any, errorInfo: any) {
     const stack = errorInfo?.componentStack || '';
     this.setState({ componentStack: stack });
     console.error('[CRASH_DETAIL] Error:', error?.toString());
