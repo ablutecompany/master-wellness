@@ -70,7 +70,7 @@ export class AiGatewayService {
             confidence: { type: 'string' as const, enum: ['low', 'medium', 'high'] },
             limitations: { type: 'array' as const, items: { type: 'string' as const } }
           },
-          required: ['id', 'title', 'status', 'explanation', 'supportingFacts', 'confidence', 'limitations'],
+          required: ['id', 'title', 'status', 'explanation', 'supportingFacts', 'suggestedAction', 'confidence', 'limitations'],
           additionalProperties: false
         }
       },
