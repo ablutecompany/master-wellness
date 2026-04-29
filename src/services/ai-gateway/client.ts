@@ -71,7 +71,7 @@ export async function generateInsights(
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout (OpenAI latency ~23-33s observed)
 
     const res = await fetch(`${AI_GATEWAY_BASE_URL}/ai-gateway/generate-insights`, {
       method: 'POST',

@@ -1,4 +1,4 @@
-# AI Reading — Ativação Controlada OpenAI (R3C)
+# AI Reading — Ativação Controlada OpenAI (R3C → R3D.1)
 
 ## Feature Flag
 
@@ -42,14 +42,14 @@ AIReadingScreen monta
 - `analysisKey` é estável: só muda quando a análise ativa muda
 - `cancelPendingInsights()` invalida qualquer request anterior antes de lançar novo
 - Flag `cancelled` no cleanup do useEffect previne state updates em componentes desmontados
-- Fetch com `AbortController` e timeout de 15 segundos
+- Fetch com `AbortController` e timeout de 45 segundos
 
 ## Fallback Local
 
 O fallback é acionado em qualquer um destes cenários:
 - Feature flag OFF
 - Backend indisponível / rede falha
-- Timeout (>15s)
+- Timeout (>45s)
 - Resposta com `ok: false`
 - JSON inválido no normalize
 - Schema incompleto
@@ -132,10 +132,41 @@ Estes logs **não** aparecem em produção (protegidos por `__DEV__`).
 4. Após timeout, readingSource deve ser `fallback`
 5. Sem crash, sem erro visível
 
+## Latência Observada (R3D)
+
+| Chamada | Modelo | Tempo |
+|---|---|---|
+| 1ª (cold) | gpt-4o-mini | ~33s |
+| 2ª (warm) | gpt-4o-mini | ~23s |
+
+O timeout do frontend foi ajustado de **15s → 45s** para acomodar esta latência.
+Durante a espera, a leitura local é exibida imediatamente — o utilizador nunca vê ecrã vazio.
+
+**Riscos:**
+- Badge "A refinar leitura…" pode permanecer visível por 20-30s
+- Custos OpenAI por chamada (~2800 tokens)
+
+**Mitigações futuras:**
+- Cache por `analysisId` (evitar chamadas repetidas)
+- Streaming (mostrar resposta parcial)
+- Reduzir tamanho do prompt
+
+## Checklist Antes de Ativar em Produção
+
+- [ ] Validar qualidade da leitura OpenAI vs local com dados reais
+- [ ] Implementar cache por analysisId no backend
+- [ ] Garantir que OPENAI_API_KEY está no Render/staging
+- [ ] Testar com 3+ cenários DEMO diferentes
+- [ ] Testar com análise real (dados de dispositivo)
+- [ ] Confirmar que fallback funciona em produção
+- [ ] Monitorizar custos OpenAI em staging
+- [ ] Decisão sobre latência aceitável para UX
+
 ## Próximos Passos
 
 1. Ativar flag em staging para testes internos
 2. Comparar qualidade da leitura OpenAI vs local
 3. Implementar cache por `analysisId` (evitar custos repetidos)
 4. Adicionar botão de refresh manual (opcional)
-5. Ativar em produção quando validada
+5. Considerar streaming para reduzir latência percebida
+6. Ativar em produção quando validada
