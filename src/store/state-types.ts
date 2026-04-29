@@ -4,6 +4,8 @@ export interface UserProfile {
   id: string; // The canonical ID of this specific profile
   name: string;
   fullName?: string;
+  email?: string;
+  avatarUrl?: string;
   habits?: string[];
   age?: number;
   weight?: SourcedMetric<number>;

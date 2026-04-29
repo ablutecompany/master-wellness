@@ -93,7 +93,7 @@ export function buildContextPayload(appId: string, state: AppState) {
         sleepScore: undefined, // legado
         // Adaptamos o histórico que existe filtrando para evitar exfiltrações
         relatedMeasurements: measurements
-          .filter(m => m.type === 'urinalysis' || m.type === 'ppg')
+          .filter((m: any) => m.type === 'urinalysis' || m.type === 'ppg')
           .slice(0, 5)
       }
     : null;
@@ -104,7 +104,7 @@ export function buildContextPayload(appId: string, state: AppState) {
         nutritionScore: undefined, // legado
         // Limita a partilha estritamente ao tipo pertinente
         lastMetabolicLogs: measurements
-          .filter(m => m.type === 'weight')
+          .filter((m: any) => m.type === 'weight')
           .slice(0, 3)
       }
     : null;

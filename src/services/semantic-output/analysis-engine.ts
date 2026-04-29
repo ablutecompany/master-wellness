@@ -66,8 +66,8 @@ export function computeSemanticFromMeasurements(
   // Anchor timestamp: use the latest measurement, fact, or a stable fixed reference
   // This prevents floating references causing infinite re-renders
   const baseTimestamp = measurements.length > 0 
-    ? Math.max(...measurements.map(m => new Date(m.timestamp || 0).getTime()))
-    : (ecosystemFacts.length > 0 ? ecosystemFacts[0].last_update : 1714172400000);
+    ? Math.max(...measurements.map(m => new Date((m as any).timestamp || m.recordedAt || 0).getTime()))
+    : (ecosystemFacts.length > 0 ? new Date((ecosystemFacts[0] as any).last_update || ecosystemFacts[0].recordedAt || 0).getTime() : 1714172400000);
 
   // Nenhum dado → estado honesto
   if (measurements.length === 0 && ecosystemFacts.length === 0) {

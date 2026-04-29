@@ -144,7 +144,7 @@ export function getSemanticInsights(): UIInsight[] {
         p2 = aiInsight.summary || p2;
         // Injetar sugestões do backend se for o card geral
         if (aiInsight.suggestions && aiInsight.suggestions.length > 0) {
-          sugs = aiInsight.suggestions.map(s => ({ title: 'Sugestão IA', desc: s }));
+          sugs = aiInsight.suggestions.map((s: string) => ({ title: 'Sugestão IA', desc: s }));
         }
       }
     }

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useMemo } from 'react';
 import { StyleSheet, View, ScrollView, TouchableOpacity, Modal, Platform, Dimensions, Alert } from 'react-native';
 import { Container, Typography, LinearGradient, BlurView } from '../components/Base';

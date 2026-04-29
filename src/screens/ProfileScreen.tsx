@@ -154,10 +154,10 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             keyExtractor={item => `year-${item}`}
             renderItem={({ item }) => (
               <TouchableOpacity 
-                style={[styles.wheelItem, tempDate.year === item && styles.wheelItemActive]}
+                style={[styles.wheelItem, tempDate.year === item ? styles.wheelItemActive : {}]}
                 onPress={() => setTempDate({ ...tempDate, year: item })}
               >
-                <Typography style={[styles.wheelText, tempDate.year === item && styles.wheelTextActive]}>{item}</Typography>
+                <Typography style={[styles.wheelText, tempDate.year === item ? styles.wheelTextActive : {}]}>{item}</Typography>
               </TouchableOpacity>
             )}
             initialScrollIndex={years.indexOf(tempDate.year) !== -1 ? years.indexOf(tempDate.year) : 18}
@@ -174,10 +174,10 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             keyExtractor={item => `month-${item.value}`}
             renderItem={({ item }) => (
               <TouchableOpacity 
-                style={[styles.wheelItem, tempDate.month === item.value && styles.wheelItemActive]}
+                style={[styles.wheelItem, tempDate.month === item.value ? styles.wheelItemActive : {}]}
                 onPress={() => setTempDate({ ...tempDate, month: item.value, day: item.value === null ? null : tempDate.day })}
               >
-                <Typography style={[styles.wheelText, tempDate.month === item.value && styles.wheelTextActive, item.value === null && { fontSize: 10 }]}>
+                <Typography style={[styles.wheelText, tempDate.month === item.value ? styles.wheelTextActive : {}, item.value === null ? { fontSize: 10 } : {}]}>
                   {item.label}
                 </Typography>
               </TouchableOpacity>
@@ -194,7 +194,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             keyExtractor={item => `day-${item.value}`}
             renderItem={({ item }) => (
               <TouchableOpacity 
-                style={[styles.wheelItem, tempDate.day === item.value && styles.wheelItemActive]}
+                style={[styles.wheelItem, tempDate.day === item.value ? styles.wheelItemActive : {}]}
                 onPress={() => {
                   if (tempDate.month === null) return;
                   setTempDate({ ...tempDate, day: item.value });
@@ -202,9 +202,9 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
               >
                 <Typography style={[
                   styles.wheelText, 
-                  tempDate.day === item.value && styles.wheelTextActive, 
-                  item.value === null && { fontSize: 10 },
-                  tempDate.month === null && { opacity: 0.1 }
+                  tempDate.day === item.value ? styles.wheelTextActive : {}, 
+                  item.value === null ? { fontSize: 10 } : {},
+                  tempDate.month === null ? { opacity: 0.1 } : {}
                 ]}>
                   {item.label}
                 </Typography>
@@ -230,7 +230,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                 style={[styles.wheelItem, tempHeight === item && styles.wheelItemActive]}
                 onPress={() => setTempHeight(item)}
               >
-                <Typography style={[styles.wheelText, tempHeight === item && styles.wheelTextActive]}>{item} cm</Typography>
+                <Typography style={[styles.wheelText, tempHeight === item ? styles.wheelTextActive : {}]}>{item} cm</Typography>
               </TouchableOpacity>
             )}
             initialScrollIndex={range.indexOf(tempHeight) !== -1 ? range.indexOf(tempHeight) : 45}
@@ -255,7 +255,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                 style={[styles.wheelItem, tempWeight === item && styles.wheelItemActive]}
                 onPress={() => setTempWeight(item)}
               >
-                <Typography style={[styles.wheelText, tempWeight === item && styles.wheelTextActive]}>{item} kg</Typography>
+                <Typography style={[styles.wheelText, tempWeight === item ? styles.wheelTextActive : {}]}>{item} kg</Typography>
               </TouchableOpacity>
             )}
             initialScrollIndex={range.indexOf(tempWeight) !== -1 ? range.indexOf(tempWeight) : 30}
@@ -278,13 +278,13 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         {options.map(opt => (
           <TouchableOpacity 
             key={String(opt.value)}
-            style={[styles.choiceBtn, user?.sex === opt.value && styles.choiceBtnActive]}
+            style={[styles.choiceBtn, user?.sex === opt.value ? styles.choiceBtnActive : {}]}
             onPress={() => {
               updateProfileField({ sex: opt.value });
               closeModal();
             }}
           >
-            <Typography style={[styles.choiceText, user?.sex === opt.value && styles.choiceTextActive]}>{opt.label}</Typography>
+            <Typography style={[styles.choiceText, user?.sex === opt.value ? styles.choiceTextActive : {}]}>{opt.label}</Typography>
           </TouchableOpacity>
         ))}
       </View>

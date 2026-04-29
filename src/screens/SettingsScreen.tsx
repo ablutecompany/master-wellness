@@ -108,10 +108,10 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                           {app.influences_global_profile && (
                             <TouchableOpacity 
                               onPress={() => setEcosystemConfig(app.miniapp_id, { ...config, influenceDisabled: !config.influenceDisabled })}
-                              style={[styles.influenceBadge, config.influenceDisabled && styles.influenceDisabled]}
+                              style={[styles.influenceBadge, config.influenceDisabled ? styles.influenceDisabled : {}]}
                             >
                               <Zap size={10} color={config.influenceDisabled ? 'rgba(255,255,255,0.3)' : '#00F2FF'} style={{ marginRight: 4 }} />
-                              <Typography style={[styles.influenceText, config.influenceDisabled && { color: 'rgba(255,255,255,0.3)' }]}>
+                              <Typography style={[styles.influenceText, config.influenceDisabled ? { color: 'rgba(255,255,255,0.3)' } : {}]}>
                                 {config.influenceDisabled ? 'ISOLADO' : 'PERFIL'}
                               </Typography>
                             </TouchableOpacity>
@@ -120,7 +120,7 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                           {app.writes_longitudinal_memory && (
                             <TouchableOpacity 
                               onPress={() => setEcosystemConfig(app.miniapp_id, { ...config, participationDisabled: !config.participationDisabled })}
-                              style={[styles.influenceBadge, config.participationDisabled && styles.influenceDisabled, { borderColor: config.participationDisabled ? 'rgba(255,255,255,0.1)' : 'rgba(160, 32, 240, 0.4)' }]}
+                              style={[styles.influenceBadge, config.participationDisabled ? styles.influenceDisabled : {}, { borderColor: config.participationDisabled ? 'rgba(255,255,255,0.1)' : 'rgba(160, 32, 240, 0.4)' }]}
                             >
                               <Brain size={10} color={config.participationDisabled ? 'rgba(255,255,255,0.3)' : '#A020F0'} style={{ marginRight: 4 }} />
                               <Typography style={[styles.influenceText, { color: config.participationDisabled ? 'rgba(255,255,255,0.3)' : '#A020F0' }]}>
@@ -149,7 +149,7 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                   <Typography variant="caption" style={styles.govSubHeaderText}>LIMPEZA POR DOMÍNIO</Typography>
                 </View>
                 {Object.keys(longitudinalMemory).map((domain, i) => (
-                  <View key={domain} style={[styles.govItem, i === Object.keys(longitudinalMemory).length - 1 && { borderBottomWidth: 0 }]}>
+                  <View key={domain} style={[styles.govItem, i === Object.keys(longitudinalMemory).length - 1 ? { borderBottomWidth: 0 } : {}]}>
                     <View>
                       <Typography style={styles.menuTitle}>{domain.toUpperCase()}</Typography>
                       <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.2)' }}>
@@ -196,7 +196,7 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
               <Typography variant="caption" style={[styles.sectionLabel, { marginTop: 24 }]}>OBSERVABILIDADE DO ECOSSISTEMA</Typography>
               <View style={styles.cardGroup}>
                 {ecosystemLogs.slice(0, 10).map((log, i) => (
-                  <View key={log.id} style={[styles.govItem, i === Math.min(ecosystemLogs.length, 10) - 1 && { borderBottomWidth: 0 }, { paddingVertical: 12 }]}>
+                  <View key={log.id} style={[styles.govItem, i === Math.min(ecosystemLogs.length, 10) - 1 ? { borderBottomWidth: 0 } : {}, { paddingVertical: 12 }]}>
                      <View style={{ flex: 1 }}>
                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
                           <View style={[styles.logStatusDot, { backgroundColor: log.status === 'success' ? '#00F2FF' : (log.status === 'warning' || log.status === 'governance_block') ? '#FFD700' : '#FF3366' }]} />

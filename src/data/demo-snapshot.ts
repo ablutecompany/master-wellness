@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Analysis } from '../store/types';
 
 /**

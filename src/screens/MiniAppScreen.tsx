@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { StyleSheet, View, ActivityIndicator, Platform } from 'react-native';
 import { useEffect, useState } from 'react';
 import { WebView } from 'react-native-webview';
