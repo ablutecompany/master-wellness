@@ -4,7 +4,7 @@
     "slug": "ablute-wellness",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/pwa-512.png",
+    "icon": "./public/pwa-512.png",
     "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -22,21 +22,21 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#05070A",
-        "foregroundImage": "./assets/pwa-maskable-512.png"
+        "foregroundImage": "./public/pwa-maskable-512.png"
       },
       "predictiveBackGestureEnabled": false,
       "usesCleartextTraffic": true
     },
     "web": {
-      "favicon": "./assets/favicon.png",
+      "favicon": "./public/favicon.png",
       "splash": {
         "backgroundColor": "transparent",
         "resizeMode": "contain",
         "image": null
       },
       "pwa": {
-        "appleTouchIcon": "./assets/apple-touch-icon.png",
-        "maskable": "./assets/pwa-maskable-512.png"
+        "appleTouchIcon": "./public/apple-touch-icon.png",
+        "maskable": "./public/pwa-maskable-512.png"
       }
     },
     "plugins": [

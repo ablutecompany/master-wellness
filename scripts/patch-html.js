@@ -28,6 +28,11 @@ html = html.replace(
   '<script$1 type="module" src="$2"$3>'
 );
 
+// Inject manifest and apple-touch-icon into head if not present
+if (!html.includes('rel="manifest"')) {
+  html = html.replace('</head>', '  <link rel="manifest" href="/manifest.json" />\n  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />\n</head>');
+}
+
 if (html === before) {
   console.warn('[patch-html] WARNING: No script tag matched. Pattern may have changed.');
   console.log('[patch-html] Looking for script tag in HTML:');
