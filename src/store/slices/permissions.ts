@@ -18,8 +18,13 @@ export const createPermissionsSlice: StateCreator<AppState, [], [], PermissionsS
     grantPermissions: (appId, perms) =>
       set((state) => {
         const next = { ...state.grantedPermissions, [appId]: perms };
-        saveToStorage(state.installedAppIds, next, state.appEvents, state.appContributionEvents);
-        return { grantedPermissions: next };
+        saveToStorage(
+        state.installedAppIds, 
+        state.favoriteAppIds,
+        next, 
+        state.appEvents, 
+        state.appContributionEvents
+      );  return { grantedPermissions: next };
       }),
 
     hasGrantedPermissions: (id) => !!get().grantedPermissions[id],

@@ -30,7 +30,13 @@ export const createContributionsSlice: StateCreator<AppState, [], [], Contributi
       }
 
       const nextEvents = [event, ...state.appContributionEvents];
-      saveToStorage(state.installedAppIds, state.grantedPermissions, state.appEvents, nextEvents);
+      saveToStorage(
+        state.installedAppIds,
+        state.favoriteAppIds,
+        state.grantedPermissions,
+        state.appEvents,
+        nextEvents
+      );
       
       // Governed Invalidation v1.2.0: Resolução por Afinidade Determinística
       const userId = 'user_current_session_1';

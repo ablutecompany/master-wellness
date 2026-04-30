@@ -214,7 +214,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ definition, observation,
             <View style={{ marginBottom: 16 }}>
                <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: 1 }}>REFERÊNCIA GERAL</Typography>
                <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>
-                 {meta?.generalReference || 'Referência geral não definida nesta versão.'}
+                 {meta?.generalReferenceLabel || 'Referência geral não definida nesta versão.'}
                </Typography>
             </View>
 

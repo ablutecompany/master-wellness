@@ -9,7 +9,7 @@ export interface DemoPersona {
   daysSinceLastExamDefault?: number;
   biomarkers: Record<string, { value: number | string; unit: string; name: string }>;
   contextual: Record<string, { value: number | string; unit: string; name: string }>;
-  fecal: Record<string, { value: number | string; unit: string; name: string }>;
+  fecal: Record<string, { value: number | string | Record<string, string>; unit: string; name: string }>;
   physiological: Record<string, { value: number | string; unit: string; name: string }>;
   notesForAI?: string;
 }

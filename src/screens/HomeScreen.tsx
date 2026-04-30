@@ -856,8 +856,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                               {app.description}
                             </Typography>
                           </View>
-                            </Typography>
-                          </View>
 
                           {/* FOOTER ACTIONS */}
                           <View style={[styles.expandedFooter, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>

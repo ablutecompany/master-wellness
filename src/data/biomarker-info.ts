@@ -209,7 +209,8 @@ export const BIOMARKER_INFO: Record<string, BiomarkerMetadata> = {
     label: 'Frequência cardíaca',
     family: 'physiological',
     unit: 'bpm',
-    generalReference: 'Varia consoante idade, atividade e condição de base',
+    referenceStatus: 'contextual',
+    generalReferenceLabel: 'Varia consoante idade, atividade e condição de base',
     educationalMeaning: 'A frequência cardíaca indica o número de batimentos por minuto. Pode variar com atividade, stress, sono, hidratação e contexto da medição.',
     limitation: 'Valor de observação num dado momento. Não constitui interpretação clínica.'
   },
@@ -218,7 +219,8 @@ export const BIOMARKER_INFO: Record<string, BiomarkerMetadata> = {
     label: 'Saturação de oxigénio',
     family: 'physiological',
     unit: '%',
-    generalReference: 'Tipicamente > 95%',
+    referenceStatus: 'contextual',
+    generalReferenceLabel: 'Tipicamente > 95%',
     educationalMeaning: 'A saturação de oxigénio indica a percentagem aproximada de oxigénio transportado no sangue no momento da medição. Deve ser lida com contexto e repetição.',
     limitation: 'Leitura dependente das condições da pele e do sensor.'
   },
@@ -227,7 +229,8 @@ export const BIOMARKER_INFO: Record<string, BiomarkerMetadata> = {
     label: 'Temperatura',
     family: 'physiological',
     unit: 'ºC',
-    generalReference: 'Geralmente entre 36.1ºC e 37.2ºC',
+    referenceStatus: 'contextual',
+    generalReferenceLabel: 'Geralmente entre 36.1ºC e 37.2ºC',
     educationalMeaning: 'A temperatura corporal pode variar ligeiramente ao longo do dia e com contexto, atividade ou ambiente.',
     limitation: 'Medição sujeita a fatores externos.'
   },
@@ -236,7 +239,8 @@ export const BIOMARKER_INFO: Record<string, BiomarkerMetadata> = {
     label: 'Peso',
     family: 'physiological',
     unit: 'kg',
-    generalReference: 'Dependente do indivíduo',
+    referenceStatus: 'contextual',
+    generalReferenceLabel: 'Dependente do indivíduo',
     educationalMeaning: 'Registo corporal para contexto de composição e tendências ao longo do tempo.',
     limitation: 'Valor observacional.'
   },
@@ -245,7 +249,8 @@ export const BIOMARKER_INFO: Record<string, BiomarkerMetadata> = {
     label: 'Impedância',
     family: 'physiological',
     unit: '',
-    generalReference: 'Relativa ao utilizador',
+    referenceStatus: 'contextual',
+    generalReferenceLabel: 'Relativa ao utilizador',
     educationalMeaning: 'A impedância é uma medição elétrica indireta que pode ajudar a contextualizar composição corporal e hidratação, mas deve ser interpretada com prudência.',
     limitation: 'Leitura estimada, não serve de diagnóstico.'
   },
@@ -254,7 +259,8 @@ export const BIOMARKER_INFO: Record<string, BiomarkerMetadata> = {
     label: 'Eletrocardiograma (ECG)',
     family: 'physiological',
     unit: '',
-    generalReference: 'Visualização de traçado',
+    referenceStatus: 'contextual',
+    generalReferenceLabel: 'Visualização de traçado',
     educationalMeaning: 'O ECG é um registo gráfico da atividade elétrica cardíaca. Nesta fase, a imagem é apresentada como apoio visual e não como interpretação clínica.',
     limitation: 'Imagem de apoio visual. Não constitui interpretação clínica.'
   }

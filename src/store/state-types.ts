@@ -56,7 +56,7 @@ export interface AnalysisMeasurement {
   memberId?: string; // Strict ownership mapping
   type: 'urinalysis' | 'ecg' | 'ppg' | 'temp' | 'weight' | 'fecal' | 'impedance' | 'contextual';
   marker?: string;
-  value: string;
+  value: any;
   unit: string;
   recordedAt: string;
 }
@@ -211,10 +211,12 @@ export interface AppState {
   addAppContributionEvent: (event: AppContributionEvent) => void;
   installApp: (id: string) => void;
   uninstallApp: (id: string) => void;
+  toggleFavoriteApp: (id: string) => void;
   launchApp: (app: MiniAppManifest) => void;
   closeApp: () => void;
   grantPermissions: (appId: string, perms: Permission[]) => void;
   isAppInstalled: (id: string) => boolean;
+  isAppFavorite: (id: string) => boolean;
   hasGrantedPermissions: (id: string) => boolean;
   clearSensitiveState: () => void;
   setHasHydrated: (val: boolean) => void;

@@ -255,6 +255,7 @@ export const selectDataFreshness = (state: AppState, forcedMemberId?: string): D
 // ─────────────────────────────────────────────────────────────────────────────
 export const selectInstalledAppIds = (state: AppState) => state.installedAppIds || [];
 export const selectActiveApp = (state: AppState) => state.activeApp;
+export const selectFavoriteAppIds = (state: AppState) => state.favoriteAppIds || [];
 export const selectIsAppInstalled = (state: AppState, appId: string) => 
   (state.installedAppIds || []).includes(appId);
 
