@@ -393,7 +393,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                            </Typography>
                            {hasSangueVisivel && (
                              <Typography style={{ color: '#EF4444', fontSize: 13, lineHeight: 18, marginTop: 12, fontWeight: '600' }}>
-                               Este campo refere-se apenas a sangue visível. Sangue oculto não é avaliável por imagem. Se existir sangue visível sem explicação clara, deve ser considerada avaliação profissional.
+                               Este campo refere-se apenas a sangue visível exteriormente. Se existir persistência ou dúvida, deve ser considerada avaliação.
                              </Typography>
                            )}
                         </View>

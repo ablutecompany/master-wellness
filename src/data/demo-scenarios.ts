@@ -223,8 +223,7 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
       contexto_alimentar: { value: 'refeição rica em hidratos nas últimas horas', unit: '', name: 'Contexto alimentar' }
     },
     fecal: {
-      bristol: { value: 4, unit: 'tipo', name: 'Bristol' },
-      regularidade: { value: 'média', unit: '', name: 'Regularidade' },
+      bristolType: { value: 6, unit: 'Tipo', name: 'Bristol' },
       consistencia: { value: 'formada', unit: '', name: 'Caracterização Óptica' }
     },
     physiological: {
@@ -279,7 +278,7 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
           mucoVisivel: 'não observado',
           sangueVisivel: 'não observado',
           aspetoGorduroso: 'não observado',
-          interpretacaoWellness: 'possível baixa hidratação ou menor regularidade intestinal',
+          interpretacaoWellness: 'possível baixa hidratação ou motilidade alterada',
           confiancaImagem: 'moderada'
         },
         unit: '',

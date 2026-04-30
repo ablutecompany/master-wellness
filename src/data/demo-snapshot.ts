@@ -26,7 +26,6 @@ export const DEMO_ANALYSIS_SNAPSHOT: Analysis = {
 
     // --- FEZES ---
     { id: 'dm10', type: 'fecal', marker: 'Bristol', value: 'Tipo 2–3', unit: '', recordedAt: '2024-04-26T23:00:00Z', timestamp: 1714172400000 },
-    { id: 'dm11', type: 'fecal', marker: 'Regularidade', value: 'Reduzida', unit: '', recordedAt: '2024-04-26T23:00:00Z', timestamp: 1714172400000 },
     { id: 'dm12', type: 'fecal', marker: 'Caracterização Óptica', value: 'firme/dura', unit: '', recordedAt: '2024-04-26T23:00:00Z', timestamp: 1714172400000 },
     { id: 'dm13', type: 'fecal', marker: 'Caracterização Óptica Completa', value: {
         bristol: '2–3',

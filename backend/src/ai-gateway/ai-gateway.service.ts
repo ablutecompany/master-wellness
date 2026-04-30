@@ -177,7 +177,7 @@ export class AiGatewayService {
       `1. energy_availability (Energia & disponibilidade) - Pode usar: sono, recuperação, hr, ppg, stress, carga.`,
       `2. recovery_load (Recuperação & carga) - Pode usar: sono, recuperação, hr, ppg, stress.`,
       `3. hydration_urinary_balance (Hidratação & equilíbrio urinário) - Pode usar: densidade urinária, pH, eletrólitos.`,
-      `4. intestinal_state (Estado intestinal) - Pode usar: Bristol, fezes. Nunca usar sangue oculto ou diagnosticar.`,
+      `4. intestinal_state (Estado intestinal) - Pode usar: Bristol, caracterização ótica. Não tirar inferências clínicas fechadas nem sugerir patologias.`,
       `5. vital_signs_physiological_balance (Sinais vitais & equilíbrio fisiológico) - Pode usar: hr, spo2, temperatura. Não interpretar ECG clinicamente.`,
       `6. signal_oriented_nutrition (Nutrição orientada por sinais) - Pistas prudentes. Não fazer plano alimentar.`,
       `7. stress_focus_self_regulation (Stress, foco & autorregulação) - Prontidão, não avaliação psicológica.`,

@@ -154,10 +154,6 @@ export const METRICS_CATALOG: Record<string, MetricDefinition> = {
     key: 'bristol', label: 'Bristol', category: 'fecal', unit: '', valueType: 'scale',
     supportedModes: ['demo', 'real'], visibleByDefault: true, visualOrder: 400
   },
-  'bowel_regularity': {
-    key: 'bowel_regularity', label: 'Regularidade intestinal', category: 'fecal', unit: '', valueType: 'text',
-    supportedModes: ['demo', 'real'], visibleByDefault: true, visualOrder: 410
-  },
   'fecal_characterization': {
     key: 'fecal_characterization', label: 'Caracterização', category: 'fecal', unit: '', valueType: 'text',
     supportedModes: ['demo', 'real'], visibleByDefault: true, visualOrder: 420

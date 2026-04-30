@@ -169,8 +169,8 @@ export function computeAIReadingFromData(
       id: 'gut',
       title: 'Estado intestinal',
       status: 'optimal',
-      explanation: 'O registo intestinal sugere boa regularidade nesta leitura. O valor principal está em acompanhar se este padrão se mantém ao longo do tempo.',
-      supportingFacts: ['Bristol'],
+      explanation: 'O registo intestinal documentado tem valor na observação visual de tendências. O principal foco é acompanhar o padrão de Bristol e a caracterização ótica ao longo do tempo.',
+      supportingFacts: ['Bristol', 'Caracterização Óptica'],
       action: 'Observar consistência',
       confidence: 0.85
     });
