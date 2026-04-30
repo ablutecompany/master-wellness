@@ -360,6 +360,13 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
       </ScrollView>
 
+      {/* PROVA TÉCNICA DE DEPLOY - APENAS PARA VALIDAÇÃO MOBILE CACHE */}
+      <View style={{ padding: 12, alignItems: 'center', opacity: 0.5 }}>
+         <Typography style={{ color: '#00F2FF', fontSize: 10, fontFamily: 'monospace' }}>
+            AI_READING_UI_COMMIT: 942cfd3
+         </Typography>
+      </View>
+
       {/* POPUP: FUNDAMENTAÇÃO */}
       <Modal visible={showFundamentacao} transparent animationType="fade">
          <BlurView intensity={60} tint="dark" style={styles.modalOverlay}>

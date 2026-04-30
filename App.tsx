@@ -256,6 +256,16 @@ export default function App() {
         }
       `;
       document.head.append(style);
+
+      // FORCE UNREGISTER SERVICE WORKERS TO FIX PWA CACHE ISSUES
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          for (let registration of registrations) {
+            registration.unregister();
+            console.warn('[PWA_CACHE] Service worker unregistered to force update.');
+          }
+        });
+      }
     }
 
     supabase.auth.getSession()
