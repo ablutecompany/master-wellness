@@ -47,7 +47,7 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
     fecal: {
       bristol: { value: 4, unit: 'tipo', name: 'Bristol' },
       regularidade: { value: 'elevada', unit: '', name: 'Regularidade' },
-      consistencia: { value: 'formada', unit: '', name: 'Consistência' }
+      consistencia: { value: 'formada', unit: '', name: 'Caracterização Óptica' }
     },
     physiological: {
       hr: { value: 62, unit: 'bpm', name: 'HR' },
@@ -89,7 +89,7 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
     fecal: {
       bristol: { value: 3, unit: 'tipo', name: 'Bristol' },
       regularidade: { value: 'média', unit: '', name: 'Regularidade' },
-      consistencia: { value: 'ligeiramente seca', unit: '', name: 'Consistência' }
+      consistencia: { value: 'ligeiramente seca', unit: '', name: 'Caracterização Óptica' }
     },
     physiological: {
       hr: { value: 72, unit: 'bpm', name: 'HR' },
@@ -131,7 +131,7 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
     fecal: {
       bristol: { value: 4, unit: 'tipo', name: 'Bristol' },
       regularidade: { value: 'média', unit: '', name: 'Regularidade' },
-      consistencia: { value: 'formada', unit: '', name: 'Consistência' }
+      consistencia: { value: 'formada', unit: '', name: 'Caracterização Óptica' }
     },
     physiological: {
       hr: { value: 76, unit: 'bpm', name: 'HR' },
@@ -174,7 +174,7 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
     fecal: {
       bristol: { value: 4, unit: 'tipo', name: 'Bristol' },
       regularidade: { value: 'média', unit: '', name: 'Regularidade' },
-      consistencia: { value: 'formada', unit: '', name: 'Consistência' }
+      consistencia: { value: 'formada', unit: '', name: 'Caracterização Óptica' }
     },
     physiological: {
       hr: { value: 74, unit: 'bpm', name: 'HR' },
@@ -216,7 +216,7 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
     fecal: {
       bristol: { value: 3, unit: 'tipo', name: 'Bristol' },
       regularidade: { value: 'média', unit: '', name: 'Regularidade' },
-      consistencia: { value: 'mais seca', unit: '', name: 'Consistência' }
+      consistencia: { value: 'mais seca', unit: '', name: 'Caracterização Óptica' }
     },
     physiological: {
       hr: { value: 78, unit: 'bpm', name: 'HR' },
@@ -258,7 +258,7 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
     fecal: {
       bristol: { value: 2, unit: 'tipo', name: 'Bristol' },
       regularidade: { value: 'baixa', unit: '', name: 'Regularidade' },
-      consistencia: { value: 'seca', unit: '', name: 'Consistência' }
+      consistencia: { value: 'seca', unit: '', name: 'Caracterização Óptica' }
     },
     physiological: {
       hr: { value: 84, unit: 'bpm', name: 'HR' },

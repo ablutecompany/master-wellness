@@ -207,7 +207,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ definition, observation,
 
             <View style={{ marginBottom: 24 }}>
                <Typography style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, lineHeight: 16, textAlign: 'center', fontStyle: 'italic' }}>
-                 Esta informação é educativa e deve ser lida em conjunto com o contexto, histórico e avaliação profissional quando aplicável. Não constitui diagnóstico.
+                 {meta?.limitation || 'Esta informação é educativa e deve ser lida em conjunto com o contexto, histórico e avaliação profissional quando aplicável. Não constitui diagnóstico.'}
                </Typography>
             </View>
 
