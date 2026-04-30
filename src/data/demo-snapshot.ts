@@ -25,21 +25,21 @@ export const DEMO_ANALYSIS_SNAPSHOT: Analysis = {
     { id: 'dm8', type: 'urinalysis', marker: 'Albumina', value: 'Negativo', unit: '', recordedAt: '2024-04-26T23:00:00Z', timestamp: 1714172400000 },
 
     // --- FEZES ---
-    { id: 'dm10', type: 'fecal', marker: 'Bristol', value: 'Tipo 4', unit: 'Ideal', recordedAt: '2024-04-26T23:00:00Z', timestamp: 1714172400000 },
-    { id: 'dm11', type: 'fecal', marker: 'Regularidade', value: 'Elevada', unit: '', recordedAt: '2024-04-26T23:00:00Z', timestamp: 1714172400000 },
-    { id: 'dm12', type: 'fecal', marker: 'Caracterização Óptica', value: 'ligeiramente seca', unit: '', recordedAt: '2024-04-26T23:00:00Z', timestamp: 1714172400000 },
+    { id: 'dm10', type: 'fecal', marker: 'Bristol', value: 'Tipo 2–3', unit: '', recordedAt: '2024-04-26T23:00:00Z', timestamp: 1714172400000 },
+    { id: 'dm11', type: 'fecal', marker: 'Regularidade', value: 'Reduzida', unit: '', recordedAt: '2024-04-26T23:00:00Z', timestamp: 1714172400000 },
+    { id: 'dm12', type: 'fecal', marker: 'Caracterização Óptica', value: 'firme/dura', unit: '', recordedAt: '2024-04-26T23:00:00Z', timestamp: 1714172400000 },
     { id: 'dm13', type: 'fecal', marker: 'Caracterização Óptica Completa', value: {
-        bristol: 'Tipo 4',
-        consistencia: 'Normal',
-        forma: 'Salsicha',
-        superficie: 'Lisa',
-        cor: 'Castanho',
-        fragmentacao: 'Baixa',
-        mucoVisivel: 'Não observado',
-        sangueVisivel: 'Não observado',
-        aspetoGorduroso: 'Não observado',
-        interpretacaoWellness: 'Trânsito intestinal regular, adequada hidratação.',
-        confiancaImagem: 'Alta'
+        bristol: '2–3',
+        consistencia: 'firme/dura',
+        forma: 'cilíndrica irregular, segmentada',
+        superficie: 'fissurada/rugosa',
+        cor: 'castanho médio-escuro',
+        fragmentacao: 'moderada',
+        mucoVisivel: 'não observado',
+        sangueVisivel: 'não observado',
+        aspetoGorduroso: 'não observado',
+        interpretacaoWellness: 'possível baixa hidratação, fibra insuficiente, trânsito lento ou retenção fecal ligeira',
+        confiancaImagem: 'moderada'
       }, unit: '', recordedAt: '2024-04-26T23:00:00Z', timestamp: 1714172400000 },
 
     // --- FISIOLÓGICOS ---
