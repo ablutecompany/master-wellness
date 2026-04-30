@@ -308,7 +308,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     })
   ).current;
 
-  const DRAWER_DOWN = height - 220; // Ajustado para revelar o dock de favoritas completamente
+  const DRAWER_DOWN = height - 245; // Ajustado para revelar o dock de favoritas completamente sem ficarem cortadas
   const DRAWER_UP = 0;
   const lastDrawerY = useRef(DRAWER_DOWN);
   const drawerAnim = useRef(new Animated.Value(DRAWER_DOWN)).current;
