@@ -50,11 +50,12 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
       consistencia: { value: 'formada', unit: '', name: 'Caracterização Óptica' }
     },
     physiological: {
-      hr: { value: 62, unit: 'bpm', name: 'HR' },
-      spo2: { value: 98, unit: '%', name: 'SpO2' },
+      hr: { value: 62, unit: 'bpm', name: 'Frequência cardíaca' },
+      spo2: { value: 98, unit: '%', name: 'Saturação de oxigénio' },
       temperatura: { value: 36.6, unit: 'ºC', name: 'Temperatura' },
       peso: { value: 74, unit: 'kg', name: 'Peso' },
-      impedancia: { value: 'normal_simulada', unit: '', name: 'Impedância' }
+      impedancia: { value: 'Sem alteração relevante', unit: '', name: 'Impedância' },
+      ecg: { value: 'Simulação', unit: '', name: 'ECG' }
     }
   },
   {
@@ -92,11 +93,12 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
       consistencia: { value: 'ligeiramente seca', unit: '', name: 'Caracterização Óptica' }
     },
     physiological: {
-      hr: { value: 72, unit: 'bpm', name: 'HR' },
-      spo2: { value: 98, unit: '%', name: 'SpO2' },
+      hr: { value: 72, unit: 'bpm', name: 'Frequência cardíaca' },
+      spo2: { value: 98, unit: '%', name: 'Saturação de oxigénio' },
       temperatura: { value: 36.7, unit: 'ºC', name: 'Temperatura' },
       peso: { value: 74.5, unit: 'kg', name: 'Peso' },
-      impedancia: { value: 'compatível_com_menor_hidratação_simulada', unit: '', name: 'Impedância' }
+      impedancia: { value: 'Compatível com menor hidratação', unit: '', name: 'Impedância' },
+      ecg: { value: 'Simulação', unit: '', name: 'ECG' }
     }
   },
   {
@@ -134,11 +136,12 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
       consistencia: { value: 'formada', unit: '', name: 'Caracterização Óptica' }
     },
     physiological: {
-      hr: { value: 76, unit: 'bpm', name: 'HR' },
-      spo2: { value: 97, unit: '%', name: 'SpO2' },
+      hr: { value: 76, unit: 'bpm', name: 'Frequência cardíaca' },
+      spo2: { value: 97, unit: '%', name: 'Saturação de oxigénio' },
       temperatura: { value: 37.0, unit: 'ºC', name: 'Temperatura' },
       peso: { value: 74.2, unit: 'kg', name: 'Peso' },
-      impedancia: { value: 'normal_simulada', unit: '', name: 'Impedância' }
+      impedancia: { value: 'Sem alteração relevante', unit: '', name: 'Impedância' },
+      ecg: { value: 'Simulação', unit: '', name: 'ECG' }
     }
   },
   {
@@ -177,11 +180,12 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
       consistencia: { value: 'formada', unit: '', name: 'Caracterização Óptica' }
     },
     physiological: {
-      hr: { value: 74, unit: 'bpm', name: 'HR' },
-      spo2: { value: 98, unit: '%', name: 'SpO2' },
+      hr: { value: 74, unit: 'bpm', name: 'Frequência cardíaca' },
+      spo2: { value: 98, unit: '%', name: 'Saturação de oxigénio' },
       temperatura: { value: 36.8, unit: 'ºC', name: 'Temperatura' },
       peso: { value: 75, unit: 'kg', name: 'Peso' },
-      impedancia: { value: 'normal_simulada', unit: '', name: 'Impedância' }
+      impedancia: { value: 'Sem alteração relevante', unit: '', name: 'Impedância' },
+      ecg: { value: 'Simulação', unit: '', name: 'ECG' }
     }
   },
   {
@@ -219,11 +223,12 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
       consistencia: { value: 'mais seca', unit: '', name: 'Caracterização Óptica' }
     },
     physiological: {
-      hr: { value: 78, unit: 'bpm', name: 'HR' },
-      spo2: { value: 97, unit: '%', name: 'SpO2' },
+      hr: { value: 78, unit: 'bpm', name: 'Frequência cardíaca' },
+      spo2: { value: 97, unit: '%', name: 'Saturação de oxigénio' },
       temperatura: { value: 36.9, unit: 'ºC', name: 'Temperatura' },
       peso: { value: 75.4, unit: 'kg', name: 'Peso' },
-      impedancia: { value: 'ligeira_variação_simulada', unit: '', name: 'Impedância' }
+      impedancia: { value: 'Variação ligeira', unit: '', name: 'Impedância' },
+      ecg: { value: 'Simulação', unit: '', name: 'ECG' }
     }
   },
   {
@@ -261,11 +266,12 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
       consistencia: { value: 'seca', unit: '', name: 'Caracterização Óptica' }
     },
     physiological: {
-      hr: { value: 84, unit: 'bpm', name: 'HR' },
-      spo2: { value: 96, unit: '%', name: 'SpO2' },
+      hr: { value: 84, unit: 'bpm', name: 'Frequência cardíaca' },
+      spo2: { value: 96, unit: '%', name: 'Saturação de oxigénio' },
       temperatura: { value: 37.1, unit: 'ºC', name: 'Temperatura' },
       peso: { value: 74.8, unit: 'kg', name: 'Peso' },
-      impedancia: { value: 'compatível_com_fadiga_hidratação_simulada', unit: '', name: 'Impedância' }
+      impedancia: { value: 'Possível stress/fadiga associada', unit: '', name: 'Impedância' },
+      ecg: { value: 'Simulação', unit: '', name: 'ECG' }
     }
   }
 ];
@@ -301,7 +307,7 @@ export const generateDemoAnalysisFromPersona = (persona: DemoPersona, referenceT
   Object.entries(persona.physiological).forEach(([key, data]) => {
     measurements.push({
       id: `demo_physio_${key}`,
-      type: key === 'peso' ? 'weight' : key === 'temperatura' ? 'temp' : key === 'hr' ? 'ecg' : key === 'spo2' ? 'ppg' : key === 'impedancia' ? 'impedance' : 'contextual',
+      type: key === 'peso' ? 'weight' : key === 'temperatura' ? 'temp' : key === 'hr' ? 'ecg' : key === 'spo2' ? 'ppg' : key === 'impedancia' ? 'impedance' : key === 'ecg' ? 'ecg' : 'contextual',
       marker: data.name,
       value: String(data.value),
       unit: data.unit,

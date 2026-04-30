@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { Typography, BlurView } from './Base';
-import { TrendingUp, TrendingDown, Minus, Activity, Info } from 'lucide-react-native';
+import { TrendingUp, TrendingDown, Minus, Activity, Info, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react-native';
 import { MetricDefinition, MetricObservation } from '../data/metrics-catalog';
 import { BIOMARKER_INFO } from '../data/biomarker-info';
 
@@ -37,7 +37,10 @@ function formatValue(value: any, valueType: string, displayValue?: string): stri
 
 export const MetricCard: React.FC<MetricCardProps> = ({ definition, observation, onExploreSemantics, testID }) => {
   const [showDetail, setShowDetail] = useState(false);
+  const [ecgZoom, setEcgZoom] = useState(1);
   const { status } = observation;
+
+  const isEcg = definition.label === 'ECG' || definition.label === 'Eletrocardiograma (ECG)';
 
   // Estados que não apresentam um valor numérico formatado
   const isNoValueState = ['empty', 'processing', 'not_measured', 'unsupported', 'error'].includes(status);
@@ -146,7 +149,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({ definition, observation,
             <Typography variant="h3" style={{ color: '#00F2FF', marginBottom: 20 }}>{meta?.label || definition.label}</Typography>
             
             <View style={{ marginBottom: 16 }}>
-               <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: 1 }}>VALOR REGISTADO</Typography>
+               <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: 1 }}>{isEcg ? 'REGISTO VISUAL' : 'VALOR REGISTADO'}</Typography>
                <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
                   <Typography style={{ color: '#ffffff', fontSize: 24, fontWeight: '800' }}>{displayValue}</Typography>
                   {showUnit && <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, marginLeft: 6 }}>{definition.unit}</Typography>}
@@ -158,6 +161,31 @@ export const MetricCard: React.FC<MetricCardProps> = ({ definition, observation,
                </View>
             </View>
 
+            {isEcg && (
+              <View style={{ marginBottom: 24 }}>
+                <View style={{ height: 120, backgroundColor: 'rgba(0, 242, 255, 0.05)', borderRadius: 8, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.1)', overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
+                  <View style={{ transform: [{ scale: ecgZoom }], flexDirection: 'row', width: '200%', justifyContent: 'space-around', opacity: 0.8 }}>
+                    <Activity size={80} color="#00F2FF" strokeWidth={1} />
+                    <Activity size={80} color="#00F2FF" strokeWidth={1} />
+                    <Activity size={80} color="#00F2FF" strokeWidth={1} />
+                  </View>
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 12 }}>
+                  <TouchableOpacity onPress={() => setEcgZoom(Math.max(1, ecgZoom - 0.5))} style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 }}>
+                    <ZoomOut size={18} color="#FFF" />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setEcgZoom(1)} style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 }}>
+                    <RotateCcw size={18} color="#FFF" />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setEcgZoom(Math.min(3, ecgZoom + 0.5))} style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 }}>
+                    <ZoomIn size={18} color="#FFF" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {!isEcg && (
+            <>
             <View style={{ marginBottom: 16 }}>
                <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: 1 }}>HISTÓRICO RECENTE</Typography>
                {observation.trend ? (
@@ -180,6 +208,8 @@ export const MetricCard: React.FC<MetricCardProps> = ({ definition, observation,
                  {observation.mode === 'demo' ? 'Baseline indisponível (Simulação)' : 'Baseline pessoal ainda não disponível.'}
                </Typography>
             </View>
+            </>
+            )}
 
             <View style={{ marginBottom: 16 }}>
                <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: 1 }}>REFERÊNCIA GERAL</Typography>

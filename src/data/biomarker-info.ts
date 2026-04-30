@@ -153,5 +153,59 @@ export const BIOMARKER_INFO: Record<string, BiomarkerMetadata> = {
     generalReference: 'Altamente variável consoante o indivíduo e dieta',
     educationalMeaning: 'A frequência e o padrão reportado de dejeções. É útil para contextualizar trânsito, sem configurar diagnóstico de patologia.',
     limitation: 'Registo observacional contextual.'
+  },
+  'Frequência cardíaca': {
+    id: 'hr',
+    label: 'Frequência cardíaca',
+    family: 'physiological',
+    unit: 'bpm',
+    generalReference: 'Varia consoante idade, atividade e condição de base',
+    educationalMeaning: 'A frequência cardíaca indica o número de batimentos por minuto. Pode variar com atividade, stress, sono, hidratação e contexto da medição.',
+    limitation: 'Valor de observação num dado momento. Não constitui interpretação clínica.'
+  },
+  'Saturação de oxigénio': {
+    id: 'spo2',
+    label: 'Saturação de oxigénio',
+    family: 'physiological',
+    unit: '%',
+    generalReference: 'Tipicamente > 95%',
+    educationalMeaning: 'A saturação de oxigénio indica a percentagem aproximada de oxigénio transportado no sangue no momento da medição. Deve ser lida com contexto e repetição.',
+    limitation: 'Leitura dependente das condições da pele e do sensor.'
+  },
+  'Temperatura': {
+    id: 'temperatura',
+    label: 'Temperatura',
+    family: 'physiological',
+    unit: 'ºC',
+    generalReference: 'Geralmente entre 36.1ºC e 37.2ºC',
+    educationalMeaning: 'A temperatura corporal pode variar ligeiramente ao longo do dia e com contexto, atividade ou ambiente.',
+    limitation: 'Medição sujeita a fatores externos.'
+  },
+  'Peso': {
+    id: 'peso',
+    label: 'Peso',
+    family: 'physiological',
+    unit: 'kg',
+    generalReference: 'Dependente do indivíduo',
+    educationalMeaning: 'Registo corporal para contexto de composição e tendências ao longo do tempo.',
+    limitation: 'Valor observacional.'
+  },
+  'Impedância': {
+    id: 'impedancia',
+    label: 'Impedância',
+    family: 'physiological',
+    unit: '',
+    generalReference: 'Relativa ao utilizador',
+    educationalMeaning: 'A impedância é uma medição elétrica indireta que pode ajudar a contextualizar composição corporal e hidratação, mas deve ser interpretada com prudência.',
+    limitation: 'Leitura estimada, não serve de diagnóstico.'
+  },
+  'ECG': {
+    id: 'ecg',
+    label: 'Eletrocardiograma (ECG)',
+    family: 'physiological',
+    unit: '',
+    generalReference: 'Visualização de traçado',
+    educationalMeaning: 'O ECG é um registo gráfico da atividade elétrica cardíaca. Nesta fase, a imagem é apresentada como apoio visual e não como interpretação clínica.',
+    limitation: 'Imagem de apoio visual. Não constitui interpretação clínica.'
   }
 };
