@@ -351,7 +351,6 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
               color={getDimensionColor(d.id)}
               isSelected={selectedDimId === d.id}
               onPress={() => {
-                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                 setSelectedDimId(prev => prev === d.id ? null : d.id);
               }}
             />
