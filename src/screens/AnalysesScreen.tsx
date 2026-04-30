@@ -25,6 +25,7 @@ import { useShallow } from 'zustand/react/shallow';
 import * as Selectors from '../store/selectors';
 import { GatingOverlay } from '../components/GatingOverlay';
 import { StateSurface } from '../components/ShellStateSurfaces';
+import { BIOMARKER_INFO } from '../data/biomarker-info';
 
 const { width } = Dimensions.get('window');
 
@@ -56,6 +57,8 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   const hasResultsAccess = useStore(Selectors.selectHasResultsAccess);
   const isDemoMode = useStore(state => state.isDemoMode);
   const dataFreshness = useStore(useShallow(Selectors.selectDataFreshness));
+
+  const [ecgZoom, setEcgZoom] = useState(1);
 
   // 1. Mapeamento e Normalização de Dados
   const allResults = useMemo(() => {
@@ -280,27 +283,159 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
       {/* DETAIL MODAL */}
       <Modal visible={!!selectedItem} transparent animationType="fade" onRequestClose={() => setSelectedItem(null)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setSelectedItem(null)}>
-           <BlurView intensity={90} tint="dark" style={styles.modalContent}>
+           <BlurView intensity={90} tint="dark" style={[styles.modalContent, { maxHeight: '90%' }]}>
               <View style={styles.modalHandle} />
-              <Typography variant="h3" style={styles.modalName}>{selectedItem?.name}</Typography>
-              <Typography variant="caption" style={styles.modalDate}>{selectedItem?.dateStr}</Typography>
-              
-              <View style={styles.modalValueBox}>
-                 <Typography style={styles.modalValue}>{selectedItem?.value}</Typography>
-                 <Typography style={styles.modalUnit}>{selectedItem?.unit}</Typography>
-              </View>
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+                <Typography variant="h3" style={styles.modalName}>
+                  {selectedItem?.name && BIOMARKER_INFO[selectedItem.name]?.label ? BIOMARKER_INFO[selectedItem.name].label : selectedItem?.name}
+                </Typography>
+                <Typography variant="caption" style={styles.modalDate}>{selectedItem?.dateStr}</Typography>
+                
+                <View style={styles.modalValueBox}>
+                   <Typography style={styles.modalValue}>
+                     {selectedItem?.name === 'ECG' && isDemoMode ? 'Simulação' : selectedItem?.value}
+                   </Typography>
+                   <Typography style={styles.modalUnit}>
+                     {selectedItem?.name !== 'ECG' ? selectedItem?.unit : ''}
+                   </Typography>
+                   {isDemoMode && (
+                     <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 8, alignSelf: 'center' }}>
+                       <Typography style={{ color: '#F59E0B', fontSize: 10, fontWeight: 'bold' }}>SIMULAÇÃO</Typography>
+                     </View>
+                   )}
+                </View>
 
-              <View style={styles.infoBox}>
-                 <Typography style={styles.infoTitle}>Audit Trace</Typography>
-                 <Typography style={styles.infoText}>
-                   Este registo foi capturado via {selectedItem?.source === 'ablute' ? 'infraestrutura Ablute_' : 'dispositivo periférico'} 
-                   e indexado na sua memória biográfica longitudinal para análise de tendências.
-                 </Typography>
-              </View>
+                {(() => {
+                  if (!selectedItem) return null;
+                  const isEcg = selectedItem.name === 'ECG';
+                  const meta = BIOMARKER_INFO[selectedItem.name];
+                  
+                  if (isEcg) {
+                    return (
+                      <View style={{ marginBottom: 24 }}>
+                        <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 12, letterSpacing: 1, textAlign: 'center' }}>REGISTO VISUAL</Typography>
+                        <View style={{ height: 120, backgroundColor: 'rgba(0, 242, 255, 0.05)', borderRadius: 8, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.1)', overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
+                          <View style={{ transform: [{ scale: ecgZoom }], flexDirection: 'row', width: '200%', justifyContent: 'space-around', opacity: 0.8 }}>
+                            <Activity size={80} color="#00F2FF" strokeWidth={1} />
+                            <Activity size={80} color="#00F2FF" strokeWidth={1} />
+                            <Activity size={80} color="#00F2FF" strokeWidth={1} />
+                          </View>
+                        </View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 12 }}>
+                          <TouchableOpacity onPress={() => setEcgZoom(Math.max(1, ecgZoom - 0.5))} style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 }}>
+                            <Typography style={{ color: '#FFF', fontSize: 16, fontWeight: 'bold', width: 16, textAlign: 'center' }}>-</Typography>
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => setEcgZoom(1)} style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 }}>
+                            <Typography style={{ color: '#FFF', fontSize: 12, fontWeight: '600' }}>Repor</Typography>
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => setEcgZoom(Math.min(3, ecgZoom + 0.5))} style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 }}>
+                            <Typography style={{ color: '#FFF', fontSize: 16, fontWeight: 'bold', width: 16, textAlign: 'center' }}>+</Typography>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    );
+                  }
 
-              <TouchableOpacity style={styles.closeBtn} onPress={() => setSelectedItem(null)}>
-                 <Typography style={styles.closeBtnText}>FECHAR</Typography>
-              </TouchableOpacity>
+                  // Simulated history for Demo mode
+                  let simHistory = null;
+                  if (isDemoMode && selectedItem.type !== 'fecal' && selectedItem.type !== 'contextual') {
+                    const baseVal = parseFloat(selectedItem.value);
+                    if (!isNaN(baseVal)) {
+                      const variation = baseVal * 0.05;
+                      simHistory = [
+                        { date: 'Há 2 dias', value: (baseVal - variation).toFixed(1) },
+                        { date: 'Há 5 dias', value: (baseVal + variation * 0.5).toFixed(1) },
+                        { date: 'Há 8 dias', value: (baseVal - variation * 0.2).toFixed(1) }
+                      ];
+                    }
+                  }
+
+                  return (
+                    <>
+                      <View style={{ marginBottom: 16 }}>
+                         <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 8, letterSpacing: 1 }}>HISTÓRICO RECENTE</Typography>
+                         {simHistory ? (
+                           <View style={{ gap: 8 }}>
+                             {simHistory.map((h, i) => (
+                               <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', paddingBottom: 4 }}>
+                                 <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>{h.date}</Typography>
+                                 <Typography style={{ color: '#FFF', fontSize: 13 }}>{h.value} {selectedItem.unit}</Typography>
+                               </View>
+                             ))}
+                             <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+                                <Typography style={{ color: '#ffffff', fontSize: 13 }}>
+                                   Tendência global: Semelhante em relação à última medição.
+                                </Typography>
+                             </View>
+                           </View>
+                         ) : (
+                            <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontStyle: 'italic' }}>Ainda não há histórico suficiente para comparar este parâmetro.</Typography>
+                         )}
+                      </View>
+
+                      <View style={{ marginBottom: 16 }}>
+                         <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: 1 }}>BASELINE PESSOAL</Typography>
+                         {simHistory ? (() => {
+                           const vals = [parseFloat(selectedItem.value), ...simHistory.map(h => parseFloat(h.value))];
+                           const min = Math.min(...vals).toFixed(1);
+                           const max = Math.max(...vals).toFixed(1);
+                           const avg = (vals.reduce((a,b) => a+b, 0) / vals.length).toFixed(1);
+                           return (
+                             <View>
+                               <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>
+                                 Valor habitual: ~{avg} {selectedItem.unit}
+                               </Typography>
+                               <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 4 }}>
+                                 Min: {min} | Max: {max} (SIMULAÇÃO)
+                               </Typography>
+                             </View>
+                           );
+                         })() : (
+                            <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>
+                              Baseline pessoal ainda não disponível.
+                            </Typography>
+                         )}
+                      </View>
+
+                      <View style={{ marginBottom: 16 }}>
+                         <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: 1 }}>REFERÊNCIA GERAL</Typography>
+                         <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>
+                           {meta?.generalReference || 'Referência geral não definida nesta versão.'}
+                         </Typography>
+                      </View>
+
+                      {meta && (
+                        <View style={{ marginBottom: 16, backgroundColor: 'rgba(0, 242, 255, 0.05)', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.1)' }}>
+                           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                             <Info size={14} color="#00F2FF" style={{ marginRight: 6 }} />
+                             <Typography variant="caption" style={{ color: '#00F2FF', letterSpacing: 1 }}>
+                               O QUE ESTE PARÂMETRO COSTUMA INDICAR
+                             </Typography>
+                           </View>
+                           <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 }}>
+                             {meta.educationalMeaning}
+                           </Typography>
+                           {meta.isExperimental && (
+                             <Typography style={{ color: '#F59E0B', fontSize: 12, marginTop: 8, fontWeight: '500' }}>
+                               Nota: Em contexto de investigação/monitorização. Não deve ser lido isoladamente.
+                             </Typography>
+                           )}
+                        </View>
+                      )}
+                    </>
+                  );
+                })()}
+
+                <View style={styles.infoBox}>
+                   <Typography style={styles.infoText}>
+                     {BIOMARKER_INFO[selectedItem?.name || '']?.limitation || 'Esta leitura é observacional e não substitui avaliação clínica quando existirem sintomas, persistência ou preocupação.'}
+                   </Typography>
+                </View>
+
+                <TouchableOpacity style={styles.closeBtn} onPress={() => setSelectedItem(null)}>
+                   <Typography style={styles.closeBtnText}>FECHAR</Typography>
+                </TouchableOpacity>
+              </ScrollView>
            </BlurView>
         </TouchableOpacity>
       </Modal>
