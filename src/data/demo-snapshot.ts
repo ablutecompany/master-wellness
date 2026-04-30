@@ -27,7 +27,20 @@ export const DEMO_ANALYSIS_SNAPSHOT: Analysis = {
     // --- FEZES ---
     { id: 'dm10', type: 'fecal', marker: 'Bristol', value: 'Tipo 4', unit: 'Ideal', recordedAt: '2024-04-26T23:00:00Z', timestamp: 1714172400000 },
     { id: 'dm11', type: 'fecal', marker: 'Regularidade', value: 'Elevada', unit: '', recordedAt: '2024-04-26T23:00:00Z', timestamp: 1714172400000 },
-    { id: 'dm12', type: 'fecal', marker: 'Consistência', value: 'Normal', unit: '', recordedAt: '2024-04-26T23:00:00Z', timestamp: 1714172400000 },
+    { id: 'dm12', type: 'fecal', marker: 'Caracterização Óptica', value: 'ligeiramente seca', unit: '', recordedAt: '2024-04-26T23:00:00Z', timestamp: 1714172400000 },
+    { id: 'dm13', type: 'fecal', marker: 'Caracterização Óptica Completa', value: {
+        bristol: 'Tipo 4',
+        consistencia: 'Normal',
+        forma: 'Salsicha',
+        superficie: 'Lisa',
+        cor: 'Castanho',
+        fragmentacao: 'Baixa',
+        mucoVisivel: 'Não observado',
+        sangueVisivel: 'Não observado',
+        aspetoGorduroso: 'Não observado',
+        interpretacaoWellness: 'Trânsito intestinal regular, adequada hidratação.',
+        confiancaImagem: 'Alta'
+      }, unit: '', recordedAt: '2024-04-26T23:00:00Z', timestamp: 1714172400000 },
 
     // --- FISIOLÓGICOS ---
     { id: 'dm20', type: 'ecg', marker: 'Ritmo Cardíaco', value: '72', unit: 'bpm', recordedAt: '2024-04-26T23:00:00Z', timestamp: 1714172400000 },

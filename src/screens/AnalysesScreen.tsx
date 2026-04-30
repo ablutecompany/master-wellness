@@ -135,7 +135,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
       case 'urina':
         return allResults.filter(r => r.type === 'urinalysis');
       case 'fezes':
-        return allResults.filter(r => r.type === 'fecal' && r.name !== 'Caracterização Óptica Completa' && r.name !== 'Regularidade');
+        return allResults.filter(r => r.type === 'fecal' && r.name !== 'Caracterização Óptica Completa' && r.name !== 'Regularidade' && r.name !== 'Consistência');
       case 'fisiologicos':
         return allResults.filter(r => ['ecg', 'ppg', 'weight', 'temp', 'impedance'].includes(r.type));
       case 'contextuais':
@@ -404,19 +404,25 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                   if (isBristol) {
                     return (
                       <>
+                        <View style={{ marginBottom: 16 }}>
+                           <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 8, letterSpacing: 1 }}>RESUMO</Typography>
+                           <Typography style={{ color: '#FFF', fontSize: 16, fontWeight: '600', textTransform: 'capitalize' }}>
+                             {String(selectedItem.value).includes('Tipo') ? selectedItem.value : `Tipo ${selectedItem.value}`}
+                           </Typography>
+                        </View>
+
                         <View style={{ marginBottom: 24, backgroundColor: 'rgba(0, 242, 255, 0.05)', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.1)' }}>
                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
                              <Info size={14} color="#00F2FF" style={{ marginRight: 6 }} />
                              <Typography variant="caption" style={{ color: '#00F2FF', letterSpacing: 1 }}>
-                               O QUE ESTA ESCALA DESCREVE
+                               SOBRE A CLASSIFICAÇÃO
                              </Typography>
                            </View>
                            <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 }}>
-                             {meta?.educationalMeaning}
+                             A classificação Bristol é atribuída em função das características descritas em “Caracterização Óptica”.
                            </Typography>
-                           <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 18, marginTop: 8 }}>
-                             <Typography style={{ fontWeight: 'bold', color: 'rgba(255,255,255,0.8)' }}>Limites: </Typography>
-                             {meta?.utility}
+                           <Typography style={{ color: '#F59E0B', fontSize: 13, lineHeight: 18, marginTop: 8, fontWeight: '500' }}>
+                             Aviso: Não é diagnóstico; é uma classificação visual/observacional baseada na literatura.
                            </Typography>
                         </View>
                       </>
