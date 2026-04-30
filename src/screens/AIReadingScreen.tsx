@@ -32,9 +32,9 @@ const DimensionGridCard = ({ id, label, score, icon: Icon, color, isSelected, on
   };
   const shortLabel = shortLabels[id] || label;
 
-  const radius = 24;
-  const strokeWidth = 5;
-  const size = 58;
+  const radius = 19;
+  const strokeWidth = 4;
+  const size = 46;
   const center = size / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (score / 100) * circumference;
@@ -44,7 +44,7 @@ const DimensionGridCard = ({ id, label, score, icon: Icon, color, isSelected, on
       style={[
         styles.gridCard, 
         isSelected && styles.gridCardSelected,
-        isSelected && { borderColor: color, shadowColor: color, shadowOffset: {width:0, height:0}, shadowOpacity: 0.3, shadowRadius: 10 }
+        isSelected && { borderColor: color, shadowColor: color, shadowOffset: {width:0, height:0}, shadowOpacity: 0.3, shadowRadius: 8 }
       ]}
       onPress={onPress}
       activeOpacity={0.7}
@@ -60,7 +60,7 @@ const DimensionGridCard = ({ id, label, score, icon: Icon, color, isSelected, on
           </View>
         </View>
         <View style={styles.gridRightContent}>
-          <Icon size={14} color={color} style={{ marginBottom: 4 }} />
+          <Icon size={12} color={color} style={{ marginBottom: 2 }} />
           <Typography style={styles.gridLabel} numberOfLines={2}>{shortLabel}</Typography>
         </View>
       </View>
@@ -293,14 +293,14 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
              <BlurView intensity={30} tint="dark" style={[styles.messageAreaCard, { borderColor: `${color}40`, backgroundColor: 'rgba(255,255,255,0.03)' }]}>
                  <View style={{ flexDirection: 'row', gap: 16 }}>
                     {/* LEFT COLUMN: BIG RING */}
-                    <View style={{ width: 120, height: 120, justifyContent: 'center', alignItems: 'center' }}>
-                      <Svg width={120} height={120} style={{ transform: [{ rotate: '90deg' }], position: 'absolute' }}>
-                        <Circle cx={60} cy={60} r={54} stroke="rgba(255,255,255,0.05)" strokeWidth={8} fill="transparent" />
-                        <Circle cx={60} cy={60} r={54} stroke={color} strokeWidth={8} strokeDasharray={2 * Math.PI * 54} strokeDashoffset={2 * Math.PI * 54 * (1 - selectedDim.score/100)} strokeLinecap="round" fill="transparent" />
+                    <View style={{ width: 100, height: 100, justifyContent: 'center', alignItems: 'center' }}>
+                      <Svg width={100} height={100} style={{ transform: [{ rotate: '90deg' }], position: 'absolute' }}>
+                        <Circle cx={50} cy={50} r={44} stroke="rgba(255,255,255,0.05)" strokeWidth={6} fill="transparent" />
+                        <Circle cx={50} cy={50} r={44} stroke={color} strokeWidth={6} strokeDasharray={2 * Math.PI * 44} strokeDashoffset={2 * Math.PI * 44 * (1 - selectedDim.score/100)} strokeLinecap="round" fill="transparent" />
                       </Svg>
                       <View style={{ alignItems: 'center' }}>
-                        {React.createElement(getDimensionIcon(selectedDim.id), { size: 24, color: color, style: { marginBottom: 4 } })}
-                        <Typography style={{ color: '#fff', fontSize: 28, fontWeight: '800' }}>{selectedDim.score}</Typography>
+                        {React.createElement(getDimensionIcon(selectedDim.id), { size: 20, color: color, style: { marginBottom: 2 } })}
+                        <Typography style={{ color: '#fff', fontSize: 24, fontWeight: '800' }}>{selectedDim.score}</Typography>
                       </View>
                     </View>
                     
@@ -314,24 +314,24 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                       <Typography style={styles.messageText}>{selectedDim.explanation}</Typography>
                       
                       {selectedTheme?.action && (
-                        <View style={{ marginTop: 16 }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                            <Target size={14} color="#00F2FF" />
-                            <Typography style={{ color: '#00F2FF', fontSize: 12, fontWeight: '700' }}>Recomendação</Typography>
+                        <View style={{ marginTop: 12 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                            <Target size={12} color="#00F2FF" />
+                            <Typography style={{ color: '#00F2FF', fontSize: 11, fontWeight: '700' }}>Recomendação</Typography>
                           </View>
-                          <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, lineHeight: 18 }}>{selectedTheme.action}</Typography>
+                          <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, lineHeight: 16 }}>{selectedTheme.action}</Typography>
                         </View>
                       )}
                     </View>
                  </View>
                  
-                 <View style={{ flexDirection: 'row', gap: 12, marginTop: 24 }}>
+                 <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
                     <TouchableOpacity style={styles.actionBtnPill} onPress={() => setShowFundamentacao(true)}>
-                      <Activity size={14} color="rgba(255,255,255,0.8)" style={{ marginRight: 6 }} />
+                      <Activity size={12} color="rgba(255,255,255,0.8)" style={{ marginRight: 6 }} />
                       <Typography style={styles.actionBtnText}>Fundamentação</Typography>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.actionBtnPill, { backgroundColor: 'rgba(0, 242, 255, 0.08)' }]} onPress={() => setShowRecomendacoes(true)}>
-                      <Target size={14} color="#00F2FF" style={{ marginRight: 6 }} />
+                      <Target size={12} color="#00F2FF" style={{ marginRight: 6 }} />
                       <Typography style={[styles.actionBtnText, { color: '#00F2FF' }]}>Recomendações</Typography>
                     </TouchableOpacity>
                  </View>
@@ -506,31 +506,31 @@ const styles = StyleSheet.create({
   container: { backgroundColor: '#05070A', flex: 1 },
   atmosphere: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
   aura: { position: 'absolute', width: 600, height: 600, borderRadius: 300, top: -200, right: -200, opacity: 0.3, ...(Platform.OS === 'web' ? { filter: 'blur(120px)' } : {}) },
-  scroll: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 60 },
-  header: { marginBottom: 12 },
-  title: { color: '#ffffff', fontSize: 24, fontWeight: '700' },
+  scroll: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 },
+  header: { marginBottom: 8 },
+  title: { color: '#ffffff', fontSize: 22, fontWeight: '700' },
   demoBadge: { borderColor: '#00F2FF', borderWidth: 1, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, justifyContent: 'center', height: 20 },
   demoLabel: { color: '#00F2FF', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
-  iconBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
+  iconBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
   
-  messageAreaCard: { padding: 20, borderRadius: 28, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', marginBottom: 20, backgroundColor: 'rgba(255,255,255,0.03)', minHeight: 160 },
-  sectionTitle: { color: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: '800', letterSpacing: 1.5, marginBottom: 8 },
-  messageTitle: { color: '#ffffff', fontSize: 16, fontWeight: '700', marginBottom: 8 },
-  messageText: { color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 },
-  statusMiniBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  statusMiniText: { fontSize: 10, fontWeight: '900', letterSpacing: 1 },
-  actionBtnPill: { flex: 1, flexDirection: 'row', paddingVertical: 12, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' },
-  actionBtnText: { color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: '600' },
+  messageAreaCard: { padding: 16, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', marginBottom: 16, backgroundColor: 'rgba(255,255,255,0.03)', minHeight: 140 },
+  sectionTitle: { color: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 6 },
+  messageTitle: { color: '#ffffff', fontSize: 15, fontWeight: '700', marginBottom: 6 },
+  messageText: { color: 'rgba(255,255,255,0.7)', fontSize: 12, lineHeight: 16 },
+  statusMiniBadge: { paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6 },
+  statusMiniText: { fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  actionBtnPill: { flex: 1, flexDirection: 'row', paddingVertical: 10, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' },
+  actionBtnText: { color: 'rgba(255,255,255,0.9)', fontSize: 12, fontWeight: '600' },
 
-  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
-  gridCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', padding: 12, minHeight: 100, justifyContent: 'center' },
+  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between' },
+  gridCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', padding: 10, minHeight: 76, justifyContent: 'center' },
   gridCardSelected: { backgroundColor: 'rgba(255,255,255,0.06)' },
   gridCardContent: { flexDirection: 'row', alignItems: 'center', width: '100%' },
-  ringContainer: { position: 'relative', width: 58, height: 58, justifyContent: 'center', alignItems: 'center' },
+  ringContainer: { position: 'relative', width: 46, height: 46, justifyContent: 'center', alignItems: 'center' },
   ringInnerContent: { position: 'absolute', alignItems: 'center', justifyContent: 'center', top: 0, left: 0, right: 0, bottom: 0 },
-  gridRightContent: { flex: 1, paddingLeft: 12, justifyContent: 'center', alignItems: 'flex-start' },
-  gridScore: { color: '#fff', fontSize: 16, fontWeight: '800' },
-  gridLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '500', lineHeight: 16 },
+  gridRightContent: { flex: 1, paddingLeft: 10, justifyContent: 'center', alignItems: 'flex-start' },
+  gridScore: { color: '#fff', fontSize: 14, fontWeight: '800' },
+  gridLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '500', lineHeight: 14 },
 
   modalOverlay: { flex: 1, justifyContent: 'center', padding: 24 },
   modalCentered: { flex: 1, justifyContent: 'center' },
