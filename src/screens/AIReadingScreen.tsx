@@ -122,16 +122,72 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
       watch: 'A Acompanhar'
     };
 
+    const fallbacks: Record<string, { explanation: string, action: string, signals: string[] }> = {
+      energy: {
+        explanation: "Esta dimensão cruza sinais fisiológicos recentes, sono registado e recuperação percebida para estimar a disponibilidade geral do organismo. Nesta leitura, a energia parece depender sobretudo da qualidade do repouso e da carga acumulada, mais do que de um único marcador isolado.",
+        action: "Evitar carga excessiva",
+        signals: ["sono", "recuperação", "frequência cardíaca", "HRV/PPG se existir", "stress/contexto"]
+      },
+      recovery: {
+        explanation: "Esta dimensão observa se o corpo parece estar a recuperar bem face à carga recente. Sono, frequência cardíaca, variabilidade/PPG e contexto de stress ajudam a perceber se é melhor manter intensidade controlada ou se há margem para maior exigência.",
+        action: "Priorizar descanso",
+        signals: ["sono", "PPG/HRV", "carga fisiológica", "stress/contexto"]
+      },
+      hydration: {
+        explanation: "Esta dimensão usa sobretudo sinais urinários, como densidade/gravidade específica, pH, eletrólitos e concentração da amostra, para contextualizar hidratação e equilíbrio urinário. Uma leitura isolada deve ser confirmada por repetição e pelo contexto de ingestão de líquidos.",
+        action: "Distribuir ingestão de água",
+        signals: ["densidade urinária", "pH urinário", "sódio", "potássio", "rácio Na/K", "creatinina urinária"]
+      },
+      digestion: {
+        explanation: "Esta dimensão resume a caracterização óptica das fezes, incluindo Bristol, consistência, forma e confiança da avaliação por imagem. O objetivo é observar padrões aparentes ao longo do tempo, não diagnosticar alterações intestinais.",
+        action: "Observar padrão nas próximas leituras",
+        signals: ["Bristol", "Caracterização Óptica", "consistência", "forma", "confiança da imagem"]
+      },
+      vitals: {
+        explanation: "Esta dimensão integra sinais fisiológicos como frequência cardíaca, saturação de oxigénio, temperatura, ECG/PPG quando disponíveis e variações recentes. Serve para perceber se os sinais vitais parecem estáveis no contexto da leitura, sem fazer interpretação clínica isolada.",
+        action: "Acompanhar estabilidade",
+        signals: ["frequência cardíaca", "saturação de oxigénio", "temperatura", "ECG", "PPG"]
+      },
+      nutrition: {
+        explanation: "Esta dimensão procura transformar sinais disponíveis em pistas nutricionais prudentes, cruzando urinálise, hidratação, eletrólitos, glicose, caracterização fecal e contexto registado. Quando os dados ainda são limitados, deve funcionar como orientação leve para observar padrões, não como plano alimentar.",
+        action: "Relacionar sinais com hábitos alimentares",
+        signals: ["glicose urinária", "eletrólitos", "densidade urinária", "caracterização fecal", "contexto alimentar"]
+      },
+      stress: {
+        explanation: "Esta dimensão combina sinais de recuperação, sono, carga fisiológica e marcadores indiretos de tensão para estimar se o organismo parece mais preparado para foco ou se beneficia de autorregulação. A leitura deve ser vista como apoio comportamental, não como avaliação psicológica.",
+        action: "Criar uma pausa de recuperação",
+        signals: ["sono", "recuperação", "PPG/HRV", "stress registado", "carga recente"]
+      },
+      watch: {
+        explanation: "Esta dimensão identifica sinais que ainda não permitem conclusão robusta, mas que merecem repetição, comparação temporal ou contexto adicional. O objetivo é separar o que já parece consistente daquilo que ainda precisa de histórico.",
+        action: "Repetir e comparar tendência",
+        signals: ["sinais sem histórico suficiente", "marcadores experimentais", "alterações isoladas", "dados contextuais em falta"]
+      }
+    };
+
     return baseIds.map(id => {
       const existing = reading.dimensions.find(d => d.id === id);
-      if (existing) {
-         return { ...existing, label: baseLabels[id] || existing.label };
-      }
+      const fb = fallbacks[id];
+
+      const isWeak = !existing || 
+                     !existing.explanation || 
+                     existing.explanation.length < 80 || 
+                     existing.explanation.includes('Dados base insuficientes') ||
+                     existing.explanation.includes('Estabilidade cardiovascular.') ||
+                     existing.explanation.includes('Capacidade de resposta a estímulos.') ||
+                     existing.explanation.includes('Estado de hidratação celular.');
+      
+      const explanation = isWeak ? fb.explanation : existing.explanation;
+      const score = existing ? existing.score : 50;
+
       return {
+        ...existing,
         id,
-        label: baseLabels[id],
-        score: 50,
-        explanation: 'Dados base insuficientes. A aguardar convergência factual para análise interpretativa.',
+        label: baseLabels[id] || (existing?.label ?? id),
+        score,
+        explanation,
+        fallbackAction: fb.action,
+        fallbackSignals: fb.signals
       };
     });
   }, [reading]);
@@ -165,7 +221,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   };
 
   const selectedDim = selectedDimId ? normalizedDimensions.find(d => d.id === selectedDimId) : null;
-  const selectedTheme = selectedDim ? (reading.highlightedThemes.find(t => t.id === selectedDim.id || t.title.toLowerCase().includes(selectedDim.label.toLowerCase())) || { status: selectedDim.score >= 70 ? 'optimal' : selectedDim.score >= 40 ? 'stable' : 'caution', action: 'Monitorizar evolução.' }) : null;
+  const selectedTheme = selectedDim ? (reading.highlightedThemes.find(t => t.id === selectedDim.id || t.title.toLowerCase().includes(selectedDim.label.toLowerCase())) || { status: selectedDim.score >= 70 ? 'optimal' : selectedDim.score >= 40 ? 'stable' : 'caution', action: selectedDim.fallbackAction }) : null;
 
   return (
     <Container safe style={styles.container}>
@@ -283,7 +339,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                    <View style={styles.refItemBox}>
                       <Typography variant="caption" style={styles.refLabel}>SINAIS CONSIDERADOS</Typography>
                       <View style={styles.signalsRow}>
-                        {(reading.references.themeDataLinks?.[selectedDim?.id || ''] || reading.references.usedSignals).map((s, i) => (
+                        {(reading.references.themeDataLinks?.[selectedDim?.id || ''] || selectedDim?.fallbackSignals || reading.references.usedSignals).map((s: string, i: number) => (
                           <View key={i} style={styles.signalChip}><Typography style={styles.signalChipText}>{s}</Typography></View>
                         ))}
                       </View>
@@ -327,7 +383,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                          return (
                             <View style={styles.actionCard}>
                                <Typography style={styles.actionTitle}>Sugestão geral</Typography>
-                               <Typography style={styles.actionReason}>{selectedTheme?.action || 'Sem ações específicas isoladas nesta dimensão. Siga a rotina sugerida globalmente.'}</Typography>
+                               <Typography style={styles.actionReason}>{selectedTheme?.action || selectedDim?.fallbackAction || 'Sem ações específicas isoladas nesta dimensão. Siga a rotina sugerida globalmente.'}</Typography>
                             </View>
                          );
                       }
