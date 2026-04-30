@@ -359,12 +359,6 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
       </ScrollView>
 
-      {/* PROVA TÉCNICA DE DEPLOY - APENAS PARA VALIDAÇÃO MOBILE CACHE */}
-      <View style={{ padding: 12, alignItems: 'center', opacity: 0.5 }}>
-         <Typography style={{ color: '#00F2FF', fontSize: 10, fontFamily: 'monospace' }}>
-            AI_READING_UI_COMMIT: 942cfd3
-         </Typography>
-      </View>
 
       {/* POPUP: FUNDAMENTAÇÃO */}
       <Modal visible={showFundamentacao} transparent animationType="fade">
@@ -512,7 +506,7 @@ const styles = StyleSheet.create({
   demoLabel: { color: '#00F2FF', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   iconBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
   
-  messageAreaCard: { padding: 16, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', marginBottom: 16, backgroundColor: 'rgba(255,255,255,0.03)', minHeight: 140 },
+  messageAreaCard: { padding: 16, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', marginBottom: 16, backgroundColor: 'rgba(255,255,255,0.03)', height: 240 },
   sectionTitle: { color: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 6 },
   messageTitle: { color: '#ffffff', fontSize: 15, fontWeight: '700', marginBottom: 6 },
   messageText: { color: 'rgba(255,255,255,0.7)', fontSize: 12, lineHeight: 16 },
