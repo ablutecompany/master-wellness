@@ -20,9 +20,21 @@ const ENABLE_OPENAI_READING = (
 type ReadingSource = 'local' | 'openai' | 'fallback';
 
 const DimensionGridCard = ({ id, label, score, icon: Icon, color, isSelected, onPress }: any) => {
-  const radius = 34;
-  const strokeWidth = 6;
-  const size = 80;
+  const shortLabels: Record<string, string> = {
+    'energy': 'Energia',
+    'recovery': 'Recuperação',
+    'hydration': 'Hidratação',
+    'digestion': 'Intestinal',
+    'vitals': 'Sinais vitais',
+    'nutrition': 'Nutrição',
+    'stress': 'Stress & foco',
+    'watch': 'A acompanhar'
+  };
+  const shortLabel = shortLabels[id] || label;
+
+  const radius = 24;
+  const strokeWidth = 5;
+  const size = 58;
   const center = size / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (score / 100) * circumference;
@@ -44,11 +56,13 @@ const DimensionGridCard = ({ id, label, score, icon: Icon, color, isSelected, on
             <Circle cx={center} cy={center} r={radius} stroke={color} strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" fill="transparent" />
           </Svg>
           <View style={styles.ringInnerContent}>
-            <Icon size={16} color={color} style={{ marginBottom: 2 }} />
             <Typography style={styles.gridScore}>{score}</Typography>
           </View>
         </View>
-        <Typography style={styles.gridLabel} numberOfLines={2}>{label}</Typography>
+        <View style={styles.gridRightContent}>
+          <Icon size={14} color={color} style={{ marginBottom: 4 }} />
+          <Typography style={styles.gridLabel} numberOfLines={2}>{shortLabel}</Typography>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -278,38 +292,47 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           return (
              <BlurView intensity={30} tint="dark" style={[styles.messageAreaCard, { borderColor: `${color}40`, backgroundColor: 'rgba(255,255,255,0.03)' }]}>
                  <View style={{ flexDirection: 'row', gap: 16 }}>
-                    {/* LEFT COLUMN: MINI RING */}
-                    <View style={{ width: 64, height: 64, justifyContent: 'center', alignItems: 'center' }}>
-                      <Svg width={64} height={64} style={{ transform: [{ rotate: '90deg' }], position: 'absolute' }}>
-                        <Circle cx={32} cy={32} r={28} stroke="rgba(255,255,255,0.05)" strokeWidth={4} fill="transparent" />
-                        <Circle cx={32} cy={32} r={28} stroke={color} strokeWidth={4} strokeDasharray={2 * Math.PI * 28} strokeDashoffset={2 * Math.PI * 28 * (1 - selectedDim.score/100)} strokeLinecap="round" fill="transparent" />
+                    {/* LEFT COLUMN: BIG RING */}
+                    <View style={{ width: 120, height: 120, justifyContent: 'center', alignItems: 'center' }}>
+                      <Svg width={120} height={120} style={{ transform: [{ rotate: '90deg' }], position: 'absolute' }}>
+                        <Circle cx={60} cy={60} r={54} stroke="rgba(255,255,255,0.05)" strokeWidth={8} fill="transparent" />
+                        <Circle cx={60} cy={60} r={54} stroke={color} strokeWidth={8} strokeDasharray={2 * Math.PI * 54} strokeDashoffset={2 * Math.PI * 54 * (1 - selectedDim.score/100)} strokeLinecap="round" fill="transparent" />
                       </Svg>
-                      <Typography style={{ color: '#fff', fontSize: 16, fontWeight: '800' }}>{selectedDim.score}</Typography>
+                      <View style={{ alignItems: 'center' }}>
+                        {React.createElement(getDimensionIcon(selectedDim.id), { size: 24, color: color, style: { marginBottom: 4 } })}
+                        <Typography style={{ color: '#fff', fontSize: 28, fontWeight: '800' }}>{selectedDim.score}</Typography>
+                      </View>
                     </View>
                     
                     {/* RIGHT COLUMN: TEXTS */}
-                    <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                        <Typography style={[styles.sectionTitle, { color, marginBottom: 0, flex: 1, marginRight: 8 }]} numberOfLines={1}>{selectedDim.label.toUpperCase()}</Typography>
-                        <View style={[styles.statusMiniBadge, { backgroundColor: `${color}15` }]}>
-                          <Typography style={[styles.statusMiniText, { color }]}>{statusLabel}</Typography>
-                        </View>
+                    <View style={{ flex: 1, paddingLeft: 4 }}>
+                      <Typography style={[styles.messageTitle, { marginBottom: 4 }]} numberOfLines={2}>{selectedDim.label}</Typography>
+                      <View style={[styles.statusMiniBadge, { backgroundColor: `${color}15`, alignSelf: 'flex-start', marginBottom: 12 }]}>
+                        <Typography style={[styles.statusMiniText, { color }]}>⚠️ {statusLabel}</Typography>
                       </View>
+                      
                       <Typography style={styles.messageText}>{selectedDim.explanation}</Typography>
+                      
                       {selectedTheme?.action && (
-                        <Typography style={[styles.messageText, { color: '#FFF', fontWeight: 'bold', marginTop: 12 }]}>
-                          💡 {selectedTheme.action}
-                        </Typography>
+                        <View style={{ marginTop: 16 }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                            <Target size={14} color="#00F2FF" />
+                            <Typography style={{ color: '#00F2FF', fontSize: 12, fontWeight: '700' }}>Recomendação</Typography>
+                          </View>
+                          <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, lineHeight: 18 }}>{selectedTheme.action}</Typography>
+                        </View>
                       )}
                     </View>
                  </View>
                  
-                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 16 }}>
+                 <View style={{ flexDirection: 'row', gap: 12, marginTop: 24 }}>
                     <TouchableOpacity style={styles.actionBtnPill} onPress={() => setShowFundamentacao(true)}>
+                      <Activity size={14} color="rgba(255,255,255,0.8)" style={{ marginRight: 6 }} />
                       <Typography style={styles.actionBtnText}>Fundamentação</Typography>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionBtnPill} onPress={() => setShowRecomendacoes(true)}>
-                      <Typography style={styles.actionBtnText}>Recomendações</Typography>
+                    <TouchableOpacity style={[styles.actionBtnPill, { backgroundColor: 'rgba(0, 242, 255, 0.08)' }]} onPress={() => setShowRecomendacoes(true)}>
+                      <Target size={14} color="#00F2FF" style={{ marginRight: 6 }} />
+                      <Typography style={[styles.actionBtnText, { color: '#00F2FF' }]}>Recomendações</Typography>
                     </TouchableOpacity>
                  </View>
              </BlurView>
@@ -485,21 +508,22 @@ const styles = StyleSheet.create({
   
   messageAreaCard: { padding: 20, borderRadius: 28, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', marginBottom: 20, backgroundColor: 'rgba(255,255,255,0.03)', minHeight: 160 },
   sectionTitle: { color: 'rgba(255,255,255,0.3)', fontSize: 11, fontWeight: '800', letterSpacing: 1.5, marginBottom: 8 },
-  messageTitle: { color: '#ffffff', fontSize: 18, fontWeight: '700', marginBottom: 8 },
+  messageTitle: { color: '#ffffff', fontSize: 16, fontWeight: '700', marginBottom: 8 },
   messageText: { color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 },
   statusMiniBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   statusMiniText: { fontSize: 10, fontWeight: '900', letterSpacing: 1 },
-  actionBtnPill: { flex: 1, paddingVertical: 8, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center' },
-  actionBtnText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  actionBtnPill: { flex: 1, flexDirection: 'row', paddingVertical: 12, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' },
+  actionBtnText: { color: 'rgba(255,255,255,0.9)', fontSize: 13, fontWeight: '600' },
 
   gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
-  gridCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', padding: 16, alignItems: 'center', minHeight: 150 },
+  gridCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', padding: 12, minHeight: 100, justifyContent: 'center' },
   gridCardSelected: { backgroundColor: 'rgba(255,255,255,0.06)' },
-  gridCardContent: { alignItems: 'center', width: '100%' },
-  ringContainer: { position: 'relative', width: 80, height: 80, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+  gridCardContent: { flexDirection: 'row', alignItems: 'center', width: '100%' },
+  ringContainer: { position: 'relative', width: 58, height: 58, justifyContent: 'center', alignItems: 'center' },
   ringInnerContent: { position: 'absolute', alignItems: 'center', justifyContent: 'center', top: 0, left: 0, right: 0, bottom: 0 },
-  gridScore: { color: '#fff', fontSize: 16, fontWeight: '800', marginTop: 2 },
-  gridLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '600', textAlign: 'center', lineHeight: 16 },
+  gridRightContent: { flex: 1, paddingLeft: 12, justifyContent: 'center', alignItems: 'flex-start' },
+  gridScore: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  gridLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '500', lineHeight: 16 },
 
   modalOverlay: { flex: 1, justifyContent: 'center', padding: 24 },
   modalCentered: { flex: 1, justifyContent: 'center' },
