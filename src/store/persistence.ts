@@ -5,6 +5,7 @@ const STORAGE_KEY = 'ablute-app-store';
 
 export function loadFromStorage(): { 
   installedAppIds: string[]; 
+  favoriteAppIds: string[];
   grantedPermissions: Record<string, Permission[]>; 
   appEvents: MiniAppEvent[];
   appContributionEvents: AppContributionEvent[];
@@ -15,11 +16,12 @@ export function loadFromStorage(): {
       if (raw) return { appEvents: [], appContributionEvents: [], ...JSON.parse(raw) };
     }
   } catch {}
-  return { installedAppIds: [], grantedPermissions: {}, appEvents: [], appContributionEvents: [] };
+  return { installedAppIds: [], favoriteAppIds: [], grantedPermissions: {}, appEvents: [], appContributionEvents: [] };
 }
 
 export function saveToStorage(
   installedAppIds: string[], 
+  favoriteAppIds: string[],
   grantedPermissions: Record<string, Permission[]>, 
   appEvents: MiniAppEvent[],
   appContributionEvents: AppContributionEvent[]
@@ -28,6 +30,7 @@ export function saveToStorage(
     if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ 
         installedAppIds, 
+        favoriteAppIds,
         grantedPermissions, 
         appEvents,
         appContributionEvents 

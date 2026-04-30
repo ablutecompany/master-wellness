@@ -177,7 +177,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const setIsDemoMode = useStore(state => state.setIsDemoMode);
   const setDemoAnalysis = useStore(state => state.setDemoAnalysis);
   const installedAppIds = useStore(state => state.installedAppIds) || [];
+  const favoriteAppIds = useStore(state => state.favoriteAppIds) || [];
   const installApp = useStore(state => state.installApp);
+  const uninstallApp = useStore(state => state.uninstallApp);
+  const toggleFavoriteApp = useStore(state => state.toggleFavoriteApp);
   const launchApp = useStore(state => state.launchApp);
 
   const isAuthenticated = !!authAccount || isGuestMode;
@@ -706,10 +709,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               
               {/* Footer Icons: Estilo Antigo (Maiores, com Label) */}
               <Animated.View style={[styles.footerIconsRow, { opacity: footerIconsOpacity }]}>
-                {installedAppIds.length > 0 ? (
-                  installedAppIds.map(id => {
-                    const app = MINI_APP_CATALOG.find(a => a.id === id);
-                    if (!app) return null;
+                {(() => {
+                  const footerApps = installedAppIds.filter(id => favoriteAppIds.includes(id));
+                  if (footerApps.length > 0) {
+                    return footerApps.map(id => {
+                      const app = MINI_APP_CATALOG.find(a => a.id === id);
+                      if (!app) return null;
                     return (
                       <TouchableOpacity 
                         key={id} 
@@ -726,10 +731,11 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                         <Typography style={styles.footerIconLabel}>{app.name.replace(/_/g, '').toUpperCase()}</Typography>
                       </TouchableOpacity>
                     );
-                  })
-                ) : (
-                  <Typography style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', letterSpacing: 2, fontWeight: '800' }}>APP PLACE VAZIO</Typography>
-                )}
+                    });
+                  } else {
+                    return null; // O rodapé fica limpo/vazio se não houver favoritos
+                  }
+                })()}
               </Animated.View>
             </View>
           </View>
@@ -766,8 +772,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                            })()}
                         </View>
                         <View style={styles.rowInfo}>
-                          <Typography style={[styles.rowTitle, !isInstalled && { opacity: 0.7 }]}>{app.name}</Typography>
-                          <Typography variant="caption" style={styles.rowDesc}>{app.tagline}</Typography>
+                          <Typography numberOfLines={1} ellipsizeMode="tail" style={[styles.rowTitle, !isInstalled && { opacity: 0.7 }]}>{app.name}</Typography>
+                          <Typography variant="caption" style={styles.rowDesc} numberOfLines={2}>{app.tagline}</Typography>
                         </View>
                         <View style={styles.rowActions}>
                           <TouchableOpacity 
@@ -784,13 +790,13 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                           
                           {isInstalled ? (
                             <TouchableOpacity 
-                              style={[styles.actionBtn, { backgroundColor: 'rgba(255,255,255,0.08)' }]}
+                              style={[styles.actionBtn, { backgroundColor: 'transparent', paddingHorizontal: 12 }]}
                               onPress={(e) => {
                                 e.stopPropagation();
-                                handleOpenApp(app);
+                                toggleFavoriteApp(app.id);
                               }}
                             >
-                              <Typography style={styles.actionText}>ABRIR</Typography>
+                              <Star size={18} color={favoriteAppIds.includes(app.id) ? "#F59E0B" : "rgba(255,255,255,0.3)"} fill={favoriteAppIds.includes(app.id) ? "#F59E0B" : "transparent"} />
                             </TouchableOpacity>
                           ) : (
                             <TouchableOpacity 
@@ -844,15 +850,31 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                           </ScrollView>
 
                           {/* DESCRIPTION AREA */}
-                          <View style={styles.descContainer}>
+                          <View style={[styles.descContainer, { width: '100%', paddingRight: 0 }]}>
                             <Typography style={styles.expandedPublisher}>{app.publisher || app.developer}</Typography>
                             <Typography style={styles.expandedDesc}>
                               {app.description}
                             </Typography>
                           </View>
+                            </Typography>
+                          </View>
 
                           {/* FOOTER ACTIONS */}
-                          <View style={styles.expandedFooter}>
+                          <View style={[styles.expandedFooter, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+                            {isInstalled && (
+                              <TouchableOpacity 
+                                style={[styles.closeExpandedBtn, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}
+                                onPress={(e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm(`Remover esta app da shell?\nIsto remove a app do App Place e dos favoritos, mas não apaga dados externos.`)) {
+                                    uninstallApp(app.id);
+                                    setExpandedAppId(null);
+                                  }
+                                }}
+                              >
+                                <Typography style={[styles.closeExpandedText, { color: '#EF4444' }]}>Desinstalar</Typography>
+                              </TouchableOpacity>
+                            )}
                             <TouchableOpacity 
                               style={styles.closeExpandedBtn}
                               onPress={(e) => {

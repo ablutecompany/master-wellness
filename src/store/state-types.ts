@@ -142,6 +142,7 @@ export interface AppState {
   appContributionEvents: AppContributionEvent[];
   hasHydrated: boolean;
   installedAppIds: string[];
+  favoriteAppIds: string[];
   activeApp: MiniAppManifest | null;
   grantedPermissions: Record<string, Permission[]>;
   demoAnalysis: Analysis | null;

@@ -133,7 +133,9 @@ export const AppsScreen = ({ navigation }: { navigation: any }) => {
   const [inlineApp, setInlineApp] = useState<MiniAppManifest | null>(null);
 
   const installedAppIds = useStore(Selectors.selectInstalledAppIds);
+  const favoriteAppIds = useStore(Selectors.selectFavoriteAppIds);
   const launchApp = useStore(state => state.launchApp);
+  const toggleFavoriteApp = useStore(state => state.toggleFavoriteApp);
   
   const isAppInstalled = (id: string) => {
     return installedAppIds.includes(id);
@@ -382,15 +384,14 @@ export const AppsScreen = ({ navigation }: { navigation: any }) => {
                     {/* Right: CTA */}
                     {installed ? (
                       <TouchableOpacity
-                        style={[styles.ctaBtn, styles.openBtn, { borderColor: app.iconColor + '50' }]}
+                        style={[styles.ctaBtn, { backgroundColor: 'transparent', borderWidth: 0, paddingHorizontal: 12 }]}
                         onPress={(e: any) => {
                           e?.stopPropagation?.();
-                          handleOpen(app);
+                          toggleFavoriteApp(app.id);
                         }}
                         activeOpacity={0.75}
                       >
-                        <Typography style={[styles.ctaText, { color: app.iconColor }]}>ABRIR</Typography>
-                        <ExternalLink size={10} color={app.iconColor} />
+                        <Star size={18} color={favoriteAppIds.includes(app.id) ? "#F59E0B" : "rgba(255,255,255,0.3)"} fill={favoriteAppIds.includes(app.id) ? "#F59E0B" : "transparent"} />
                       </TouchableOpacity>
                     ) : (
                       <TouchableOpacity
