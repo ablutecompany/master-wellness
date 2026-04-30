@@ -135,7 +135,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
       case 'urina':
         return allResults.filter(r => r.type === 'urinalysis');
       case 'fezes':
-        return allResults.filter(r => r.type === 'fecal');
+        return allResults.filter(r => r.type === 'fecal' && r.name !== 'Caracterização Óptica Completa' && r.name !== 'Regularidade');
       case 'fisiologicos':
         return allResults.filter(r => ['ecg', 'ppg', 'weight', 'temp', 'impedance'].includes(r.type));
       case 'contextuais':
@@ -306,9 +306,10 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                 </View>
 
                 {(() => {
-                  if (!selectedItem) return null;
                   const isEcg = selectedItem.name === 'ECG';
-                  const meta = BIOMARKER_INFO[selectedItem.name];
+                  const isFecalOptica = selectedItem.name === 'Caracterização Óptica';
+                  const isBristol = selectedItem.name === 'Bristol';
+                  const meta = BIOMARKER_INFO[selectedItem.name] || BIOMARKER_INFO['Caracterização Óptica Completa'];
                   
                   if (isEcg) {
                     return (
@@ -333,6 +334,91 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                           </TouchableOpacity>
                         </View>
                       </View>
+                    );
+                  }
+
+                  if (isFecalOptica) {
+                    const fullOpticaEntry = allResults.find(r => r.name === 'Caracterização Óptica Completa' && r.timestamp === selectedItem.timestamp);
+                    const opticaData: any = fullOpticaEntry?.value || {};
+                    const hasSangueVisivel = opticaData.sangueVisivel && opticaData.sangueVisivel.toLowerCase() !== 'não observado' && opticaData.sangueVisivel.toLowerCase() !== 'ausente';
+
+                    return (
+                      <>
+                        <View style={{ marginBottom: 16 }}>
+                           <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 8, letterSpacing: 1 }}>RESUMO</Typography>
+                           <Typography style={{ color: '#FFF', fontSize: 16, fontWeight: '600', textTransform: 'capitalize' }}>
+                             {selectedItem.value}
+                           </Typography>
+                        </View>
+
+                        <View style={{ marginBottom: 24 }}>
+                           <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 12, letterSpacing: 1 }}>DESCRIÇÃO OBSERVACIONAL</Typography>
+                           {['bristol', 'consistencia', 'forma', 'superficie', 'cor', 'fragmentacao', 'mucoVisivel', 'sangueVisivel', 'aspetoGorduroso', 'interpretacaoWellness', 'confiancaImagem'].map((key) => {
+                             if (!opticaData[key]) return null;
+                             const labels: Record<string, string> = {
+                               bristol: 'Bristol',
+                               consistencia: 'Consistência',
+                               forma: 'Forma',
+                               superficie: 'Superfície',
+                               cor: 'Cor',
+                               fragmentacao: 'Fragmentação',
+                               mucoVisivel: 'Muco visível',
+                               sangueVisivel: 'Sangue visível',
+                               aspetoGorduroso: 'Aspeto gorduroso',
+                               interpretacaoWellness: 'Interpretação wellness',
+                               confiancaImagem: 'Confiança da avaliação por imagem'
+                             };
+                             const isAlert = key === 'sangueVisivel' && hasSangueVisivel;
+                             return (
+                               <View key={key} style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', paddingVertical: 8 }}>
+                                 <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>{labels[key]}</Typography>
+                                 <Typography style={{ color: isAlert ? '#EF4444' : '#FFF', fontSize: 13, flex: 1, textAlign: 'right', marginLeft: 16 }}>
+                                   {opticaData[key]}
+                                 </Typography>
+                               </View>
+                             );
+                           })}
+                        </View>
+
+                        <View style={{ marginBottom: 16, backgroundColor: 'rgba(0, 242, 255, 0.05)', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.1)' }}>
+                           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                             <Info size={14} color="#00F2FF" style={{ marginRight: 6 }} />
+                             <Typography variant="caption" style={{ color: '#00F2FF', letterSpacing: 1 }}>
+                               LIMITES
+                             </Typography>
+                           </View>
+                           <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 }}>
+                             Esta caracterização é observacional e depende da qualidade da imagem, iluminação, visibilidade e contexto. Não constitui diagnóstico.
+                           </Typography>
+                           {hasSangueVisivel && (
+                             <Typography style={{ color: '#EF4444', fontSize: 13, lineHeight: 18, marginTop: 12, fontWeight: '600' }}>
+                               Este campo refere-se apenas a sangue visível. Sangue oculto não é avaliável por imagem. Se existir sangue visível sem explicação clara, deve ser considerada avaliação profissional.
+                             </Typography>
+                           )}
+                        </View>
+                      </>
+                    );
+                  }
+
+                  if (isBristol) {
+                    return (
+                      <>
+                        <View style={{ marginBottom: 24, backgroundColor: 'rgba(0, 242, 255, 0.05)', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.1)' }}>
+                           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                             <Info size={14} color="#00F2FF" style={{ marginRight: 6 }} />
+                             <Typography variant="caption" style={{ color: '#00F2FF', letterSpacing: 1 }}>
+                               O QUE ESTA ESCALA DESCREVE
+                             </Typography>
+                           </View>
+                           <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 }}>
+                             {meta?.educationalMeaning}
+                           </Typography>
+                           <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 18, marginTop: 8 }}>
+                             <Typography style={{ fontWeight: 'bold', color: 'rgba(255,255,255,0.8)' }}>Limites: </Typography>
+                             {meta?.utility}
+                           </Typography>
+                        </View>
+                      </>
                     );
                   }
 

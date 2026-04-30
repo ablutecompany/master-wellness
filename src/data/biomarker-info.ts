@@ -176,27 +176,33 @@ export const BIOMARKER_INFO: Record<string, BiomarkerMetadata> = {
     label: 'Escala de Bristol',
     family: 'fecal',
     unit: 'escala visual',
-    generalReference: 'Tipos 3 e 4 são tipicamente reportados como formados/normais',
-    educationalMeaning: 'A escala apresentada traduz a qualificação das fezes quando estas possuem as características descritas na Caracterização Óptica. A Escala de Bristol é uma classificação visual usada para descrever a forma e consistência aparente das fezes. Não constitui diagnóstico e deve ser interpretada com contexto, repetição e outros sinais.',
-    limitation: 'Esta leitura é observacional e não substitui avaliação clínica quando existirem sintomas, persistência ou preocupação.'
+    referenceStatus: 'contextual',
+    generalReferenceLabel: 'Tipos 3 e 4 são tipicamente formados',
+    educationalMeaning: 'A escala apresentada traduz a qualificação das fezes quando estas possuem as características descritas na Caracterização Óptica. A Escala de Bristol é uma classificação visual usada para descrever a forma e consistência aparente das fezes. Em termos gerais, tipos 1–2 aproximam-se de fezes mais duras, 3–4 tendem a ser mais formadas, e 5–7 aproximam-se de fezes moles ou líquidas. Não constitui diagnóstico.',
+    utility: 'A leitura deve ser feita em conjunto com contexto, repetição e sintomas, quando existam.',
+    limitation: 'Esta leitura é observacional e não substitui avaliação clínica quando existirem sintomas, persistência, dor, febre, perda de peso, sangue visível ou preocupação.'
   },
   'Caracterização Óptica': {
     id: 'caracterizacao_optica',
     label: 'Caracterização Óptica',
     family: 'fecal',
     unit: '',
-    generalReference: 'Depende de contexto individual e dieta',
-    educationalMeaning: 'Reflete a avaliação visual da consistência e forma. É um complemento observacional que ajuda a traçar o perfil de trânsito e hidratação sem constituir interpretação gastrointestinal clínica.',
-    limitation: 'Leitura puramente observacional.'
+    referenceStatus: 'contextual',
+    generalReferenceLabel: 'Depende de observação visual aparente',
+    educationalMeaning: 'Reflete a avaliação visual da consistência, forma e aspeto. É um complemento observacional que ajuda a traçar o perfil gastrointestinal sem constituir interpretação clínica.',
+    utility: 'Avaliação observacional para acompanhamento prudente.',
+    limitation: 'Esta caracterização é observacional e depende da qualidade da imagem, iluminação, visibilidade e contexto. Não constitui diagnóstico.'
   },
-  'Regularidade': {
-    id: 'regularidade',
-    label: 'Regularidade',
+  'Caracterização Óptica Completa': {
+    id: 'caracterizacao_optica_completa',
+    label: 'Caracterização Óptica',
     family: 'fecal',
     unit: '',
-    generalReference: 'Altamente variável consoante o indivíduo e dieta',
-    educationalMeaning: 'A frequência e o padrão reportado de dejeções. É útil para contextualizar trânsito, sem configurar diagnóstico de patologia.',
-    limitation: 'Registo observacional contextual.'
+    referenceStatus: 'contextual',
+    generalReferenceLabel: 'Depende de observação visual aparente',
+    educationalMeaning: 'Reflete a avaliação visual completa e estruturada da amostra.',
+    utility: 'Avaliação detalhada com limitações de visibilidade e qualidade de imagem.',
+    limitation: 'Esta caracterização é observacional e depende da qualidade da imagem, iluminação, visibilidade e contexto. Não constitui diagnóstico.'
   },
   'Frequência cardíaca': {
     id: 'hr',

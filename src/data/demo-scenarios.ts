@@ -45,9 +45,25 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
       recuperacao: { value: 86, unit: '%', name: 'Recuperação' }
     },
     fecal: {
-      bristol: { value: 4, unit: 'tipo', name: 'Bristol' },
-      regularidade: { value: 'elevada', unit: '', name: 'Regularidade' },
-      consistencia: { value: 'formada', unit: '', name: 'Caracterização Óptica' }
+      bristolType: { value: 4, unit: 'Tipo', name: 'Bristol' },
+      opticalSummary: { value: 'formada', unit: '', name: 'Caracterização Óptica' },
+      opticalCharacterization: {
+        value: {
+          bristol: '4',
+          consistencia: 'moldada/normal',
+          forma: 'salsicha lisa',
+          superficie: 'lisa',
+          cor: 'castanho médio',
+          fragmentacao: 'nenhuma — peça única',
+          mucoVisivel: 'não observado',
+          sangueVisivel: 'não observado',
+          aspetoGorduroso: 'não observado',
+          interpretacaoWellness: 'compatível com padrão regular',
+          confiancaImagem: 'alta'
+        },
+        unit: '',
+        name: 'Caracterização Óptica Completa'
+      }
     },
     physiological: {
       hr: { value: 62, unit: 'bpm', name: 'Frequência cardíaca' },
@@ -88,9 +104,25 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
       recuperacao: { value: 68, unit: '%', name: 'Recuperação' }
     },
     fecal: {
-      bristol: { value: 3, unit: 'tipo', name: 'Bristol' },
-      regularidade: { value: 'média', unit: '', name: 'Regularidade' },
-      consistencia: { value: 'ligeiramente seca', unit: '', name: 'Caracterização Óptica' }
+      bristolType: { value: 3, unit: 'Tipo', name: 'Bristol' },
+      opticalSummary: { value: 'ligeiramente seca', unit: '', name: 'Caracterização Óptica' },
+      opticalCharacterization: {
+        value: {
+          bristol: '3',
+          consistencia: 'firme',
+          forma: 'salsicha fissurada',
+          superficie: 'seca/fissurada',
+          cor: 'castanho escuro',
+          fragmentacao: 'baixa',
+          mucoVisivel: 'não observado',
+          sangueVisivel: 'não observado',
+          aspetoGorduroso: 'não observado',
+          interpretacaoWellness: 'possível baixa hidratação ou trânsito mais lento',
+          confiancaImagem: 'moderada'
+        },
+        unit: '',
+        name: 'Caracterização Óptica Completa'
+      }
     },
     physiological: {
       hr: { value: 72, unit: 'bpm', name: 'Frequência cardíaca' },
@@ -131,9 +163,25 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
       recuperacao: { value: 61, unit: '%', name: 'Recuperação' }
     },
     fecal: {
-      bristol: { value: 4, unit: 'tipo', name: 'Bristol' },
-      regularidade: { value: 'média', unit: '', name: 'Regularidade' },
-      consistencia: { value: 'formada', unit: '', name: 'Caracterização Óptica' }
+      bristolType: { value: 4, unit: 'Tipo', name: 'Bristol' },
+      opticalSummary: { value: 'formada', unit: '', name: 'Caracterização Óptica' },
+      opticalCharacterization: {
+        value: {
+          bristol: '4',
+          consistencia: 'moldada/normal',
+          forma: 'salsicha lisa',
+          superficie: 'lisa',
+          cor: 'castanho médio',
+          fragmentacao: 'nenhuma',
+          mucoVisivel: 'não observado',
+          sangueVisivel: 'não observado',
+          aspetoGorduroso: 'não observado',
+          interpretacaoWellness: 'compatível com padrão regular',
+          confiancaImagem: 'alta'
+        },
+        unit: '',
+        name: 'Caracterização Óptica Completa'
+      }
     },
     physiological: {
       hr: { value: 76, unit: 'bpm', name: 'Frequência cardíaca' },
@@ -218,9 +266,25 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
       recuperacao: { value: 49, unit: '%', name: 'Recuperação' }
     },
     fecal: {
-      bristol: { value: 3, unit: 'tipo', name: 'Bristol' },
-      regularidade: { value: 'média', unit: '', name: 'Regularidade' },
-      consistencia: { value: 'mais seca', unit: '', name: 'Caracterização Óptica' }
+      bristolType: { value: 3, unit: 'Tipo', name: 'Bristol' },
+      opticalSummary: { value: 'mais seca', unit: '', name: 'Caracterização Óptica' },
+      opticalCharacterization: {
+        value: {
+          bristol: '3',
+          consistencia: 'firme',
+          forma: 'salsicha fissurada',
+          superficie: 'fissurada/rugosa',
+          cor: 'castanho médio-escuro',
+          fragmentacao: 'moderada',
+          mucoVisivel: 'não observado',
+          sangueVisivel: 'não observado',
+          aspetoGorduroso: 'não observado',
+          interpretacaoWellness: 'possível baixa hidratação ou menor regularidade intestinal',
+          confiancaImagem: 'moderada'
+        },
+        unit: '',
+        name: 'Caracterização Óptica Completa'
+      }
     },
     physiological: {
       hr: { value: 78, unit: 'bpm', name: 'Frequência cardíaca' },
@@ -261,9 +325,25 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
       recuperacao: { value: 37, unit: '%', name: 'Recuperação' }
     },
     fecal: {
-      bristol: { value: 2, unit: 'tipo', name: 'Bristol' },
-      regularidade: { value: 'baixa', unit: '', name: 'Regularidade' },
-      consistencia: { value: 'seca', unit: '', name: 'Caracterização Óptica' }
+      bristolType: { value: '2–3', unit: 'Tipo', name: 'Bristol' },
+      opticalSummary: { value: 'seca', unit: '', name: 'Caracterização Óptica' },
+      opticalCharacterization: {
+        value: {
+          bristol: '2–3',
+          consistencia: 'firme/dura',
+          forma: 'cilíndrica irregular, segmentada',
+          superficie: 'fissurada/rugosa',
+          cor: 'castanho médio-escuro',
+          fragmentacao: 'moderada',
+          mucoVisivel: 'não observado',
+          sangueVisivel: 'não observado',
+          aspetoGorduroso: 'não observado',
+          interpretacaoWellness: 'possível baixa hidratação, fibra insuficiente, trânsito lento ou retenção fecal ligeira',
+          confiancaImagem: 'moderada'
+        },
+        unit: '',
+        name: 'Caracterização Óptica Completa'
+      }
     },
     physiological: {
       hr: { value: 84, unit: 'bpm', name: 'Frequência cardíaca' },
@@ -297,7 +377,7 @@ export const generateDemoAnalysisFromPersona = (persona: DemoPersona, referenceT
       id: `demo_fecal_${key}`,
       type: 'fecal',
       marker: data.name,
-      value: String(data.value),
+      value: typeof data.value === 'object' ? data.value : String(data.value),
       unit: data.unit,
       recordedAt: new Date(referenceTimestamp).toISOString()
     });
