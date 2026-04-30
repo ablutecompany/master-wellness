@@ -306,6 +306,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                 </View>
 
                 {(() => {
+                  if (!selectedItem) return null;
                   const isEcg = selectedItem.name === 'ECG';
                   const isFecalOptica = selectedItem.name === 'Caracterização Óptica';
                   const isBristol = selectedItem.name === 'Bristol';
