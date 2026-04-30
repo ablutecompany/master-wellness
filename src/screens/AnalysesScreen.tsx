@@ -400,7 +400,10 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                       <View style={{ marginBottom: 16 }}>
                          <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: 1 }}>REFERÊNCIA GERAL</Typography>
                          <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>
-                           {meta?.generalReference || 'Referência geral não definida nesta versão.'}
+                           {meta?.referenceStatus === 'defined' ? meta.generalReferenceLabel :
+                            meta?.referenceStatus === 'contextual' ? `${meta.generalReferenceLabel} (dependente de contexto/método)` :
+                            meta?.referenceStatus === 'not_defined' ? 'Referência geral não definida nesta versão.' :
+                            (meta as any)?.generalReference || 'Referência geral não definida nesta versão.'}
                          </Typography>
                       </View>
 
@@ -415,6 +418,12 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                            <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 }}>
                              {meta.educationalMeaning}
                            </Typography>
+                           {meta.utility && (
+                             <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 18, marginTop: 8 }}>
+                               <Typography style={{ fontWeight: 'bold', color: 'rgba(255,255,255,0.8)' }}>Utilidade: </Typography>
+                               {meta.utility}
+                             </Typography>
+                           )}
                            {meta.isExperimental && (
                              <Typography style={{ color: '#F59E0B', fontSize: 12, marginTop: 8, fontWeight: '500' }}>
                                Nota: Em contexto de investigação/monitorização. Não deve ser lido isoladamente.

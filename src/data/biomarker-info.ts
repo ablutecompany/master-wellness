@@ -3,8 +3,10 @@ export interface BiomarkerMetadata {
   label: string;
   family: 'urine' | 'fecal' | 'physiological' | 'contextual';
   unit: string;
-  generalReference: string;
+  referenceStatus?: 'defined' | 'contextual' | 'not_defined';
+  generalReferenceLabel?: string;
   educationalMeaning: string;
+  utility?: string;
   limitation?: string;
   isExperimental?: boolean;
 }
@@ -14,118 +16,160 @@ export const BIOMARKER_INFO: Record<string, BiomarkerMetadata> = {
     id: 'ph_urinario',
     label: 'pH urinário',
     family: 'urine',
-    unit: 'pH',
-    generalReference: 'Geralmente entre 5.0 e 8.0, consoante o laboratório',
-    educationalMeaning: 'Reflete a acidez ou alcalinidade da urina. Pode variar com hidratação, alimentação, horário da recolha e outros fatores. Isoladamente não permite concluir uma condição clínica.'
-  },
-  'Nitritos': {
-    id: 'nitritos',
-    label: 'Nitritos',
-    family: 'urine',
     unit: '',
-    generalReference: 'Negativo',
-    educationalMeaning: 'A presença de nitritos é frequentemente usada na literatura como sinal de apoio na avaliação urinária, podendo estar associada à presença de bactérias que convertem nitratos em nitritos. Deve ser interpretada com sintomas, repetição e outros dados.'
-  },
-  'Glicose': {
-    id: 'glicose',
-    label: 'Glicose',
-    family: 'urine',
-    unit: '',
-    generalReference: 'Negativo ou ausente na urina',
-    educationalMeaning: 'A glicose na urina é habitualmente observada como sinal a contextualizar com alimentação recente, metabolismo e repetição do resultado. Isoladamente não permite concluir uma condição metabólica.'
-  },
-  'Albumina / uACR': {
-    id: 'albumina_uacr',
-    label: 'Albumina/uACR',
-    family: 'urine',
-    unit: 'mg/g',
-    generalReference: '< 30 mg/g (idealmente inferior)',
-    educationalMeaning: 'A albumina ajustada à creatinina é usada para observar perda urinária de proteína de forma mais comparável. O valor ganha importância sobretudo quando repetido e comparado com histórico.'
-  },
-  'Creatinina Urinária': {
-    id: 'creatinina_urinaria',
-    label: 'Creatinina urinária',
-    family: 'urine',
-    unit: 'mg/dL',
-    generalReference: 'Varia largamente com a diluição da urina',
-    educationalMeaning: 'A creatinina urinária ajuda a contextualizar a concentração da amostra e a normalizar outros marcadores. Deve ser lida com hidratação, densidade urinária e contexto da recolha.'
-  },
-  'Sódio Urinário': {
-    id: 'sodio_urinario',
-    label: 'Sódio urinário',
-    family: 'urine',
-    unit: 'mmol/L',
-    generalReference: 'Variável com a ingestão',
-    educationalMeaning: 'O sódio urinário pode refletir ingestão recente, hidratação e equilíbrio eletrolítico. Em amostra isolada, a interpretação deve ser prudente.'
-  },
-  'Potássio Urinário': {
-    id: 'potassio_urinario',
-    label: 'Potássio urinário',
-    family: 'urine',
-    unit: 'mmol/L',
-    generalReference: 'Variável com a ingestão alimentar',
-    educationalMeaning: 'O potássio urinário pode contribuir para observar equilíbrio eletrolítico e relação com ingestão, hidratação e contexto fisiológico. Deve ser lido com outros sinais.'
-  },
-  'Rácio Na/K': {
-    id: 'ratio_na_k',
-    label: 'Rácio Na/K',
-    family: 'urine',
-    unit: '',
-    generalReference: 'A analisar em relação à literatura',
-    educationalMeaning: 'O rácio entre sódio e potássio ajuda a observar padrões relativos entre estes eletrólitos. Tem mais valor quando acompanhado ao longo do tempo.'
+    referenceStatus: 'defined',
+    generalReferenceLabel: '4,6–8,0',
+    educationalMeaning: 'Reflete a acidez ou alcalinidade da urina. Pode variar com hidratação, alimentação, horário da recolha e outros fatores.',
+    utility: 'Ajuda a contextualizar o ambiente urinário e a evolução ao longo do tempo.',
+    limitation: 'Isoladamente não permite concluir uma condição clínica.'
   },
   'Densidade Urinária': {
     id: 'densidade_urinaria',
     label: 'Densidade urinária / gravidade específica',
     family: 'urine',
     unit: 'SG',
-    generalReference: 'Normalmente 1.002 a 1.030',
-    educationalMeaning: 'Indica quão concentrada ou diluída está a urina. É útil para contextualizar hidratação e concentração da amostra, mas varia com horário e ingestão de líquidos.'
+    referenceStatus: 'defined',
+    generalReferenceLabel: '1,005–1,030 SG',
+    educationalMeaning: 'Indica quão concentrada ou diluída está a urina.',
+    utility: 'Ajuda a contextualizar hidratação e concentração da amostra.',
+    limitation: 'Varia com ingestão de líquidos, hora da recolha e contexto.'
+  },
+  'Nitritos': {
+    id: 'nitritos',
+    label: 'Nitritos',
+    family: 'urine',
+    unit: '',
+    referenceStatus: 'defined',
+    generalReferenceLabel: 'Negativo',
+    educationalMeaning: 'A presença de nitritos é frequentemente usada na literatura como sinal de apoio na avaliação urinária, podendo estar associada à presença de bactérias que convertem nitratos em nitritos.',
+    utility: 'Ajuda a sinalizar quando pode fazer sentido repetir ou contextualizar a análise urinária.',
+    limitation: 'Não permite concluir infeção isoladamente. Deve ser interpretado com sintomas, repetição e outros dados.'
+  },
+  'Glicose': {
+    id: 'glicose',
+    label: 'Glicose',
+    family: 'urine',
+    unit: '',
+    referenceStatus: 'defined',
+    generalReferenceLabel: 'Negativo / não detetável',
+    educationalMeaning: 'A glicose na urina é habitualmente observada como sinal a contextualizar com alimentação recente, metabolismo e repetição do resultado.',
+    utility: 'Ajuda a identificar sinais que merecem observação quando aparecem de forma repetida.',
+    limitation: 'Não permite concluir uma condição metabólica isoladamente.'
+  },
+  'Albumina / uACR': {
+    id: 'albumina_uacr',
+    label: 'Albumina/uACR',
+    family: 'urine',
+    unit: 'mg/g creatinina',
+    referenceStatus: 'defined',
+    generalReferenceLabel: '<30 mg/g; 30–299 mg/g moderadamente aumentado; ≥300 mg/g aumentado',
+    educationalMeaning: 'A albumina ajustada à creatinina é usada para observar perda urinária de proteína de forma mais comparável.',
+    utility: 'É útil para acompanhar repetição, tendência e comparação com histórico.',
+    limitation: 'Um valor isolado deve ser confirmado e interpretado com contexto clínico.'
+  },
+  'Creatinina Urinária': {
+    id: 'creatinina_urinaria',
+    label: 'Creatinina urinária',
+    family: 'urine',
+    unit: 'mg/dL',
+    referenceStatus: 'contextual',
+    generalReferenceLabel: 'Adultos: 16–326 mg/dL em amostra aleatória',
+    educationalMeaning: 'A creatinina urinária ajuda a contextualizar a concentração da amostra e a normalizar outros marcadores.',
+    utility: 'Ajuda a perceber se outros valores podem estar influenciados pela concentração da urina.',
+    limitation: 'Varia com hidratação, massa muscular, idade, sexo e tipo de amostra.'
+  },
+  'Sódio Urinário': {
+    id: 'sodio_urinario',
+    label: 'Sódio urinário',
+    family: 'urine',
+    unit: 'mmol/L',
+    referenceStatus: 'contextual',
+    generalReferenceLabel: 'Amostra aleatória: sem referência geral robusta; 24h: 40–220 mmol/24h',
+    educationalMeaning: 'O sódio urinário pode refletir ingestão recente, hidratação e equilíbrio eletrolítico.',
+    utility: 'Tem mais utilidade quando comparado com histórico, hidratação e potássio.',
+    limitation: 'Em amostra isolada, a interpretação deve ser prudente.'
+  },
+  'Potássio Urinário': {
+    id: 'potassio_urinario',
+    label: 'Potássio urinário',
+    family: 'urine',
+    unit: 'mmol/L',
+    referenceStatus: 'contextual',
+    generalReferenceLabel: 'Amostra aleatória: sem referência geral robusta; 24h: 25–125 mmol/24h',
+    educationalMeaning: 'O potássio urinário pode contribuir para observar equilíbrio eletrolítico e relação com ingestão, hidratação e contexto fisiológico.',
+    utility: 'É útil em conjunto com sódio, rácio Na/K e histórico pessoal.',
+    limitation: 'Em amostra isolada, não deve ser sobre-interpretado.'
+  },
+  'Rácio Na/K': {
+    id: 'ratio_na_k',
+    label: 'Rácio Na/K',
+    family: 'urine',
+    unit: '',
+    referenceStatus: 'contextual',
+    generalReferenceLabel: 'Sem referência geral universal para amostra aleatória',
+    educationalMeaning: 'O rácio entre sódio e potássio ajuda a observar padrões relativos entre estes eletrólitos.',
+    utility: 'Tem maior valor quando acompanhado ao longo do tempo no mesmo utilizador.',
+    limitation: 'Não deve ser usado isoladamente como conclusão clínica.'
   },
   'NGAL': {
     id: 'ngal',
     label: 'NGAL',
     family: 'urine',
     unit: 'ng/mL',
-    generalReference: 'A definir de forma validada (uso experimental)',
-    educationalMeaning: 'NGAL é descrito na literatura como biomarcador associado a stress tubular/renal em contextos específicos. Na app, deve ser tratado como sinal experimental/interpretativo e nunca como diagnóstico isolado.',
-    isExperimental: true
+    referenceStatus: 'not_defined',
+    generalReferenceLabel: 'Referência geral não definida nesta versão',
+    isExperimental: true,
+    educationalMeaning: 'NGAL é descrito na literatura como biomarcador associado a stress tubular/renal em contextos específicos.',
+    utility: 'Pode funcionar como sinal de acompanhamento experimental, sobretudo quando comparado com histórico.',
+    limitation: 'Não deve ser lido isoladamente nem usado como diagnóstico.'
   },
   'KIM-1': {
     id: 'kim1',
     label: 'KIM-1',
     family: 'urine',
     unit: 'ng/mL',
-    generalReference: 'A definir de forma validada (uso experimental)',
-    educationalMeaning: 'KIM-1 é referido na literatura em contextos de observação de stress tubular/renal. Deve ser interpretado com extrema prudência, histórico e outros marcadores.',
-    isExperimental: true
+    referenceStatus: 'not_defined',
+    generalReferenceLabel: 'Referência geral não definida nesta versão',
+    isExperimental: true,
+    educationalMeaning: 'KIM-1 é referido na literatura em contextos de observação de stress tubular/renal.',
+    utility: 'Pode ajudar a compor um painel experimental de acompanhamento, quando existe histórico.',
+    limitation: 'Deve ser interpretado com extrema prudência, método laboratorial e outros marcadores.'
   },
   'Cistatina C Urinária': {
     id: 'cistatina_c_urinaria',
     label: 'Cistatina C urinária',
     family: 'urine',
     unit: 'mg/L',
-    generalReference: 'A definir de forma validada (uso experimental)',
-    educationalMeaning: 'A cistatina C urinária pode ser explorada em contextos de função/filtração e stress renal, dependendo do contexto analítico. Na app, deve ser apenas sinal de acompanhamento.',
-    isExperimental: true
+    referenceStatus: 'contextual',
+    generalReferenceLabel: 'Dependente do método; literatura reporta intervalos como 0,06–0,16 mg/L ou <0,414 mg/L',
+    isExperimental: true,
+    educationalMeaning: 'A cistatina C urinária pode ser explorada em contextos de função/filtração e stress renal, dependendo do contexto analítico.',
+    utility: 'Pode ser útil como sinal de acompanhamento quando medido de forma consistente.',
+    limitation: 'Não há referência universal simples nesta versão. Usar baseline pessoal e método laboratorial.'
   },
   'F2-isoprostanos': {
     id: 'f2_isoprostanos',
     label: 'F2-isoprostanos',
     family: 'urine',
     unit: 'ng/mg Cr',
-    generalReference: 'A definir de forma validada (uso experimental)',
-    educationalMeaning: 'F2-isoprostanos são frequentemente usados em investigação como marcadores associados a stress oxidativo. O valor deve ser lido como sinal contextual e não como conclusão clínica.',
-    isExperimental: true
+    referenceStatus: 'contextual',
+    generalReferenceLabel: '≤1,0 ng/mg creatinina quando o método/unidade coincidem',
+    isExperimental: true,
+    educationalMeaning: 'F2-isoprostanos são frequentemente usados em investigação como marcadores associados a stress oxidativo.',
+    utility: 'Pode ajudar a acompanhar sinais relacionados com stress oxidativo em contexto longitudinal.',
+    limitation: 'Valores dependem do método. Não deve ser usado como conclusão clínica isolada.'
   },
   'NT-proBNP Urinário': {
     id: 'ntprobnp_urinario',
     label: 'NT-proBNP urinário',
     family: 'urine',
     unit: 'pg/mL',
-    generalReference: 'A definir de forma validada (uso experimental)',
-    educationalMeaning: 'NT-proBNP urinário é tratado nesta versão como marcador experimental/de investigação. Não deve ser usado para inferência clínica direta no utilizador.',
-    isExperimental: true
+    referenceStatus: 'not_defined',
+    generalReferenceLabel: 'Experimental; sem referência geral definida nesta versão',
+    isExperimental: true,
+    educationalMeaning: 'NT-proBNP urinário é tratado nesta versão como marcador experimental/de investigação.',
+    utility: 'Pode ser estudado como sinal exploratório em investigação, mas não deve orientar inferências clínicas diretas.',
+    limitation: 'Não deve ser usado para inferência clínica direta no utilizador.'
   },
   'Bristol': {
     id: 'bristol',
