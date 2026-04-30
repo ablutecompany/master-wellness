@@ -308,7 +308,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     })
   ).current;
 
-  const DRAWER_DOWN = height - 170; // Ajustado para os ícones reduzidos
+  const DRAWER_DOWN = height - 220; // Ajustado para revelar o dock de favoritas completamente
   const DRAWER_UP = 0;
   const lastDrawerY = useRef(DRAWER_DOWN);
   const drawerAnim = useRef(new Animated.Value(DRAWER_DOWN)).current;
@@ -696,19 +696,22 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       {/* ── BOTTOM DRAWER: APPS ───────────────────────────────────────────── */}
       <Animated.View
         style={[styles.appDrawer, { transform: [{ translateY: drawerAnim }] }]}
+        pointerEvents="box-none"
       >
-        <Animated.View style={[StyleSheet.absoluteFill, { opacity: drawerBgOpacity }]}>
+        <Animated.View style={[StyleSheet.absoluteFill, { opacity: drawerBgOpacity }]} pointerEvents="none">
           <BlurView intensity={90} tint="dark" style={styles.drawerContent} />
         </Animated.View>
 
-        <Animated.View style={{ flex: 1, width: '100%', opacity: drawerInnerOpacity, borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' }}>
-          <View {...drawerPanResponder.panHandlers} style={{ zIndex: 10, width: '100%', backgroundColor: 'transparent' }}>
-            <View style={styles.drawerHandleArea}>
+        <Animated.View style={{ flex: 1, width: '100%', opacity: drawerInnerOpacity, borderTopLeftRadius: 32, borderTopRightRadius: 32, overflow: 'hidden' }} pointerEvents="box-none">
+          <View style={{ zIndex: 10, width: '100%', backgroundColor: 'transparent' }} pointerEvents="box-none">
+            {/* O puxador tem o PanResponder para deslizar o drawer */}
+            <View {...drawerPanResponder.panHandlers} style={styles.drawerHandleArea}>
               <View style={styles.drawerHandle} />
               <Typography variant="caption" style={styles.drawerTitle}>APP PLACE</Typography>
-              
-              {/* Footer Icons: Estilo Antigo (Maiores, com Label) */}
-              <Animated.View style={[styles.footerIconsRow, { opacity: footerIconsOpacity }]}>
+            </View>
+            
+            {/* Footer Icons (Favoritos) ficam fora do PanResponder para garantir clique imaculado */}
+            <Animated.View style={[styles.footerIconsRow, { opacity: footerIconsOpacity }]} pointerEvents="box-none">
                 {(() => {
                   const footerApps = favoriteAppIds.filter(id => installedAppIds.includes(id)).slice(0, 5);
                   if (footerApps.length > 0) {
@@ -743,7 +746,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   }
                 })()}
               </Animated.View>
-            </View>
           </View>
 
           <Animated.View style={{ flex: 1, width: '100%', opacity: appContentOpacity }}>
@@ -1422,6 +1424,7 @@ const styles = StyleSheet.create({
   drawerHandleArea: {
     paddingVertical: 12,
     alignItems: 'center',
+    width: '100%',
   },
   drawerHandle: {
     width: 40,
@@ -1716,10 +1719,10 @@ const styles = StyleSheet.create({
   footerIconsRow: {
     flexDirection: 'row',
     gap: 20,
-    marginTop: 24,
+    marginTop: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    height: 100,
+    height: 80,
   },
   footerIconWrapper: {
     alignItems: 'center',
