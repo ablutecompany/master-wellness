@@ -393,7 +393,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
                    <View style={styles.refItemBox}>
                       <Typography variant="caption" style={styles.refLabel}>COMO ESTES DADOS SUSTENTAM A CONCLUSÃO</Typography>
-                      <Typography style={styles.refValue}>{selectedDim?.explanation}</Typography>
+                      <Typography style={styles.refValue}>{selectedDim?.groundingReasoning || selectedDim?.explanation}</Typography>
                    </View>
 
                    {reading.references.limitations && reading.references.limitations.length > 0 && (

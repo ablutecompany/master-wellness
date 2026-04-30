@@ -14,7 +14,8 @@ export interface AIReading {
     id: string;
     label: string;
     score: number;
-    explanation: string;
+    explanation: string; // Used for card text
+    groundingReasoning?: string; // Used for popup
     supportingFacts: string[];
     confidence: number;
   }>;
@@ -248,12 +249,15 @@ export function computeAIReadingFromData(
 
   // 5. Dimensões (Mantendo suporte visual)
   const dimensions: AIReading['dimensions'] = [
-    { id: 'energy', label: 'Energia & disponibilidade', score: Math.round(hasData ? 85 : 0), explanation: 'Capacidade de resposta a estímulos.', supportingFacts: ['HRV', 'Sono'], confidence: 0.8 },
-    { id: 'recovery', label: 'Recuperação & carga', score: Math.round(hasData ? 72 : 0), explanation: 'Eficiência da regeneração celular.', supportingFacts: ['HRV', 'Temperatura'], confidence: 0.75 },
-    { id: 'hydration', label: 'Hidratação & equilíbrio urinário', score: Math.round(hasData ? score01(gravidade || 1.015, 1.035, 1.005) : 0), explanation: 'Estado de hidratação celular.', supportingFacts: ['Gravidade'], confidence: 0.9 },
-    { id: 'digestion', label: 'Estado intestinal', score: Math.round(hasData ? 80 : 0), explanation: 'Absorção e regularidade.', supportingFacts: ['Bristol'], confidence: 0.85 },
-    { id: 'vitals', label: 'Sinais vitais & equilíbrio fisiológico', score: Math.round(hasData ? 90 : 0), explanation: 'Estabilidade cardiovascular.', supportingFacts: ['HR', 'SpO2'], confidence: 0.95 },
-  ].filter(d => hasData);
+    { id: 'energy_availability', label: 'Energia & disponibilidade', score: Math.round(hasData ? 85 : 50), explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Dados simulados/limitados.', supportingFacts: ['HRV', 'Sono'], confidence: 0.8 },
+    { id: 'recovery_load', label: 'Recuperação & carga', score: Math.round(hasData ? 72 : 50), explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Dados simulados/limitados.', supportingFacts: ['HRV', 'Temperatura'], confidence: 0.75 },
+    { id: 'hydration_urinary_balance', label: 'Hidratação & equilíbrio urinário', score: Math.round(hasData ? score01(gravidade || 1.015, 1.035, 1.005) : 50), explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Dados simulados/limitados.', supportingFacts: ['Gravidade'], confidence: 0.9 },
+    { id: 'intestinal_state', label: 'Estado intestinal', score: Math.round(hasData ? 80 : 50), explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Dados simulados/limitados.', supportingFacts: ['Bristol'], confidence: 0.85 },
+    { id: 'vital_signs_physiological_balance', label: 'Sinais vitais & equilíbrio fisiológico', score: Math.round(hasData ? 90 : 50), explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Dados simulados/limitados.', supportingFacts: ['HR', 'SpO2'], confidence: 0.95 },
+    { id: 'signal_oriented_nutrition', label: 'Nutrição orientada por sinais', score: Math.round(hasData ? 80 : 50), explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Dados simulados/limitados.', supportingFacts: [], confidence: 0.8 },
+    { id: 'stress_focus_self_regulation', label: 'Stress, foco & autorregulação', score: Math.round(hasData ? 75 : 50), explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Dados simulados/limitados.', supportingFacts: [], confidence: 0.8 },
+    { id: 'watch_signals', label: 'Sinais a acompanhar', score: Math.round(hasData ? 85 : 50), explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Dados simulados/limitados.', supportingFacts: [], confidence: 0.8 },
+  ];
 
   // 6. Referências
   const families = [];

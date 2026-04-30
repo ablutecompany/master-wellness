@@ -14,58 +14,64 @@ export function normalizeAIReadingResponse(rawOutput: any): AIReading {
   const references = isObject(raw.references) ? raw.references : {};
 
   const dimensions = Array.isArray(raw.dimensions) ? raw.dimensions : [];
-  const highlightedThemes = Array.isArray(raw.highlightedThemes) ? raw.highlightedThemes : [];
-  const priorityActions = Array.isArray(raw.priorityActions) ? raw.priorityActions : [];
-  const watchSignals = Array.isArray(raw.watchSignals) ? raw.watchSignals : [];
+  const globalReferences = isObject(raw.globalReferences) ? raw.globalReferences : {};
 
   return {
     summary: {
       title: summary.title || 'Análise de dados concluída',
       text: summary.text || 'Ocorreu um erro ao gerar o resumo detalhado desta leitura. Pode visualizar as dimensões abaixo.',
-      confidence: mapConfidence(summary.confidence),
+      confidence: mapConfidence(summary.confidence?.score),
       mode: 'real', // Pode ser sobrescrito pelo caller se for demo
     },
     dimensions: dimensions.map((d: any) => ({
       id: d.id || 'unknown',
-      label: d.label || 'Domínio Desconhecido',
-      score: typeof d.score === 'number' ? d.score : 0,
-      explanation: d.explanation || '',
-      supportingFacts: Array.isArray(d.supportingFacts) ? d.supportingFacts : [],
-      confidence: mapConfidence(d.confidence),
+      label: d.shortLabel || d.label || 'Domínio Desconhecido', // We want to show short labels on the grid if possible
+      score: typeof d.score === 'number' ? d.score : 50,
+      explanation: d.messageText || d.explanation || '',
+      groundingReasoning: d.grounding?.reasoning || '',
+      supportingFacts: d.grounding?.usedFamilies || [],
+      confidence: mapConfidence(d.grounding?.confidenceScore),
     })),
-    highlightedThemes: highlightedThemes.slice(0, 5).map((t: any) => ({
-      id: t.id || 'theme',
-      title: t.title || 'Tema em destaque',
-      status: mapStatus(t.status),
-      explanation: t.explanation || '',
-      supportingFacts: Array.isArray(t.supportingFacts) ? t.supportingFacts : [],
-      action: typeof t.suggestedAction === 'string' && t.suggestedAction !== '' ? t.suggestedAction : undefined,
-      confidence: mapConfidence(t.confidence),
-      limitation: Array.isArray(t.limitations) && t.limitations.length > 0 ? t.limitations[0] : undefined,
+    highlightedThemes: dimensions.map((d: any) => ({
+      id: d.id || 'theme',
+      title: d.messageTitle || d.label || 'Tema em destaque',
+      status: mapStatus(d.status),
+      explanation: d.messageText || '',
+      supportingFacts: d.grounding?.usedFamilies || [],
+      action: typeof d.primaryRecommendation === 'string' && d.primaryRecommendation !== '' ? d.primaryRecommendation : undefined,
+      confidence: mapConfidence(d.grounding?.confidenceScore),
+      limitation: Array.isArray(d.grounding?.limitations) && d.grounding.limitations.length > 0 ? d.grounding.limitations[0] : undefined,
     })),
-    priorityActions: priorityActions.slice(0, 3).map((a: any) => ({
-      title: a.title || 'Ação sugerida',
-      reason: a.reason || 'Sinalização importante',
-      priority: mapPriority(a.priority),
-      supportingFacts: Array.isArray(a.supportingFacts) ? a.supportingFacts : [],
-      domain: a.domain || 'general',
-      evidenceStrength: mapConfidence(a.confidence), // mapped to 0-1 if frontend expects number
-    })),
-    watchSignals: watchSignals.map((s: any) => ({
-      title: s.title || 'Sinal a monitorizar',
-      explanation: s.explanation || '',
-      reasonToRepeat: s.reasonToRepeat || 'Reavaliação necessária',
+    priorityActions: dimensions.flatMap((d: any) => 
+      Array.isArray(d.recommendations) ? d.recommendations.map((r: any) => ({
+        title: r.title || 'Ação sugerida',
+        reason: r.text || 'Sinalização importante',
+        priority: mapPriority(r.priority),
+        supportingFacts: [],
+        domain: d.id || 'general',
+        evidenceStrength: mapConfidence(d.grounding?.confidenceScore),
+      })) : []
+    ).slice(0, 3), // max 3 actions globally
+    watchSignals: dimensions.filter((d: any) => d.id === 'watch_signals').map((s: any) => ({
+      title: s.messageTitle || 'Sinal a monitorizar',
+      explanation: s.messageText || '',
+      reasonToRepeat: s.primaryRecommendation || 'Reavaliação necessária',
     })),
     references: {
-      usedDataFamilies: Array.isArray(references.usedDataFamilies) ? references.usedDataFamilies : [],
-      usedSignals: Array.isArray(references.usedSignals) ? references.usedSignals : [],
-      freshness: mapFreshness(references.freshness),
-      origins: ['AI Generated'],
-      confidence: mapConfidenceString(references.confidence),
-      limitations: Array.isArray(references.limitations) ? references.limitations : [],
-      themeDataLinks: {}, // Ignorado ou mapeado do AI se suportado
+      usedDataFamilies: Array.isArray(globalReferences.usedDataFamilies) ? globalReferences.usedDataFamilies : [],
+      usedSignals: dimensions.flatMap((d: any) => Array.isArray(d.grounding?.usedSignals) ? d.grounding.usedSignals.map((s:any) => s.label) : []),
+      freshness: mapFreshness(globalReferences.freshness),
+      origins: [globalReferences.origin || 'AI Generated'],
+      confidence: mapConfidenceString(summary.confidence?.label),
+      limitations: Array.isArray(globalReferences.limitations) ? globalReferences.limitations : [],
+      themeDataLinks: dimensions.reduce((acc: any, d: any) => {
+        if (d.id) {
+          acc[d.id] = Array.isArray(d.grounding?.usedSignals) ? d.grounding.usedSignals.map((s:any) => s.label) : [];
+        }
+        return acc;
+      }, {}),
     },
-    readingLimits: Array.isArray(raw.readingLimits) ? raw.readingLimits : [
+    readingLimits: [
       'Esta leitura é interpretativa e gerada por inteligência artificial.',
       'Não substitui avaliação clínica nem faz diagnóstico.'
     ]

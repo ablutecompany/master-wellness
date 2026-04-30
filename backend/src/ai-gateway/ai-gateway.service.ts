@@ -34,10 +34,19 @@ export class AiGatewayService {
         type: 'object' as const,
         properties: {
           title: { type: 'string' as const },
+          status: { type: 'string' as const, enum: ['stable', 'attention', 'caution', 'insufficient_data'] },
           text: { type: 'string' as const },
-          confidence: { type: 'string' as const, enum: ['low', 'medium', 'high'] }
+          confidence: {
+            type: 'object' as const,
+            properties: {
+              label: { type: 'string' as const, enum: ['alta', 'moderada', 'baixa'] },
+              score: { type: 'number' as const }
+            },
+            required: ['label', 'score'],
+            additionalProperties: false
+          }
         },
-        required: ['title', 'text', 'confidence'],
+        required: ['title', 'status', 'text', 'confidence'],
         additionalProperties: false
       },
       dimensions: {
@@ -45,78 +54,72 @@ export class AiGatewayService {
         items: {
           type: 'object' as const,
           properties: {
-            id: { type: 'string' as const, enum: ['energy_availability', 'recovery_load', 'hydration_urinary_balance', 'intestinal_state', 'vital_signs_physiological_balance'] },
+            id: { type: 'string' as const, enum: ['energy_availability', 'recovery_load', 'hydration_urinary_balance', 'intestinal_state', 'vital_signs_physiological_balance', 'signal_oriented_nutrition', 'stress_focus_self_regulation', 'watch_signals'] },
             label: { type: 'string' as const },
+            shortLabel: { type: 'string' as const },
             score: { type: 'number' as const },
-            explanation: { type: 'string' as const },
-            supportingFacts: { type: 'array' as const, items: { type: 'string' as const } },
-            confidence: { type: 'string' as const, enum: ['low', 'medium', 'high'] }
+            status: { type: 'string' as const, enum: ['ótimo', 'estável', 'cautela', 'atenção', 'insuficiente'] },
+            messageTitle: { type: 'string' as const },
+            messageText: { type: 'string' as const },
+            primaryRecommendation: { type: 'string' as const },
+            recommendations: {
+              type: 'array' as const,
+              items: {
+                type: 'object' as const,
+                properties: {
+                  title: { type: 'string' as const },
+                  text: { type: 'string' as const },
+                  priority: { type: 'string' as const, enum: ['alta', 'média', 'baixa'] },
+                  actionability: { type: 'string' as const, enum: ['imediata', 'próximas horas', 'próximas leituras'] }
+                },
+                required: ['title', 'text', 'priority', 'actionability'],
+                additionalProperties: false
+              }
+            },
+            grounding: {
+              type: 'object' as const,
+              properties: {
+                confidenceLabel: { type: 'string' as const, enum: ['alta', 'moderada', 'baixa'] },
+                confidenceScore: { type: 'number' as const },
+                usedFamilies: { type: 'array' as const, items: { type: 'string' as const, enum: ['urina', 'fezes', 'fisiológicos', 'contexto', 'histórico'] } },
+                usedSignals: {
+                  type: 'array' as const,
+                  items: {
+                    type: 'object' as const,
+                    properties: {
+                      label: { type: 'string' as const },
+                      value: { type: 'string' as const },
+                      contribution: { type: 'string' as const }
+                    },
+                    required: ['label', 'value', 'contribution'],
+                    additionalProperties: false
+                  }
+                },
+                reasoning: { type: 'string' as const },
+                limitations: { type: 'array' as const, items: { type: 'string' as const } }
+              },
+              required: ['confidenceLabel', 'confidenceScore', 'usedFamilies', 'usedSignals', 'reasoning', 'limitations'],
+              additionalProperties: false
+            }
           },
-          required: ['id', 'label', 'score', 'explanation', 'supportingFacts', 'confidence'],
+          required: ['id', 'label', 'shortLabel', 'score', 'status', 'messageTitle', 'messageText', 'primaryRecommendation', 'recommendations', 'grounding'],
           additionalProperties: false
         }
       },
-      highlightedThemes: {
-        type: 'array' as const,
-        items: {
-          type: 'object' as const,
-          properties: {
-            id: { type: 'string' as const },
-            title: { type: 'string' as const },
-            status: { type: 'string' as const, enum: ['stable', 'attention', 'insufficient_data'] },
-            explanation: { type: 'string' as const },
-            supportingFacts: { type: 'array' as const, items: { type: 'string' as const } },
-            suggestedAction: { type: 'string' as const },
-            confidence: { type: 'string' as const, enum: ['low', 'medium', 'high'] },
-            limitations: { type: 'array' as const, items: { type: 'string' as const } }
-          },
-          required: ['id', 'title', 'status', 'explanation', 'supportingFacts', 'suggestedAction', 'confidence', 'limitations'],
-          additionalProperties: false
-        }
-      },
-      priorityActions: {
-        type: 'array' as const,
-        items: {
-          type: 'object' as const,
-          properties: {
-            title: { type: 'string' as const },
-            reason: { type: 'string' as const },
-            priority: { type: 'string' as const, enum: ['low', 'medium', 'high'] },
-            supportingFacts: { type: 'array' as const, items: { type: 'string' as const } },
-            domain: { type: 'string' as const, enum: ['hydration', 'recovery', 'nutrition', 'stress', 'monitoring', 'general'] }
-          },
-          required: ['title', 'reason', 'priority', 'supportingFacts', 'domain'],
-          additionalProperties: false
-        }
-      },
-      watchSignals: {
-        type: 'array' as const,
-        items: {
-          type: 'object' as const,
-          properties: {
-            title: { type: 'string' as const },
-            explanation: { type: 'string' as const },
-            reasonToRepeat: { type: 'string' as const }
-          },
-          required: ['title', 'explanation', 'reasonToRepeat'],
-          additionalProperties: false
-        }
-      },
-      references: {
+      globalReferences: {
         type: 'object' as const,
         properties: {
-          usedDataFamilies: { type: 'array' as const, items: { type: 'string' as const } },
-          usedSignals: { type: 'array' as const, items: { type: 'string' as const } },
-          freshness: { type: 'string' as const, enum: ['fresh', 'usable_with_warning', 'stale', 'unavailable'] },
-          confidence: { type: 'string' as const, enum: ['low', 'medium', 'high'] },
+          freshness: { type: 'string' as const, enum: ['recente', 'moderada', 'antiga'] },
+          origin: { type: 'string' as const, enum: ['real', 'simulação'] },
+          engine: { type: 'string' as const, enum: ['openai', 'local', 'fallback'] },
+          usedDataFamilies: { type: 'array' as const, items: { type: 'string' as const, enum: ['urina', 'fezes', 'fisiológicos'] } },
           limitations: { type: 'array' as const, items: { type: 'string' as const } }
         },
-        required: ['usedDataFamilies', 'usedSignals', 'freshness', 'confidence', 'limitations'],
+        required: ['freshness', 'origin', 'engine', 'usedDataFamilies', 'limitations'],
         additionalProperties: false
-      },
-      readingLimits: { type: 'array' as const, items: { type: 'string' as const } }
+      }
     },
-    required: ['summary', 'dimensions', 'highlightedThemes', 'priorityActions', 'watchSignals', 'references', 'readingLimits'],
+    required: ['summary', 'dimensions', 'globalReferences'],
     additionalProperties: false,
   };
 
@@ -150,46 +153,37 @@ export class AiGatewayService {
     const startMs = Date.now();
 
     const prompt = [
-      `És um motor de interpretação de dados biológicos para a plataforma ablute_ wellness.`,
-      `Recebes dados de análises laboratoriais e fisiológicas de um utilizador e devolves uma leitura estruturada em JSON (Leitura AI R2).`,
+      `A Leitura AI é uma camada interpretativa prudente baseada nos Resultados disponíveis na plataforma ablute_ wellness.`,
+      `A Leitura AI NÃO é diagnóstico.`,
       ``,
-      `REGRAS OBRIGATÓRIAS:`,
-      `- Escreve em português de Portugal (PT-PT), tom técnico, contido e elegante.`,
-      `- Usa a 3.ª pessoa ou construções impessoais. Nunca uses "você" ou "deves".`,
-      `- Não faças diagnósticos nem prescrições. Não uses frases do tipo "tens X condição" ou "sofres de Y".`,
-      `- Não cries causalidades inventadas sem suporte explícito nos dados.`,
-      `- Sem linguagem de marketing ("potencial", "otimizar", "biohacking").`,
-      `- Sem inglês user-facing. Usa sempre os labels exatos em PT-PT.`,
-      `- Sem pseudo-ciência. Baseia-te apenas em mecanismos fisiológicos documentados.`,
-      `- Sem menção direta a "sangue oculto nas fezes" (usa termos como integridade gastrointestinal).`,
-      `- Sê prudente quando há poucos dados. Explicita essa limitação se aplicável.`,
-      `- Não contradijas os dados. Se um marcador for negativo/normal, o status não é problemático.`,
-      `- As ações sugeridas (priorityActions) devem ser práticas e não farmacológicas por defeito. Máximo 3 ações.`,
-      `- Máximo de 5 temas em destaque (highlightedThemes).`,
-      `- Para campos string não obrigatórios ou ausentes num contexto estruturado, usa "".`,
+      `A AI deve:`,
+      `- usar apenas os dados recebidos no input;`,
+      `- não inventar biomarcadores, histórico ou contexto;`,
+      `- não tirar conclusões clínicas fechadas;`,
+      `- explicar o que usou para construir a leitura;`,
+      `- declarar insuficiência quando os dados forem fracos, mas explicando de forma útil o valor da repetição;`,
+      `- produzir texto útil, humano, prudente e acionável em PT-PT.`,
       ``,
-      `EIXOS/DOMÍNIOS A AVALIAR (Usa exatamente estes labels na UI):`,
-      `1. Energia & disponibilidade (id: energy_availability)`,
-      `2. Recuperação & carga (id: recovery_load)`,
-      `3. Hidratação & equilíbrio urinário (id: hydration_urinary_balance)`,
-      `4. Estado intestinal (id: intestinal_state)`,
-      `5. Sinais vitais & equilíbrio fisiológico (id: vital_signs_physiological_balance)`,
-      `6. Nutrição orientada por sinais (usado em priorityActions ou themes)`,
-      `7. Stress, foco & autorregulação (usado em priorityActions ou themes)`,
-      `8. Sinais a acompanhar (usado em watchSignals)`,
+      `A AI deve evitar frases pobres e genéricas como "Dados insuficientes.", "Estabilidade cardiovascular.", "A aguardar convergência factual.".`,
+      `Se houver poucos dados, explica a limitação de forma útil e acionável.`,
       ``,
-      `CAMPOS DO SCHEMA:`,
-      `- summary.title: frase curta e forte (máx 15 palavras).`,
-      `- summary.text: 2-3 frases coerentes sintetizando a leitura global.`,
-      `- dimensions: Array apenas com os 5 eixos principais (1 a 5 descritos acima). Atribui um 'score' de 0 a 100 baseado na adequação fisiológica.`,
-      `- highlightedThemes: Temas de maior relevância atual (inclui eixos 1-7). Define status (stable | attention | insufficient_data) e suggestedAction ("" se não houver).`,
-      `- priorityActions: Máximo 3 sugestões de ação não farmacológicas, indicando 'domain' e 'priority'.`,
-      `- watchSignals: Aspectos a observar em análises futuras (eixo 8).`,
-      `- references / readingLimits: Preenche conforme o contexto analítico fornecido e limites do modelo.`,
+      `REGRAS DE ESCRITA:`,
+      `- Tom: claro, técnico sem ser denso, prudente, útil, não alarmista, não paternalista.`,
+      `- Usar termos como: "sugere", "parece compatível", "pode estar relacionado", "merece observação".`,
+      `- Não diagnosticar (nunca usar: "tem infeção", "tem diabetes", "deve fazer tratamento", etc).`,
+      `- Não usar linguagem vaga ("equilíbrio celular", "vetores", "ecossistema biográfico").`,
       ``,
-      `FALLBACK E LIMITES:`,
-      `- Se faltarem dados vitais/sono/urina, reflete essa ausência na confidence (baixa) ou status (insufficient_data).`,
-      `- limits: Inclui sempre avisos de que não é diagnóstico clínico.`,
+      `AS 8 DIMENSÕES OBRIGATÓRIAS (Gera as 8, nunca omitas nenhuma):`,
+      `1. energy_availability (Energia & disponibilidade) - Pode usar: sono, recuperação, hr, ppg, stress, carga.`,
+      `2. recovery_load (Recuperação & carga) - Pode usar: sono, recuperação, hr, ppg, stress.`,
+      `3. hydration_urinary_balance (Hidratação & equilíbrio urinário) - Pode usar: densidade urinária, pH, eletrólitos.`,
+      `4. intestinal_state (Estado intestinal) - Pode usar: Bristol, fezes. Nunca usar sangue oculto ou diagnosticar.`,
+      `5. vital_signs_physiological_balance (Sinais vitais & equilíbrio fisiológico) - Pode usar: hr, spo2, temperatura. Não interpretar ECG clinicamente.`,
+      `6. signal_oriented_nutrition (Nutrição orientada por sinais) - Pistas prudentes. Não fazer plano alimentar.`,
+      `7. stress_focus_self_regulation (Stress, foco & autorregulação) - Prontidão, não avaliação psicológica.`,
+      `8. watch_signals (Sinais a acompanhar) - O que repetir ou vigiar.`,
+      ``,
+      `Se não houver dados para uma dimensão, gera score=50, status="insuficiente", e escreve texto útil explicando que aguarda dados.`,
       ``,
       `Contexto da análise (JSON):`,
       JSON.stringify(dto, null, 2),
@@ -245,7 +239,7 @@ export class AiGatewayService {
       }
 
       // Validação mínima dos campos obrigatórios do R2
-      const required = ['summary', 'dimensions', 'highlightedThemes', 'priorityActions', 'watchSignals', 'references', 'readingLimits'];
+      const required = ['summary', 'dimensions', 'globalReferences'];
       const missing = required.filter((k) => !(k in parsed));
       if (missing.length > 0) {
         this.logger.error(`Campos em falta no insight (${source}): ${missing.join(', ')}`);
