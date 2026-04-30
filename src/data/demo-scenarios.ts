@@ -301,7 +301,7 @@ export const generateDemoAnalysisFromPersona = (persona: DemoPersona, referenceT
   Object.entries(persona.physiological).forEach(([key, data]) => {
     measurements.push({
       id: `demo_physio_${key}`,
-      type: key === 'peso' ? 'weight' : key === 'temperatura' ? 'temp' : key === 'hr' ? 'ecg' : key === 'spo2' ? 'ppg' : 'urinalysis',
+      type: key === 'peso' ? 'weight' : key === 'temperatura' ? 'temp' : key === 'hr' ? 'ecg' : key === 'spo2' ? 'ppg' : key === 'impedancia' ? 'impedance' : 'contextual',
       marker: data.name,
       value: String(data.value),
       unit: data.unit,

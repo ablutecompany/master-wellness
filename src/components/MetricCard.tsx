@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { Typography, BlurView } from './Base';
-import { TrendingUp, TrendingDown, Minus, Activity } from 'lucide-react-native';
+import { TrendingUp, TrendingDown, Minus, Activity, Info } from 'lucide-react-native';
 import { MetricDefinition, MetricObservation } from '../data/metrics-catalog';
+import { BIOMARKER_INFO } from '../data/biomarker-info';
 
 export interface MetricCardProps {
   definition: MetricDefinition;
@@ -83,6 +84,9 @@ export const MetricCard: React.FC<MetricCardProps> = ({ definition, observation,
     ? new Date(observation.measuredAt).toLocaleDateString('pt-PT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) 
     : 'Sessão corrente';
 
+  // Get biomarker metadata if available
+  const meta = BIOMARKER_INFO[definition.label] || null;
+
   return (
     <>
     <TouchableOpacity 
@@ -139,69 +143,73 @@ export const MetricCard: React.FC<MetricCardProps> = ({ definition, observation,
         <TouchableOpacity style={StyleSheet.absoluteFillObject} onPress={() => setShowDetail(false)} activeOpacity={1}/>
         <View style={styles.modalCentered}>
           <View style={styles.modalContent}>
-            <Typography variant="h3" style={{ color: '#00F2FF', marginBottom: 20 }}>{definition.label}</Typography>
+            <Typography variant="h3" style={{ color: '#00F2FF', marginBottom: 20 }}>{meta?.label || definition.label}</Typography>
             
             <View style={{ marginBottom: 16 }}>
                <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: 1 }}>VALOR REGISTADO</Typography>
                <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
                   <Typography style={{ color: '#ffffff', fontSize: 24, fontWeight: '800' }}>{displayValue}</Typography>
                   {showUnit && <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, marginLeft: 6 }}>{definition.unit}</Typography>}
+                  {observation.mode === 'demo' && (
+                    <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 8 }}>
+                      <Typography style={{ color: '#F59E0B', fontSize: 10, fontWeight: 'bold' }}>SIMULAÇÃO</Typography>
+                    </View>
+                  )}
                </View>
             </View>
 
             <View style={{ marginBottom: 16 }}>
-               <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: 1 }}>TENDÊNCIA TEMPORAL</Typography>
+               <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: 1 }}>HISTÓRICO RECENTE</Typography>
                {observation.trend ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     {observation.trend.direction === 'up' ? <TrendingUp size={16} color="#00F2FF" style={{ marginRight: 6 }} /> : 
                      observation.trend.direction === 'down' ? <TrendingDown size={16} color="#00F2FF" style={{ marginRight: 6 }} /> :
                      <Minus size={16} color="#00F2FF" style={{ marginRight: 6 }} />}
-                    <Typography style={{ 
-                       color: observation.trend.priority === 'critical' ? '#FF3366' : observation.trend.priority === 'relevant' ? '#FFA500' : '#00F2FF', 
-                       fontSize: 14, 
-                       fontWeight: observation.trend.priority === 'critical' || observation.trend.priority === 'relevant' ? '800' : '600' 
-                    }}>
-                       {observation.trend.priority === 'critical' || observation.trend.priority === 'relevant' ? 'Mudança Principal: ' : ''}
-                       {observation.trend.diffLabel}
+                    <Typography style={{ color: '#ffffff', fontSize: 14 }}>
+                       {observation.trend.direction === 'up' ? 'Subiu' : observation.trend.direction === 'down' ? 'Desceu' : 'Semelhante'} em relação à última medição.
                     </Typography>
                   </View>
                ) : (
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Activity size={14} color="rgba(255,255,255,0.3)" style={{ marginRight: 6 }} />
-                    <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontStyle: 'italic' }}>Sem base temporal prévia para comparar estabilidade.</Typography>
-                  </View>
+                  <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13, fontStyle: 'italic' }}>Ainda não há histórico suficiente para comparar este parâmetro.</Typography>
                )}
             </View>
 
             <View style={{ marginBottom: 16 }}>
-               <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: 1 }}>CONTEXTO TEMPORAL</Typography>
-               <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>{formattedDate}</Typography>
-            </View>
-
-            <View style={{ marginBottom: 24 }}>
-               <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: 1 }}>ORIGEM DO DADO</Typography>
-               <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, textTransform: 'capitalize' }}>
-                 {observation.mode === 'demo' ? 'Demonstração (Simulada)' : (observation.source === 'manual' ? 'Inserção Manual' : (observation.source === 'derived' ? 'Processado / Derivado' : 'Captura Sensorial'))}
+               <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: 1 }}>BASELINE PESSOAL</Typography>
+               <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>
+                 {observation.mode === 'demo' ? 'Baseline indisponível (Simulação)' : 'Baseline pessoal ainda não disponível.'}
                </Typography>
             </View>
 
-            {onExploreSemantics && (
-               <View style={{ marginBottom: 12 }}>
-                 <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 6, letterSpacing: 1 }}>TRADUÇÃO BIOLÓGICA</Typography>
-                 <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 18, marginBottom: 12 }}>
-                   O peso exato desta métrica no contexto de bem-estar pode ser consultado na camada de análise base.
+            <View style={{ marginBottom: 16 }}>
+               <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 4, letterSpacing: 1 }}>REFERÊNCIA GERAL</Typography>
+               <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>
+                 {meta?.generalReference || 'Referência geral não definida nesta versão.'}
+               </Typography>
+            </View>
+
+            {meta && (
+              <View style={{ marginBottom: 16, backgroundColor: 'rgba(0, 242, 255, 0.05)', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.1)' }}>
+                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                   <Info size={14} color="#00F2FF" style={{ marginRight: 6 }} />
+                   <Typography variant="caption" style={{ color: '#00F2FF', letterSpacing: 1 }}>O QUE ESTE PARÂMETRO COSTUMA INDICAR</Typography>
+                 </View>
+                 <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 }}>
+                   {meta.educationalMeaning}
                  </Typography>
-                 <TouchableOpacity 
-                   style={[styles.closeBtn, { backgroundColor: 'rgba(0, 242, 255, 0.1)', borderColor: 'rgba(0, 242, 255, 0.3)' }]} 
-                   onPress={() => {
-                     setShowDetail(false);
-                     onExploreSemantics();
-                   }}
-                 >
-                   <Typography style={[styles.closeBtnText, { color: '#00F2FF' }]}>CONSULTAR LEITURA AI</Typography>
-                 </TouchableOpacity>
-               </View>
+                 {meta.isExperimental && (
+                   <Typography style={{ color: '#F59E0B', fontSize: 12, marginTop: 8, fontWeight: '500' }}>
+                     Nota: Em contexto de investigação/monitorização. Não deve ser lido isoladamente.
+                   </Typography>
+                 )}
+              </View>
             )}
+
+            <View style={{ marginBottom: 24 }}>
+               <Typography style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, lineHeight: 16, textAlign: 'center', fontStyle: 'italic' }}>
+                 Esta informação é educativa e deve ser lida em conjunto com o contexto, histórico e avaliação profissional quando aplicável. Não constitui diagnóstico.
+               </Typography>
+            </View>
 
             <TouchableOpacity 
               style={styles.closeBtn} 

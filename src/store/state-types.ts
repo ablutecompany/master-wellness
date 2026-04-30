@@ -54,7 +54,7 @@ export interface Measurement {
 export interface AnalysisMeasurement {
   id: string;
   memberId?: string; // Strict ownership mapping
-  type: 'urinalysis' | 'ecg' | 'ppg' | 'temp' | 'weight' | 'fecal';
+  type: 'urinalysis' | 'ecg' | 'ppg' | 'temp' | 'weight' | 'fecal' | 'impedance' | 'contextual';
   marker?: string;
   value: string;
   unit: string;
