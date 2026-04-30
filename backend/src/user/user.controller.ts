@@ -14,7 +14,7 @@ export class UserController {
   @Patch('profile')
   async updateProfile(
     @Request() req: any,
-    @Body() body: { name?: string; dateOfBirth?: string; height?: number; sex?: string; timezone?: string; country?: string; weight?: { manualValue?: number | null } },
+    @Body() body: { name?: string; avatarUrl?: string; dateOfBirth?: string; dateOfBirthPrecision?: string; height?: number; sex?: string; timezone?: string; country?: string; weight?: { manualValue?: number | null } },
   ) {
     try {
       const userId = req.user.userId;

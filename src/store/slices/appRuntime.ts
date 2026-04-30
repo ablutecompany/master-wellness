@@ -59,7 +59,11 @@ export const createAppRuntimeSlice: StateCreator<AppState, [], [], AppRuntimeSli
         } else {
           // Limit reached, we do not add and return same state
           if (typeof window !== 'undefined' && window.alert) {
-            window.alert('Limite de favoritos atingido. Remove uma app dos favoritos para adicionar outra.');
+            window.alert('Só podes ter até 5 apps favoritas. Remove uma favorita para adicionar outra.');
+          } else {
+             // Fallback for native if needed, though window.alert often works in web fallback
+             const { Alert } = require('react-native');
+             Alert.alert('Limite Atingido', 'Só podes ter até 5 apps favoritas. Remove uma favorita para adicionar outra.');
           }
           return state;
         }

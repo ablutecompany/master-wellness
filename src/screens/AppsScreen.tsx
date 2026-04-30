@@ -357,7 +357,7 @@ export const AppsScreen = ({ navigation }: { navigation: any }) => {
                     {/* Middle: info */}
                     <View style={styles.catalogInfo}>
                       <View style={styles.catalogNameRow}>
-                        <Typography style={styles.catalogName}>{app.name}</Typography>
+                        <Typography style={styles.catalogName} numberOfLines={1} ellipsizeMode="tail">{app.name}</Typography>
                         {app.developerVerified && (
                           <View style={styles.verifiedBadge}>
                             <Typography style={styles.verifiedText}>✓</Typography>

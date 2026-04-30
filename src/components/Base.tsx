@@ -22,6 +22,7 @@ interface TypographyProps {
   color?: string;
   style?: TextStyle | TextStyle[];
   numberOfLines?: number;
+  ellipsizeMode?: 'head' | 'middle' | 'tail' | 'clip';
 }
 
 export const Typography: React.FC<TypographyProps> = ({ 
@@ -29,12 +30,14 @@ export const Typography: React.FC<TypographyProps> = ({
   variant = 'body', 
   color = theme.colors.text, 
   style,
-  numberOfLines 
+  numberOfLines,
+  ellipsizeMode
 }) => {
   return (
     <Text 
       style={[theme.typography[variant], { color }, style]}
       numberOfLines={numberOfLines}
+      ellipsizeMode={ellipsizeMode}
     >
       {children}
     </Text>

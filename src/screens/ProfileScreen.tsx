@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, ScrollView, Platform, Image, Alert, Modal, SafeAreaView, Dimensions, FlatList, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, ScrollView, Platform, Image, Alert, Modal, SafeAreaView, Dimensions, FlatList, ActivityIndicator, TextInput } from 'react-native';
 import { Container, Typography, BlurView } from '../components/Base';
 import { theme } from '../theme';
 import { 
@@ -12,7 +12,8 @@ import {
   Calendar,
   Ruler,
   Dna,
-  Settings
+  Settings,
+  Edit2
 } from 'lucide-react-native';
 import { GatingOverlay } from '../components/GatingOverlay';
 import { useStore } from '../store/useStore';
@@ -65,15 +66,18 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   // ─────────────────────────────────────────────────────────────────────────────
   const [modalConfig, setModalConfig] = useState<{
     visible: boolean;
-    type: 'birthday' | 'height' | 'sex' | 'weight';
+    type: 'birthday' | 'height' | 'sex' | 'weight' | 'name' | 'email' | 'avatar';
     title: string;
   }>({ visible: false, type: 'birthday', title: '' });
 
   const [tempDate, setTempDate] = useState<{ year: number; month?: number | null; day?: number | null }>({ year: 2006 });
   const [tempHeight, setTempHeight] = useState(175);
   const [tempWeight, setTempWeight] = useState(60);
+  const [tempName, setTempName] = useState('');
+  const [tempEmail, setTempEmail] = useState('');
+  const [tempAvatar, setTempAvatar] = useState('');
 
-  const openModal = (type: 'birthday' | 'height' | 'sex' | 'weight', title: string) => {
+  const openModal = (type: 'birthday' | 'height' | 'sex' | 'weight' | 'name' | 'email' | 'avatar', title: string) => {
     if (type === 'birthday') {
       const dob = user?.dateOfBirth;
       const precision = user?.dateOfBirthPrecision;
@@ -92,6 +96,12 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     } else if (type === 'weight') {
       const w = user?.weight?.manualValue || user?.weight?.value;
       setTempWeight(w ? Math.round(w) : 60);
+    } else if (type === 'name') {
+      setTempName(user?.name || user?.fullName || '');
+    } else if (type === 'email') {
+      setTempEmail(user?.email || authAccount?.email || '');
+    } else if (type === 'avatar') {
+      setTempAvatar(user?.avatarUrl || '');
     }
     setModalConfig({ visible: true, type, title });
   };
@@ -134,6 +144,31 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       } 
     });
     closeModal();
+  };
+
+  const saveName = () => {
+    updateProfileField({ name: tempName });
+    closeModal();
+  };
+
+  const saveAvatar = () => {
+    updateProfileField({ avatarUrl: tempAvatar });
+    closeModal();
+  };
+
+  const saveEmail = async () => {
+    if (!tempEmail || !tempEmail.includes('@')) {
+      Alert.alert('Erro', 'Por favor, insere um email válido.');
+      return;
+    }
+    try {
+      const { error } = await supabase.auth.updateUser({ email: tempEmail });
+      if (error) throw error;
+      Alert.alert('Confirmação enviada', 'Um link de confirmação foi enviado para o novo email. O email atual será mantido até confirmares o novo.');
+      closeModal();
+    } catch (err: any) {
+      Alert.alert('Erro', err.message || 'Falha ao alterar o email.');
+    }
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -291,6 +326,51 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     );
   };
 
+  const renderNameInput = () => (
+    <View style={styles.textInputContainer}>
+      <TextInput
+        style={styles.textInputField}
+        value={tempName}
+        onChangeText={setTempName}
+        placeholder="O teu nome"
+        placeholderTextColor="rgba(255,255,255,0.3)"
+      />
+    </View>
+  );
+
+  const renderEmailInput = () => (
+    <View style={styles.textInputContainer}>
+      <TextInput
+        style={styles.textInputField}
+        value={tempEmail}
+        onChangeText={setTempEmail}
+        placeholder="O teu email"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        placeholderTextColor="rgba(255,255,255,0.3)"
+      />
+      <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginTop: 8 }}>
+        Iremos enviar um link de confirmação. O teu email atual manter-se-á até confirmares.
+      </Typography>
+    </View>
+  );
+
+  const renderAvatarInput = () => (
+    <View style={styles.textInputContainer}>
+      <TextInput
+        style={styles.textInputField}
+        value={tempAvatar}
+        onChangeText={setTempAvatar}
+        placeholder="URL da tua foto"
+        autoCapitalize="none"
+        placeholderTextColor="rgba(255,255,255,0.3)"
+      />
+      <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginTop: 8 }}>
+        Coloca um URL válido para a tua foto de perfil. (Upload nativo chegará em breve).
+      </Typography>
+    </View>
+  );
+
   // ─────────────────────────────────────────────────────────────────────────────
   // 5. MAIN RENDER
   // ─────────────────────────────────────────────────────────────────────────────
@@ -327,21 +407,31 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           >
             {/* HERO SECTION */}
             <View style={styles.heroSection}>
-              <View style={styles.avatarContainer}>
+              <TouchableOpacity style={styles.avatarContainer} onPress={() => openModal('avatar', 'Alterar Foto')}>
                 {user?.avatarUrl ? (
                   <Image source={{ uri: user.avatarUrl }} style={styles.avatarImg} />
                 ) : (
                   <User size={32} color="white" />
                 )}
-              </View>
+                <View style={styles.editBadge}>
+                  <Edit2 size={12} color="#fff" />
+                </View>
+              </TouchableOpacity>
               
               <View style={styles.nameBlock}>
-                <Typography variant="h2" style={styles.profileName}>
-                  {user?.name || user?.fullName || (isGuestMode ? 'Convidada' : 'Utilizadora')}
-                </Typography>
-                <Typography variant="caption" style={styles.profileEmail}>
-                  {user?.email || authAccount?.email || 'MODO GUEST LOCAL'}
-                </Typography>
+                <TouchableOpacity onPress={() => openModal('name', 'Editar Nome')} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Typography variant="h2" style={styles.profileName}>
+                    {user?.name || user?.fullName || (isGuestMode ? 'Convidada' : 'Utilizadora')}
+                  </Typography>
+                  <Edit2 size={14} color="rgba(255,255,255,0.4)" />
+                </TouchableOpacity>
+                
+                <TouchableOpacity onPress={() => openModal('email', 'Alterar Email')} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Typography variant="caption" style={styles.profileEmail}>
+                    {user?.email || authAccount?.email || 'MODO GUEST LOCAL'}
+                  </Typography>
+                  {!isGuestMode && <Edit2 size={12} color="rgba(255,255,255,0.4)" style={{ marginTop: 4 }} />}
+                </TouchableOpacity>
                 <View style={styles.badgeRow}>
                    <Typography style={styles.versionBadge}>BUILD 2.7 • STABLE</Typography>
                    <Typography style={[styles.modeBadge, { backgroundColor: isGuestMode ? 'rgba(255,255,255,0.1)' : 'rgba(0, 242, 255, 0.1)' }]}>
@@ -452,8 +542,9 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                   } else {
                     await supabase.auth.signOut();
                     useStore.getState().setUser(null);
+                    useStore.getState().clearSensitiveState();
                   }
-                  navigation.goBack();
+                  navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
                 }}
               >
                 <LogOut size={18} color="#FF3B30" />
@@ -482,6 +573,9 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
               {modalConfig.type === 'height' && renderHeightPicker()}
               {modalConfig.type === 'sex' && renderSexPicker()}
               {modalConfig.type === 'weight' && renderWeightPicker()}
+              {modalConfig.type === 'name' && renderNameInput()}
+              {modalConfig.type === 'email' && renderEmailInput()}
+              {modalConfig.type === 'avatar' && renderAvatarInput()}
             </View>
 
             {modalConfig.type !== 'sex' && (
@@ -491,6 +585,9 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                   if (modalConfig.type === 'birthday') saveBirthday();
                   else if (modalConfig.type === 'height') saveHeight();
                   else if (modalConfig.type === 'weight') saveWeight();
+                  else if (modalConfig.type === 'name') saveName();
+                  else if (modalConfig.type === 'email') saveEmail();
+                  else if (modalConfig.type === 'avatar') saveAvatar();
                 }}
               >
                 <Typography style={styles.saveBtnText}>CONFIRMAR</Typography>
@@ -839,5 +936,32 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 11,
     letterSpacing: 1.5,
+  },
+  editBadge: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    backgroundColor: '#00F2FF',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#05070A',
+  },
+  textInputContainer: {
+    paddingHorizontal: 20,
+    marginTop: 10,
+  },
+  textInputField: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
+    color: '#fff',
+    paddingHorizontal: 16,
+    height: 52,
+    fontSize: 16,
   },
 });

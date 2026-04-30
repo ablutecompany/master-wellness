@@ -710,7 +710,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
               {/* Footer Icons: Estilo Antigo (Maiores, com Label) */}
               <Animated.View style={[styles.footerIconsRow, { opacity: footerIconsOpacity }]}>
                 {(() => {
-                  const footerApps = installedAppIds.filter(id => favoriteAppIds.includes(id));
+                  const footerApps = favoriteAppIds.filter(id => installedAppIds.includes(id)).slice(0, 5);
                   if (footerApps.length > 0) {
                     return footerApps.map(id => {
                       const app = MINI_APP_CATALOG.find(a => a.id === id);
@@ -728,12 +728,18 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                              return <IconComp size={22} color={app.iconColor || '#fff'} strokeWidth={1.2} />;
                            })()}
                         </View>
-                        <Typography style={styles.footerIconLabel}>{app.name.replace(/_/g, '').toUpperCase()}</Typography>
+                        <Typography style={styles.footerIconLabel} numberOfLines={1}>{app.name.replace(/_/g, '').toUpperCase()}</Typography>
                       </TouchableOpacity>
                     );
                     });
                   } else {
-                    return null; // O rodapé fica limpo/vazio se não houver favoritos
+                    return (
+                      <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 10 }}>
+                        <Typography style={{ color: 'rgba(255,255,255,0.3)', fontSize: 12, fontStyle: 'italic' }}>
+                          Sem apps favoritas ainda
+                        </Typography>
+                      </View>
+                    );
                   }
                 })()}
               </Animated.View>
@@ -1709,7 +1715,7 @@ const styles = StyleSheet.create({
   },
   footerIconsRow: {
     flexDirection: 'row',
-    gap: 32,
+    gap: 20,
     marginTop: 24,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1717,7 +1723,7 @@ const styles = StyleSheet.create({
   },
   footerIconWrapper: {
     alignItems: 'center',
-    width: 60,
+    width: 56,
   },
   footerIconCircle: {
     width: 46,

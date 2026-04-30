@@ -138,8 +138,8 @@ export class UserService {
     return { ...hh, ownerId };
   }
 
-  async updateCombinedProfile(userId: string, updates: { name?: string, dateOfBirth?: string, height?: number, sex?: string, timezone?: string, country?: string, weight?: { manualValue?: number | null } }) {
-    const { name, dateOfBirth, height, sex, timezone, country, weight } = updates;
+  async updateCombinedProfile(userId: string, updates: { name?: string, avatarUrl?: string, dateOfBirth?: string, dateOfBirthPrecision?: string, height?: number, sex?: string, timezone?: string, country?: string, weight?: { manualValue?: number | null } }) {
+    const { name, avatarUrl, dateOfBirth, dateOfBirthPrecision, height, sex, timezone, country, weight } = updates;
     
     // Update name directly in public.profiles since public.User doesn't exist
     if (name !== undefined) {
@@ -150,10 +150,29 @@ export class UserService {
       `;
     }
 
+    if (avatarUrl !== undefined) {
+      await this.prisma.$executeRaw`
+        UPDATE public.profiles 
+        SET avatar_url = ${avatarUrl}, updated_at = now()
+        WHERE id = ${userId}::uuid
+      `;
+    }
+
     if (dateOfBirth !== undefined) {
       await this.prisma.$executeRaw`
         UPDATE public.profiles 
         SET date_of_birth = ${dateOfBirth}::date, updated_at = now()
+        WHERE id = ${userId}::uuid
+      `;
+    }
+
+    if (dateOfBirthPrecision !== undefined) {
+      try {
+        await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS date_of_birth_precision TEXT`);
+      } catch (e) {}
+      await this.prisma.$executeRaw`
+        UPDATE public.profiles 
+        SET date_of_birth_precision = ${dateOfBirthPrecision}, updated_at = now()
         WHERE id = ${userId}::uuid
       `;
     }
@@ -223,7 +242,7 @@ export class UserService {
     
     // Fetch the updated profile using raw query to avoid Prisma map crashes
     const profiles = await this.prisma.$queryRaw<any[]>`
-      SELECT id, email, name, TO_CHAR(date_of_birth, 'YYYY-MM-DD') as "dateOfBirth", height as "heightCm", sex, timezone, country, weight as "manualWeight", active_analysis_id as "activeAnalysisId", household_data as "householdData"
+      SELECT id, email, name, avatar_url as "avatarUrl", TO_CHAR(date_of_birth, 'YYYY-MM-DD') as "dateOfBirth", date_of_birth_precision as "dateOfBirthPrecision", height as "heightCm", sex, timezone, country, weight as "manualWeight", active_analysis_id as "activeAnalysisId", household_data as "householdData"
       FROM public.profiles 
       WHERE id = ${userId}::uuid
     `;
@@ -278,8 +297,10 @@ export class UserService {
       id: p.id,
       email: p.email,
       name: p.name,
+      avatarUrl: p.avatarUrl || null,
       height: p.heightCm !== null ? Number(p.heightCm) : (pPrisma?.height || null),
       dateOfBirth: p.dateOfBirth || null,
+      dateOfBirthPrecision: p.dateOfBirthPrecision || null,
       sex: p.sex || null,
       timezone: p.timezone || null,
       country: p.country || null,
