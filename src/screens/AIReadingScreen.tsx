@@ -113,7 +113,7 @@ const DimensionGridCard = ({ dimension, isSelected, onPress, onInfoPress }: { di
         </View>
         <View style={styles.gridRightContent}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 2 }}>
-            <Icon size={21} color={color} style={{ marginRight: 6, marginTop: 1 }} />
+            <Icon size={24} color={color} style={{ marginRight: 6, marginTop: 1 }} />
             <Typography style={styles.gridLabel} numberOfLines={2}>{dimension.title}</Typography>
           </View>
           <View style={[styles.statusMiniBadge, { backgroundColor: `${color}15`, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 }]}>
@@ -256,8 +256,8 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         {/* HEADER */}
         <View style={styles.header}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-              <Typography variant="h1" style={styles.title}>Leitura AI</Typography>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12, flex: 1 }}>
+              <Typography variant="h1" style={styles.title}>Interpretação Das Análises Com IA</Typography>
               { (ENV.IS_DEV || ENV.SHOW_AI_DEBUG_BADGE) ? (
                 <Typography style={{ fontSize: 10, color: fallbackReason ? '#FFB800' : 'rgba(255,255,255,0.5)', marginTop: 8 }}>
                   Fonte: {readingSource}{readingSource === 'cached' ? ' · Recuperada' : ''}{fallbackReason && fallbackReason !== 'LOADING' ? ` · ${fallbackReason}` : (fallbackReason === 'LOADING' ? ' · A carregar...' : (readingSource === 'local_fallback' ? ' · UNKNOWN_FALLBACK_REASON' : ''))}
@@ -265,9 +265,11 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                   {'\n'}Status: {responseStatus} · requestStarted: {requestStarted ? 'true' : 'false'}
                 </Typography>
               ) : (
-                <Typography style={{ fontSize: 10, color: fallbackReason && fallbackReason !== 'LOADING' ? '#FFB800' : 'rgba(255,255,255,0.5)', marginTop: 8 }}>
-                  {fallbackReason === 'LOADING' ? 'A gerar leitura...' : (readingSource === 'cached' ? 'Leitura recuperada' : (readingSource === 'local_fallback' ? 'Análise local de segurança' : (isDemoMode ? 'Simulação' : 'Leitura atualizada')))}
-                </Typography>
+                (fallbackReason === 'LOADING' || readingSource === 'local_fallback') && (
+                  <Typography style={{ fontSize: 10, color: fallbackReason && fallbackReason !== 'LOADING' ? '#FFB800' : 'rgba(255,255,255,0.5)', marginTop: 8 }}>
+                    {fallbackReason === 'LOADING' ? 'A gerar leitura...' : 'Análise local de segurança'}
+                  </Typography>
+                )
               )}
               {isDemoMode && (
                 <View style={styles.demoBadge}>
@@ -516,8 +518,8 @@ const styles = StyleSheet.create({
   atmosphere: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
   aura: { position: 'absolute', width: 600, height: 600, borderRadius: 300, top: -200, right: -200, opacity: 0.3, ...(Platform.OS === 'web' ? { filter: 'blur(120px)' } : {}) },
   scroll: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 },
-  header: { marginBottom: 8 },
-  title: { color: '#ffffff', fontSize: 22, fontWeight: '700' },
+  header: { marginBottom: 8, marginLeft: 10 },
+  title: { color: '#ffffff', fontSize: 20, fontWeight: '700', flexShrink: 1 },
   demoBadge: { borderColor: '#00F2FF', borderWidth: 1, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, justifyContent: 'center', height: 20 },
   demoLabel: { color: '#00F2FF', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   iconBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
@@ -543,7 +545,7 @@ const styles = StyleSheet.create({
   ringInnerContent: { position: 'absolute', alignItems: 'center', justifyContent: 'center', top: 0, left: 0, right: 0, bottom: 0 },
   gridRightContent: { flex: 1, paddingLeft: 10, justifyContent: 'center', alignItems: 'flex-start' },
   gridScore: { color: '#fff', fontSize: 17, fontWeight: '700' },
-  gridLabel: { color: 'rgba(255,255,255,0.9)', fontSize: 16, fontWeight: '600', lineHeight: 20, flexShrink: 1 },
+  gridLabel: { color: 'rgba(255,255,255,0.9)', fontSize: 17, fontWeight: '600', lineHeight: 21, flexShrink: 1 },
 
   modalOverlay: { flex: 1, justifyContent: 'center', padding: 24 },
   modalCentered: { flex: 1, justifyContent: 'center' },
