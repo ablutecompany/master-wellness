@@ -212,8 +212,12 @@ export class AiGatewayService {
     const { activeMemberId, analysisSessionId, forceRegenerate, sourcePayload } = body;
     const isDemo = sourcePayload?.isDemo === true;
     
-    if (!isDemo && !userId) {
-       throw new AiGatewayError('UNAUTHORIZED', 'Autenticação obrigatória para leitura não-demo (401)');
+    const hasAuth = !!userId;
+    
+    this.logger.log(`[R5C1_OPENAI_GUARD] hasAuth=${hasAuth} | isDemo=${isDemo} | willCallOpenAI=${hasAuth}`);
+
+    if (!hasAuth) {
+       throw new AiGatewayError('UNAUTHORIZED', 'Autenticação obrigatória para utilizar a IA Avançada. (401)');
     }
 
     // 1. Identificar Source Hash
@@ -235,7 +239,7 @@ export class AiGatewayService {
        }
 
        if (cached && cached.themesJson && (cached.themesJson as any[]).length > 0) {
-          this.logger.log(`[R5C_OPENAI_V2] CACHE HIT | isDemo=${isDemo} | analysisSessionId=${analysisSessionId} | hash=${hashStr.substring(0,8)}`);
+          this.logger.log(`[R5C1_OPENAI_GUARD] engineSource=cached | cached=true | hasAuth=${hasAuth} | isDemo=${isDemo} | willCallOpenAI=false`);
           return {
             ok: true,
             provider: 'cached',
@@ -258,7 +262,7 @@ export class AiGatewayService {
        }
     }
 
-    this.logger.log(`[R5C_OPENAI_V2] GERANDO NOVA | isDemo=${isDemo} | analysisSessionId=${analysisSessionId} | hash=${hashStr.substring(0,8)}`);
+    this.logger.log(`[R5C1_OPENAI_GUARD] engineSource=backend_openai_v2 | cached=false | hasAuth=${hasAuth} | isDemo=${isDemo} | willCallOpenAI=true`);
 
     const prompt = [
       `A Leitura AI é uma camada interpretativa baseada em resultados reais (ou simulados) da plataforma ablute_ wellness.`,

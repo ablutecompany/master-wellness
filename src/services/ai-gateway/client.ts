@@ -154,8 +154,8 @@ export async function generateInsightsV2(context: any, analysis?: Analysis): Pro
     const state = useStore.getState();
     const token = state.sessionToken;
 
-    if (!token && context.isDemo !== true) {
-      return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Sessão expirada ou não autenticada' } };
+    if (!token) {
+      return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Autenticação necessária para a Leitura AI Avançada' } };
     }
 
     const payload = {
