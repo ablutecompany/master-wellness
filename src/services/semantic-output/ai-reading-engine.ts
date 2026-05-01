@@ -481,20 +481,6 @@ export function computeAIReadingFromData(
     color: nextFocusDimension.color
   } : undefined;
 
-  // Add Próximo Foco as 8th dimension
-  dimensions.push({
-    id: 'next_focus',
-    title: 'Próximo foco',
-    color: nextFocus ? nextFocus.color : '#AAA',
-    score: null,
-    confidence: 'high',
-    status: 'stable',
-    summary: nextFocus ? `O ajuste mais útil a fazer primeiro foca-se em: ${nextFocus.label}.` : 'Manter consistência geral.',
-    topDrivers: [],
-    recommendations: [],
-    references: [],
-    limitations: []
-  });
 
   return {
     summary: { 

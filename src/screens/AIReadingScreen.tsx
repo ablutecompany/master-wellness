@@ -77,6 +77,14 @@ const DimensionGridCard = ({ dimension, isSelected, onPress }: { dimension: Holi
   );
 };
 
+const CTAGridCard = () => {
+  return (
+    <View style={[styles.gridCard, { justifyContent: 'center', alignItems: 'center', borderStyle: 'dashed' }]}>
+      <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '600' }}>Histórico</Typography>
+    </View>
+  );
+};
+
 export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const isDemoMode = useStore(state => state.isDemoMode);
   const analyses = useStore(state => state.analyses);
@@ -193,8 +201,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
       <View style={styles.atmosphere}>
         <View style={[styles.aura, { backgroundColor: `${auraColor}20` }]} />
       </View>
-
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <View style={{ flex: 1 }}>
         
         {/* HEADER */}
         <View style={styles.header}>
@@ -234,6 +241,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           </View>
         </View>
 
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {/* ÁREA DE TEXTO / MENSAGEM */}
         {(() => {
           if (!selectedDim) {
@@ -344,22 +352,27 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           );
         })()}
 
+        </ScrollView>
+
         {/* GRELHA DE DIMENSÕES */}
-        <View style={styles.gridContainer}>
-          {dimensions.map(d => (
-            <DimensionGridCard 
-              key={d.id}
-              dimension={d}
-              isSelected={selectedDimId === d.id}
-              onPress={() => {
-                if (selectedDimId !== d.id) setActiveTab('summary');
-                setSelectedDimId(prev => prev === d.id ? null : d.id);
-              }}
-            />
-          ))}
+        <View style={styles.gridWrapper}>
+          <View style={styles.gridContainer}>
+            {dimensions.map(d => (
+              <DimensionGridCard 
+                key={d.id}
+                dimension={d}
+                isSelected={selectedDimId === d.id}
+                onPress={() => {
+                  if (selectedDimId !== d.id) setActiveTab('summary');
+                  setSelectedDimId(prev => prev === d.id ? null : d.id);
+                }}
+              />
+            ))}
+            {dimensions.length === 7 && <CTAGridCard />}
+          </View>
         </View>
 
-      </ScrollView>
+      </View>
 
       {/* POPUP: GLOBAL INFO */}
       <Modal visible={showGlobalInfo} transparent animationType="fade">
@@ -407,6 +420,7 @@ const styles = StyleSheet.create({
   tabBtnText: { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600' },
   tabContentArea: { paddingVertical: 4 },
 
+  gridWrapper: { paddingHorizontal: 16, paddingBottom: Platform.OS === 'ios' ? 40 : 24, paddingTop: 8 },
   gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between' },
   gridCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', padding: 10, minHeight: 76, justifyContent: 'center' },
   gridCardSelected: { backgroundColor: 'rgba(255,255,255,0.06)' },
