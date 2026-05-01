@@ -6,6 +6,7 @@ import { Analysis, AnalysisMeasurement } from '../store/types';
 import { computeAIReadingFromData, AIReading, HolisticDimension, buildAiReadingLLMContextV2 } from '../services/semantic-output/ai-reading-engine';
 import { normalizeAIReadingResponse } from '../services/semantic-output/ai-reading-adapter';
 import { generateInsightsV2, cancelPendingInsights } from '../services/ai-gateway/client';
+import { ENV } from '../config/env';
 import Svg, { Circle } from 'react-native-svg';
 import { 
   Activity, Zap, Target, Heart, Moon, FlaskConical, X, 
@@ -18,10 +19,7 @@ const buildAnalysisValuesHash = (analysis: Analysis | null | undefined) => {
   return `${analysis.id}-${analysis.demoScenarioKey || 'real'}-${markers}`;
 };
 
-const ENABLE_OPENAI_READING = (
-  typeof process !== 'undefined' &&
-  (process.env as any)?.EXPO_PUBLIC_ENABLE_OPENAI_READING === 'true'
-);
+const ENABLE_OPENAI_READING = true;
 
 type ReadingSource = 'local' | 'openai' | 'fallback';
 
@@ -112,7 +110,10 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
     setReadingSource('local_fallback');
     setFallbackReason(null);
     setIsRefining(false);
-    if (!ENABLE_OPENAI_READING || !activeAnalysis) return;
+    if (!ENABLE_OPENAI_READING || !activeAnalysis) {
+      setFallbackReason('EARLY_RETURN_NO_ANALYSIS');
+      return;
+    }
 
     cancelPendingInsights();
     let cancelled = false;
@@ -183,7 +184,8 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
             <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
               <Typography variant="h1" style={styles.title}>Leitura AI</Typography>
               <Typography style={{ fontSize: 10, color: fallbackReason ? '#FFB800' : 'rgba(255,255,255,0.5)', marginTop: 8 }}>
-                Fonte: {readingSource}{readingSource === 'cached' ? ' · Recuperada' : ''}{fallbackReason ? ` · ${fallbackReason}` : ''}
+                Fonte: {readingSource}{readingSource === 'cached' ? ' · Recuperada' : ''}{fallbackReason ? ` · ${fallbackReason}` : (readingSource === 'local_fallback' ? ' · UNKNOWN_FALLBACK_REASON' : '')}
+                {'\n'}Backend: {ENV.BACKEND_URL || 'undefined'}
               </Typography>
               {isDemoMode && (
                 <View style={styles.demoBadge}>

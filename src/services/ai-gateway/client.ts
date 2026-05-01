@@ -152,7 +152,18 @@ export async function generateInsightsV2(context: any, analysis?: Analysis): Pro
     const state = useStore.getState();
     const token = state.sessionToken;
 
+    const isDemo = analysis?.source === 'demo';
+    const endpointFinal = `${AI_GATEWAY_BASE_URL}/ai-gateway/generate-v2`;
+    
+    console.log(`[R5C6_AI_V2_CLIENT] requestWillStart | isDemo=${isDemo} | hasToken=${!!token} | tokenLength=${token ? token.length : 0} | backendUrl=${AI_GATEWAY_BASE_URL} | endpointFinal=${endpointFinal}`);
+
+    if (!AI_GATEWAY_BASE_URL) {
+      console.log(`[R5C6_AI_V2_CLIENT] fallbackReason=BACKEND_URL_MISSING`);
+      return { ok: false, error: { code: 'BACKEND_URL_MISSING', message: 'Backend URL não configurado' } };
+    }
+
     if (!token) {
+      console.log(`[R5C6_AI_V2_CLIENT] fallbackReason=NO_TOKEN`);
       return { ok: false, error: { code: 'NO_TOKEN', message: 'Autenticação necessária para a Leitura AI Avançada' } };
     }
 
@@ -163,7 +174,8 @@ export async function generateInsightsV2(context: any, analysis?: Analysis): Pro
       sourcePayload: context
     };
 
-    const res = await fetch(`${AI_GATEWAY_BASE_URL}/ai-gateway/generate-v2`, {
+    console.log(`[R5C6_AI_V2_CLIENT] requestStarted=true`);
+    const res = await fetch(endpointFinal, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -177,20 +189,30 @@ export async function generateInsightsV2(context: any, analysis?: Analysis): Pro
 
     if (requestId !== activeRequestId) return null;
 
+    console.log(`[R5C6_AI_V2_CLIENT] responseStatus=${res.status} | responseOk=${res.ok}`);
+
     if (!res.ok) {
-      if (res.status === 401) {
-        console.warn('[R5C4_AI_V2_CLIENT] UNAUTHORIZED (401)');
-        return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Não autorizado' } };
-      }
-      console.warn(`[R5C4_AI_V2_CLIENT] SERVER_ERROR (${res.status})`);
-      return { ok: false, error: { code: `SERVER_ERROR_${res.status}`, message: 'Erro no servidor' } };
+      let code = `SERVER_ERROR_${res.status}`;
+      if (res.status === 401) code = 'UNAUTHORIZED';
+      if (res.status === 403) code = 'FORBIDDEN';
+      if (res.status === 404) code = 'NOT_FOUND';
+      
+      console.log(`[R5C6_AI_V2_CLIENT] fallbackReason=${code}`);
+      return { ok: false, error: { code, message: `Erro no servidor (${res.status})` } };
     }
 
-    const json = await res.json() as AiGatewayResponse;
-    console.log(`[R5C4_AI_V2_CLIENT] SUCCESS | engineSource=${(json as AiGatewaySuccess).meta?.engineSource}`);
+    let json: AiGatewayResponse;
+    try {
+      json = await res.json() as AiGatewayResponse;
+    } catch (e) {
+      console.log(`[R5C6_AI_V2_CLIENT] fallbackReason=INVALID_RESPONSE`);
+      return { ok: false, error: { code: 'INVALID_RESPONSE', message: 'Resposta não é JSON' } };
+    }
+
+    console.log(`[R5C6_AI_V2_CLIENT] SUCCESS | responseProvider=${(json as AiGatewaySuccess).provider} | engineSource=${(json as AiGatewaySuccess).meta?.engineSource}`);
     return json;
   } catch (err: any) {
-    console.error('[R5C4_AI_V2_CLIENT] FETCH_ERROR:', err.message);
+    console.error(`[R5C6_AI_V2_CLIENT] errorName=${err.name} | errorMessage=${err.message} | fallbackReason=NETWORK_ERROR`);
     if (requestId !== activeRequestId) return null;
     return { ok: false, error: { code: 'NETWORK_ERROR', message: err.message || 'Falha de rede' } };
   }

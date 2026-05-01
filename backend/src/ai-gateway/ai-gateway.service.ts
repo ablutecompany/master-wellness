@@ -214,7 +214,7 @@ export class AiGatewayService {
     
     const hasAuth = !!userId;
     
-    this.logger.log(`[R5C1_OPENAI_GUARD] hasAuth=${hasAuth} | isDemo=${isDemo} | willCallOpenAI=${hasAuth}`);
+    this.logger.log(`[R5C6_AI_V2_SERVER] requestReceived=true | hasAuth=${hasAuth} | isDemo=${isDemo} | willCallOpenAI=${hasAuth}`);
 
     if (!hasAuth) {
        throw new AiGatewayError('UNAUTHORIZED', 'Autenticação obrigatória para utilizar a IA Avançada. (401)');
@@ -239,7 +239,7 @@ export class AiGatewayService {
        }
 
        if (cached && cached.themesJson && (cached.themesJson as any[]).length > 0) {
-          this.logger.log(`[R5C1_OPENAI_GUARD] engineSource=cached | cached=true | hasAuth=${hasAuth} | isDemo=${isDemo} | willCallOpenAI=false`);
+          this.logger.log(`[R5C6_AI_V2_SERVER] cacheHit=true | sourceSnapshotHash=${hashStr.substring(0,8)} | openaiCalled=false | prismaCreateAttempted=false`);
           return {
             ok: true,
             provider: 'cached',
@@ -280,6 +280,7 @@ export class AiGatewayService {
     ].join('\n');
 
     try {
+      this.logger.log(`[R5C6_AI_V2_SERVER] cacheHit=false | sourceSnapshotHash=${hashStr.substring(0,8)} | openaiCalled=true`);
       const response: any = await (this.openai as any).responses.create({
         model: this.model,
         input: prompt,
@@ -357,11 +358,12 @@ export class AiGatewayService {
            }
          });
          savedRecordId = record.id;
+         this.logger.log(`[R5C6_AI_V2_SERVER] prismaCreateAttempted=true | savedRecordId=${savedRecordId}`);
       } catch (dbErr) {
-         this.logger.error(`[R5C_OPENAI_V2] DB_PERSIST_ERROR: ${dbErr.message}`);
+         this.logger.error(`[R5C6_AI_V2_SERVER] prismaCreateAttempted=true | errorCode=DB_PERSIST_ERROR | errorMessage=${dbErr.message}`);
       }
 
-      this.logger.log(`[R5C_OPENAI_V2] SUCESSO | isDemo=${isDemo} | savedRecordId=${savedRecordId || 'NONE'} | execMs=${execMillis}`);
+      this.logger.log(`[R5C6_AI_V2_SERVER] SUCESSO | isDemo=${isDemo} | savedRecordId=${savedRecordId || 'NONE'} | execMs=${execMillis}`);
 
       return {
         ok: true,
