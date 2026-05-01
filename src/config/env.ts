@@ -25,6 +25,7 @@ export const ENV = {
   SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
   SITE_URL: process.env.EXPO_PUBLIC_SITE_URL || (isProduction ? 'https://ablute-wellness-app.vercel.app' : 'http://localhost:8081'),
   IS_DEV: !isProduction,
+  SHOW_AI_DEBUG_BADGE: process.env.EXPO_PUBLIC_SHOW_AI_DEBUG_BADGE === 'true' || false,
 };
 
 // Warn but don't throw — allows app to boot even with missing config

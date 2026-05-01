@@ -152,7 +152,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
       } else { 
         setReadingSource('local_fallback'); 
         setFallbackReason(response.error?.code || 'RESPONSE_OK_FALSE_WITHOUT_CODE');
-        setResponseStatus(response.error?.status || 'error');
+        setResponseStatus((response as any).status || 'error');
         console.log(`[R5C10_AI_READING_STATE] requestStarted=true | clientReturnedOk=false | fallbackReasonFinal=${response.error?.code}`);
       }
       setIsRefining(false);
@@ -201,11 +201,17 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
               <Typography variant="h1" style={styles.title}>Leitura AI</Typography>
-              <Typography style={{ fontSize: 10, color: fallbackReason ? '#FFB800' : 'rgba(255,255,255,0.5)', marginTop: 8 }}>
-                Fonte: {readingSource}{readingSource === 'cached' ? ' · Recuperada' : ''}{fallbackReason && fallbackReason !== 'LOADING' ? ` · ${fallbackReason}` : (fallbackReason === 'LOADING' ? ' · A carregar...' : (readingSource === 'local_fallback' ? ' · UNKNOWN_FALLBACK_REASON' : ''))}
-                {'\n'}Backend: {ENV.BACKEND_URL || 'undefined'}
-                {'\n'}Status: {responseStatus} · requestStarted: {requestStarted ? 'true' : 'false'}
-              </Typography>
+              { (ENV.IS_DEV || ENV.SHOW_AI_DEBUG_BADGE) ? (
+                <Typography style={{ fontSize: 10, color: fallbackReason ? '#FFB800' : 'rgba(255,255,255,0.5)', marginTop: 8 }}>
+                  Fonte: {readingSource}{readingSource === 'cached' ? ' · Recuperada' : ''}{fallbackReason && fallbackReason !== 'LOADING' ? ` · ${fallbackReason}` : (fallbackReason === 'LOADING' ? ' · A carregar...' : (readingSource === 'local_fallback' ? ' · UNKNOWN_FALLBACK_REASON' : ''))}
+                  {'\n'}Backend: {ENV.BACKEND_URL || 'undefined'}
+                  {'\n'}Status: {responseStatus} · requestStarted: {requestStarted ? 'true' : 'false'}
+                </Typography>
+              ) : (
+                <Typography style={{ fontSize: 10, color: fallbackReason && fallbackReason !== 'LOADING' ? '#FFB800' : 'rgba(255,255,255,0.5)', marginTop: 8 }}>
+                  {fallbackReason === 'LOADING' ? 'A gerar leitura...' : (readingSource === 'cached' ? 'Leitura recuperada' : (readingSource === 'local_fallback' ? 'Análise local de segurança' : (isDemoMode ? 'Simulação' : 'Leitura atualizada')))}
+                </Typography>
+              )}
               {isDemoMode && (
                 <View style={styles.demoBadge}>
                   <Typography style={styles.demoLabel}>SIMULAÇÃO</Typography>
