@@ -195,7 +195,17 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
     };
 
     return baseIds.map(id => {
-      const existing = reading.dimensions.find(d => d.id === id);
+      const existing = reading.dimensions.find(d => 
+        d.id === id || 
+        (id === 'energy' && d.id === 'energy_availability') ||
+        (id === 'recovery' && d.id === 'recovery_load') ||
+        (id === 'hydration' && d.id === 'hydration_urinary_balance') ||
+        (id === 'digestion' && d.id === 'intestinal_state') ||
+        (id === 'vitals' && d.id === 'vital_signs_physiological_balance') ||
+        (id === 'nutrition' && d.id === 'signal_oriented_nutrition') ||
+        (id === 'stress' && d.id === 'stress_focus_self_regulation') ||
+        (id === 'watch' && d.id === 'watch_signals')
+      );
       const fb = fallbacks[id];
 
       const isWeak = !existing || 
@@ -271,7 +281,10 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           <Typography style={{ color: '#AAA', fontSize: 10 }}>engineSource: {readingSource}</Typography>
           <Typography style={{ color: '#AAA', fontSize: 10 }}>firstVal: {activeAnalysis?.measurements?.[0]?.marker}={String(activeAnalysis?.measurements?.[0]?.value)}</Typography>
           <Typography style={{ color: '#FFF', fontSize: 10 }}>title: {reading.summary.title}</Typography>
-          <Typography style={{ color: '#FFF', fontSize: 10 }}>score[0]: {normalizedDimensions[0]?.score}</Typography>
+          <Typography style={{ color: '#FFF', fontSize: 10, marginTop: 4 }}>SCORES:</Typography>
+          {normalizedDimensions.map(d => (
+            <Typography key={d.id} style={{ color: '#FFF', fontSize: 10 }}>  - {d.id}: {d.score}</Typography>
+          ))}
         </View>
 
         {/* HEADER */}
