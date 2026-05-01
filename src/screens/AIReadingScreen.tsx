@@ -182,12 +182,9 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
               <Typography variant="h1" style={styles.title}>Leitura AI</Typography>
-              {readingSource === 'cached' && (
-                <Typography style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 8 }}>Recuperada</Typography>
-              )}
-              {fallbackReason && (
-                <Typography style={{ fontSize: 10, color: '#FFB800', marginTop: 8 }}>Fonte: local_fallback · {fallbackReason}</Typography>
-              )}
+              <Typography style={{ fontSize: 10, color: fallbackReason ? '#FFB800' : 'rgba(255,255,255,0.5)', marginTop: 8 }}>
+                Fonte: {readingSource}{readingSource === 'cached' ? ' · Recuperada' : ''}{fallbackReason ? ` · ${fallbackReason}` : ''}
+              </Typography>
               {isDemoMode && (
                 <View style={styles.demoBadge}>
                   <Typography style={styles.demoLabel}>SIMULAÇÃO</Typography>

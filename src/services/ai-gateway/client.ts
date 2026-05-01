@@ -153,7 +153,7 @@ export async function generateInsightsV2(context: any, analysis?: Analysis): Pro
     const token = state.sessionToken;
 
     if (!token) {
-      return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Autenticação necessária para a Leitura AI Avançada' } };
+      return { ok: false, error: { code: 'NO_TOKEN', message: 'Autenticação necessária para a Leitura AI Avançada' } };
     }
 
     const payload = {
