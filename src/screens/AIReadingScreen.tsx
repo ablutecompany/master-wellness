@@ -270,23 +270,6 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         
-        {/* R4F7 DEBUG TEMPORÁRIO */}
-        <View style={{ backgroundColor: '#1A1A1A', padding: 10, borderRadius: 8, marginBottom: 16, borderWidth: 1, borderColor: '#333' }}>
-          <Typography style={{ color: '#FF3B30', fontSize: 10, fontWeight: 'bold' }}>R4F7 DEBUG PIPELINE</Typography>
-          <Typography style={{ color: '#AAA', fontSize: 10 }}>isDemoMode: {String(isDemoMode)}</Typography>
-          <Typography style={{ color: '#AAA', fontSize: 10 }}>scenarioKey: {activeAnalysis?.demoScenarioKey || 'none'}</Typography>
-          <Typography style={{ color: '#AAA', fontSize: 10 }}>analysisId: {activeAnalysis?.id}</Typography>
-          <Typography style={{ color: '#AAA', fontSize: 10 }}>measurementsCount: {activeAnalysis?.measurements?.length}</Typography>
-          <Typography style={{ color: '#AAA', fontSize: 10 }}>sourceHash: {sourceSnapshotHash}</Typography>
-          <Typography style={{ color: '#AAA', fontSize: 10 }}>engineSource: {readingSource}</Typography>
-          <Typography style={{ color: '#AAA', fontSize: 10 }}>firstVal: {activeAnalysis?.measurements?.[0]?.marker}={String(activeAnalysis?.measurements?.[0]?.value)}</Typography>
-          <Typography style={{ color: '#FFF', fontSize: 10 }}>title: {reading.summary.title}</Typography>
-          <Typography style={{ color: '#FFF', fontSize: 10, marginTop: 4 }}>SCORES:</Typography>
-          {normalizedDimensions.map(d => (
-            <Typography key={d.id} style={{ color: '#FFF', fontSize: 10 }}>  - {d.id}: {d.score}</Typography>
-          ))}
-        </View>
-
         {/* HEADER */}
         <View style={styles.header}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
