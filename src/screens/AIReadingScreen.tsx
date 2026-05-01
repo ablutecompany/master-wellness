@@ -77,9 +77,9 @@ const DimensionGridCard = ({ dimension, isSelected, onPress, onInfoPress }: { di
   const Icon = getDimensionIcon(dimension.id);
   const color = dimension.color;
   const score = dimension.score !== null ? dimension.score : '--';
-  const radius = 25;
+  const radius = 23;
   const strokeWidth = 5;
-  const size = 56;
+  const size = 52;
   const center = size / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = dimension.score !== null ? circumference - (dimension.score / 100) * circumference : circumference;
@@ -95,7 +95,7 @@ const DimensionGridCard = ({ dimension, isSelected, onPress, onInfoPress }: { di
       activeOpacity={0.7}
     >
       <TouchableOpacity 
-        style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, padding: 4 }} 
+        style={{ position: 'absolute', top: 8, right: 8, zIndex: 10, padding: 4 }} 
         onPress={(e) => { e.stopPropagation(); onInfoPress(); }}
         hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
       >
@@ -112,8 +112,8 @@ const DimensionGridCard = ({ dimension, isSelected, onPress, onInfoPress }: { di
           </View>
         </View>
         <View style={styles.gridRightContent}>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 2 }}>
-            <Icon size={24} color={color} style={{ marginRight: 6, marginTop: 1 }} />
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 }}>
+            <Icon size={20} color={color} style={{ marginRight: 6, marginTop: 1 }} />
             <Typography style={styles.gridLabel} numberOfLines={2}>{dimension.title}</Typography>
           </View>
           <View style={[styles.statusMiniBadge, { backgroundColor: `${color}15`, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 }]}>
@@ -299,7 +299,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           if (!selectedDim) {
              return (
                <View>
-                 <BlurView intensity={20} tint="dark" style={[styles.messageAreaCard, { height: 'auto', minHeight: 120, marginBottom: 12 }]}>
+                 <BlurView intensity={20} tint="dark" style={[styles.messageAreaCard, { minHeight: 120, marginBottom: 12 }]}>
                    <Typography style={styles.sectionTitle}>SÍNTESE DO MOMENTO</Typography>
                    <Typography style={styles.messageTitle}>{reading.summary.title}</Typography>
                    <Typography style={styles.messageText}>{reading.summary.text}</Typography>
@@ -350,7 +350,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           const Icon = getDimensionIcon(selectedDim.id);
           
           return (
-             <BlurView intensity={30} tint="dark" style={[styles.messageAreaCard, { borderColor: `${color}40`, backgroundColor: 'rgba(255,255,255,0.02)', height: 'auto', minHeight: 200 }]}>
+             <BlurView intensity={30} tint="dark" style={[styles.messageAreaCard, { borderColor: `${color}40`, backgroundColor: 'rgba(255,255,255,0.02)', minHeight: 200 }]}>
                  <View style={{ flexDirection: 'row', gap: 12 }}>
                     <View style={{ width: 80, height: 80, justifyContent: 'center', alignItems: 'center' }}>
                       <Svg width={80} height={80} style={{ transform: [{ rotate: '90deg' }], position: 'absolute' }}>
@@ -536,16 +536,16 @@ const styles = StyleSheet.create({
   tabBtnText: { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600' },
   tabContentArea: { paddingVertical: 4 },
 
-  gridWrapper: { paddingHorizontal: 16, paddingBottom: Platform.OS === 'ios' ? 40 : 24, paddingTop: 8 },
+  gridWrapper: { paddingHorizontal: 16, paddingBottom: Platform.OS === 'ios' ? 40 : 24, paddingTop: 12 },
   gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between' },
-  gridCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', padding: 12, height: 104, maxHeight: 112, justifyContent: 'center' },
+  gridCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', padding: 10, height: 96, maxHeight: 100, justifyContent: 'center' },
   gridCardSelected: { backgroundColor: 'rgba(255,255,255,0.06)' },
   gridCardContent: { flexDirection: 'row', alignItems: 'center', width: '100%' },
-  ringContainer: { position: 'relative', width: 56, height: 56, justifyContent: 'center', alignItems: 'center' },
+  ringContainer: { position: 'relative', width: 52, height: 52, justifyContent: 'center', alignItems: 'center' },
   ringInnerContent: { position: 'absolute', alignItems: 'center', justifyContent: 'center', top: 0, left: 0, right: 0, bottom: 0 },
-  gridRightContent: { flex: 1, paddingLeft: 10, justifyContent: 'center', alignItems: 'flex-start' },
-  gridScore: { color: '#fff', fontSize: 17, fontWeight: '700' },
-  gridLabel: { color: 'rgba(255,255,255,0.9)', fontSize: 17, fontWeight: '600', lineHeight: 21, flexShrink: 1 },
+  gridRightContent: { flex: 1, paddingLeft: 8, justifyContent: 'center', alignItems: 'flex-start' },
+  gridScore: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  gridLabel: { color: 'rgba(255,255,255,0.9)', fontSize: 16, fontWeight: '600', lineHeight: 20, flexShrink: 1 },
 
   modalOverlay: { flex: 1, justifyContent: 'center', padding: 24 },
   modalCentered: { flex: 1, justifyContent: 'center' },
