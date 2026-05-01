@@ -207,9 +207,58 @@ export class AiGatewayService {
     additionalProperties: false,
   };
 
-  async generateInsightsV2(context: any): Promise<{ ok: true; provider: string; model: string; insight: any; meta: any }> {
+  async generateInsightsV2(body: any, userId?: string): Promise<{ ok: true; provider: string; model: string; insight: any; meta: any }> {
     const startMs = Date.now();
-    const isDemo = context.isDemo === true;
+    const { activeMemberId, analysisSessionId, forceRegenerate, sourcePayload } = body;
+    const isDemo = sourcePayload?.isDemo === true;
+    
+    if (!isDemo && !userId) {
+       throw new AiGatewayError('UNAUTHORIZED', 'Autenticação obrigatória para leitura não-demo (401)');
+    }
+
+    // 1. Identificar Source Hash
+    const hashStr = sourcePayload ? Buffer.from(JSON.stringify(sourcePayload)).toString('base64').substring(0, 32) : 'unknown';
+    
+    // 2. Verificar cache se forceRegenerate=false
+    if (!forceRegenerate) {
+       let cached;
+       if (analysisSessionId) {
+          cached = await this.prisma.aiReadingRecord.findFirst({
+             where: { analysisSessionId, status: 'completed' },
+             orderBy: { generatedAt: 'desc' }
+          });
+       } else {
+          cached = await this.prisma.aiReadingRecord.findFirst({
+             where: { sourceSnapshotHash: hashStr, status: 'completed' },
+             orderBy: { generatedAt: 'desc' }
+          });
+       }
+
+       if (cached && cached.themesJson && (cached.themesJson as any[]).length > 0) {
+          this.logger.log(`[R5C_OPENAI_V2] CACHE HIT | isDemo=${isDemo} | analysisSessionId=${analysisSessionId} | hash=${hashStr.substring(0,8)}`);
+          return {
+            ok: true,
+            provider: 'cached',
+            model: cached.model,
+            insight: {
+              overallNarrative: cached.narrative,
+              shortSummary: cached.themesJson[0]?.refinedSummary || '',
+              dimensions: cached.themesJson,
+              globalRecommendations: cached.recommendationsJson,
+              limitations: cached.limitationsJson ? (cached.limitationsJson as any).limitations || [] : [],
+              safetyFlags: cached.safetyFlagsJson || []
+            },
+            meta: {
+              execMillis: 0,
+              cached: true,
+              engineSource: 'cached',
+              savedRecordId: cached.id
+            }
+          };
+       }
+    }
+
+    this.logger.log(`[R5C_OPENAI_V2] GERANDO NOVA | isDemo=${isDemo} | analysisSessionId=${analysisSessionId} | hash=${hashStr.substring(0,8)}`);
 
     const prompt = [
       `A Leitura AI é uma camada interpretativa baseada em resultados reais (ou simulados) da plataforma ablute_ wellness.`,
@@ -222,7 +271,7 @@ export class AiGatewayService {
       `As recomendações devem ser pragmáticas e accionáveis.`,
       ``,
       `Contexto estrutural gerado pelo motor local (JSON):`,
-      JSON.stringify(context, null, 2),
+      JSON.stringify(sourcePayload, null, 2),
     ].join('\n');
 
     try {
@@ -262,12 +311,46 @@ export class AiGatewayService {
         throw new AiGatewayError('PARSE_FAILED', 'JSON inválido devolvido pelo provider');
       }
 
-      if (isDemo && !parsed.safetyFlags?.includes('demo_data')) {
+      if (isDemo && (!parsed.safetyFlags || !parsed.safetyFlags.includes('demo_data'))) {
          parsed.safetyFlags = parsed.safetyFlags || [];
          parsed.safetyFlags.push('demo_data');
       }
 
-      this.logger.log(`Insight V2 gerado em ${execMillis}ms`);
+      // Persist to ai_readings table
+      let savedRecordId: string | undefined;
+      try {
+         const limitationsObj = isDemo 
+             ? { notice: "demo_data_not_for_real_longitudinal_use" } 
+             : { execMillis, tokensUsed: response.usage?.total_tokens };
+
+         const record = await this.prisma.aiReadingRecord.create({
+           data: {
+             userId: userId || 'unauthenticated-demo',
+             activeMemberId: activeMemberId || 'default',
+             analysisSessionId: analysisSessionId || null,
+             sourceSnapshotHash: hashStr,
+             sourceSnapshotJson: sourcePayload as object,
+             analysisDate: sourcePayload?.analysisDate ? new Date(sourcePayload.analysisDate) : new Date(),
+             language: 'pt-PT',
+             promptVersion: '2.0.0',
+             model: response.model || this.model,
+             contractVersion: '2.0.0',
+             status: 'completed',
+             themesJson: parsed.dimensions || [],
+             narrative: parsed.overallNarrative || '',
+             recommendationsJson: parsed.globalRecommendations || [],
+             nutrientSuggestionsJson: [],
+             longitudinalNotesJson: [],
+             limitationsJson: limitationsObj,
+             safetyFlagsJson: parsed.safetyFlags || []
+           }
+         });
+         savedRecordId = record.id;
+      } catch (dbErr) {
+         this.logger.error(`[R5C_OPENAI_V2] DB_PERSIST_ERROR: ${dbErr.message}`);
+      }
+
+      this.logger.log(`[R5C_OPENAI_V2] SUCESSO | isDemo=${isDemo} | savedRecordId=${savedRecordId || 'NONE'} | execMs=${execMillis}`);
 
       return {
         ok: true,
@@ -278,6 +361,8 @@ export class AiGatewayService {
           execMillis,
           tokensUsed: response.usage?.total_tokens ?? null,
           promptVersion: '2.0.0',
+          engineSource: 'backend_openai_v2',
+          savedRecordId
         },
       };
     } catch (err: any) {

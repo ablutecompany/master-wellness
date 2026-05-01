@@ -95,7 +95,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   }, [activeAnalysis, isDemoMode]);
 
   const [aiReading, setAiReading] = useState<AIReading | null>(null);
-  const [readingSource, setReadingSource] = useState<ReadingSource>('local');
+  const [readingSource, setReadingSource] = useState<string>('local_fallback');
   const [isRefining, setIsRefining] = useState(false);
 
   const [selectedDimId, setSelectedDimId] = useState<string | null>(null);
@@ -108,7 +108,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
   useEffect(() => {
     setAiReading(null);
-    setReadingSource('local');
+    setReadingSource('local_fallback');
     setIsRefining(false);
     if (!ENABLE_OPENAI_READING || !activeAnalysis) return;
 
@@ -118,20 +118,20 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
     const llmContext = buildAiReadingLLMContextV2(localReading, isDemoMode);
 
-    generateInsightsV2(llmContext).then((response) => {
+    generateInsightsV2(llmContext, activeAnalysis).then((response) => {
       if (cancelled) return;
       if (response?.ok) {
         try {
           const normalized = normalizeAIReadingResponse(response.insight, localReading);
           normalized.summary.mode = isDemoMode ? 'simulation' : 'real';
           setAiReading(normalized);
-          setReadingSource('openai');
-        } catch (normErr) { setReadingSource('fallback'); }
-      } else { setReadingSource('fallback'); }
+          setReadingSource(response.meta?.engineSource || 'backend_openai_v2');
+        } catch (normErr) { setReadingSource('local_fallback'); }
+      } else { setReadingSource('local_fallback'); }
       setIsRefining(false);
     }).catch(() => {
       if (cancelled) return;
-      setReadingSource('fallback');
+      setReadingSource('local_fallback');
       setIsRefining(false);
     });
 
@@ -172,6 +172,9 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
               <Typography variant="h1" style={styles.title}>Leitura AI</Typography>
+              {readingSource === 'cached' && (
+                <Typography style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 8 }}>Recuperada</Typography>
+              )}
               {isDemoMode && (
                 <View style={styles.demoBadge}>
                   <Typography style={styles.demoLabel}>SIMULAÇÃO</Typography>

@@ -56,13 +56,32 @@ export class AiGatewayController {
 
   /**
    * POST /ai-gateway/generate-v2
-   * Endpoint dedicado à Leitura AI R5B (Holística)
+   * Endpoint dedicado à Leitura AI R5B/R5C (Holística)
    */
   @Post('generate-v2')
   @HttpCode(HttpStatus.OK)
-  async generateInsightsV2(@Body() context: any) {
+  async generateInsightsV2(@Request() req: any, @Body() body: any) {
     try {
-      return await this.service.generateInsightsV2(context);
+      // Allow optional token extraction if not using global Guard
+      let userId: string | undefined;
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+         // Manual simple decode for this endpoint if no Guard is used, or just rely on a Guard.
+         // Actually, let's just use the service to handle auth logic if needed, 
+         // but if it's protected by JwtAuthGuard, we get req.user.
+         // Wait, the client sends token in Authorization header.
+         // Let's rely on standard Auth service if possible, or just require JwtAuthGuard but make it optional if we write a custom guard. 
+         // Since demo users have no token, we can't use a strict JwtAuthGuard here if we want Demo to hit the same endpoint.
+         // So we extract it manually:
+         try {
+           const tokenStr = authHeader.split(' ')[1];
+           const payloadStr = Buffer.from(tokenStr.split('.')[1], 'base64').toString();
+           const payload = JSON.parse(payloadStr);
+           userId = payload.sub || payload.userId;
+         } catch(e) {}
+      }
+
+      return await this.service.generateInsightsV2(body, userId);
     } catch (err) {
       if (err instanceof AiGatewayError) {
         return { ok: false, error: { code: err.code, message: err.message, details: err.details } };

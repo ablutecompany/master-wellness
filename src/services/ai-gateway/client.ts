@@ -21,6 +21,7 @@ export interface AiGatewaySuccess {
     inputTokens: number | null;
     outputTokens: number | null;
     finishReason: string | null;
+    engineSource?: string;
   };
 }
 
@@ -143,17 +144,34 @@ export async function generateInsights(
   }
 }
 
-export async function generateInsightsV2(context: any): Promise<AiGatewayResponse | null> {
+export async function generateInsightsV2(context: any, analysis?: Analysis): Promise<AiGatewayResponse | null> {
   const requestId = ++activeRequestId;
 
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 45000);
+    
+    const state = useStore.getState();
+    const token = state.sessionToken;
+
+    if (!token && context.isDemo !== true) {
+      return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Sessão expirada ou não autenticada' } };
+    }
+
+    const payload = {
+      activeMemberId: analysis ? (analysis as any).userId || 'default' : 'default',
+      analysisSessionId: analysis && analysis.id !== 'demo-0' ? analysis.id : null,
+      forceRegenerate: false,
+      sourcePayload: context
+    };
 
     const res = await fetch(`${AI_GATEWAY_BASE_URL}/ai-gateway/generate-v2`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(context),
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify(payload),
       signal: controller.signal,
     });
 
@@ -162,6 +180,9 @@ export async function generateInsightsV2(context: any): Promise<AiGatewayRespons
     if (requestId !== activeRequestId) return null;
 
     if (!res.ok) {
+      if (res.status === 401) {
+        return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Não autorizado' } };
+      }
       return { ok: false, error: { code: 'SERVER_ERROR', message: 'Erro no servidor' } };
     }
 
