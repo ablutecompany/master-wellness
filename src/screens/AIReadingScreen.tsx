@@ -1,16 +1,15 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { StyleSheet, View, ScrollView, Platform, TouchableOpacity, LayoutAnimation, Modal } from 'react-native';
+import { StyleSheet, View, ScrollView, Platform, TouchableOpacity, Modal } from 'react-native';
 import { Container, Typography, BlurView } from '../components/Base';
 import { useStore } from '../store/useStore';
 import { Analysis, AnalysisMeasurement } from '../store/types';
-import { selectDailySynthesis, selectContextualResults, selectDataFreshness } from '../store/selectors';
-import { computeAIReadingFromData, AIReading } from '../services/semantic-output/ai-reading-engine';
+import { computeAIReadingFromData, AIReading, HolisticDimension } from '../services/semantic-output/ai-reading-engine';
 import { normalizeAIReadingResponse } from '../services/semantic-output/ai-reading-adapter';
 import { generateInsights, cancelPendingInsights } from '../services/ai-gateway/client';
 import Svg, { Circle } from 'react-native-svg';
 import { 
   Activity, Zap, Target, Heart, Moon, FlaskConical, X, 
-  ShieldAlert, Info, CheckCircle2, Eye, ChevronRight
+  ShieldAlert, Info, Focus
 } from 'lucide-react-native';
 
 const buildAnalysisValuesHash = (analysis: Analysis | null | undefined) => {
@@ -26,25 +25,30 @@ const ENABLE_OPENAI_READING = (
 
 type ReadingSource = 'local' | 'openai' | 'fallback';
 
-const DimensionGridCard = ({ id, label, score, icon: Icon, color, isSelected, onPress }: any) => {
-  const shortLabels: Record<string, string> = {
-    'energy': 'Energia',
-    'recovery': 'Recuperação',
-    'hydration': 'Hidratação',
-    'digestion': 'Intestinal',
-    'vitals': 'Sinais vitais',
-    'nutrition': 'Nutrição',
-    'stress': 'Stress & foco',
-    'watch': 'A acompanhar'
+const DimensionGridCard = ({ dimension, isSelected, onPress }: { dimension: HolisticDimension, isSelected: boolean, onPress: () => void }) => {
+  const getDimensionIcon = (id: string) => {
+    switch(id) {
+      case 'readiness_today': return Zap;
+      case 'recovery_load': return Moon;
+      case 'internal_balance': return Activity;
+      case 'metabolic_rhythm': return Heart;
+      case 'digestive_comfort': return Target;
+      case 'food_adjustments': return FlaskConical;
+      case 'routine_signals': return ShieldAlert;
+      case 'next_focus': return Focus;
+      default: return Info;
+    }
   };
-  const shortLabel = shortLabels[id] || label;
 
+  const Icon = getDimensionIcon(dimension.id);
+  const color = dimension.color;
+  const score = dimension.score !== null ? dimension.score : '--';
   const radius = 19;
   const strokeWidth = 4;
   const size = 46;
   const center = size / 2;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (score / 100) * circumference;
+  const strokeDashoffset = dimension.score !== null ? circumference - (dimension.score / 100) * circumference : circumference;
 
   return (
     <TouchableOpacity 
@@ -68,7 +72,7 @@ const DimensionGridCard = ({ id, label, score, icon: Icon, color, isSelected, on
         </View>
         <View style={styles.gridRightContent}>
           <Icon size={12} color={color} style={{ marginBottom: 2 }} />
-          <Typography style={styles.gridLabel} numberOfLines={2}>{shortLabel}</Typography>
+          <Typography style={styles.gridLabel} numberOfLines={2}>{dimension.title}</Typography>
         </View>
       </View>
     </TouchableOpacity>
@@ -80,7 +84,6 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   const analyses = useStore(state => state.analyses);
   const demoAnalysis = useStore(state => state.demoAnalysis);
   
-  // No modo DEMO, consome o snapshot em tempo real do demoAnalysis
   const activeAnalysis = isDemoMode && demoAnalysis ? demoAnalysis : analyses[0];
   
   const localReading: AIReading = useMemo(() => {
@@ -96,17 +99,14 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   const [isRefining, setIsRefining] = useState(false);
 
   const [selectedDimId, setSelectedDimId] = useState<string | null>(null);
-  const [showFundamentacao, setShowFundamentacao] = useState(false);
-  const [showRecomendacoes, setShowRecomendacoes] = useState(false);
+  const [activeTab, setActiveTab] = useState<'summary' | 'recommendations' | 'references'>('summary');
   const [showGlobalInfo, setShowGlobalInfo] = useState(false);
 
-  // [R4F6_AI_READING_REACTIVITY] Hash determinístico do estado actual
   const sourceSnapshotHash = useMemo(() => {
     return buildAnalysisValuesHash(activeAnalysis);
   }, [activeAnalysis]);
 
   useEffect(() => {
-    console.log(`[R4F6_AI_READING_REACTIVITY] Triggering AI Reading for hash: ${sourceSnapshotHash}`);
     setAiReading(null);
     setReadingSource('local');
     setIsRefining(false);
@@ -137,135 +137,30 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   }, [sourceSnapshotHash, isDemoMode]);
 
   const reading: AIReading = aiReading ?? localReading;
-
-  const normalizedDimensions = useMemo(() => {
-    const baseIds = ['energy', 'recovery', 'hydration', 'digestion', 'vitals', 'nutrition', 'stress', 'watch'];
-    const baseLabels: Record<string, string> = {
-      energy: 'Energia & Disp.',
-      recovery: 'Recuperação',
-      hydration: 'Hidratação',
-      digestion: 'Intestinal',
-      vitals: 'Sinais Vitais',
-      nutrition: 'Nutrição',
-      stress: 'Stress & Foco',
-      watch: 'A Acompanhar'
-    };
-
-    const fallbacks: Record<string, { explanation: string, action: string, signals: string[] }> = {
-      energy: {
-        explanation: "Esta dimensão cruza sinais fisiológicos recentes, sono registado e recuperação percebida para estimar a disponibilidade geral do organismo. Nesta leitura, a energia parece depender sobretudo da qualidade do repouso e da carga acumulada, mais do que de um único marcador isolado.",
-        action: "Evitar carga excessiva",
-        signals: ["sono", "recuperação", "frequência cardíaca", "HRV/PPG se existir", "stress/contexto"]
-      },
-      recovery: {
-        explanation: "Esta dimensão observa se o corpo parece estar a recuperar bem face à carga recente. Sono, frequência cardíaca, variabilidade/PPG e contexto de stress ajudam a perceber se é melhor manter intensidade controlada ou se há margem para maior exigência.",
-        action: "Priorizar descanso",
-        signals: ["sono", "PPG/HRV", "carga fisiológica", "stress/contexto"]
-      },
-      hydration: {
-        explanation: "Esta dimensão usa sobretudo sinais urinários, como densidade/gravidade específica, pH, eletrólitos e concentração da amostra, para contextualizar hidratação e equilíbrio urinário. Uma leitura isolada deve ser confirmada por repetição e pelo contexto de ingestão de líquidos.",
-        action: "Distribuir ingestão de água",
-        signals: ["densidade urinária", "pH urinário", "sódio", "potássio", "rácio Na/K", "creatinina urinária"]
-      },
-      digestion: {
-        explanation: "Esta dimensão resume a caracterização óptica das fezes, incluindo Bristol, consistência, forma e confiança da avaliação por imagem. O objetivo é observar padrões aparentes ao longo do tempo, não diagnosticar alterações intestinais.",
-        action: "Observar padrão nas próximas leituras",
-        signals: ["Bristol", "Caracterização Óptica", "consistência", "forma", "confiança da imagem"]
-      },
-      vitals: {
-        explanation: "Esta dimensão integra sinais fisiológicos como frequência cardíaca, saturação de oxigénio, temperatura, ECG/PPG quando disponíveis e variações recentes. Serve para perceber se os sinais vitais parecem estáveis no contexto da leitura, sem fazer interpretação clínica isolada.",
-        action: "Acompanhar estabilidade",
-        signals: ["frequência cardíaca", "saturação de oxigénio", "temperatura", "ECG", "PPG"]
-      },
-      nutrition: {
-        explanation: "Esta dimensão procura transformar sinais disponíveis em pistas nutricionais prudentes, cruzando urinálise, hidratação, eletrólitos, glicose, caracterização fecal e contexto registado. Quando os dados ainda são limitados, deve funcionar como orientação leve para observar padrões, não como plano alimentar.",
-        action: "Relacionar sinais com hábitos alimentares",
-        signals: ["glicose urinária", "eletrólitos", "densidade urinária", "caracterização fecal", "contexto alimentar"]
-      },
-      stress: {
-        explanation: "Esta dimensão combina sinais de recuperação, sono, carga fisiológica e marcadores indiretos de tensão para estimar se o organismo parece mais preparado para foco ou se beneficia de autorregulação. A leitura deve ser vista como apoio comportamental, não como avaliação psicológica.",
-        action: "Criar uma pausa de recuperação",
-        signals: ["sono", "recuperação", "PPG/HRV", "stress registado", "carga recente"]
-      },
-      watch: {
-        explanation: "Esta dimensão identifica sinais que ainda não permitem conclusão robusta, mas que merecem repetição, comparação temporal ou contexto adicional. O objetivo é separar o que já parece consistente daquilo que ainda precisa de histórico.",
-        action: "Repetir e comparar tendência",
-        signals: ["sinais sem histórico suficiente", "marcadores experimentais", "alterações isoladas", "dados contextuais em falta"]
-      }
-    };
-
-    return baseIds.map(id => {
-      const existing = reading.dimensions.find(d => 
-        d.id === id || 
-        (id === 'energy' && d.id === 'energy_availability') ||
-        (id === 'recovery' && d.id === 'recovery_load') ||
-        (id === 'hydration' && d.id === 'hydration_urinary_balance') ||
-        (id === 'digestion' && d.id === 'intestinal_state') ||
-        (id === 'vitals' && d.id === 'vital_signs_physiological_balance') ||
-        (id === 'nutrition' && d.id === 'signal_oriented_nutrition') ||
-        (id === 'stress' && d.id === 'stress_focus_self_regulation') ||
-        (id === 'watch' && d.id === 'watch_signals')
-      );
-      const fb = fallbacks[id];
-
-      const isWeak = !existing || 
-                     !existing.explanation || 
-                     existing.explanation.length < 80 || 
-                     existing.explanation.includes('Dados base insuficientes') ||
-                     existing.explanation.includes('Estabilidade cardiovascular.') ||
-                     existing.explanation.includes('Capacidade de resposta a estímulos.') ||
-                     existing.explanation.includes('Estado de hidratação celular.');
-      
-      const explanation = isWeak ? fb.explanation : existing.explanation;
-      const score = existing ? existing.score : 50;
-
-      return {
-        ...existing,
-        id,
-        label: baseLabels[id] || (existing?.label ?? id),
-        score,
-        explanation,
-        fallbackAction: fb.action,
-        fallbackSignals: fb.signals
-      };
-    });
-  }, [reading]);
+  const dimensions = reading.dimensions || [];
 
   const getDimensionIcon = (id: string) => {
     switch(id) {
-      case 'energy': return Zap;
-      case 'recovery': return Moon;
-      case 'hydration': return Activity;
-      case 'digestion': return Target;
-      case 'vitals': return Heart;
-      case 'nutrition': return FlaskConical;
-      case 'stress': return ShieldAlert;
-      case 'watch': return Eye;
+      case 'readiness_today': return Zap;
+      case 'recovery_load': return Moon;
+      case 'internal_balance': return Activity;
+      case 'metabolic_rhythm': return Heart;
+      case 'digestive_comfort': return Target;
+      case 'food_adjustments': return FlaskConical;
+      case 'routine_signals': return ShieldAlert;
+      case 'next_focus': return Focus;
       default: return Info;
     }
   };
 
-  const getDimensionColor = (id: string) => {
-    switch(id) {
-      case 'energy': return '#FFD700';
-      case 'recovery': return '#A020F0';
-      case 'hydration': return '#37ECFD';
-      case 'digestion': return '#FF9500';
-      case 'vitals': return '#00FF9D';
-      case 'nutrition': return '#FF3366';
-      case 'stress': return '#FF6060';
-      case 'watch': return '#B0C4DE';
-      default: return '#fff';
-    }
-  };
-
-  const selectedDim = selectedDimId ? normalizedDimensions.find(d => d.id === selectedDimId) : null;
-  const selectedTheme = selectedDim ? (reading.highlightedThemes.find(t => t.id === selectedDim.id || t.title.toLowerCase().includes(selectedDim.label.toLowerCase())) || { status: selectedDim.score >= 70 ? 'optimal' : selectedDim.score >= 40 ? 'stable' : 'caution', action: selectedDim.fallbackAction }) : null;
+  const selectedDim = selectedDimId ? dimensions.find(d => d.id === selectedDimId) : null;
+  const focusDim = dimensions.find(d => d.id === 'next_focus');
+  const auraColor = focusDim && focusDim.color !== '#AAA' ? focusDim.color : '#00FF9D';
 
   return (
     <Container safe style={styles.container}>
       <View style={styles.atmosphere}>
-        <View style={[styles.aura, { backgroundColor: normalizedDimensions[0]?.score > 70 ? '#00FF9D20' : '#FFD70015' }]} />
+        <View style={[styles.aura, { backgroundColor: `${auraColor}20` }]} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
@@ -301,7 +196,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         {(() => {
           if (!selectedDim) {
              return (
-               <BlurView intensity={20} tint="dark" style={styles.messageAreaCard}>
+               <BlurView intensity={20} tint="dark" style={[styles.messageAreaCard, { height: 'auto', minHeight: 180 }]}>
                  <Typography style={styles.sectionTitle}>SÍNTESE DO MOMENTO</Typography>
                  <Typography variant="h2" style={styles.messageTitle}>{reading.summary.title}</Typography>
                  <Typography style={styles.messageText}>{reading.summary.text}</Typography>
@@ -309,71 +204,89 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
              );
           }
           
-          const color = getDimensionColor(selectedDim.id);
-          const statusLabel = selectedTheme?.status === 'optimal' ? 'ÓPTIMO' : selectedTheme?.status === 'stable' ? 'ESTÁVEL' : 'CAUTELA';
+          const color = selectedDim.color;
+          const Icon = getDimensionIcon(selectedDim.id);
           
           return (
-             <BlurView intensity={30} tint="dark" style={[styles.messageAreaCard, { borderColor: `${color}40`, backgroundColor: 'rgba(255,255,255,0.03)' }]}>
+             <BlurView intensity={30} tint="dark" style={[styles.messageAreaCard, { borderColor: `${color}40`, backgroundColor: 'rgba(255,255,255,0.03)', height: 'auto', minHeight: 280 }]}>
                  <View style={{ flexDirection: 'row', gap: 16 }}>
-                    {/* LEFT COLUMN: BIG RING */}
                     <View style={{ width: 100, height: 100, justifyContent: 'center', alignItems: 'center' }}>
                       <Svg width={100} height={100} style={{ transform: [{ rotate: '90deg' }], position: 'absolute' }}>
                         <Circle cx={50} cy={50} r={44} stroke="rgba(255,255,255,0.05)" strokeWidth={6} fill="transparent" />
-                        <Circle cx={50} cy={50} r={44} stroke={color} strokeWidth={6} strokeDasharray={2 * Math.PI * 44} strokeDashoffset={2 * Math.PI * 44 * (1 - selectedDim.score/100)} strokeLinecap="round" fill="transparent" />
+                        {selectedDim.score !== null && (
+                          <Circle cx={50} cy={50} r={44} stroke={color} strokeWidth={6} strokeDasharray={2 * Math.PI * 44} strokeDashoffset={2 * Math.PI * 44 * (1 - selectedDim.score/100)} strokeLinecap="round" fill="transparent" />
+                        )}
                       </Svg>
                       <View style={{ alignItems: 'center' }}>
-                        {React.createElement(getDimensionIcon(selectedDim.id), { size: 20, color: color, style: { marginBottom: 2 } })}
-                        <Typography style={{ color: '#fff', fontSize: 24, fontWeight: '800' }}>{selectedDim.score}</Typography>
+                        <Icon size={20} color={color} style={{ marginBottom: 2 }} />
+                        <Typography style={{ color: '#fff', fontSize: 24, fontWeight: '800' }}>{selectedDim.score ?? '--'}</Typography>
                       </View>
                     </View>
                     
-                    {/* RIGHT COLUMN: TEXTS */}
                     <View style={{ flex: 1, paddingLeft: 4 }}>
-                      <Typography style={[styles.messageTitle, { marginBottom: 4 }]} numberOfLines={2}>{selectedDim.label}</Typography>
-                      <View style={[styles.statusMiniBadge, { backgroundColor: `${color}15`, alignSelf: 'flex-start', marginBottom: 12 }]}>
-                        <Typography style={[styles.statusMiniText, { color }]}>⚠️ {statusLabel}</Typography>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <Typography style={styles.messageTitle} numberOfLines={2}>{selectedDim.title}</Typography>
+                        <TouchableOpacity style={{ padding: 4 }}>
+                          <Info size={16} color="rgba(255,255,255,0.5)" />
+                        </TouchableOpacity>
                       </View>
-                      
-                      <Typography style={styles.messageText}>{selectedDim.explanation}</Typography>
-                      
-                      {selectedTheme?.action && (
-                        <View style={{ marginTop: 12 }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                            <Target size={12} color="#00F2FF" />
-                            <Typography style={{ color: '#00F2FF', fontSize: 11, fontWeight: '700' }}>Recomendação</Typography>
-                          </View>
-                          <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, lineHeight: 16 }}>{selectedTheme.action}</Typography>
-                        </View>
-                      )}
+                      <View style={[styles.statusMiniBadge, { backgroundColor: `${color}15`, alignSelf: 'flex-start', marginBottom: 12 }]}>
+                        <Typography style={[styles.statusMiniText, { color }]}>{selectedDim.status.toUpperCase()}</Typography>
+                      </View>
                     </View>
                  </View>
                  
-                 <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
-                    <TouchableOpacity style={styles.actionBtnPill} onPress={() => setShowFundamentacao(true)}>
-                      <Activity size={12} color="rgba(255,255,255,0.8)" style={{ marginRight: 6 }} />
-                      <Typography style={styles.actionBtnText}>Fundamentação</Typography>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionBtnPill, { backgroundColor: 'rgba(0, 242, 255, 0.08)' }]} onPress={() => setShowRecomendacoes(true)}>
-                      <Target size={12} color="#00F2FF" style={{ marginRight: 6 }} />
-                      <Typography style={[styles.actionBtnText, { color: '#00F2FF' }]}>Recomendações</Typography>
-                    </TouchableOpacity>
+                 <View style={styles.tabsContainer}>
+                   <TouchableOpacity onPress={() => setActiveTab('summary')} style={[styles.tabBtn, activeTab === 'summary' ? { backgroundColor: `${color}20` } : {}]}>
+                     <Typography style={[styles.tabBtnText, activeTab === 'summary' ? { color } : {}] as any}>Resumo</Typography>
+                   </TouchableOpacity>
+                   <TouchableOpacity onPress={() => setActiveTab('recommendations')} style={[styles.tabBtn, activeTab === 'recommendations' ? { backgroundColor: `${color}20` } : {}]}>
+                     <Typography style={[styles.tabBtnText, activeTab === 'recommendations' ? { color } : {}] as any}>Ações</Typography>
+                   </TouchableOpacity>
+                   <TouchableOpacity onPress={() => setActiveTab('references')} style={[styles.tabBtn, activeTab === 'references' ? { backgroundColor: `${color}20` } : {}]}>
+                     <Typography style={[styles.tabBtnText, activeTab === 'references' ? { color } : {}] as any}>Refs</Typography>
+                   </TouchableOpacity>
                  </View>
+
+                 <View style={styles.tabContentArea}>
+                    {activeTab === 'summary' && (
+                      <Typography style={styles.messageText}>{selectedDim.summary}</Typography>
+                    )}
+                    {activeTab === 'recommendations' && (
+                      <View>
+                        {selectedDim.recommendations?.length > 0 ? selectedDim.recommendations.map((r, i) => (
+                          <View key={i} style={{ marginBottom: 12 }}>
+                            <Typography style={{ color: '#FFF', fontSize: 13, fontWeight: 'bold' }}>• {r.text}</Typography>
+                            <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{r.reason}</Typography>
+                          </View>
+                        )) : <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>Sem ações específicas. Manter consistência.</Typography>}
+                      </View>
+                    )}
+                    {activeTab === 'references' && (
+                      <View>
+                        {selectedDim.references?.length > 0 ? selectedDim.references.map((r, i) => (
+                          <View key={i} style={{ marginBottom: 12 }}>
+                            <Typography style={{ color: '#FFF', fontSize: 13, fontWeight: 'bold' }}>{r.factor} {r.observedValue ? `(${r.observedValue})` : ''}</Typography>
+                            <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{r.whyItMatters}</Typography>
+                          </View>
+                        )) : <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>Refs incorporadas no resumo holístico.</Typography>}
+                      </View>
+                    )}
+                 </View>
+
              </BlurView>
           );
         })()}
 
-        {/* GRELHA 2x4 DE DIMENSÕES */}
+        {/* GRELHA DE DIMENSÕES */}
         <View style={styles.gridContainer}>
-          {normalizedDimensions.map(d => (
+          {dimensions.map(d => (
             <DimensionGridCard 
               key={d.id}
-              id={d.id}
-              label={d.label}
-              score={d.score}
-              icon={getDimensionIcon(d.id)}
-              color={getDimensionColor(d.id)}
+              dimension={d}
               isSelected={selectedDimId === d.id}
               onPress={() => {
+                if (selectedDimId !== d.id) setActiveTab('summary');
                 setSelectedDimId(prev => prev === d.id ? null : d.id);
               }}
             />
@@ -381,97 +294,6 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         </View>
 
       </ScrollView>
-
-
-      {/* POPUP: FUNDAMENTAÇÃO */}
-      <Modal visible={showFundamentacao} transparent animationType="fade">
-         <BlurView intensity={60} tint="dark" style={styles.modalOverlay}>
-            <TouchableOpacity style={StyleSheet.absoluteFillObject} onPress={() => setShowFundamentacao(false)} activeOpacity={1}/>
-            <View style={styles.modalCentered}>
-              <View style={styles.modalContent}>
-                <Typography variant="h3" style={{ color: selectedDim ? getDimensionColor(selectedDim.id) : '#FFF', marginBottom: 8 }}>Fundamentação</Typography>
-                <Typography style={{ color: 'rgba(255,255,255,0.6)', marginBottom: 20 }}>{selectedDim?.label}</Typography>
-                
-                <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
-                   <View style={styles.refItemBox}>
-                      <Typography variant="caption" style={styles.refLabel}>CONFIANÇA & FRESCURA</Typography>
-                      <Typography style={styles.refValue}>Confiança: {reading.references.confidence === 'high' ? 'Alta' : 'Moderada/Baixa'}</Typography>
-                      <Typography style={styles.refValue}>Frescura: {reading.references.freshness === 'recent' ? 'Recente' : 'Requer atualização'}</Typography>
-                   </View>
-
-                   <View style={styles.refItemBox}>
-                      <Typography variant="caption" style={styles.refLabel}>SINAIS CONSIDERADOS</Typography>
-                      <View style={styles.signalsRow}>
-                        {(reading.references.themeDataLinks?.[selectedDim?.id || ''] || selectedDim?.fallbackSignals || reading.references.usedSignals).map((s: string, i: number) => (
-                          <View key={i} style={styles.signalChip}><Typography style={styles.signalChipText}>{s}</Typography></View>
-                        ))}
-                      </View>
-                   </View>
-
-                   <View style={styles.refItemBox}>
-                      <Typography variant="caption" style={styles.refLabel}>COMO ESTES DADOS SUSTENTAM A CONCLUSÃO</Typography>
-                      <Typography style={styles.refValue}>{selectedDim?.groundingReasoning || selectedDim?.explanation}</Typography>
-                   </View>
-
-                   {reading.references.limitations && reading.references.limitations.length > 0 && (
-                     <View style={[styles.refItemBox, { marginBottom: 0 }]}>
-                        <Typography variant="caption" style={styles.refLabel}>LIMITAÇÕES (NOTA PRUDENTE)</Typography>
-                        {reading.references.limitations.slice(0, 2).map((l, i) => (
-                          <Typography key={i} style={{ color: '#F59E0B', fontSize: 13, marginBottom: 4 }}>• {l}</Typography>
-                        ))}
-                     </View>
-                   )}
-                </ScrollView>
-                <TouchableOpacity style={styles.closeBtn} onPress={() => setShowFundamentacao(false)}>
-                   <Typography style={styles.closeBtnText}>FECHAR</Typography>
-                </TouchableOpacity>
-              </View>
-            </View>
-         </BlurView>
-      </Modal>
-
-      {/* POPUP: RECOMENDAÇÕES */}
-      <Modal visible={showRecomendacoes} transparent animationType="fade">
-         <BlurView intensity={60} tint="dark" style={styles.modalOverlay}>
-            <TouchableOpacity style={StyleSheet.absoluteFillObject} onPress={() => setShowRecomendacoes(false)} activeOpacity={1}/>
-            <View style={styles.modalCentered}>
-              <View style={styles.modalContent}>
-                <Typography variant="h3" style={{ color: selectedDim ? getDimensionColor(selectedDim.id) : '#FFF', marginBottom: 8 }}>Recomendações</Typography>
-                <Typography style={{ color: 'rgba(255,255,255,0.6)', marginBottom: 20 }}>{selectedDim?.label}</Typography>
-                
-                <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
-                   {(() => {
-                      const relevantActions = reading.priorityActions.filter(a => a.domain === selectedDim?.id);
-                      if (relevantActions.length === 0) {
-                         return (
-                            <View style={styles.actionCard}>
-                               <Typography style={styles.actionTitle}>Sugestão geral</Typography>
-                               <Typography style={styles.actionReason}>{selectedTheme?.action || selectedDim?.fallbackAction || 'Sem ações específicas isoladas nesta dimensão. Siga a rotina sugerida globalmente.'}</Typography>
-                            </View>
-                         );
-                      }
-                      return relevantActions.map((action, i) => (
-                         <View key={i} style={styles.actionCard}>
-                            <View style={styles.actionHeader}>
-                               <View style={[styles.priorityTag, { backgroundColor: action.priority === 'high' ? 'rgba(255, 51, 102, 0.1)' : 'rgba(255,255,255,0.05)' }]}>
-                                 <Typography style={[styles.priorityTagText, { color: action.priority === 'high' ? '#FF3366' : 'rgba(255,255,255,0.4)' }]}>
-                                   {action.priority.toUpperCase()}
-                                 </Typography>
-                               </View>
-                               <Typography style={styles.actionTitle}>{action.title}</Typography>
-                            </View>
-                            <Typography style={styles.actionReason}>{action.reason}</Typography>
-                         </View>
-                      ));
-                   })()}
-                </ScrollView>
-                <TouchableOpacity style={styles.closeBtn} onPress={() => setShowRecomendacoes(false)}>
-                   <Typography style={styles.closeBtnText}>FECHAR</Typography>
-                </TouchableOpacity>
-              </View>
-            </View>
-         </BlurView>
-      </Modal>
 
       {/* POPUP: GLOBAL INFO */}
       <Modal visible={showGlobalInfo} transparent animationType="fade">
@@ -481,31 +303,9 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
               <View style={styles.modalContent}>
                 <Typography variant="h3" style={{ color: '#00F2FF', marginBottom: 8 }}>Sobre a Leitura AI</Typography>
                 <Typography style={{ color: 'rgba(255,255,255,0.6)', marginBottom: 20 }}>Fundamentos e transparência</Typography>
-                
-                <ScrollView style={{ maxHeight: 400 }} showsVerticalScrollIndicator={false}>
-                   <View style={styles.refGrid}>
-                      <View style={styles.refItem}>
-                        <Typography variant="caption" style={styles.refLabel}>ORIGEM</Typography>
-                        <Typography style={styles.refValue}>{reading.references.origins.join(' / ')}</Typography>
-                      </View>
-                      <View style={styles.refItem}>
-                        <Typography variant="caption" style={styles.refLabel}>MOTOR</Typography>
-                        <Typography style={styles.refValue}>{readingSource === 'openai' ? 'Assistido por IA' : readingSource === 'fallback' ? 'Fallback local' : 'Motor local'}</Typography>
-                      </View>
-                   </View>
-
-                   <View style={styles.refItemBox}>
-                      <Typography variant="caption" style={styles.refLabel}>FAMÍLIAS USADAS</Typography>
-                      <Typography style={styles.refValue}>{reading.references.usedDataFamilies.join(', ') || '—'}</Typography>
-                   </View>
-
-                   <View style={styles.refItemBox}>
-                      <Typography variant="caption" style={styles.refLabel}>LIMITAÇÕES DA LEITURA</Typography>
-                      {reading.readingLimits.map((l, i) => (
-                        <Typography key={i} style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, marginBottom: 4 }}>• {l}</Typography>
-                      ))}
-                   </View>
-                </ScrollView>
+                <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>
+                  Esta leitura usa um motor holístico para cruzar sinais reais. Nenhuma interpretação substitui aconselhamento clínico.
+                </Typography>
                 <TouchableOpacity style={styles.closeBtn} onPress={() => setShowGlobalInfo(false)}>
                    <Typography style={styles.closeBtnText}>FECHAR</Typography>
                 </TouchableOpacity>
@@ -529,14 +329,17 @@ const styles = StyleSheet.create({
   demoLabel: { color: '#00F2FF', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   iconBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
   
-  messageAreaCard: { padding: 16, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', marginBottom: 16, backgroundColor: 'rgba(255,255,255,0.03)', height: 240 },
+  messageAreaCard: { padding: 16, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', marginBottom: 16, backgroundColor: 'rgba(255,255,255,0.03)' },
   sectionTitle: { color: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 6 },
-  messageTitle: { color: '#ffffff', fontSize: 15, fontWeight: '700', marginBottom: 6 },
+  messageTitle: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
   messageText: { color: 'rgba(255,255,255,0.7)', fontSize: 12, lineHeight: 16 },
   statusMiniBadge: { paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6 },
   statusMiniText: { fontSize: 9, fontWeight: '900', letterSpacing: 1 },
-  actionBtnPill: { flex: 1, flexDirection: 'row', paddingVertical: 10, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' },
-  actionBtnText: { color: 'rgba(255,255,255,0.9)', fontSize: 12, fontWeight: '600' },
+
+  tabsContainer: { flexDirection: 'row', gap: 8, marginTop: 16, marginBottom: 12 },
+  tabBtn: { flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center' },
+  tabBtnText: { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 'bold' },
+  tabContentArea: { paddingVertical: 8 },
 
   gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between' },
   gridCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', padding: 10, minHeight: 76, justifyContent: 'center' },
@@ -551,21 +354,6 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, justifyContent: 'center', padding: 24 },
   modalCentered: { flex: 1, justifyContent: 'center' },
   modalContent: { backgroundColor: '#0A0D12', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20 },
-  refItemBox: { marginBottom: 20 },
-  refLabel: { color: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: '800', marginBottom: 8, letterSpacing: 0.5 },
-  refValue: { color: 'rgba(255,255,255,0.7)', fontSize: 14, lineHeight: 20 },
-  signalsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  signalChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.05)' },
-  signalChipText: { color: 'rgba(255,255,255,0.5)', fontSize: 11 },
   closeBtn: { marginTop: 24, paddingVertical: 14, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center' },
   closeBtnText: { color: '#fff', fontSize: 14, fontWeight: '800', letterSpacing: 1 },
-  
-  actionCard: { padding: 16, borderRadius: 16, backgroundColor: 'rgba(0, 242, 255, 0.03)', borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.1)', marginBottom: 12 },
-  actionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 },
-  priorityTag: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  priorityTagText: { fontSize: 8, fontWeight: '900' },
-  actionTitle: { color: '#ffffff', fontSize: 14, fontWeight: '700', flex: 1 },
-  actionReason: { color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 18 },
-  refGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginBottom: 20 },
-  refItem: { width: '45%' },
 });

@@ -238,18 +238,17 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       isDemoMode
     );
     
-    const domains = reading.dimensions;
+    const domains = reading.dimensions || [];
 
     // Se não houver dados nenhuns (ex: sem demo e sem histórico), o anel fica apagado.
     if (domains.length === 0) return 'rgba(255, 255, 255, 0.05)'; 
-    if (domains.length === 1) return getThemeColor(domains[0].id);
 
-    const sortedVals = [...domains].sort((a, b) => a.score - b.score);
-    const lowest = sortedVals[0];
+    const focusDim = domains.find(d => d.id === 'next_focus');
+    if (focusDim && focusDim.color !== '#AAA') {
+      return focusDim.color;
+    }
 
-    // Devolvemos a cor do elo mais fraco sem misturas para garantir
-    // correspondência exata com o ícone no ecrã de Leitura AI
-    return getThemeColor(lowest.id);
+    return '#00FF9D'; // fallback brand green
   }, [isDemoMode, currentDemoPersonaIndex, analyses]);
 
   const glowRadiusFactor = Math.min(daysSince, 30) / 30;

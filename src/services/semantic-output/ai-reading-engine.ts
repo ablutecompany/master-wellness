@@ -1,8 +1,47 @@
 import { SemanticStatus, SemanticDomainView, SemanticRecommendationView, SemanticInsightView } from './types';
 import { AnalysisMeasurement, AnalysisEvent } from '../../store/types';
 
-// ── CONTRATO MODULAR PARA FUTURA INTEGRAÇÃO OPENAI ────────────────────────────
-// ── CONTRATO MODULAR PARA FUTURA INTEGRAÇÃO OPENAI ────────────────────────────
+// ── HOLISTIC DIMENSION TYPES (R5A) ──────────────────────────────────────────
+
+export type DimensionDriver = {
+  label: string;
+  value?: string | number;
+  unit?: string;
+  direction: 'positive' | 'negative' | 'neutral';
+  impact: 'low' | 'medium' | 'high';
+  explanation: string;
+};
+
+export type DimensionRecommendation = {
+  text: string;
+  reason: string;
+  type: 'hydration' | 'food' | 'routine' | 'monitoring' | 'recovery' | 'context';
+  priority: 'low' | 'medium' | 'high';
+};
+
+export type DimensionReference = {
+  factor: string;
+  observedValue?: string;
+  whyItMatters: string;
+  influenceOnScore: string;
+  caution?: string;
+};
+
+export type HolisticDimension = {
+  id: string;
+  title: string;
+  internalTechnicalIds?: string[];
+  color: string;
+  score: number | null;
+  confidence: 'low' | 'medium' | 'high' | 'insufficient';
+  status: 'stable' | 'watch' | 'priority' | 'insufficient';
+  summary: string;
+  topDrivers: DimensionDriver[];
+  recommendations: DimensionRecommendation[];
+  references: DimensionReference[];
+  limitations: string[];
+};
+
 export interface AIReading {
   summary: {
     title: string;
@@ -10,49 +49,34 @@ export interface AIReading {
     confidence: number;
     mode: 'simulation' | 'real';
   };
-  dimensions: Array<{
-    id: string;
+  dimensions: HolisticDimension[]; // Substitui o formato antigo
+  nextFocus?: {
+    dimensionId: string;
     label: string;
-    score: number;
-    explanation: string; // Used for card text
-    groundingReasoning?: string; // Used for popup
-    supportingFacts: string[];
-    confidence: number;
-  }>;
-  priorityActions: Array<{
-    title: string;
-    reason: string;
-    priority: 'low' | 'medium' | 'high';
-    supportingFacts: string[];
-    domain: string;
-    evidenceStrength: number;
-  }>;
-  highlightedThemes: Array<{
-    id: string;
-    title: string;
-    status: 'optimal' | 'caution' | 'insufficient';
-    explanation: string;
-    supportingFacts: string[];
-    action?: string;
-    confidence: number;
-    limitation?: string;
-  }>;
-  watchSignals: Array<{
-    title: string;
-    explanation: string;
-    reasonToRepeat: string;
-  }>;
-  references: {
-    usedDataFamilies: string[];
-    usedSignals: string[];
-    freshness: 'recent' | 'caution' | 'stale' | 'unavailable';
-    origins: string[];
-    confidence: 'high' | 'medium' | 'low';
-    limitations: string[];
-    themeDataLinks: Record<string, string[]>;
+    color: string;
   };
-  readingLimits: string[];
+  // Campos de compatibilidade legada se existirem:
+  priorityActions?: any[];
+  highlightedThemes?: any[];
+  watchSignals?: any[];
+  references?: any;
+  readingLimits?: string[];
 }
+
+export type AiReadingLLMContextV2 = {
+  sourceOrigin: string;
+  isDemo: boolean;
+  analysisDate: string;
+  activeObjectives: string[];
+  visibleDimensions: HolisticDimension[];
+  internalScores: Record<string, number | null>;
+  topGlobalDrivers: DimensionDriver[];
+  dataQuality: string;
+  missingData: string[];
+  historySummary: string;
+  safetyRules: string[];
+  language: 'pt-PT';
+};
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 function clamp(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)); }
@@ -72,241 +96,257 @@ function getSleepHours(facts: AnalysisEvent[]): number {
   return parseInt(match[1]) + (parseInt(match[2] || '0') / 60);
 }
 
-// ── MOTOR DE CÁLCULO E TRADUÇÃO SEMÂNTICA ─────────────────────────────────────
+// ── NEW MOTOR DE CÁLCULO HOLÍSTICO (R5A) ──────────────────────────────────────
 
 export function computeAIReadingFromData(
   measurements: AnalysisMeasurement[],
   ecosystemFacts: AnalysisEvent[],
   isDemo: boolean
 ): AIReading {
-  const now = Date.now();
-  
-  // 1. Extrair Biomarcadores
-  const hr = parseFloat(getMeasurement(measurements, 'ecg', 'Ritmo Cardíaco') || getMeasurement(measurements, 'ecg', 'Frequência cardíaca') || '0');
+  // --- 1. Extração de Biomarcadores ---
+  const hr = parseFloat(getMeasurement(measurements, 'ecg', 'Frequência cardíaca') || getMeasurement(measurements, 'ecg', 'Ritmo Cardíaco') || '0');
   const hrvStr = getMeasurement(measurements, 'ppg', 'HRV Estimada');
   const recFact = ecosystemFacts.find(f => f.type === 'Recuperação');
   const hrv = parseFloat(hrvStr || (recFact ? String(recFact.value) : '0'));
   
   const temp = parseFloat(getMeasurement(measurements, 'temp', 'Temperatura') || '0');
   const spo2 = parseFloat(getMeasurement(measurements, 'ppg', 'SpO2') || getMeasurement(measurements, 'ppg', 'Saturação de oxigénio') || '0');
-  const gravidadeStr = getMeasurement(measurements, 'urinalysis', 'Gravidade Específica') || getMeasurement(measurements, 'urinalysis', 'Densidade Urinária');
-  const gravidade = parseFloat(gravidadeStr || '0');
+  
+  const gravidade = parseFloat(getMeasurement(measurements, 'urinalysis', 'Densidade Urinária') || getMeasurement(measurements, 'urinalysis', 'Gravidade Específica') || '0');
+  const na = parseFloat(getMeasurement(measurements, 'urinalysis', 'Sódio Urinário') || '0');
+  const k = parseFloat(getMeasurement(measurements, 'urinalysis', 'Potássio Urinário') || '0');
+  const nakRatio = parseFloat(getMeasurement(measurements, 'urinalysis', 'Rácio Na/K') || '0');
+  const creatinina = parseFloat(getMeasurement(measurements, 'urinalysis', 'Creatinina Urinária') || '0');
+  const ph = parseFloat(getMeasurement(measurements, 'urinalysis', 'pH Urinário') || '0');
+  const glicose = getMeasurement(measurements, 'urinalysis', 'Glicose') === 'Positivo' ? 1 : (getMeasurement(measurements, 'urinalysis', 'Glicose') === 'Negativo' ? 0 : -1);
+  const nitritos = getMeasurement(measurements, 'urinalysis', 'Nitritos') === 'Positivo' ? 1 : (getMeasurement(measurements, 'urinalysis', 'Nitritos') === 'Negativo' ? 0 : -1);
+  const uACR = parseFloat(getMeasurement(measurements, 'urinalysis', 'Albumina / uACR') || '0');
+  
   const bristol = getMeasurement(measurements, 'fecal', 'Bristol');
+  const fecalOptic = getMeasurement(measurements, 'fecal', 'Caracterização Óptica') || '';
   const sleepH = getSleepHours(ecosystemFacts);
+  
+  const f2iso = parseFloat(getMeasurement(measurements, 'oxidative', 'F2-isoprostanos') || '0');
+  const ngal = parseFloat(getMeasurement(measurements, 'kidney', 'NGAL') || '0');
+  const kim1 = parseFloat(getMeasurement(measurements, 'kidney', 'KIM-1') || '0');
+  const cistatina = parseFloat(getMeasurement(measurements, 'kidney', 'Cistatina C Urinária') || '0');
 
-  const hasData = measurements.length > 0 || ecosystemFacts.length > 0 || isDemo;
-  const hasHRV = hrv > 0 || isDemo;
-  const hasSleep = sleepH > 0 || isDemo;
-  const hasUrine = measurements.some(m => m.type === 'urinalysis') || isDemo;
-  const hasFecal = measurements.some(m => m.type === 'fecal') || isDemo;
-  const hasVitals = (hr > 0 || spo2 > 0 || temp > 0) || isDemo;
-
-  // 2. Scores de referência para Lógica de Síntese
-  const energyScore = hasData ? (sleepH >= 7 && (hrv >= 40 || !hasHRV) ? 85 : sleepH < 6 || hrv < 30 ? 45 : 65) : 50;
-  const recoveryScore = hasData ? (hrv >= 45 ? 88 : hrv >= 30 ? 62 : 40) : 50;
-  const hydrationScore = Math.round(hasData ? score01(gravidade || 1.015, 1.035, 1.005) : 50);
-  const intestinalScore = hasData ? (bristol === 'Type 3' || bristol === 'Type 4' || bristol === '3' || bristol === '4' ? 90 : bristol === 'Type 1' || bristol === 'Type 2' || bristol === '1' || bristol === '2' ? 45 : 65) : 50;
-  const vitalsScore = hasData ? (hr >= 50 && hr <= 80 ? 90 : hr > 80 ? 60 : 75) : 50;
-  const nutritionScore = hasData ? Math.round((hydrationScore + intestinalScore) / 2) : 50;
-  const stressScore = hasData ? (hrv >= 40 ? 80 : hrv > 0 ? 45 : 70) : 50;
-  const watchScore = hasData ? (hrv > 0 && sleepH > 0 ? 85 : 60) : 50;
-
-  let summaryTitle = 'Sinais coerentes entre categorias';
-  let summaryText = 'Os dados sugerem boa estabilidade geral, com sinais positivos de recuperação e disponibilidade. A principal oportunidade está em manter consistência nas próximas leituras.';
-
-  if (!hasData) {
-    summaryTitle = 'Leitura aguarda dados';
-    summaryText = 'Aguardamos a primeira sincronização de sinais para gerar a síntese interpretativa do seu momento biográfico.';
-  } else if (hydrationScore < 40) {
-    summaryTitle = 'Atenção à Hidratação';
-    summaryText = 'Os valores indicam urina concentrada. Sugere-se distribuição reforçada da ingestão de água e observação do contexto.';
-  } else if (energyScore < 50 || recoveryScore < 50) {
-    summaryTitle = 'Recuperação Limitada';
-    summaryText = 'A resposta fisiológica e repouso sugerem fadiga ou stress acrescido. Priorizar descanso antes de aumentar carga de treino.';
-  } else if (intestinalScore < 50) {
-    summaryTitle = 'Alterações no Trânsito Intestinal';
-    summaryText = 'Os sinais fecais sugerem desvio do padrão ótimo. Observar hidratação e diversidade de fibras na rotina alimentar.';
-  }
-
-  // 3. Temas (Lógica R2)
-  const themes: AIReading['highlightedThemes'] = [];
-  const themeDataLinks: Record<string, string[]> = {};
-
-  // T1: Energia & disponibilidade
-  if (hasData) {
-    const isGood = sleepH >= 7 && hrv >= 40;
-    const isBad = sleepH < 6 || (hasHRV && hrv < 30);
-    themes.push({
-      id: 'energy',
-      title: 'Energia & disponibilidade',
-      status: isGood ? 'optimal' : isBad ? 'caution' : 'insufficient',
-      explanation: isGood 
-        ? 'Os dados sugerem boa disponibilidade geral, apoiada por sono suficiente e sinais fisiológicos estáveis. Ainda assim, a leitura ganha mais valor quando comparada com histórico.'
-        : 'A disponibilidade energética parece limitada nesta leitura, possivelmente por repouso incompleto ou elevada demanda fisiológica.',
-      supportingFacts: ['Sono', 'HRV'],
-      action: isGood ? 'Manter rotina' : 'Evitar carga excessiva',
-      confidence: 0.8
+  // --- 2. Função Base de Weighted Score ---
+  function computeDimensionScore(factors: { val: number | string; weight: number; evaluate: (v: any) => number }[]) {
+    let weightSum = 0;
+    let scoreSum = 0;
+    factors.forEach(f => {
+      if (f.val !== '0' && f.val !== 0 && f.val !== -1 && f.val !== '') {
+        const itemScore = f.evaluate(f.val);
+        scoreSum += itemScore * f.weight;
+        weightSum += f.weight;
+      }
     });
-    themeDataLinks['energy'] = ['ecg', 'ppg', 'sleep_duration_logged'];
+    if (weightSum === 0) return { score: null, confidence: 'insufficient' as const };
+    const finalScore = Math.round(scoreSum / weightSum);
+    const maxWeight = factors.reduce((acc, f) => acc + f.weight, 0);
+    const ratio = weightSum / maxWeight;
+    
+    let confidence: 'high' | 'medium' | 'low' | 'insufficient' = 'low';
+    if (ratio >= 0.7) confidence = 'high';
+    else if (ratio >= 0.4) confidence = 'medium';
+    else if (ratio >= 0.2) confidence = 'low';
+    else confidence = 'insufficient';
+    
+    return { score: finalScore, confidence };
   }
 
-  // T2: Recuperação & carga
-  if (hasHRV || hasSleep) {
-    const recoveryLevel = hrv >= 45 ? 'favorável' : hrv >= 30 ? 'moderada' : 'reduzida';
-    themes.push({
-      id: 'recovery',
-      title: 'Recuperação & carga',
-      status: hrv >= 45 ? 'optimal' : 'caution',
-      explanation: `A carga recente parece compatível com uma recuperação ${recoveryLevel}. Hoje pode fazer sentido manter intensidade controlada em vez de aumentar o esforço de pico.`,
-      supportingFacts: ['HRV', 'Sono'],
-      action: hrv < 35 ? 'Priorizar descanso' : 'Manter treino leve',
-      confidence: 0.75
-    });
-    themeDataLinks['recovery'] = ['ppg', 'ecg', 'sleep_duration_logged'];
-  }
+  // Helper para Bristol (1-7) -> score 0-100 (3-4 é bom, extremos são maus)
+  const evalBristol = (v: any) => {
+    const num = parseInt(v.toString().replace(/\D/g, ''));
+    if (num === 3 || num === 4) return 100;
+    if (num === 2 || num === 5) return 60;
+    return 20; // 1, 6, 7
+  };
 
-  // T3: Hidratação & equilíbrio urinário
-  if (hasUrine) {
-    const isDehydrated = gravidade > 1.025;
-    themes.push({
-      id: 'hydration',
-      title: 'Hidratação & equilíbrio urinário',
-      status: isDehydrated ? 'caution' : 'optimal',
-      explanation: isDehydrated
-        ? 'A leitura sugere necessidade de melhorar a regularidade da hidratação. A densidade urinária e o contexto de atividade foram os sinais com maior peso.'
-        : 'A hidratação parece aceitável nesta leitura, com equilíbrio urinário dentro dos parâmetros funcionais.',
-      supportingFacts: ['Gravidade Específica'],
-      action: 'Distribuir ingestão de água',
-      confidence: 0.9
-    });
-    themeDataLinks['hydration'] = ['urinalysis'];
-  }
+  // --- 3. Calcular Dimensões ---
 
-  // T4: Estado intestinal
-  if (hasFecal) {
-    themes.push({
-      id: 'gut',
-      title: 'Estado intestinal',
-      status: 'optimal',
-      explanation: 'O registo intestinal documentado tem valor na observação visual de tendências. O principal foco é acompanhar o padrão de Bristol e a caracterização ótica ao longo do tempo.',
-      supportingFacts: ['Bristol', 'Caracterização Óptica'],
-      action: 'Observar consistência',
-      confidence: 0.85
-    });
-    themeDataLinks['gut'] = ['fecal'];
-  }
+  // D2. Recuperação & Carga
+  const recScore = computeDimensionScore([
+    { val: f2iso, weight: 25, evaluate: v => score01(v, 2.5, 0.5) }, // Baixo é bom
+    { val: hr, weight: 20, evaluate: v => (v >= 50 && v <= 75 ? 100 : score01(v, 100, 75)) },
+    { val: temp, weight: 15, evaluate: v => (v >= 36.1 && v <= 37.2 ? 100 : score01(v, 38, 37.2)) },
+    { val: ngal, weight: 10, evaluate: v => score01(v, 30, 10) },
+    { val: sleepH, weight: 10, evaluate: v => score01(v, 4, 8) }
+  ]);
 
-  // T5: Sinais vitais & equilíbrio fisiológico
-  if (hasVitals) {
-    themes.push({
-      id: 'vitals',
-      title: 'Sinais vitais & equilíbrio fisiológico',
-      status: 'optimal',
-      explanation: 'Os sinais vitais disponíveis não mostram um desvio forte nesta leitura. A interpretação fica mais robusta quando houver comparação com medições anteriores.',
-      supportingFacts: ['HR', 'SpO2', 'Temperatura'],
-      action: 'Acompanhar evolução',
-      confidence: 0.95
-    });
-    themeDataLinks['vitals'] = ['ecg', 'ppg', 'temp'];
-  }
+  // D3. Equilíbrio Interno
+  const eqScore = computeDimensionScore([
+    { val: gravidade, weight: 30, evaluate: v => score01(v, 1.030, 1.010) },
+    { val: nakRatio, weight: 20, evaluate: v => score01(v, 3.5, 1.0) },
+    { val: na, weight: 15, evaluate: v => score01(v, 150, 70) },
+    { val: creatinina, weight: 10, evaluate: v => score01(v, 250, 80) },
+    { val: bristol, weight: 10, evaluate: evalBristol },
+    { val: ph, weight: 5, evaluate: v => (v >= 5.5 && v <= 7.5 ? 100 : 50) }
+  ]);
 
-  // T6: Nutrição orientada por sinais
-  if (hasData) {
-    themes.push({
-      id: 'nutrition',
-      title: 'Nutrição orientada por sinais',
-      status: 'optimal',
-      explanation: 'As sugestões nutricionais devem partir dos sinais disponíveis, não de uma dieta genérica. Nesta leitura, hidratação, recuperação e estado intestinal têm mais peso.',
-      supportingFacts: ['Digestão', 'Hidratação'],
-      action: 'Priorizar alimentos hidratantes',
-      confidence: 0.8,
-      limitation: 'A leitura não assume efeito direto nem imediato de nutrientes específicos.'
-    });
-    themeDataLinks['nutrition'] = ['urinalysis', 'fecal'];
-  }
+  // D4. Ritmo Metabólico
+  const metScore = computeDimensionScore([
+    { val: glicose === 1 ? 1 : 0, weight: 20, evaluate: v => v === 1 ? 20 : 100 },
+    { val: ph, weight: 10, evaluate: v => (v >= 5.5 && v <= 7.5 ? 100 : 50) },
+    { val: nakRatio, weight: 15, evaluate: v => score01(v, 3.5, 1.0) },
+    { val: bristol, weight: 10, evaluate: evalBristol },
+    { val: sleepH, weight: 10, evaluate: v => score01(v, 4, 8) }
+  ]);
 
-  // T7: Stress, foco & autorregulação
-  if (hasHRV && hrv < 35) {
-    themes.push({
-      id: 'stress',
-      title: 'Stress, foco & autorregulação',
-      status: 'caution',
-      explanation: 'Os dados contextuais sugerem que o stress e a recuperação podem estar a influenciar a consistência e a energia. A ação útil deve ser pequena e concreta.',
-      supportingFacts: ['HRV'],
-      action: 'Reduzir carga cognitiva',
-      confidence: 0.7
-    });
-    themeDataLinks['stress'] = ['ppg'];
-  }
+  // D5. Conforto Digestivo
+  const digScore = computeDimensionScore([
+    { val: bristol, weight: 40, evaluate: evalBristol },
+    { val: fecalOptic ? 1 : 0, weight: 20, evaluate: v => v === 1 && !fecalOptic.includes('seca') ? 100 : 50 }
+  ]);
 
-  // T8: Sinais a acompanhar
-  if (hasData) {
-    themes.push({
-      id: 'watch',
-      title: 'Sinais a acompanhar',
-      status: 'optimal',
-      explanation: 'Alguns sinais ganham valor apenas quando se repetem. Nesta fase, a leitura deve ser usada como orientação inicial, não como conclusão fechada.',
-      supportingFacts: ['Tendência'],
-      action: 'Repetir análise',
-      confidence: 0.85
-    });
-    themeDataLinks['watch'] = ['history'];
-  }
+  // D6. Ajustes Alimentares
+  const nutScore = computeDimensionScore([
+    { val: nakRatio, weight: 25, evaluate: v => score01(v, 3.5, 1.0) },
+    { val: bristol, weight: 20, evaluate: evalBristol },
+    { val: gravidade, weight: 10, evaluate: v => score01(v, 1.030, 1.010) },
+    { val: glicose === 1 ? 1 : 0, weight: 10, evaluate: v => v === 1 ? 20 : 100 }
+  ]);
 
-  // 4. Ações recomendadas (Derivadas dos temas)
-  const priorityActions: AIReading['priorityActions'] = themes
-    .filter(t => t.action)
-    .map(t => ({
-      title: t.action!,
-      reason: t.explanation.split('.')[0] + '.',
-      priority: (t.status === 'caution' ? 'high' : 'medium') as 'low' | 'medium' | 'high',
-      supportingFacts: t.supportingFacts,
-      domain: t.id,
-      evidenceStrength: t.confidence
-    }))
-    .slice(0, 3);
+  // D7. Sinais de Rotina
+  const rotScore = computeDimensionScore([
+    { val: uACR, weight: 25, evaluate: v => score01(v, 30, 5) },
+    { val: creatinina, weight: 10, evaluate: v => score01(v, 250, 80) },
+    { val: cistatina, weight: 12, evaluate: v => score01(v, 0.15, 0.05) },
+    { val: ngal, weight: 12, evaluate: v => score01(v, 30, 10) },
+    { val: kim1, weight: 12, evaluate: v => score01(v, 1.5, 0.5) },
+    { val: nitritos === 1 ? 1 : 0, weight: 10, evaluate: v => v === 1 ? 20 : 100 }
+  ]);
 
-  // 5. Dimensões (Mantendo suporte visual)
-  const dimensions: AIReading['dimensions'] = [
-    { id: 'energy_availability', label: 'Energia & disponibilidade', score: energyScore, explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Sinais avaliados com base no sono e carga.', supportingFacts: ['HRV', 'Sono'], confidence: 0.8 },
-    { id: 'recovery_load', label: 'Recuperação & carga', score: recoveryScore, explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Avaliação da resposta parassimpática e repouso.', supportingFacts: ['HRV', 'Temperatura'], confidence: 0.75 },
-    { id: 'hydration_urinary_balance', label: 'Hidratação & equilíbrio urinário', score: hydrationScore, explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Avaliação baseada na densidade urinária.', supportingFacts: ['Gravidade'], confidence: 0.9 },
-    { id: 'intestinal_state', label: 'Estado intestinal', score: intestinalScore, explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Composição e consistência fecal reportada.', supportingFacts: ['Bristol'], confidence: 0.85 },
-    { id: 'vital_signs_physiological_balance', label: 'Sinais vitais & equilíbrio fisiológico', score: vitalsScore, explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Sinais cardiovasculares recentes.', supportingFacts: ['HR', 'SpO2'], confidence: 0.95 },
-    { id: 'signal_oriented_nutrition', label: 'Nutrição orientada por sinais', score: nutritionScore, explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Avaliado pela hidratação e função digestiva.', supportingFacts: [], confidence: 0.8 },
-    { id: 'stress_focus_self_regulation', label: 'Stress, foco & autorregulação', score: stressScore, explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Avaliação da carga autonómica.', supportingFacts: [], confidence: 0.8 },
-    { id: 'watch_signals', label: 'Sinais a acompanhar', score: watchScore, explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Sinais isolados.', supportingFacts: [], confidence: 0.8 },
+  // D1. Prontidão de Hoje (Agregador)
+  const readyScore = computeDimensionScore([
+    { val: hr ? 1 : 0, weight: 25, evaluate: () => hr >= 50 && hr <= 80 ? 100 : 60 },
+    { val: recScore.score || 0, weight: 25, evaluate: v => v },
+    { val: eqScore.score || 0, weight: 20, evaluate: v => v },
+    { val: digScore.score || 0, weight: 10, evaluate: v => v },
+    { val: metScore.score || 0, weight: 10, evaluate: v => v }
+  ]);
+
+  // Helper para Status
+  const getStatus = (score: number | null): HolisticDimension['status'] => {
+    if (score === null) return 'insufficient';
+    if (score >= 70) return 'stable';
+    if (score >= 40) return 'watch';
+    return 'priority';
+  };
+
+  const genHolistic = (id: string, title: string, color: string, scoreRes: {score: number|null, confidence: any}, summaries: {good:string, warn:string}): HolisticDimension => ({
+    id, title, color,
+    score: scoreRes.score,
+    confidence: scoreRes.confidence,
+    status: getStatus(scoreRes.score),
+    summary: scoreRes.score === null ? 'Dados insuficientes para avaliar.' : (scoreRes.score >= 60 ? summaries.good : summaries.warn),
+    topDrivers: [],
+    recommendations: [],
+    references: [],
+    limitations: isDemo ? ['demo_data_not_for_real_longitudinal_use'] : []
+  });
+
+  const dimensions: HolisticDimension[] = [
+    genHolistic('readiness_today', 'Prontidão de hoje', '#38BDF8', readyScore, {
+      good: 'Sinais gerais sugerem um corpo num estado favorável para funcionar bem, com base na recuperação e estabilidade.',
+      warn: 'A leitura sugere necessidade de repouso ou melhor regulação, possivelmente devido a carga fisiológica ou contexto de stress.'
+    }),
+    genHolistic('recovery_load', 'Recuperação & carga', '#6366F1', recScore, {
+      good: 'A resposta fisiológica sugere que o corpo parece estar a recuperar bem face à carga recente.',
+      warn: 'Os dados apontam para sinais de carga ou esforço. Priorizar descanso antes de aumentar a intensidade.'
+    }),
+    genHolistic('internal_balance', 'Equilíbrio interno', '#14B8A6', eqScore, {
+      good: 'O equilíbrio de fluidos e minerais parece estável e funcional nesta sessão.',
+      warn: 'Leitura sugere maior concentração urinária ou desequilíbrio no perfil fluido-mineral.'
+    }),
+    genHolistic('metabolic_rhythm', 'Ritmo metabólico', '#22C55E', metScore, {
+      good: 'Os sinais disponíveis apoiam energia estável e um contexto metabólico regular.',
+      warn: 'Há sinais que justificam pequenos ajustes na rotina alimentar ou hidratação para manter o ritmo.'
+    }),
+    genHolistic('digestive_comfort', 'Conforto digestivo', '#D97706', digScore, {
+      good: 'O trânsito e conforto intestinal parecem equilibrados, favorecendo absorção regular.',
+      warn: 'Os sinais sugerem um desvio do padrão ótimo intestinal, possivelmente indicando necessidade de hidratação e fibra.'
+    }),
+    genHolistic('food_adjustments', 'Ajustes alimentares', '#F59E0B', nutScore, {
+      good: 'Os biomarcadores suportam a atual rotina alimentar. Manter consistência.',
+      warn: 'Os dados apontam para possível benefício em ajustar a ingestão de certos minerais ou líquidos.'
+    }),
+    genHolistic('routine_signals', 'Sinais de rotina', '#8B5CF6', rotScore, {
+      good: 'Não existem marcadores fora do padrão que exijam acompanhamento atípico.',
+      warn: 'Há marcadores a observar. Estes sinais isolados não indicam alarme clínico, mas merecem atenção nas próximas leituras.'
+    })
   ];
 
-  // 6. Referências
-  const families = [];
-  if (hasUrine) families.push('Urina');
-  if (hasFecal) families.push('Fezes');
-  if (hasVitals) families.push('Fisiológicos');
-  if (ecosystemFacts.length > 0) families.push('Contextuais');
+  // Adicionar Drivers & Recomendações
+  // Exemplo para Internal Balance
+  const eqDim = dimensions.find(d => d.id === 'internal_balance');
+  if (eqDim && eqScore.score !== null) {
+    if (gravidade > 1.025) {
+      eqDim.topDrivers.push({ label: 'Densidade Urinária', value: gravidade, direction: 'negative', impact: 'high', explanation: 'Sugere urina mais concentrada.' });
+      eqDim.recommendations.push({ text: 'Distribuir água ao longo do dia.', reason: 'Urina concentrada.', type: 'hydration', priority: 'high' });
+      eqDim.references.push({ factor: 'Densidade Urinária', observedValue: String(gravidade), whyItMatters: 'Ajuda a avaliar hidratação.', influenceOnScore: 'Reduziu o score.' });
+    } else {
+      eqDim.topDrivers.push({ label: 'Densidade Urinária', value: gravidade, direction: 'positive', impact: 'high', explanation: 'Estável.' });
+    }
+  }
+
+  // Determinar Próximo Foco
+  let nextFocusDimension: HolisticDimension | null = null;
+  let lowestScore = 101;
+  for (const d of dimensions) {
+    if (d.score !== null && d.confidence !== 'insufficient' && d.score < lowestScore) {
+      lowestScore = d.score;
+      nextFocusDimension = d;
+    }
+  }
+
+  const nextFocus = nextFocusDimension ? {
+    dimensionId: nextFocusDimension.id,
+    label: nextFocusDimension.title,
+    color: nextFocusDimension.color
+  } : undefined;
+
+  // Add Próximo Foco as 8th dimension
+  dimensions.push({
+    id: 'next_focus',
+    title: 'Próximo foco',
+    color: nextFocus ? nextFocus.color : '#AAA',
+    score: null,
+    confidence: 'high',
+    status: 'stable',
+    summary: nextFocus ? `O ajuste mais útil a fazer primeiro foca-se em: ${nextFocus.label}.` : 'Manter consistência geral.',
+    topDrivers: [],
+    recommendations: [],
+    references: [],
+    limitations: []
+  });
 
   return {
-    summary: { title: summaryTitle, text: summaryText, confidence: 0.85, mode: isDemo ? 'simulation' : 'real' },
-    dimensions,
-    priorityActions,
-    highlightedThemes: themes.slice(0, 8),
-    watchSignals: hasData ? [
-      { title: 'Repetir análise para confirmar tendência', explanation: 'Um ponto isolado não define o seu estado biológico.', reasonToRepeat: 'Validar estabilidade cardiovascular' }
-    ] : [],
-    references: {
-      usedDataFamilies: families,
-      usedSignals: measurements.map(m => m.marker || m.type),
-      freshness: 'recent',
-      origins: isDemo ? ['Simulação'] : ['Medição', 'Contexto'],
-      confidence: 'high',
-      limitations: isDemo ? ['Modo simulação'] : ['Histórico curto'],
-      themeDataLinks
+    summary: { 
+      title: nextFocusDimension && nextFocusDimension.score! < 60 ? `Atenção: ${nextFocusDimension.title}` : 'Sinais coerentes entre categorias', 
+      text: 'Resumo holístico.', 
+      confidence: 0.85, 
+      mode: isDemo ? 'simulation' : 'real' 
     },
-    readingLimits: [
-      'Esta leitura é interpretativa e deve ser lida em conjunto com os Resultados.',
-      'Não substitui avaliação clínica nem faz diagnóstico.',
-      'Sinais persistentes, agravamento ou sintomas relevantes devem ser acompanhados por um profissional.'
-    ]
+    dimensions,
+    nextFocus
   };
 }
 
+export function buildAiReadingLLMContextV2(reading: AIReading, isDemo: boolean): AiReadingLLMContextV2 {
+  return {
+    sourceOrigin: isDemo ? 'demo' : 'real',
+    isDemo,
+    analysisDate: new Date().toISOString(),
+    activeObjectives: [],
+    visibleDimensions: reading.dimensions,
+    internalScores: {},
+    topGlobalDrivers: [],
+    dataQuality: 'medium',
+    missingData: [],
+    historySummary: '',
+    safetyRules: ['No clinical diagnosis', 'Use Portuguese'],
+    language: 'pt-PT'
+  };
+}
