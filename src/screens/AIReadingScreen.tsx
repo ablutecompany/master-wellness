@@ -3,9 +3,9 @@ import { StyleSheet, View, ScrollView, Platform, TouchableOpacity, Modal } from 
 import { Container, Typography, BlurView } from '../components/Base';
 import { useStore } from '../store/useStore';
 import { Analysis, AnalysisMeasurement } from '../store/types';
-import { computeAIReadingFromData, AIReading, HolisticDimension } from '../services/semantic-output/ai-reading-engine';
+import { computeAIReadingFromData, AIReading, HolisticDimension, buildAiReadingLLMContextV2 } from '../services/semantic-output/ai-reading-engine';
 import { normalizeAIReadingResponse } from '../services/semantic-output/ai-reading-adapter';
-import { generateInsights, cancelPendingInsights } from '../services/ai-gateway/client';
+import { generateInsightsV2, cancelPendingInsights } from '../services/ai-gateway/client';
 import Svg, { Circle } from 'react-native-svg';
 import { 
   Activity, Zap, Target, Heart, Moon, FlaskConical, X, 
@@ -116,11 +116,13 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
     let cancelled = false;
     setIsRefining(true);
 
-    generateInsights(activeAnalysis).then((response) => {
+    const llmContext = buildAiReadingLLMContextV2(localReading, isDemoMode);
+
+    generateInsightsV2(llmContext).then((response) => {
       if (cancelled) return;
       if (response?.ok) {
         try {
-          const normalized = normalizeAIReadingResponse(response.insight);
+          const normalized = normalizeAIReadingResponse(response.insight, localReading);
           normalized.summary.mode = isDemoMode ? 'simulation' : 'real';
           setAiReading(normalized);
           setReadingSource('openai');

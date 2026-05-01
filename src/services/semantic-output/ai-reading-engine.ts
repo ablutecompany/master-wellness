@@ -76,6 +76,12 @@ export type AiReadingLLMContextV2 = {
   historySummary: string;
   safetyRules: string[];
   language: 'pt-PT';
+  nextFocus?: { dimensionId: string; label: string; color: string; };
+  attentionDimension?: string;
+  auraColor?: string;
+  cached?: boolean;
+  promptVersion?: string;
+  contractVersion?: string;
 };
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
@@ -341,12 +347,18 @@ export function buildAiReadingLLMContextV2(reading: AIReading, isDemo: boolean):
     analysisDate: new Date().toISOString(),
     activeObjectives: [],
     visibleDimensions: reading.dimensions,
-    internalScores: {},
+    internalScores: reading.dimensions.reduce((acc, d) => ({ ...acc, [d.id]: d.score }), {}),
     topGlobalDrivers: [],
     dataQuality: 'medium',
     missingData: [],
     historySummary: '',
-    safetyRules: ['No clinical diagnosis', 'Use Portuguese'],
-    language: 'pt-PT'
+    safetyRules: ['No clinical diagnosis', 'Use Portuguese', 'No medical supplement claims as first-line'],
+    language: 'pt-PT',
+    nextFocus: reading.nextFocus,
+    attentionDimension: reading.nextFocus?.dimensionId,
+    auraColor: reading.nextFocus?.color,
+    cached: false,
+    promptVersion: '2.0.0',
+    contractVersion: '2.0.0'
   };
 }

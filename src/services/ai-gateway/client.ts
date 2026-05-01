@@ -143,6 +143,35 @@ export async function generateInsights(
   }
 }
 
+export async function generateInsightsV2(context: any): Promise<AiGatewayResponse | null> {
+  const requestId = ++activeRequestId;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
+
+    const res = await fetch(`${AI_GATEWAY_BASE_URL}/ai-gateway/generate-v2`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(context),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (requestId !== activeRequestId) return null;
+
+    if (!res.ok) {
+      return { ok: false, error: { code: 'SERVER_ERROR', message: 'Erro no servidor' } };
+    }
+
+    return await res.json() as AiGatewayResponse;
+  } catch (err: any) {
+    if (requestId !== activeRequestId) return null;
+    return { ok: false, error: { code: 'NETWORK_ERROR', message: err.message || 'Falha de rede' } };
+  }
+}
+
 /**
  * Cancel any in-flight request (used when activeAnalysis changes).
  */

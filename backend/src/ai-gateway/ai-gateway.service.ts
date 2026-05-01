@@ -139,6 +139,152 @@ export class AiGatewayService {
     additionalProperties: false,
   };
 
+  private readonly insightsSchemaV2 = {
+    type: 'object' as const,
+    properties: {
+      overallNarrative: { type: 'string' as const },
+      shortSummary: { type: 'string' as const },
+      nextFocusText: { type: 'string' as const },
+      dimensions: {
+        type: 'array' as const,
+        items: {
+          type: 'object' as const,
+          properties: {
+            id: { type: 'string' as const },
+            title: { type: 'string' as const },
+            refinedSummary: { type: 'string' as const },
+            refinedRecommendations: {
+              type: 'array' as const,
+              items: {
+                type: 'object' as const,
+                properties: {
+                  text: { type: 'string' as const },
+                  reason: { type: 'string' as const },
+                  priority: { type: 'string' as const, enum: ['low', 'medium', 'high'] }
+                },
+                required: ['text', 'reason', 'priority'],
+                additionalProperties: false
+              }
+            },
+            refinedReferences: {
+              type: 'array' as const,
+              items: {
+                type: 'object' as const,
+                properties: {
+                  factor: { type: 'string' as const },
+                  observedValue: { type: 'string' as const },
+                  explanation: { type: 'string' as const },
+                  whyItMatters: { type: 'string' as const },
+                  caution: { type: 'string' as const }
+                },
+                required: ['factor', 'explanation', 'whyItMatters'],
+                additionalProperties: false
+              }
+            }
+          },
+          required: ['id', 'title', 'refinedSummary', 'refinedRecommendations', 'refinedReferences'],
+          additionalProperties: false
+        }
+      },
+      globalRecommendations: {
+        type: 'array' as const,
+        items: {
+          type: 'object' as const,
+          properties: {
+            text: { type: 'string' as const },
+            reason: { type: 'string' as const },
+            linkedDimensionId: { type: 'string' as const },
+            priority: { type: 'string' as const, enum: ['low', 'medium', 'high'] }
+          },
+          required: ['text', 'reason', 'priority'],
+          additionalProperties: false
+        }
+      },
+      limitations: { type: 'array' as const, items: { type: 'string' as const } },
+      safetyFlags: { type: 'array' as const, items: { type: 'string' as const } }
+    },
+    required: ['overallNarrative', 'shortSummary', 'nextFocusText', 'dimensions', 'globalRecommendations', 'limitations', 'safetyFlags'],
+    additionalProperties: false,
+  };
+
+  async generateInsightsV2(context: any): Promise<{ ok: true; provider: string; model: string; insight: any; meta: any }> {
+    const startMs = Date.now();
+    const isDemo = context.isDemo === true;
+
+    const prompt = [
+      `A Leitura AI é uma camada interpretativa baseada em resultados reais (ou simulados) da plataforma ablute_ wellness.`,
+      isDemo ? `[ALERTA DE SISTEMA]: Os dados desta leitura são simulados/demo. A resposta deve tratar o cenário como simulação, e incluir a safetyFlag "demo_data".` : ``,
+      `A OpenAI NÃO deve inventar scores, biomarcadores ou diagnósticos clínicos.`,
+      `A sua função é transformar a estrutura calculada do motor local numa narrativa útil, personalizada e em português de Portugal.`,
+      `Regras de tom: wellness, premium, claro, não paternalista, e nunca alarmista.`,
+      `Não recomendar suplementação como primeira linha.`,
+      `Para cada dimensão, explica "porque importa" baseando-te nos "topDrivers" e "references" providenciados.`,
+      `As recomendações devem ser pragmáticas e accionáveis.`,
+      ``,
+      `Contexto estrutural gerado pelo motor local (JSON):`,
+      JSON.stringify(context, null, 2),
+    ].join('\n');
+
+    try {
+      const response: any = await (this.openai as any).responses.create({
+        model: this.model,
+        input: prompt,
+        text: {
+          format: {
+            type: 'json_schema',
+            name: 'InsightsV2',
+            strict: true,
+            schema: this.insightsSchemaV2,
+          },
+        },
+      });
+
+      const execMillis = Date.now() - startMs;
+      let rawText = response?.output_text;
+      let source = 'output_text';
+
+      if (!rawText && response?.output && Array.isArray(response.output)) {
+        rawText = response.output
+          .filter((item: any) => item.content && Array.isArray(item.content))
+          .flatMap((item: any) => item.content)
+          .filter((c: any) => c.type === 'output_text')
+          .map((c: any) => c.text)
+          .join('\n');
+        source = 'output_array';
+      }
+
+      if (!rawText) throw new AiGatewayError('PARSE_FAILED', 'Provider não devolveu texto legível');
+
+      let parsed: any;
+      try {
+        parsed = JSON.parse(rawText);
+      } catch {
+        throw new AiGatewayError('PARSE_FAILED', 'JSON inválido devolvido pelo provider');
+      }
+
+      if (isDemo && !parsed.safetyFlags?.includes('demo_data')) {
+         parsed.safetyFlags = parsed.safetyFlags || [];
+         parsed.safetyFlags.push('demo_data');
+      }
+
+      this.logger.log(`Insight V2 gerado em ${execMillis}ms`);
+
+      return {
+        ok: true,
+        provider: 'openai',
+        model: response.model || this.model,
+        insight: parsed,
+        meta: {
+          execMillis,
+          tokensUsed: response.usage?.total_tokens ?? null,
+          promptVersion: '2.0.0',
+        },
+      };
+    } catch (err: any) {
+      throw new AiGatewayError(this.classifyError(err), err.message || 'Erro V2');
+    }
+  }
+
   async generateInsights(
     dto: GenerateInsightsDto,
   ): Promise<{ ok: true; provider: string; model: string; insight: any; meta: any }> {

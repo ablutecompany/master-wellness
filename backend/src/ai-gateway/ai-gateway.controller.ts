@@ -55,6 +55,23 @@ export class AiGatewayController {
   }
 
   /**
+   * POST /ai-gateway/generate-v2
+   * Endpoint dedicado à Leitura AI R5B (Holística)
+   */
+  @Post('generate-v2')
+  @HttpCode(HttpStatus.OK)
+  async generateInsightsV2(@Body() context: any) {
+    try {
+      return await this.service.generateInsightsV2(context);
+    } catch (err) {
+      if (err instanceof AiGatewayError) {
+        return { ok: false, error: { code: err.code, message: err.message, details: err.details } };
+      }
+      return { ok: false, error: { code: 'INTERNAL_ERROR', message: (err as Error).message || 'Erro inesperado' } };
+    }
+  }
+
+  /**
    * POST /ai/readings/generate
    * Novo endpoint estruturado para Leitura AI (Modo Híbrido)
    */
