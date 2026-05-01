@@ -71,16 +71,18 @@ const DimensionGridCard = ({ id, label, score, icon: Icon, color, isSelected, on
 export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const store = useStore();
   
-  const { isDemoMode, analyses } = store;
-  const lastAnalysis = analyses[0];
+  const { isDemoMode, analyses, demoAnalysis } = store;
+  
+  // No modo DEMO, consome o snapshot em tempo real do demoAnalysis
+  const activeAnalysis = isDemoMode && demoAnalysis ? demoAnalysis : analyses[0];
   
   const localReading: AIReading = useMemo(() => {
     return computeAIReadingFromData(
-      lastAnalysis?.measurements || [],
-      lastAnalysis?.ecosystemFacts || [],
+      activeAnalysis?.measurements || [],
+      activeAnalysis?.ecosystemFacts || [],
       isDemoMode
     );
-  }, [lastAnalysis, isDemoMode]);
+  }, [activeAnalysis, isDemoMode]);
 
   const [aiReading, setAiReading] = useState<AIReading | null>(null);
   const [readingSource, setReadingSource] = useState<ReadingSource>('local');
@@ -91,19 +93,24 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   const [showRecomendacoes, setShowRecomendacoes] = useState(false);
   const [showGlobalInfo, setShowGlobalInfo] = useState(false);
 
-  const analysisKey = lastAnalysis?.id ?? 'none';
+  // [R4F6_AI_READING_REACTIVITY] Hash determinístico do estado actual
+  const sourceSnapshotHash = useMemo(() => {
+    if (!activeAnalysis) return 'none';
+    return `${activeAnalysis.id}-${activeAnalysis.demoScenarioKey || 'real'}-${activeAnalysis.measurements?.length ?? 0}`;
+  }, [activeAnalysis]);
 
   useEffect(() => {
+    console.log(`[R4F6_AI_READING_REACTIVITY] Triggering AI Reading for hash: ${sourceSnapshotHash}`);
     setAiReading(null);
     setReadingSource('local');
     setIsRefining(false);
-    if (!ENABLE_OPENAI_READING || !lastAnalysis) return;
+    if (!ENABLE_OPENAI_READING || !activeAnalysis) return;
 
     cancelPendingInsights();
     let cancelled = false;
     setIsRefining(true);
 
-    generateInsights(lastAnalysis).then((response) => {
+    generateInsights(activeAnalysis).then((response) => {
       if (cancelled) return;
       if (response?.ok) {
         try {
@@ -121,7 +128,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
     });
 
     return () => { cancelled = true; cancelPendingInsights(); };
-  }, [analysisKey, isDemoMode]);
+  }, [sourceSnapshotHash, isDemoMode]);
 
   const reading: AIReading = aiReading ?? localReading;
 

@@ -874,3 +874,32 @@ enum UserRole {
   HYPER_ADMIN
 }
 
+// --- AI READINGS (Section 29) ---
+model AiReadingRecord {
+  id                      String    @id @default(uuid())
+  userId                  String    @map("user_id")
+  activeMemberId          String?   @map("active_member_id")
+  analysisSessionId       String?   @map("analysis_session_id")
+  sourceAnalysisIds       Json?     @map("source_analysis_ids")
+  sourceSnapshotHash      String?   @map("source_snapshot_hash")
+  sourceSnapshotJson      Json?     @map("source_snapshot_json")
+  generatedAt             DateTime  @default(now()) @map("generated_at")
+  analysisDate            DateTime? @map("analysis_date")
+  language                String
+  promptVersion           String    @map("prompt_version")
+  model                   String
+  contractVersion         String    @map("contract_version")
+  status                  String
+  themesJson              Json      @map("themes_json")
+  narrative               String    @db.Text
+  recommendationsJson     Json      @map("recommendations_json")
+  nutrientSuggestionsJson Json      @map("nutrient_suggestions_json")
+  longitudinalNotesJson   Json?     @map("longitudinal_notes_json")
+  limitationsJson         Json?     @map("limitations_json")
+  safetyFlagsJson         Json?     @map("safety_flags_json")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+
+  @@map("ai_readings")
+}
+

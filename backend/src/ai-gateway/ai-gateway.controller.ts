@@ -6,9 +6,12 @@ import {
   Post,
   UsePipes,
   ValidationPipe,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { AiGatewayService, AiGatewayError } from './ai-gateway.service';
 import { GenerateInsightsDto } from './dto/generate-insights.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 /**
  * Controller do AI Gateway.
@@ -48,6 +51,26 @@ export class AiGatewayController {
           message: (err as Error).message || 'Erro inesperado no servidor',
         },
       };
+    }
+  }
+
+  /**
+   * POST /ai/readings/generate
+   * Novo endpoint estruturado para Leitura AI (Modo Híbrido)
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post('../ai/readings/generate')
+  @HttpCode(HttpStatus.OK)
+  async generateAiReading(@Request() req: any, @Body() body: any) {
+    try {
+      const userId = req.user.userId;
+      const result = await this.service.generateOrReuseAiReading(body, userId);
+      return { ok: true, data: result };
+    } catch (err) {
+      if (err instanceof AiGatewayError) {
+        return { ok: false, error: { code: err.code, message: err.message, details: err.details } };
+      }
+      return { ok: false, error: { code: 'INTERNAL_ERROR', message: (err as Error).message || 'Erro inesperado' } };
     }
   }
 }

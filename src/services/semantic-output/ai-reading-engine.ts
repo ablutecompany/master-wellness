@@ -64,7 +64,7 @@ function getMeasurement(ms: AnalysisMeasurement[], type: string, marker?: string
 }
 
 function getSleepHours(facts: AnalysisEvent[]): number {
-  const f = facts.find(f => f.type === 'sleep_duration_logged' || f.type === 'sono_profundo');
+  const f = facts.find(f => f.type === 'sleep_duration_logged' || f.type === 'sono_profundo' || f.type === 'Sono');
   if (!f) return 0;
   const raw = String(f.value ?? '');
   const match = String(raw).match(/(\d+)h\s*(\d+)?/);
@@ -82,11 +82,15 @@ export function computeAIReadingFromData(
   const now = Date.now();
   
   // 1. Extrair Biomarcadores
-  const hr = parseFloat(getMeasurement(measurements, 'ecg', 'Ritmo Cardíaco') || '0');
-  const hrv = parseFloat(getMeasurement(measurements, 'ppg', 'HRV Estimada') || '0');
+  const hr = parseFloat(getMeasurement(measurements, 'ecg', 'Ritmo Cardíaco') || getMeasurement(measurements, 'ecg', 'Frequência cardíaca') || '0');
+  const hrvStr = getMeasurement(measurements, 'ppg', 'HRV Estimada');
+  const recFact = ecosystemFacts.find(f => f.type === 'Recuperação');
+  const hrv = parseFloat(hrvStr || (recFact ? String(recFact.value) : '0'));
+  
   const temp = parseFloat(getMeasurement(measurements, 'temp', 'Temperatura') || '0');
-  const spo2 = parseFloat(getMeasurement(measurements, 'ppg', 'SpO2') || '0');
-  const gravidade = parseFloat(getMeasurement(measurements, 'urinalysis', 'Gravidade Específica') || '0');
+  const spo2 = parseFloat(getMeasurement(measurements, 'ppg', 'SpO2') || getMeasurement(measurements, 'ppg', 'Saturação de oxigénio') || '0');
+  const gravidadeStr = getMeasurement(measurements, 'urinalysis', 'Gravidade Específica') || getMeasurement(measurements, 'urinalysis', 'Densidade Urinária');
+  const gravidade = parseFloat(gravidadeStr || '0');
   const bristol = getMeasurement(measurements, 'fecal', 'Bristol');
   const sleepH = getSleepHours(ecosystemFacts);
 
@@ -97,16 +101,31 @@ export function computeAIReadingFromData(
   const hasFecal = measurements.some(m => m.type === 'fecal') || isDemo;
   const hasVitals = (hr > 0 || spo2 > 0 || temp > 0) || isDemo;
 
-  // 2. Lógica de Síntese
+  // 2. Scores de referência para Lógica de Síntese
+  const energyScore = hasData ? (sleepH >= 7 && (hrv >= 40 || !hasHRV) ? 85 : sleepH < 6 || hrv < 30 ? 45 : 65) : 50;
+  const recoveryScore = hasData ? (hrv >= 45 ? 88 : hrv >= 30 ? 62 : 40) : 50;
+  const hydrationScore = Math.round(hasData ? score01(gravidade || 1.015, 1.035, 1.005) : 50);
+  const intestinalScore = hasData ? (bristol === 'Type 3' || bristol === 'Type 4' || bristol === '3' || bristol === '4' ? 90 : bristol === 'Type 1' || bristol === 'Type 2' || bristol === '1' || bristol === '2' ? 45 : 65) : 50;
+  const vitalsScore = hasData ? (hr >= 50 && hr <= 80 ? 90 : hr > 80 ? 60 : 75) : 50;
+  const nutritionScore = hasData ? Math.round((hydrationScore + intestinalScore) / 2) : 50;
+  const stressScore = hasData ? (hrv >= 40 ? 80 : hrv > 0 ? 45 : 70) : 50;
+  const watchScore = hasData ? (hrv > 0 && sleepH > 0 ? 85 : 60) : 50;
+
   let summaryTitle = 'Sinais coerentes entre categorias';
-  let summaryText = 'Os seus dados sugerem boa estabilidade geral, com sinais positivos de recuperação e disponibilidade. A principal oportunidade está em manter hidratação regular e acompanhar a consistência nas próximas leituras.';
+  let summaryText = 'Os dados sugerem boa estabilidade geral, com sinais positivos de recuperação e disponibilidade. A principal oportunidade está em manter consistência nas próximas leituras.';
 
   if (!hasData) {
     summaryTitle = 'Leitura aguarda dados';
     summaryText = 'Aguardamos a primeira sincronização de sinais para gerar a síntese interpretativa do seu momento biográfico.';
-  } else if (isDemo) {
-    summaryTitle = 'Simulação: Estabilidade Detetada';
-    summaryText = 'Os dados simulados sugerem boa estabilidade geral, com sinais positivos de recuperação e disponibilidade. A principal oportunidade está em manter hidratação regular e acompanhar a consistência nas próximas leituras.';
+  } else if (hydrationScore < 40) {
+    summaryTitle = 'Atenção à Hidratação';
+    summaryText = 'Os valores indicam urina concentrada. Sugere-se distribuição reforçada da ingestão de água e observação do contexto.';
+  } else if (energyScore < 50 || recoveryScore < 50) {
+    summaryTitle = 'Recuperação Limitada';
+    summaryText = 'A resposta fisiológica e repouso sugerem fadiga ou stress acrescido. Priorizar descanso antes de aumentar carga de treino.';
+  } else if (intestinalScore < 50) {
+    summaryTitle = 'Alterações no Trânsito Intestinal';
+    summaryText = 'Os sinais fecais sugerem desvio do padrão ótimo. Observar hidratação e diversidade de fibras na rotina alimentar.';
   }
 
   // 3. Temas (Lógica R2)
@@ -249,14 +268,14 @@ export function computeAIReadingFromData(
 
   // 5. Dimensões (Mantendo suporte visual)
   const dimensions: AIReading['dimensions'] = [
-    { id: 'energy_availability', label: 'Energia & disponibilidade', score: Math.round(hasData ? 85 : 50), explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Dados simulados/limitados.', supportingFacts: ['HRV', 'Sono'], confidence: 0.8 },
-    { id: 'recovery_load', label: 'Recuperação & carga', score: Math.round(hasData ? 72 : 50), explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Dados simulados/limitados.', supportingFacts: ['HRV', 'Temperatura'], confidence: 0.75 },
-    { id: 'hydration_urinary_balance', label: 'Hidratação & equilíbrio urinário', score: Math.round(hasData ? score01(gravidade || 1.015, 1.035, 1.005) : 50), explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Dados simulados/limitados.', supportingFacts: ['Gravidade'], confidence: 0.9 },
-    { id: 'intestinal_state', label: 'Estado intestinal', score: Math.round(hasData ? 80 : 50), explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Dados simulados/limitados.', supportingFacts: ['Bristol'], confidence: 0.85 },
-    { id: 'vital_signs_physiological_balance', label: 'Sinais vitais & equilíbrio fisiológico', score: Math.round(hasData ? 90 : 50), explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Dados simulados/limitados.', supportingFacts: ['HR', 'SpO2'], confidence: 0.95 },
-    { id: 'signal_oriented_nutrition', label: 'Nutrição orientada por sinais', score: Math.round(hasData ? 80 : 50), explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Dados simulados/limitados.', supportingFacts: [], confidence: 0.8 },
-    { id: 'stress_focus_self_regulation', label: 'Stress, foco & autorregulação', score: Math.round(hasData ? 75 : 50), explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Dados simulados/limitados.', supportingFacts: [], confidence: 0.8 },
-    { id: 'watch_signals', label: 'Sinais a acompanhar', score: Math.round(hasData ? 85 : 50), explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Dados simulados/limitados.', supportingFacts: [], confidence: 0.8 },
+    { id: 'energy_availability', label: 'Energia & disponibilidade', score: energyScore, explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Sinais avaliados com base no sono e carga.', supportingFacts: ['HRV', 'Sono'], confidence: 0.8 },
+    { id: 'recovery_load', label: 'Recuperação & carga', score: recoveryScore, explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Avaliação da resposta parassimpática e repouso.', supportingFacts: ['HRV', 'Temperatura'], confidence: 0.75 },
+    { id: 'hydration_urinary_balance', label: 'Hidratação & equilíbrio urinário', score: hydrationScore, explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Avaliação baseada na densidade urinária.', supportingFacts: ['Gravidade'], confidence: 0.9 },
+    { id: 'intestinal_state', label: 'Estado intestinal', score: intestinalScore, explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Composição e consistência fecal reportada.', supportingFacts: ['Bristol'], confidence: 0.85 },
+    { id: 'vital_signs_physiological_balance', label: 'Sinais vitais & equilíbrio fisiológico', score: vitalsScore, explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Sinais cardiovasculares recentes.', supportingFacts: ['HR', 'SpO2'], confidence: 0.95 },
+    { id: 'signal_oriented_nutrition', label: 'Nutrição orientada por sinais', score: nutritionScore, explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Avaliado pela hidratação e função digestiva.', supportingFacts: [], confidence: 0.8 },
+    { id: 'stress_focus_self_regulation', label: 'Stress, foco & autorregulação', score: stressScore, explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Avaliação da carga autonómica.', supportingFacts: [], confidence: 0.8 },
+    { id: 'watch_signals', label: 'Sinais a acompanhar', score: watchScore, explanation: 'Aguardamos a recolha de mais sinais.', groundingReasoning: 'Sinais isolados.', supportingFacts: [], confidence: 0.8 },
   ];
 
   // 6. Referências

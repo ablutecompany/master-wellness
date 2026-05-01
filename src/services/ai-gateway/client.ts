@@ -6,6 +6,7 @@
  */
 
 import { Analysis } from '../../store/types';
+import { useStore } from '../../store/useStore';
 
 // ── Backend canonical response shapes ──────────────────────────────────────────
 
@@ -73,10 +74,25 @@ export async function generateInsights(
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout (OpenAI latency ~23-33s observed)
 
-    const res = await fetch(`${AI_GATEWAY_BASE_URL}/ai-gateway/generate-insights`, {
+    const state = useStore.getState();
+    const token = state.sessionToken;
+
+    if (!token && analysis.source !== 'demo') {
+      return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Sessão expirada ou não autenticada' } };
+    }
+
+    const res = await fetch(`${AI_GATEWAY_BASE_URL}/ai/readings/generate`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        activeMemberId: (analysis as any).userId || 'default',
+        analysisSessionId: analysis.id !== 'demo-0' ? analysis.id : null,
+        forceRegenerate: false,
+        sourcePayload: body // Fallback payload R4A
+      }),
       signal: controller.signal,
     });
 
@@ -85,8 +101,35 @@ export async function generateInsights(
     // Race protection: if a newer request was fired, discard this result
     if (requestId !== activeRequestId) return null;
 
-    const data: AiGatewayResponse = await res.json();
-    return data;
+    if (!res.ok) {
+      if (res.status === 401) {
+        return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Sessão não autorizada ou expirada' } };
+      }
+      if (res.status === 403) {
+        return { ok: false, error: { code: 'FORBIDDEN', message: 'Análise não pertence ao utilizador' } };
+      }
+      if (res.status === 404) {
+        return { ok: false, error: { code: 'NOT_FOUND', message: 'Análise não encontrada' } };
+      }
+      // If error payload is JSON, it will be caught in rawData, but we handle status first if it fails JSON parse
+    }
+
+    const rawData = await res.json();
+    // Adaptador híbrido: Se o endpoint devolver o novo formato {ok: true, data: AiReadingRecord}, mapeamos de volta para o AiGatewayResponse esperado pelo frontend nesta fase
+    if (rawData.ok && rawData.data) {
+      return {
+        ok: true,
+        provider: rawData.data.provider || 'openai',
+        model: rawData.data.model,
+        insight: {
+           summary: { title: 'Síntese do Momento', text: rawData.data.narrative, status: rawData.data.status, confidence: rawData.data.limitationsJson },
+           dimensions: rawData.data.themesJson || []
+        },
+        meta: { execMillis: 0, tokensUsed: null, inputTokens: null, outputTokens: null, finishReason: 'hybrid-cache' }
+      } as AiGatewaySuccess;
+    }
+    
+    return rawData as AiGatewayResponse;
   } catch (err: any) {
     if (requestId !== activeRequestId) return null;
 

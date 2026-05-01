@@ -13,7 +13,7 @@ export class AiGatewayService {
   private readonly openai: OpenAI;
   private readonly model: string;
   private readonly logger = new Logger(AiGatewayService.name);
-  private readonly PROMPT_VERSION = '2.0.0-canonical-r2';
+  private readonly PROMPT_VERSION = '2.1.0-canonical-r1.1';
 
   constructor(
     private readonly configService: ConfigService,
@@ -106,6 +106,22 @@ export class AiGatewayService {
           additionalProperties: false
         }
       },
+      nutrientSuggestions: {
+        type: 'array' as const,
+        items: {
+          type: 'object' as const,
+          properties: {
+            nutrient: { type: 'string' as const },
+            reason: { type: 'string' as const },
+            foodExamples: { type: 'array' as const, items: { type: 'string' as const } },
+            linkedTo: { type: 'string' as const },
+            confidence: { type: 'string' as const, enum: ['low', 'medium', 'high'] },
+            caution: { type: 'string' as const }
+          },
+          required: ['nutrient', 'reason', 'foodExamples', 'linkedTo', 'confidence', 'caution'],
+          additionalProperties: false
+        }
+      },
       globalReferences: {
         type: 'object' as const,
         properties: {
@@ -119,7 +135,7 @@ export class AiGatewayService {
         additionalProperties: false
       }
     },
-    required: ['summary', 'dimensions', 'globalReferences'],
+    required: ['summary', 'dimensions', 'nutrientSuggestions', 'globalReferences'],
     additionalProperties: false,
   };
 
@@ -154,6 +170,7 @@ export class AiGatewayService {
 
     const prompt = [
       `A Leitura AI é uma camada interpretativa prudente baseada nos Resultados disponíveis na plataforma ablute_ wellness.`,
+      dto.isDemo ? `[ALERTA DE SISTEMA]: Os dados desta leitura são simulados/demo e não representam uma medição real do utilizador. A resposta deve tratar o cenário como uma simulação, referindo-se aos 'dados simulados' em vez de dados reais.` : ``,
       `A Leitura AI NÃO é diagnóstico.`,
       ``,
       `A AI deve:`,
@@ -184,6 +201,13 @@ export class AiGatewayService {
       `8. watch_signals (Sinais a acompanhar) - O que repetir ou vigiar.`,
       ``,
       `Se não houver dados para uma dimensão, gera score=50, status="insuficiente", e escreve texto útil explicando que aguarda dados.`,
+      ``,
+      `NUTRIENTES (nutrientSuggestions):`,
+      `Deves sugerir nutrientes alimentares baseados na análise (ex: Potássio, Magnésio, Proteína, Ómega-3, Fibra).`,
+      `- Não sugiras suplementos, dá alimentos concretos.`,
+      `- Liga ao contexto da análise.`,
+      `- Se dados insuficientes, usa confidence="low" e explica a limitação.`,
+      `- Não inventes défices.`,
       ``,
       `Contexto da análise (JSON):`,
       JSON.stringify(dto, null, 2),
@@ -315,6 +339,173 @@ export class AiGatewayService {
     if (msg.includes('timeout') || msg.includes('econnrefused')) return 'PROVIDER_UNREACHABLE';
     
     return 'PROVIDER_ERROR';
+  }
+
+  /**
+   * Método híbrido (R4A) para persistência segura
+   */
+  async generateOrReuseAiReading(body: any, currentUserId: string) {
+    const { analysisSessionId, activeMemberId, forceRegenerate, sourcePayload } = body;
+    
+    // 1. Procurar leitura existente se analysisSessionId for válido e forceRegenerate for falso
+    if (analysisSessionId && !forceRegenerate) {
+      const existing = await this.prisma.aiReadingRecord.findFirst({
+        where: { analysisSessionId }
+      });
+      if (existing) return existing;
+    }
+
+    // 2. Procurar leitura existente baseada em hash do sourcePayload se não usar DB Session
+    const hashStr = sourcePayload ? Buffer.from(JSON.stringify(sourcePayload)).toString('base64').substring(0, 32) : 'unknown';
+    if (!analysisSessionId && !forceRegenerate && sourcePayload) {
+       const existingByHash = await this.prisma.aiReadingRecord.findFirst({
+         where: { sourceSnapshotHash: hashStr }
+       });
+       if (existingByHash) return existingByHash;
+    }
+
+    // 3. Montar dados para a AI
+    let finalPayload: GenerateInsightsDto;
+    let finalHashStr = hashStr;
+
+    if (analysisSessionId && !sourcePayload) {
+      // Modo DB_SESSION
+      if (!currentUserId) {
+         // DB_SESSION exige Auth.
+         throw new AiGatewayError('UNAUTHORIZED', 'Autenticação obrigatória para acesso à DB_SESSION (401)');
+      }
+
+      const analysis = await this.prisma.analysis.findUnique({
+        where: { id: analysisSessionId },
+        include: { measurements: true, events: true }
+      });
+
+      if (!analysis) {
+        throw new AiGatewayError('NOT_FOUND', 'Análise não encontrada na BD (404)');
+      }
+
+      // Validação de segurança R4C (propriedade / autorização)
+      if (currentUserId && analysis.ownerId !== currentUserId) {
+        // Se currentUserId existir e não for dono
+        // Verificar se é activeMemberId partilhado (fora do scope atual)
+        throw new AiGatewayError('FORBIDDEN', 'Análise não pertence ao utilizador autenticado (403)');
+      }
+
+      finalPayload = this.buildAiReadingInputFromAnalysis(analysis, activeMemberId);
+      finalHashStr = Buffer.from(JSON.stringify(finalPayload)).toString('base64').substring(0, 32);
+
+      // Nova tentativa de cache agora que temos a Hash real vinda da BD
+      if (!forceRegenerate) {
+        const existingDbSession = await this.prisma.aiReadingRecord.findFirst({
+           where: { sourceSnapshotHash: finalHashStr, analysisSessionId }
+        });
+        if (existingDbSession) {
+          return { ...existingDbSession, cached: true };
+        }
+      }
+
+    } else {
+      // Modo Híbrido PAYLOAD_SNAPSHOT: usamos o payload enviado pelo frontend, mas guardamos de forma estruturada.
+      // Limites de Segurança R4C:
+      if (!sourcePayload || !Array.isArray(sourcePayload.measurements)) {
+        throw new AiGatewayError('INVALID_REQUEST', 'Payload inválido ou vazio no modo snapshot');
+      }
+      
+      // Sanitização básica
+      finalPayload = {
+        ...sourcePayload,
+        userId: currentUserId || 'unauthenticated', // Nunca confiar na origem do cliente
+      };
+    }
+
+    // 4. Gerar insights chamando o método atual
+    const result = await this.generateInsights(finalPayload);
+    
+    // 5. Mapear para AiReadingRecord e guardar
+    if (result.ok) {
+       // Flag demo data
+       const isSimulated = finalPayload.isDemo === true;
+       const limitationsObj = isSimulated 
+           ? { ...result.meta, notice: "demo_data_not_for_real_longitudinal_use" } 
+           : result.meta;
+
+       const record = await this.prisma.aiReadingRecord.create({
+         data: {
+           userId: currentUserId || 'unauthenticated-r4c',
+           activeMemberId: activeMemberId || 'default',
+           analysisSessionId: analysisSessionId || null,
+           sourceSnapshotHash: hashStr,
+           sourceSnapshotJson: finalPayload as object,
+           analysisDate: finalPayload.selectedDate ? new Date(finalPayload.selectedDate) : null,
+           language: 'pt-PT',
+           promptVersion: '1.0',
+           model: result.model,
+           contractVersion: '1.0',
+           status: 'completed',
+           themesJson: result.insight.dimensions || [],
+           narrative: result.insight.summary?.text || '',
+           recommendationsJson: result.insight.priorityActions || [],
+           nutrientSuggestionsJson: result.insight.nutrientSuggestions || [],
+           longitudinalNotesJson: [],
+           limitationsJson: limitationsObj,
+           safetyFlagsJson: isSimulated ? ["demo_data"] : []
+         }
+       });
+       return record;
+    }
+
+    throw new AiGatewayError('GENERATION_FAILED', 'Falha ao gerar leitura com OpenAI');
+  }
+
+  /**
+   * Obtém o histórico longitudinal de leituras AI do utilizador.
+   * Por defeito, exclui leituras geradas em modo DEMO/simulação para não contaminar estatísticas reais.
+   */
+  async getAiReadingHistory(userId: string, options?: { includeDemo?: boolean }) {
+    const includeDemo = options?.includeDemo ?? false;
+    
+    const records = await this.prisma.aiReadingRecord.findMany({
+      where: { userId },
+      orderBy: { generatedAt: 'desc' }
+    });
+
+    if (includeDemo) {
+      return records;
+    }
+
+    // Exclui registos marcados como "demo_data"
+    return records.filter(r => {
+      const flags = r.safetyFlagsJson as string[] | undefined;
+      return !flags || !Array.isArray(flags) || !flags.includes("demo_data");
+    });
+  }
+
+  private buildAiReadingInputFromAnalysis(analysis: any, activeMemberId?: string): GenerateInsightsDto {
+    return {
+      analysisId: analysis.id,
+      selectedDate: analysis.analysisDate.toISOString(),
+      isDemo: false,
+      measurements: analysis.measurements.map(m => ({
+        id: m.id,
+        code: m.code,
+        value: m.value,
+        unit: m.unit,
+        category: m.category,
+        flags: m.flags,
+      })),
+      events: analysis.events.map(e => ({
+        id: e.id,
+        code: e.code,
+        type: e.type,
+        data: e.data,
+      })),
+      ecosystemFacts: analysis.events.map(e => ({
+        id: e.id,
+        code: e.code,
+        type: e.type,
+        data: e.data,
+      }))
+    };
   }
 }
 
