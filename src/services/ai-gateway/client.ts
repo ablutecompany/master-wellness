@@ -175,7 +175,12 @@ export async function generateInsightsV2(context: any, analysis?: Analysis): Pro
     const { token, source, isAuthenticated, hasSessionObj } = await getAuthTokenForApi();
 
     const isDemo = analysis?.source === 'demo';
+    const isDemoId = analysis?.id?.startsWith('demo_analysis');
+    const effectivelyDemo = isDemo || isDemoId;
+    
     const endpointFinal = `${AI_GATEWAY_BASE_URL}/ai-gateway/generate-v2`;
+    
+    console.log(`[R5C8_AI_V2_REQUEST] endpoint=${endpointFinal} | hasToken=${!!token} | isDemo=${effectivelyDemo} | analysisId=${analysis?.id} | hasSourcePayload=${!!context} | sourceSnapshotHash=${context ? JSON.stringify(context).length + ' bytes' : 'none'}`);
     
     console.log(`[R5C7_AUTH_TOKEN] isAuthenticatedFromStore=${isAuthenticated} | hasSessionObject=${hasSessionObj} | hasSessionToken=${!!token} | hasSupabaseSession=${source==='supabase_getSession'} | tokenLength=${token ? token.length : 0} | tokenSource=${source} | endpoint=${endpointFinal} | willSendAuthorization=${!!token}`);
     console.log(`[R5C6_AI_V2_CLIENT] requestWillStart | isDemo=${isDemo} | hasToken=${!!token} | tokenLength=${token ? token.length : 0} | backendUrl=${AI_GATEWAY_BASE_URL} | endpointFinal=${endpointFinal}`);
@@ -192,7 +197,7 @@ export async function generateInsightsV2(context: any, analysis?: Analysis): Pro
 
     const payload = {
       activeMemberId: analysis ? (analysis as any).userId || 'default' : 'default',
-      analysisSessionId: analysis && analysis.id !== 'demo-0' ? analysis.id : null,
+      analysisSessionId: isDemo ? null : (analysis ? analysis.id : null),
       forceRegenerate: false,
       sourcePayload: context
     };
@@ -218,7 +223,7 @@ export async function generateInsightsV2(context: any, analysis?: Analysis): Pro
       let code = `SERVER_ERROR_${res.status}`;
       if (res.status === 401) code = 'UNAUTHORIZED';
       if (res.status === 403) code = 'FORBIDDEN';
-      if (res.status === 404) code = 'NOT_FOUND';
+      if (res.status === 404) code = 'ROUTE_NOT_FOUND';
       
       console.log(`[R5C6_AI_V2_CLIENT] fallbackReason=${code}`);
       return { ok: false, error: { code, message: `Erro no servidor (${res.status})` } };
