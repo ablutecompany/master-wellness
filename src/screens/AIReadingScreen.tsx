@@ -259,12 +259,36 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                     )}
                     {activeTab === 'recommendations' && (
                       <View>
-                        {selectedDim.recommendations?.length > 0 ? selectedDim.recommendations.map((r, i) => (
-                          <View key={i} style={{ marginBottom: 12 }}>
-                            <Typography style={{ color: '#FFF', fontSize: 13, fontWeight: 'bold' }}>• {r.text}</Typography>
-                            <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{r.reason}</Typography>
-                          </View>
-                        )) : <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>Sem ações específicas. Manter consistência.</Typography>}
+                        {selectedDim.id === 'food_adjustments' ? (
+                           reading.nutrientPriorities && reading.nutrientPriorities.length > 0 ? (
+                             reading.nutrientPriorities.map((n, i) => (
+                               <View key={n.id || i} style={{ marginBottom: 16 }}>
+                                 <Typography style={{ color: '#FFF', fontSize: 13, fontWeight: 'bold' }}>
+                                   • {n.actionType === 'reduce' ? 'Limitar' : 'Favorecer'}: {n.label}
+                                 </Typography>
+                                 <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 }}>
+                                   {n.reason}
+                                 </Typography>
+                                 {n.exampleFoods && n.exampleFoods.length > 0 && (
+                                   <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 2 }}>
+                                     Ex: {n.exampleFoods.join(', ')}
+                                   </Typography>
+                                 )}
+                               </View>
+                             ))
+                           ) : (
+                             <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>
+                               Ainda não há dados suficientes para gerar ajustes alimentares personalizados.
+                             </Typography>
+                           )
+                        ) : (
+                          selectedDim.recommendations?.length > 0 ? selectedDim.recommendations.map((r, i) => (
+                            <View key={i} style={{ marginBottom: 12 }}>
+                              <Typography style={{ color: '#FFF', fontSize: 13, fontWeight: 'bold' }}>• {r.text}</Typography>
+                              <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{r.reason}</Typography>
+                            </View>
+                          )) : <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>Sem ações específicas. Manter consistência.</Typography>
+                        )}
                       </View>
                     )}
                     {activeTab === 'references' && (

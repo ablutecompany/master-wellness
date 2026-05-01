@@ -250,7 +250,8 @@ export class AiGatewayService {
               dimensions: cached.themesJson,
               globalRecommendations: cached.recommendationsJson,
               limitations: cached.limitationsJson ? (cached.limitationsJson as any).limitations || [] : [],
-              safetyFlags: cached.safetyFlagsJson || []
+              safetyFlags: cached.safetyFlagsJson || [],
+              nutrientPriorities: (cached.nutrientSuggestionsJson as any)?.nutrientPriorities || []
             },
             meta: {
               execMillis: 0,
@@ -343,7 +344,13 @@ export class AiGatewayService {
              themesJson: parsed.dimensions || [],
              narrative: parsed.overallNarrative || '',
              recommendationsJson: parsed.globalRecommendations || [],
-             nutrientSuggestionsJson: [],
+             nutrientSuggestionsJson: {
+                nutrientPriorities: sourcePayload?.nutrientPriorities || [],
+                generatedAt: new Date().toISOString(),
+                sourceOrigin: isDemo ? "demo" : "real",
+                confidence: "medium",
+                excludeFromRealPlanning: isDemo
+             },
              longitudinalNotesJson: [],
              limitationsJson: limitationsObj,
              safetyFlagsJson: parsed.safetyFlags || []

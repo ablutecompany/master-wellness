@@ -61,7 +61,27 @@ export interface AIReading {
   watchSignals?: any[];
   references?: any;
   readingLimits?: string[];
+  nutrientPriorities?: NutrientPriority[];
 }
+
+export type NutrientPriority = {
+  id: string;
+  nutrient: string;
+  label: string;
+  priority: "low" | "medium" | "high";
+  confidence: "low" | "medium" | "high";
+  reason: string;
+  linkedDimensions: string[];
+  linkedDrivers: string[];
+  foodFamilies: string[];
+  exampleFoods: string[];
+  avoidOrLimit?: string[];
+  timeframe: "today" | "next_24_72h" | "weekly_pattern";
+  actionType: "favor" | "balance" | "reduce" | "monitor";
+  isMedicalDeficiency: false;
+  caution?: string;
+  sourceOrigin: "real" | "demo" | "snapshot";
+};
 
 export type AiReadingLLMContextV2 = {
   sourceOrigin: string;
@@ -82,6 +102,7 @@ export type AiReadingLLMContextV2 = {
   cached?: boolean;
   promptVersion?: string;
   contractVersion?: string;
+  nutrientPriorities?: NutrientPriority[];
 };
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
@@ -297,6 +318,153 @@ export function computeAIReadingFromData(
     }
   }
 
+  // ── R5D: NUTRIENT PRIORITIES (MEAL PLANNER FEED) ──
+  const nutrientPriorities: NutrientPriority[] = [];
+  const addNutrient = (n: Partial<NutrientPriority>) => {
+    nutrientPriorities.push({
+      id: Math.random().toString(36).substring(7),
+      nutrient: n.nutrient || '',
+      label: n.label || n.nutrient || '',
+      priority: n.priority || 'medium',
+      confidence: n.confidence || 'medium',
+      reason: n.reason || '',
+      linkedDimensions: n.linkedDimensions || [],
+      linkedDrivers: n.linkedDrivers || [],
+      foodFamilies: n.foodFamilies || [],
+      exampleFoods: n.exampleFoods || [],
+      avoidOrLimit: n.avoidOrLimit || [],
+      timeframe: n.timeframe || 'today',
+      actionType: n.actionType || 'favor',
+      isMedicalDeficiency: false,
+      sourceOrigin: isDemo ? 'demo' : 'real',
+      caution: n.caution
+    });
+  };
+
+  const isLow = (s: {score: number|null}) => s.score !== null && s.score < 60;
+  
+  if (isLow(eqScore)) {
+    if (gravidade > 1.025) {
+      addNutrient({
+        nutrient: "Água/alimentos ricos em água",
+        label: "Hidratação",
+        priority: "high",
+        reason: "Sinais de concentração elevada detectados.",
+        linkedDimensions: ['internal_balance'],
+        linkedDrivers: ['Densidade Urinária'],
+        foodFamilies: ['Hortícolas', 'Fruta rica em água'],
+        exampleFoods: ['Melancia', 'Pepino', 'Courgette', 'Sopas claras']
+      });
+    }
+    if (nakRatio > 2.0 || na > 120) {
+      addNutrient({
+        nutrient: "Potássio alimentar",
+        priority: "high",
+        reason: "Rácio Na/K desequilibrado ou sódio elevado.",
+        linkedDimensions: ['internal_balance'],
+        linkedDrivers: ['Rácio Na/K'],
+        foodFamilies: ['Leguminosas', 'Hortícolas', 'Fruta'],
+        exampleFoods: ['Batata', 'Banana', 'Espinafres', 'Feijão'],
+        actionType: 'balance'
+      });
+      addNutrient({
+        nutrient: "Redução de sódio",
+        priority: "high",
+        reason: "Sinais de ingestão ou retenção de sódio.",
+        linkedDimensions: ['internal_balance'],
+        linkedDrivers: ['Sódio', 'Rácio Na/K'],
+        avoidOrLimit: ['Refeições muito salgadas', 'Ultraprocessados', 'Enchidos'],
+        actionType: 'reduce',
+        timeframe: 'next_24_72h'
+      });
+    }
+  }
+
+  if (isLow(recScore)) {
+    addNutrient({
+      nutrient: "Proteína de boa qualidade",
+      priority: "medium",
+      reason: "Sinais de fadiga ou carga metabólica alta.",
+      linkedDimensions: ['recovery_load'],
+      foodFamilies: ['Carnes brancas', 'Ovos', 'Peixe', 'Tofu'],
+      exampleFoods: ['Peixe grelhado', 'Ovo cozido', 'Frango'],
+    });
+    addNutrient({
+      nutrient: "Magnésio alimentar",
+      priority: "medium",
+      reason: "Apoio à recuperação fisiológica e muscular.",
+      linkedDimensions: ['recovery_load'],
+      foodFamilies: ['Sementes', 'Frutos secos', 'Folhas verdes escuro'],
+      exampleFoods: ['Amêndoas', 'Sementes de abóbora', 'Espinafres'],
+    });
+    addNutrient({
+      nutrient: "Antioxidantes alimentares",
+      priority: "medium",
+      reason: "Possível stress fisiológico elevado.",
+      linkedDimensions: ['recovery_load'],
+      foodFamilies: ['Frutos vermelhos', 'Cítricos', 'Especiarias'],
+      exampleFoods: ['Mirtilos', 'Açafrão', 'Kiwi'],
+    });
+  }
+
+  if (isLow(digScore) || (Number(bristol) >= 1 && Number(bristol) <= 2)) {
+    addNutrient({
+      nutrient: "Fibra",
+      priority: "high",
+      reason: "Sinais de trânsito lento ou secura.",
+      linkedDimensions: ['digestive_comfort'],
+      linkedDrivers: ['Escala de Bristol'],
+      foodFamilies: ['Hortícolas', 'Leguminosas', 'Cereais integrais'],
+      exampleFoods: ['Aveia', 'Feijão', 'Maçã com casca', 'Kiwi'],
+    });
+    addNutrient({
+      nutrient: "Água/alimentos ricos em água",
+      label: "Hidratação",
+      priority: "high",
+      reason: "Sinergia com a fibra para conforto digestivo.",
+      linkedDimensions: ['digestive_comfort'],
+      foodFamilies: ['Sopas', 'Fruta fresca'],
+      exampleFoods: ['Sopa de legumes', 'Laranja'],
+    });
+  }
+
+  if (isLow(metScore)) {
+    addNutrient({
+      nutrient: "Hidratos complexos",
+      priority: "medium",
+      reason: "Regulação da energia prática e ritmo glicémico.",
+      linkedDimensions: ['metabolic_rhythm'],
+      foodFamilies: ['Tubérculos', 'Cereais integrais'],
+      exampleFoods: ['Batata doce', 'Arroz integral', 'Quinoa'],
+      actionType: 'balance'
+    });
+  }
+
+  if (nutrientPriorities.length === 0 && readyScore.score && readyScore.score >= 70) {
+     addNutrient({
+        nutrient: "Regularidade alimentar",
+        priority: "low",
+        reason: "Sinais coerentes de recuperação e equilíbrio. Manter as bases.",
+        linkedDimensions: ['readiness_today'],
+        foodFamilies: ['Alimentos inteiros'],
+        exampleFoods: ['Refeições equilibradas com vegetais, proteína e fibra'],
+        actionType: 'monitor'
+     });
+  }
+
+  // Inject into Food Adjustments dimension directly for summary UI fallback
+  const foodDim = dimensions.find(d => d.id === 'food_adjustments');
+  if (foodDim) {
+      nutrientPriorities.forEach(n => {
+         foodDim.recommendations.push({
+            text: n.actionType === 'reduce' ? `Limitar: ${n.nutrient}` : `Favorecer: ${n.nutrient} (ex: ${n.exampleFoods.join(', ')})`,
+            reason: n.reason,
+            type: 'food',
+            priority: n.priority
+         });
+      });
+  }
+
   // Determinar Próximo Foco
   let nextFocusDimension: HolisticDimension | null = null;
   let lowestScore = 101;
@@ -336,7 +504,8 @@ export function computeAIReadingFromData(
       mode: isDemo ? 'simulation' : 'real' 
     },
     dimensions,
-    nextFocus
+    nextFocus,
+    nutrientPriorities
   };
 }
 
@@ -359,6 +528,41 @@ export function buildAiReadingLLMContextV2(reading: AIReading, isDemo: boolean):
     auraColor: reading.nextFocus?.color,
     cached: false,
     promptVersion: '2.0.0',
-    contractVersion: '2.0.0'
+    contractVersion: '2.0.0',
+    nutrientPriorities: reading.nutrientPriorities || []
+  };
+}
+
+// ── MEAL PLANNER INTEGRATION ──
+export type MealPlannerNutritionContext = {
+  source: "ablute_ai_reading";
+  readingId?: string;
+  generatedAt: string;
+  nutrientPriorities: NutrientPriority[];
+  preferredFoodFamilies: string[];
+  avoidOrLimit: string[];
+  mealPlanningGoals: string[];
+  confidence: "low" | "medium" | "high";
+  sourceOrigin: "real" | "demo" | "snapshot";
+  excludeFromRealPlanning?: boolean;
+};
+
+export function buildMealPlannerNutritionContext(reading: AIReading): MealPlannerNutritionContext {
+  const isDemo = reading.summary.mode === 'simulation';
+  const priorities = reading.nutrientPriorities || [];
+  
+  const preferredFoodFamilies = Array.from(new Set(priorities.flatMap(p => p.foodFamilies)));
+  const avoidOrLimit = Array.from(new Set(priorities.flatMap(p => p.avoidOrLimit || [])));
+
+  return {
+    source: "ablute_ai_reading",
+    generatedAt: new Date().toISOString(),
+    nutrientPriorities: priorities,
+    preferredFoodFamilies,
+    avoidOrLimit,
+    mealPlanningGoals: priorities.map(p => p.reason),
+    confidence: "medium",
+    sourceOrigin: isDemo ? "demo" : "real",
+    excludeFromRealPlanning: isDemo
   };
 }
