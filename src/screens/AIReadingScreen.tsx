@@ -100,6 +100,8 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   const [selectedDimId, setSelectedDimId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'summary' | 'recommendations' | 'references'>('summary');
   const [showGlobalInfo, setShowGlobalInfo] = useState(false);
+  const [requestStarted, setRequestStarted] = useState(false);
+  const [responseStatus, setResponseStatus] = useState<string | number>('n/a');
 
   const sourceSnapshotHash = useMemo(() => {
     return buildAnalysisValuesHash(activeAnalysis);
@@ -108,7 +110,9 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   useEffect(() => {
     setAiReading(null);
     setReadingSource('local_fallback');
-    setFallbackReason(null);
+    setFallbackReason('REQUEST_NOT_STARTED');
+    setRequestStarted(false);
+    setResponseStatus('n/a');
     setIsRefining(false);
     if (!ENABLE_OPENAI_READING || !activeAnalysis) {
       setFallbackReason('EARLY_RETURN_NO_ANALYSIS');
@@ -118,31 +122,45 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
     cancelPendingInsights();
     let cancelled = false;
     setIsRefining(true);
+    setRequestStarted(true);
+    setFallbackReason('LOADING');
 
     const llmContext = buildAiReadingLLMContextV2(localReading, isDemoMode);
 
+    console.log(`[R5C10_AI_READING_STATE] requestStarted=true | clientReturnedOk=pending | provider=pending | fallbackReasonFromClient=pending | fallbackReasonFinal=LOADING | readingSourceFinal=local_fallback`);
+
     generateInsightsV2(llmContext, activeAnalysis).then((response) => {
       if (cancelled) return;
-      if (response?.ok) {
+      if (response === null) {
+        setReadingSource('local_fallback');
+        setFallbackReason('CANCELLED_OR_SUPERSEDED');
+        console.log(`[R5C10_AI_READING_STATE] requestStarted=true | clientReturnedOk=null | fallbackReasonFinal=CANCELLED_OR_SUPERSEDED`);
+      } else if (response.ok) {
         try {
           const normalized = normalizeAIReadingResponse(response.insight, localReading);
           normalized.summary.mode = isDemoMode ? 'simulation' : 'real';
           setAiReading(normalized);
           setReadingSource(response.meta?.engineSource || 'backend_openai_v2');
           setFallbackReason(null);
+          setResponseStatus(200);
+          console.log(`[R5C10_AI_READING_STATE] requestStarted=true | clientReturnedOk=true | provider=${response.provider} | fallbackReasonFinal=null | readingSourceFinal=${response.meta?.engineSource || 'backend_openai_v2'}`);
         } catch (normErr: any) { 
           setReadingSource('local_fallback'); 
-          setFallbackReason('normalization_error');
+          setFallbackReason('NORMALIZE_RESPONSE_FAILED');
+          console.log(`[R5C10_AI_READING_STATE] requestStarted=true | clientReturnedOk=true | provider=${response.provider} | fallbackReasonFinal=NORMALIZE_RESPONSE_FAILED`);
         }
       } else { 
         setReadingSource('local_fallback'); 
-        setFallbackReason(response?.error?.code || 'unknown_error');
+        setFallbackReason(response.error?.code || 'RESPONSE_OK_FALSE_WITHOUT_CODE');
+        setResponseStatus(response.error?.status || 'error');
+        console.log(`[R5C10_AI_READING_STATE] requestStarted=true | clientReturnedOk=false | fallbackReasonFinal=${response.error?.code}`);
       }
       setIsRefining(false);
     }).catch((err: any) => {
       if (cancelled) return;
       setReadingSource('local_fallback');
-      setFallbackReason('catch_error');
+      setFallbackReason(err.code || 'CLIENT_EXCEPTION');
+      console.log(`[R5C10_AI_READING_STATE] requestStarted=true | catchError=${err.code || 'CLIENT_EXCEPTION'} | fallbackReasonFinal=${err.code || 'CLIENT_EXCEPTION'}`);
       setIsRefining(false);
     });
 
@@ -184,8 +202,9 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
             <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
               <Typography variant="h1" style={styles.title}>Leitura AI</Typography>
               <Typography style={{ fontSize: 10, color: fallbackReason ? '#FFB800' : 'rgba(255,255,255,0.5)', marginTop: 8 }}>
-                Fonte: {readingSource}{readingSource === 'cached' ? ' · Recuperada' : ''}{fallbackReason ? ` · ${fallbackReason}` : (readingSource === 'local_fallback' ? ' · UNKNOWN_FALLBACK_REASON' : '')}
+                Fonte: {readingSource}{readingSource === 'cached' ? ' · Recuperada' : ''}{fallbackReason && fallbackReason !== 'LOADING' ? ` · ${fallbackReason}` : (fallbackReason === 'LOADING' ? ' · A carregar...' : (readingSource === 'local_fallback' ? ' · UNKNOWN_FALLBACK_REASON' : ''))}
                 {'\n'}Backend: {ENV.BACKEND_URL || 'undefined'}
+                {'\n'}Status: {responseStatus} · requestStarted: {requestStarted ? 'true' : 'false'}
               </Typography>
               {isDemoMode && (
                 <View style={styles.demoBadge}>

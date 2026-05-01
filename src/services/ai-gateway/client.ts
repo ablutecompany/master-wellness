@@ -60,6 +60,28 @@ export interface AiGatewayError {
 
 export type AiGatewayResponse = AiGatewaySuccess | AiGatewayError;
 
+export function normaliseAiGatewayError(errObj: any, status?: number, fallbackCode?: string): AiGatewayError & { provider: 'local_fallback', status?: number } {
+  let code = errObj?.code || fallbackCode || 'UNKNOWN_ERROR';
+  
+  if (status && !errObj?.code) {
+    if (status === 401) code = 'UNAUTHORIZED';
+    else if (status === 403) code = 'FORBIDDEN';
+    else if (status === 404) code = 'ROUTE_NOT_FOUND';
+    else if (status >= 500) code = `SERVER_ERROR_${status}`;
+    else code = `BACKEND_ERROR_${status}`;
+  }
+
+  return {
+    ok: false,
+    provider: 'local_fallback',
+    error: {
+      code,
+      message: errObj?.message || 'Erro inesperado',
+    },
+    status
+  };
+}
+
 // ── Request builder ────────────────────────────────────────────────────────────
 
 function buildRequestFromAnalysis(analysis: Analysis) {
@@ -196,7 +218,7 @@ export async function generateInsightsV2(context: any, analysis?: Analysis): Pro
 
     if (!token) {
       console.log(`[R5C6_AI_V2_CLIENT] fallbackReason=NO_TOKEN`);
-      return { ok: false, error: { code: 'NO_TOKEN', message: 'Autenticação necessária para a Leitura AI Avançada' } };
+      return normaliseAiGatewayError({ code: 'NO_TOKEN', message: 'Autenticação necessária para a Leitura AI Avançada' });
     }
 
     const payload = {
@@ -215,38 +237,53 @@ export async function generateInsightsV2(context: any, analysis?: Analysis): Pro
       },
       body: JSON.stringify(payload),
       signal: controller.signal,
+    }).catch(err => {
+      console.error(`[R5C10_AI_V2_CLIENT] Fetch exception:`, err);
+      throw err;
     });
 
     clearTimeout(timeoutId);
 
     if (requestId !== activeRequestId) return null;
 
-    console.log(`[R5C6_AI_V2_CLIENT] responseStatus=${res.status} | responseOk=${res.ok}`);
+    console.log(`[R5C10_AI_V2_CLIENT] responseStatus=${res.status} | responseOk=${res.ok}`);
+
+    let json: any;
+    let text = '';
+    try {
+      text = await res.text();
+      if (text) {
+        console.log(`[R5C10_AI_V2_CLIENT] responseTextFirstChars=${text.substring(0, 50)}...`);
+        json = JSON.parse(text);
+      }
+    } catch (e) {
+      // Ignora erro de parsing
+    }
 
     if (!res.ok) {
-      let code = `SERVER_ERROR_${res.status}`;
-      if (res.status === 401) code = 'UNAUTHORIZED';
-      if (res.status === 403) code = 'FORBIDDEN';
-      if (res.status === 404) code = 'ROUTE_NOT_FOUND';
-      
-      console.log(`[R5C6_AI_V2_CLIENT] fallbackReason=${code}`);
-      return { ok: false, error: { code, message: `Erro no servidor (${res.status})` } };
+      const errPayload = json?.error || json || {};
+      const err = normaliseAiGatewayError(errPayload, res.status, `SERVER_ERROR_${res.status}`);
+      console.log(`[R5C10_AI_V2_CLIENT] fallbackReason=${err.error.code}`);
+      return err;
     }
 
-    let json: AiGatewayResponse;
-    try {
-      json = await res.json() as AiGatewayResponse;
-    } catch (e) {
-      console.log(`[R5C6_AI_V2_CLIENT] fallbackReason=INVALID_RESPONSE`);
-      return { ok: false, error: { code: 'INVALID_RESPONSE', message: 'Resposta não é JSON' } };
+    if (!json) {
+      console.log(`[R5C10_AI_V2_CLIENT] fallbackReason=INVALID_RESPONSE`);
+      return normaliseAiGatewayError({ code: 'INVALID_RESPONSE', message: 'Resposta não é JSON válido' }, res.status);
     }
 
-    console.log(`[R5C6_AI_V2_CLIENT] SUCCESS | responseProvider=${(json as AiGatewaySuccess).provider} | engineSource=${(json as AiGatewaySuccess).meta?.engineSource}`);
-    return json;
+    if (json.ok === false) {
+      const backendCode = json.error?.code || 'RESPONSE_OK_FALSE_WITHOUT_CODE';
+      console.log(`[R5C10_AI_V2_CLIENT] fallbackReason=${backendCode}`);
+      return normaliseAiGatewayError(json.error, res.status, backendCode);
+    }
+
+    console.log(`[R5C10_AI_V2_CLIENT] SUCCESS | responseProvider=${json.provider} | engineSource=${json.meta?.engineSource}`);
+    return json as AiGatewayResponse;
   } catch (err: any) {
-    console.error(`[R5C6_AI_V2_CLIENT] errorName=${err.name} | errorMessage=${err.message} | fallbackReason=NETWORK_ERROR`);
+    console.error(`[R5C10_AI_V2_CLIENT] errorName=${err.name} | errorMessage=${err.message} | fallbackReason=NETWORK_ERROR`);
     if (requestId !== activeRequestId) return null;
-    return { ok: false, error: { code: 'NETWORK_ERROR', message: err.message || 'Falha de rede' } };
+    return normaliseAiGatewayError({ code: 'NETWORK_ERROR', message: err.message || 'Falha de rede ou CORS' });
   }
 }
 
