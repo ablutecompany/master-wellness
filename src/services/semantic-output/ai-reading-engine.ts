@@ -235,7 +235,7 @@ export function computeAIReadingFromData(
     { val: glicose === 1 ? 1 : 0, weight: 10, evaluate: v => v === 1 ? 20 : 100 }
   ]);
 
-  // D7. Sinais de Rotina
+  // D8. Sinais de Rotina
   const rotScore = computeDimensionScore([
     { val: uACR, weight: 25, evaluate: v => score01(v, 30, 5) },
     { val: creatinina, weight: 10, evaluate: v => score01(v, 250, 80) },
@@ -243,6 +243,14 @@ export function computeAIReadingFromData(
     { val: ngal, weight: 12, evaluate: v => score01(v, 30, 10) },
     { val: kim1, weight: 12, evaluate: v => score01(v, 1.5, 0.5) },
     { val: nitritos === 1 ? 1 : 0, weight: 10, evaluate: v => v === 1 ? 20 : 100 }
+  ]);
+
+  // D7. Carga Fisiológica
+  const physLoadScore = computeDimensionScore([
+    { val: hr, weight: 30, evaluate: v => (v >= 50 && v <= 80 ? 100 : score01(v, 110, 80)) },
+    { val: hrv, weight: 30, evaluate: v => (v >= 40 ? 100 : score01(v, 10, 40)) },
+    { val: temp, weight: 20, evaluate: v => (v >= 36.1 && v <= 37.3 ? 100 : score01(v, 38.5, 37.3)) },
+    { val: spo2, weight: 20, evaluate: v => (v >= 95 ? 100 : score01(v, 90, 95)) }
   ]);
 
   // D1. Prontidão de Hoje (Agregador)
@@ -298,6 +306,10 @@ export function computeAIReadingFromData(
     genHolistic('food_adjustments', 'Ajustes alimentares', '#F59E0B', nutScore, {
       good: 'Os biomarcadores suportam a atual rotina alimentar. Manter consistência.',
       warn: 'Os dados apontam para possível benefício em ajustar a ingestão de certos minerais ou líquidos.'
+    }),
+    genHolistic('physiological_load', 'Carga fisiológica', '#EAB308', physLoadScore, {
+      good: 'Os sinais vitais e de perfusão apontam para um estado de repouso ou exigência mínima.',
+      warn: 'Os indicadores sugerem um nível elevado de exigência ou tensão fisiológica no momento.'
     }),
     genHolistic('routine_signals', 'Sinais de rotina', '#8B5CF6', rotScore, {
       good: 'Não existem marcadores fora do padrão que exijam acompanhamento atípico.',

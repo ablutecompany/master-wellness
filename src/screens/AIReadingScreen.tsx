@@ -10,7 +10,7 @@ import { ENV } from '../config/env';
 import Svg, { Circle } from 'react-native-svg';
 import { 
   Activity, Zap, Target, Heart, Moon, FlaskConical, X, 
-  ShieldAlert, Info, Focus
+  ShieldAlert, Info, Focus, Droplets
 } from 'lucide-react-native';
 
 const buildAnalysisValuesHash = (analysis: Analysis | null | undefined) => {
@@ -23,15 +23,16 @@ const ENABLE_OPENAI_READING = true;
 
 type ReadingSource = 'local' | 'openai' | 'fallback';
 
-const DimensionGridCard = ({ dimension, isSelected, onPress }: { dimension: HolisticDimension, isSelected: boolean, onPress: () => void }) => {
+const DimensionGridCard = ({ dimension, isSelected, onPress, onInfoPress }: { dimension: HolisticDimension, isSelected: boolean, onPress: () => void, onInfoPress: () => void }) => {
   const getDimensionIcon = (id: string) => {
     switch(id) {
       case 'readiness_today': return Zap;
       case 'recovery_load': return Moon;
-      case 'internal_balance': return Activity;
+      case 'internal_balance': return Droplets;
       case 'metabolic_rhythm': return Heart;
       case 'digestive_comfort': return Target;
       case 'food_adjustments': return FlaskConical;
+      case 'physiological_load': return Activity;
       case 'routine_signals': return ShieldAlert;
       case 'next_focus': return Focus;
       default: return Info;
@@ -41,9 +42,9 @@ const DimensionGridCard = ({ dimension, isSelected, onPress }: { dimension: Holi
   const Icon = getDimensionIcon(dimension.id);
   const color = dimension.color;
   const score = dimension.score !== null ? dimension.score : '--';
-  const radius = 19;
-  const strokeWidth = 4;
-  const size = 46;
+  const radius = 28;
+  const strokeWidth = 6;
+  const size = 60;
   const center = size / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = dimension.score !== null ? circumference - (dimension.score / 100) * circumference : circumference;
@@ -58,6 +59,13 @@ const DimensionGridCard = ({ dimension, isSelected, onPress }: { dimension: Holi
       onPress={onPress}
       activeOpacity={0.7}
     >
+      <TouchableOpacity 
+        style={{ position: 'absolute', top: 12, right: 12, zIndex: 10, padding: 4 }} 
+        onPress={(e) => { e.stopPropagation(); onInfoPress(); }}
+        hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
+      >
+        <Info size={16} color="rgba(255,255,255,0.4)" />
+      </TouchableOpacity>
       <View style={styles.gridCardContent}>
         <View style={styles.ringContainer}>
           <Svg width={size} height={size} style={{ transform: [{ rotate: '90deg' }] }}>
@@ -69,8 +77,13 @@ const DimensionGridCard = ({ dimension, isSelected, onPress }: { dimension: Holi
           </View>
         </View>
         <View style={styles.gridRightContent}>
-          <Icon size={12} color={color} style={{ marginBottom: 2 }} />
-          <Typography style={styles.gridLabel} numberOfLines={2}>{dimension.title}</Typography>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <Icon size={22} color={color} style={{ marginRight: 8 }} />
+            <Typography style={styles.gridLabel} numberOfLines={2}>{dimension.title}</Typography>
+          </View>
+          <View style={[styles.statusMiniBadge, { backgroundColor: `${color}15`, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }]}>
+            <Typography style={[styles.statusMiniText, { color, fontSize: 10, fontWeight: '700' }]}>{dimension.status.toUpperCase()}</Typography>
+          </View>
         </View>
       </View>
     </TouchableOpacity>
@@ -108,6 +121,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   const [selectedDimId, setSelectedDimId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'summary' | 'recommendations' | 'references'>('summary');
   const [showGlobalInfo, setShowGlobalInfo] = useState(false);
+  const [infoModalContent, setInfoModalContent] = useState<{title: string, text: string} | null>(null);
   const [requestStarted, setRequestStarted] = useState(false);
   const [responseStatus, setResponseStatus] = useState<string | number>('n/a');
 
@@ -182,10 +196,11 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
     switch(id) {
       case 'readiness_today': return Zap;
       case 'recovery_load': return Moon;
-      case 'internal_balance': return Activity;
+      case 'internal_balance': return Droplets;
       case 'metabolic_rhythm': return Heart;
       case 'digestive_comfort': return Target;
       case 'food_adjustments': return FlaskConical;
+      case 'physiological_load': return Activity;
       case 'routine_signals': return ShieldAlert;
       case 'next_focus': return Focus;
       default: return Info;
@@ -193,7 +208,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   };
 
   const selectedDim = selectedDimId ? dimensions.find(d => d.id === selectedDimId) : null;
-  const focusDim = dimensions.find(d => d.id === 'next_focus');
+  const focusDim = reading.nextFocus ? dimensions.find(d => d.id === reading.nextFocus!.dimensionId) : null;
   const auraColor = focusDim && focusDim.color !== '#AAA' ? focusDim.color : '#00FF9D';
 
   return (
@@ -246,11 +261,51 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         {(() => {
           if (!selectedDim) {
              return (
-               <BlurView intensity={20} tint="dark" style={[styles.messageAreaCard, { height: 'auto', minHeight: 140 }]}>
-                 <Typography style={styles.sectionTitle}>SÍNTESE DO MOMENTO</Typography>
-                 <Typography style={styles.messageTitle}>{reading.summary.title}</Typography>
-                 <Typography style={styles.messageText}>{reading.summary.text}</Typography>
-               </BlurView>
+               <View>
+                 <BlurView intensity={20} tint="dark" style={[styles.messageAreaCard, { height: 'auto', minHeight: 120, marginBottom: 12 }]}>
+                   <Typography style={styles.sectionTitle}>SÍNTESE DO MOMENTO</Typography>
+                   <Typography style={styles.messageTitle}>{reading.summary.title}</Typography>
+                   <Typography style={styles.messageText}>{reading.summary.text}</Typography>
+                 </BlurView>
+                 
+                 {reading.nextFocus && (() => {
+                   const fDim = dimensions.find(d => d.id === reading.nextFocus!.dimensionId);
+                   if (!fDim) return null;
+                   const FIcon = getDimensionIcon(fDim.id);
+                   const recAction = fDim.recommendations?.[0]?.text || 'Explorar detalhes para mais ações.';
+                   return (
+                     <TouchableOpacity 
+                       onPress={() => setSelectedDimId(fDim.id)}
+                       style={[styles.messageAreaCard, { padding: 16, flexDirection: 'row', alignItems: 'center', borderColor: `${fDim.color}40`, backgroundColor: 'rgba(255,255,255,0.02)' }]}
+                       activeOpacity={0.7}
+                     >
+                       <View style={{ flex: 1, paddingRight: 16 }}>
+                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                            <Focus size={16} color="rgba(255,255,255,0.5)" style={{ marginRight: 6 }} />
+                            <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 14, fontWeight: '700' }}>Foco recomendado</Typography>
+                         </View>
+                         <Typography style={{ color: fDim.color, fontSize: 15, fontWeight: '700', marginBottom: 6 }}>{fDim.title}</Typography>
+                         <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginBottom: 8, lineHeight: 18 }}>É a dimensão com maior margem de melhoria nesta leitura.</Typography>
+                         <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, lineHeight: 18 }}>
+                            <Typography style={{ color: fDim.color, fontWeight: '600' }}>Ação sugerida: </Typography>{recAction}
+                         </Typography>
+                       </View>
+                       
+                       {fDim.score !== null && (
+                         <View style={{ alignItems: 'flex-start', paddingLeft: 16, paddingVertical: 8, borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.08)' }}>
+                           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                             <FIcon size={12} color="rgba(255,255,255,0.4)" style={{ marginRight: 4 }} />
+                             <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10 }}>Score atual</Typography>
+                           </View>
+                           <Typography style={{ color: '#fff', fontSize: 24, fontWeight: '800', marginBottom: 8 }}>{fDim.score}</Typography>
+                           <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, marginBottom: 2 }}>Estado</Typography>
+                           <Typography style={{ color: fDim.color, fontSize: 10, fontWeight: '800' }}>{fDim.status.toUpperCase()}</Typography>
+                         </View>
+                       )}
+                     </TouchableOpacity>
+                   );
+                 })()}
+               </View>
              );
           }
           
@@ -276,7 +331,19 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                     <View style={{ flex: 1, paddingLeft: 4, justifyContent: 'center' }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
                         <Typography style={[styles.messageTitle, { fontSize: 14 }]} numberOfLines={2}>{selectedDim.title}</Typography>
-                        <TouchableOpacity style={{ padding: 4 }}>
+                        <TouchableOpacity style={{ padding: 4 }} onPress={() => {
+                          if (selectedDim.id === 'physiological_load') {
+                            setInfoModalContent({
+                              title: 'Carga fisiológica',
+                              text: 'Carga fisiológica avalia sinais de tensão ou exigência corporal no momento da leitura. Pode considerar frequência cardíaca, temperatura, saturação, ECG/PPG, impedância, peso/contexto corporal e desvios face ao padrão habitual. Serve para perceber se o corpo está calmo e estável ou se há sinais de maior exigência, fadiga ou stress fisiológico.'
+                            });
+                          } else {
+                            setInfoModalContent({
+                              title: selectedDim.title,
+                              text: 'O índice holístico processa todos os marcadores interligados disponíveis para esta dimensão.'
+                            });
+                          }
+                        }}>
                           <Info size={14} color="rgba(255,255,255,0.4)" />
                         </TouchableOpacity>
                       </View>
@@ -366,26 +433,48 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                   if (selectedDimId !== d.id) setActiveTab('summary');
                   setSelectedDimId(prev => prev === d.id ? null : d.id);
                 }}
+                onInfoPress={() => {
+                  if (d.id === 'physiological_load') {
+                    setInfoModalContent({
+                      title: 'Carga fisiológica',
+                      text: 'Carga fisiológica avalia sinais de tensão ou exigência corporal no momento da leitura. Pode considerar frequência cardíaca, temperatura, saturação, ECG/PPG, impedância, peso/contexto corporal e desvios face ao padrão habitual. Serve para perceber se o corpo está calmo e estável ou se há sinais de maior exigência, fadiga ou stress fisiológico.'
+                    });
+                  } else {
+                    setInfoModalContent({
+                      title: d.title,
+                      text: 'O índice holístico processa todos os marcadores interligados disponíveis para esta dimensão.'
+                    });
+                  }
+                }}
               />
             ))}
-            {dimensions.length === 7 && <CTAGridCard />}
           </View>
         </View>
-
       </View>
 
-      {/* POPUP: GLOBAL INFO */}
-      <Modal visible={showGlobalInfo} transparent animationType="fade">
+      {/* POPUP: GLOBAL INFO & DIMENSION INFO */}
+      <Modal visible={showGlobalInfo || infoModalContent !== null} transparent animationType="fade">
          <BlurView intensity={60} tint="dark" style={styles.modalOverlay}>
-            <TouchableOpacity style={StyleSheet.absoluteFillObject} onPress={() => setShowGlobalInfo(false)} activeOpacity={1}/>
+            <TouchableOpacity style={StyleSheet.absoluteFillObject} onPress={() => { setShowGlobalInfo(false); setInfoModalContent(null); }} activeOpacity={1}/>
             <View style={styles.modalCentered}>
               <View style={styles.modalContent}>
-                <Typography variant="h3" style={{ color: '#00F2FF', marginBottom: 8 }}>Sobre a Leitura AI</Typography>
-                <Typography style={{ color: 'rgba(255,255,255,0.6)', marginBottom: 20 }}>Fundamentos e transparência</Typography>
-                <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>
-                  Esta leitura usa um motor holístico para cruzar sinais reais. Nenhuma interpretação substitui aconselhamento clínico.
-                </Typography>
-                <TouchableOpacity style={styles.closeBtn} onPress={() => setShowGlobalInfo(false)}>
+                {infoModalContent ? (
+                  <>
+                    <Typography variant="h3" style={{ color: '#00F2FF', marginBottom: 8 }}>{infoModalContent.title}</Typography>
+                    <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, lineHeight: 20 }}>
+                      {infoModalContent.text}
+                    </Typography>
+                  </>
+                ) : (
+                  <>
+                    <Typography variant="h3" style={{ color: '#00F2FF', marginBottom: 8 }}>Sobre a Leitura AI</Typography>
+                    <Typography style={{ color: 'rgba(255,255,255,0.6)', marginBottom: 20 }}>Fundamentos e transparência</Typography>
+                    <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, lineHeight: 20 }}>
+                      Esta leitura usa um motor holístico para cruzar sinais reais. Nenhuma interpretação substitui aconselhamento clínico.
+                    </Typography>
+                  </>
+                )}
+                <TouchableOpacity style={styles.closeBtn} onPress={() => { setShowGlobalInfo(false); setInfoModalContent(null); }}>
                    <Typography style={styles.closeBtnText}>FECHAR</Typography>
                 </TouchableOpacity>
               </View>
@@ -421,15 +510,15 @@ const styles = StyleSheet.create({
   tabContentArea: { paddingVertical: 4 },
 
   gridWrapper: { paddingHorizontal: 16, paddingBottom: Platform.OS === 'ios' ? 40 : 24, paddingTop: 8 },
-  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between' },
-  gridCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', padding: 10, minHeight: 76, justifyContent: 'center' },
+  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
+  gridCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', padding: 16, minHeight: 108, justifyContent: 'center' },
   gridCardSelected: { backgroundColor: 'rgba(255,255,255,0.06)' },
-  gridCardContent: { flexDirection: 'row', alignItems: 'center', width: '100%' },
-  ringContainer: { position: 'relative', width: 46, height: 46, justifyContent: 'center', alignItems: 'center' },
+  gridCardContent: { flexDirection: 'column', alignItems: 'flex-start', width: '100%', gap: 12 },
+  ringContainer: { position: 'relative', width: 60, height: 60, justifyContent: 'center', alignItems: 'center' },
   ringInnerContent: { position: 'absolute', alignItems: 'center', justifyContent: 'center', top: 0, left: 0, right: 0, bottom: 0 },
-  gridRightContent: { flex: 1, paddingLeft: 10, justifyContent: 'center', alignItems: 'flex-start' },
-  gridScore: { color: '#fff', fontSize: 14, fontWeight: '800' },
-  gridLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 11, fontWeight: '500', lineHeight: 14 },
+  gridRightContent: { flex: 1, justifyContent: 'center', alignItems: 'flex-start' },
+  gridScore: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  gridLabel: { color: 'rgba(255,255,255,0.9)', fontSize: 16, fontWeight: '600', lineHeight: 20 },
 
   modalOverlay: { flex: 1, justifyContent: 'center', padding: 24 },
   modalCentered: { flex: 1, justifyContent: 'center' },
