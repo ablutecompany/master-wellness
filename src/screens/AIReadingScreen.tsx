@@ -21,6 +21,41 @@ const buildAnalysisValuesHash = (analysis: Analysis | null | undefined) => {
 
 const ENABLE_OPENAI_READING = true;
 
+const DIMENSION_INFO: Record<string, { title: string, description: string }> = {
+  readiness_today: {
+    title: 'Prontidão de hoje',
+    description: 'Avalia se os sinais disponíveis apontam para energia, estabilidade e capacidade prática para o dia. Pode cruzar recuperação, sinais vitais, sono/contexto e equilíbrio geral. Serve para orientar intensidade, rotina e exigência diária.'
+  },
+  recovery_load: {
+    title: 'Recuperação & carga',
+    description: 'Avalia como o corpo parece estar a responder à carga recente. Pode considerar frequência cardíaca, temperatura, sinais de stress oxidativo, fadiga/contexto e recuperação. Serve para decidir se faz sentido manter, aliviar ou recuperar melhor.'
+  },
+  internal_balance: {
+    title: 'Equilíbrio interno',
+    description: 'Avalia sinais ligados a fluidos, minerais e eliminação. Pode considerar densidade urinária, sódio, potássio, rácio Na/K, pH e contexto intestinal. Serve para perceber se há sinais de concentração, desequilíbrio ou necessidade de ajustar hidratação/alimentação.'
+  },
+  metabolic_rhythm: {
+    title: 'Ritmo metabólico',
+    description: 'Avalia estabilidade energética e regularidade metabólica prática. Pode cruzar peso, impedância, glicose quando existir, rotina alimentar e sinais fisiológicos. Serve para perceber se o corpo parece estar a funcionar de forma estável ao longo do dia.'
+  },
+  digestive_comfort: {
+    title: 'Conforto digestivo',
+    description: 'Avalia sinais associados ao trânsito intestinal e conforto digestivo. Pode considerar Bristol, consistência, forma, secura, fragmentação e sinais visuais não clínicos. Serve para orientar fibra, água, rotina alimentar e observação de padrões.'
+  },
+  food_adjustments: {
+    title: 'Ajustes alimentares',
+    description: 'Transforma os sinais da leitura em focos alimentares práticos. Pode sugerir nutrientes ou grupos alimentares a favorecer, como fibra, potássio, água/alimentos ricos em água, proteína ou redução de sódio. Não indica deficiência médica.'
+  },
+  physiological_load: {
+    title: 'Carga fisiológica',
+    description: 'Avalia sinais de tensão ou exigência corporal no momento da leitura. Pode considerar frequência cardíaca, temperatura, saturação, ECG/PPG, impedância, peso/contexto corporal e desvios face ao padrão habitual. Serve para perceber se o corpo está calmo e estável ou se há sinais de maior exigência, fadiga ou stress fisiológico.'
+  },
+  routine_signals: {
+    title: 'Sinais de rotina',
+    description: 'Agrupa marcadores que ganham valor quando acompanhados ao longo do tempo. Pode incluir albumina/uACR, NGAL, KIM-1, cistatina C, nitritos, pH ou marcadores experimentais. Serve para observar repetição, tendência e necessidade de acompanhamento, sem tirar conclusões fortes de uma leitura isolada.'
+  }
+};
+
 type ReadingSource = 'local' | 'openai' | 'fallback';
 
 const DimensionGridCard = ({ dimension, isSelected, onPress, onInfoPress }: { dimension: HolisticDimension, isSelected: boolean, onPress: () => void, onInfoPress: () => void }) => {
@@ -332,17 +367,12 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
                         <Typography style={[styles.messageTitle, { fontSize: 14 }]} numberOfLines={2}>{selectedDim.title}</Typography>
                         <TouchableOpacity style={{ padding: 4 }} onPress={() => {
-                          if (selectedDim.id === 'physiological_load') {
-                            setInfoModalContent({
-                              title: 'Carga fisiológica',
-                              text: 'Carga fisiológica avalia sinais de tensão ou exigência corporal no momento da leitura. Pode considerar frequência cardíaca, temperatura, saturação, ECG/PPG, impedância, peso/contexto corporal e desvios face ao padrão habitual. Serve para perceber se o corpo está calmo e estável ou se há sinais de maior exigência, fadiga ou stress fisiológico.'
-                            });
-                          } else {
-                            setInfoModalContent({
-                              title: selectedDim.title,
-                              text: 'O índice holístico processa todos os marcadores interligados disponíveis para esta dimensão.'
-                            });
-                          }
+                          const infoKey = selectedDim.id === 'signal_oriented_nutrition' ? 'food_adjustments' : selectedDim.id;
+                          const info = DIMENSION_INFO[infoKey];
+                          setInfoModalContent({
+                            title: info ? info.title : selectedDim.title,
+                            text: info ? info.description : 'O índice holístico processa todos os marcadores interligados disponíveis para esta dimensão.'
+                          });
                         }}>
                           <Info size={14} color="rgba(255,255,255,0.4)" />
                         </TouchableOpacity>
@@ -434,17 +464,12 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                   setSelectedDimId(prev => prev === d.id ? null : d.id);
                 }}
                 onInfoPress={() => {
-                  if (d.id === 'physiological_load') {
-                    setInfoModalContent({
-                      title: 'Carga fisiológica',
-                      text: 'Carga fisiológica avalia sinais de tensão ou exigência corporal no momento da leitura. Pode considerar frequência cardíaca, temperatura, saturação, ECG/PPG, impedância, peso/contexto corporal e desvios face ao padrão habitual. Serve para perceber se o corpo está calmo e estável ou se há sinais de maior exigência, fadiga ou stress fisiológico.'
-                    });
-                  } else {
-                    setInfoModalContent({
-                      title: d.title,
-                      text: 'O índice holístico processa todos os marcadores interligados disponíveis para esta dimensão.'
-                    });
-                  }
+                  const infoKey = d.id === 'signal_oriented_nutrition' ? 'food_adjustments' : d.id;
+                  const info = DIMENSION_INFO[infoKey];
+                  setInfoModalContent({
+                    title: info ? info.title : d.title,
+                    text: info ? info.description : 'O índice holístico processa todos os marcadores interligados disponíveis para esta dimensão.'
+                  });
                 }}
               />
             ))}
