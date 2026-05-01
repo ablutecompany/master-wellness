@@ -238,9 +238,9 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         {(() => {
           if (!selectedDim) {
              return (
-               <BlurView intensity={20} tint="dark" style={[styles.messageAreaCard, { height: 'auto', minHeight: 180 }]}>
+               <BlurView intensity={20} tint="dark" style={[styles.messageAreaCard, { height: 'auto', minHeight: 140 }]}>
                  <Typography style={styles.sectionTitle}>SÍNTESE DO MOMENTO</Typography>
-                 <Typography variant="h2" style={styles.messageTitle}>{reading.summary.title}</Typography>
+                 <Typography style={styles.messageTitle}>{reading.summary.title}</Typography>
                  <Typography style={styles.messageText}>{reading.summary.text}</Typography>
                </BlurView>
              );
@@ -250,29 +250,29 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           const Icon = getDimensionIcon(selectedDim.id);
           
           return (
-             <BlurView intensity={30} tint="dark" style={[styles.messageAreaCard, { borderColor: `${color}40`, backgroundColor: 'rgba(255,255,255,0.03)', height: 'auto', minHeight: 280 }]}>
-                 <View style={{ flexDirection: 'row', gap: 16 }}>
-                    <View style={{ width: 100, height: 100, justifyContent: 'center', alignItems: 'center' }}>
-                      <Svg width={100} height={100} style={{ transform: [{ rotate: '90deg' }], position: 'absolute' }}>
-                        <Circle cx={50} cy={50} r={44} stroke="rgba(255,255,255,0.05)" strokeWidth={6} fill="transparent" />
+             <BlurView intensity={30} tint="dark" style={[styles.messageAreaCard, { borderColor: `${color}40`, backgroundColor: 'rgba(255,255,255,0.02)', height: 'auto', minHeight: 200 }]}>
+                 <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <View style={{ width: 80, height: 80, justifyContent: 'center', alignItems: 'center' }}>
+                      <Svg width={80} height={80} style={{ transform: [{ rotate: '90deg' }], position: 'absolute' }}>
+                        <Circle cx={40} cy={40} r={36} stroke="rgba(255,255,255,0.05)" strokeWidth={4} fill="transparent" />
                         {selectedDim.score !== null && (
-                          <Circle cx={50} cy={50} r={44} stroke={color} strokeWidth={6} strokeDasharray={2 * Math.PI * 44} strokeDashoffset={2 * Math.PI * 44 * (1 - selectedDim.score/100)} strokeLinecap="round" fill="transparent" />
+                          <Circle cx={40} cy={40} r={36} stroke={color} strokeWidth={4} strokeDasharray={2 * Math.PI * 36} strokeDashoffset={2 * Math.PI * 36 * (1 - selectedDim.score/100)} strokeLinecap="round" fill="transparent" />
                         )}
                       </Svg>
                       <View style={{ alignItems: 'center' }}>
-                        <Icon size={20} color={color} style={{ marginBottom: 2 }} />
-                        <Typography style={{ color: '#fff', fontSize: 24, fontWeight: '800' }}>{selectedDim.score ?? '--'}</Typography>
+                        <Icon size={16} color={color} style={{ marginBottom: 2 }} />
+                        <Typography style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>{selectedDim.score ?? '--'}</Typography>
                       </View>
                     </View>
                     
-                    <View style={{ flex: 1, paddingLeft: 4 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <Typography style={styles.messageTitle} numberOfLines={2}>{selectedDim.title}</Typography>
+                    <View style={{ flex: 1, paddingLeft: 4, justifyContent: 'center' }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <Typography style={[styles.messageTitle, { fontSize: 14 }]} numberOfLines={2}>{selectedDim.title}</Typography>
                         <TouchableOpacity style={{ padding: 4 }}>
-                          <Info size={16} color="rgba(255,255,255,0.5)" />
+                          <Info size={14} color="rgba(255,255,255,0.4)" />
                         </TouchableOpacity>
                       </View>
-                      <View style={[styles.statusMiniBadge, { backgroundColor: `${color}15`, alignSelf: 'flex-start', marginBottom: 12 }]}>
+                      <View style={[styles.statusMiniBadge, { backgroundColor: `${color}15`, alignSelf: 'flex-start', marginBottom: 4 }]}>
                         <Typography style={[styles.statusMiniText, { color }]}>{selectedDim.status.toUpperCase()}</Typography>
                       </View>
                     </View>
@@ -299,15 +299,15 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                         {selectedDim.id === 'food_adjustments' ? (
                            reading.nutrientPriorities && reading.nutrientPriorities.length > 0 ? (
                              reading.nutrientPriorities.map((n, i) => (
-                               <View key={n.id || i} style={{ marginBottom: 16 }}>
-                                 <Typography style={{ color: '#FFF', fontSize: 13, fontWeight: 'bold' }}>
+                               <View key={n.id || i} style={{ marginBottom: 10 }}>
+                                 <Typography style={{ color: '#E2E8F0', fontSize: 13, fontWeight: '500' }}>
                                    • {n.actionType === 'reduce' ? 'Limitar' : 'Favorecer'}: {n.label}
                                  </Typography>
-                                 <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 2 }}>
+                                 <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 1, lineHeight: 16 }}>
                                    {n.reason}
                                  </Typography>
                                  {n.exampleFoods && n.exampleFoods.length > 0 && (
-                                   <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 2 }}>
+                                   <Typography style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 1 }}>
                                      Ex: {n.exampleFoods.join(', ')}
                                    </Typography>
                                  )}
@@ -320,9 +320,9 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                            )
                         ) : (
                           selectedDim.recommendations?.length > 0 ? selectedDim.recommendations.map((r, i) => (
-                            <View key={i} style={{ marginBottom: 12 }}>
-                              <Typography style={{ color: '#FFF', fontSize: 13, fontWeight: 'bold' }}>• {r.text}</Typography>
-                              <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{r.reason}</Typography>
+                            <View key={i} style={{ marginBottom: 10 }}>
+                              <Typography style={{ color: '#E2E8F0', fontSize: 13, fontWeight: '500' }}>• {r.text}</Typography>
+                              <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, lineHeight: 16 }}>{r.reason}</Typography>
                             </View>
                           )) : <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>Sem ações específicas. Manter consistência.</Typography>
                         )}
@@ -331,9 +331,9 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                     {activeTab === 'references' && (
                       <View>
                         {selectedDim.references?.length > 0 ? selectedDim.references.map((r, i) => (
-                          <View key={i} style={{ marginBottom: 12 }}>
-                            <Typography style={{ color: '#FFF', fontSize: 13, fontWeight: 'bold' }}>{r.factor} {r.observedValue ? `(${r.observedValue})` : ''}</Typography>
-                            <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{r.whyItMatters}</Typography>
+                          <View key={i} style={{ marginBottom: 10 }}>
+                            <Typography style={{ color: '#E2E8F0', fontSize: 13, fontWeight: '500' }}>{r.factor} {r.observedValue ? `(${r.observedValue})` : ''}</Typography>
+                            <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, lineHeight: 16 }}>{r.whyItMatters}</Typography>
                           </View>
                         )) : <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>Refs incorporadas no resumo holístico.</Typography>}
                       </View>
@@ -395,17 +395,17 @@ const styles = StyleSheet.create({
   demoLabel: { color: '#00F2FF', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   iconBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
   
-  messageAreaCard: { padding: 16, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)', marginBottom: 16, backgroundColor: 'rgba(255,255,255,0.03)' },
-  sectionTitle: { color: 'rgba(255,255,255,0.3)', fontSize: 10, fontWeight: '800', letterSpacing: 1.5, marginBottom: 6 },
-  messageTitle: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
-  messageText: { color: 'rgba(255,255,255,0.7)', fontSize: 12, lineHeight: 16 },
-  statusMiniBadge: { paddingHorizontal: 6, paddingVertical: 3, borderRadius: 6 },
-  statusMiniText: { fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  messageAreaCard: { padding: 14, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', marginBottom: 12, backgroundColor: 'rgba(255,255,255,0.03)' },
+  sectionTitle: { color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, marginBottom: 4 },
+  messageTitle: { color: '#ffffff', fontSize: 14, fontWeight: '600', marginBottom: 4 },
+  messageText: { color: 'rgba(255,255,255,0.75)', fontSize: 12, lineHeight: 18, fontWeight: '400' },
+  statusMiniBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  statusMiniText: { fontSize: 8, fontWeight: '800', letterSpacing: 0.5 },
 
-  tabsContainer: { flexDirection: 'row', gap: 8, marginTop: 16, marginBottom: 12 },
-  tabBtn: { flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center' },
-  tabBtnText: { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 'bold' },
-  tabContentArea: { paddingVertical: 8 },
+  tabsContainer: { flexDirection: 'row', gap: 6, marginTop: 12, marginBottom: 8 },
+  tabBtn: { flex: 1, paddingVertical: 6, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center' },
+  tabBtnText: { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600' },
+  tabContentArea: { paddingVertical: 4 },
 
   gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between' },
   gridCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', padding: 10, minHeight: 76, justifyContent: 'center' },
