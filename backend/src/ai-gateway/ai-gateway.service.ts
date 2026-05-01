@@ -13,7 +13,7 @@ export class AiGatewayService {
   private readonly openai: OpenAI;
   private readonly model: string;
   private readonly logger = new Logger(AiGatewayService.name);
-  private readonly PROMPT_VERSION = '2.1.0-canonical-r1.1';
+  private readonly PROMPT_VERSION = '2.1.0-canonical-r5d.1';
 
   constructor(
     private readonly configService: ConfigService,

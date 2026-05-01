@@ -26,7 +26,7 @@ function ensureDimensionTabsContent(dim: HolisticDimension, nutrientPriorities: 
   // Ensure actions
   let actions = (dim.recommendations || []).map(r => ({ ...r, text: cleanForbiddenPlaceholders(r.text) })).filter(r => r.text);
   
-  if (dim.id === 'signal_oriented_nutrition' && nutrientPriorities && nutrientPriorities.length > 0) {
+  if ((dim.id === 'signal_oriented_nutrition' || dim.id === 'food_adjustments') && nutrientPriorities && nutrientPriorities.length > 0) {
     // Inject nutrientPriorities as actions for Ajustes Alimentares
     actions = nutrientPriorities.map(np => ({
       text: `${np.nutrient}: ${np.foodExamples?.join(', ') || 'Sem exemplos'}`,
