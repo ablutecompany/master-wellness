@@ -8,6 +8,29 @@
 import { Analysis } from '../../store/types';
 import { useStore } from '../../store/useStore';
 import { ENV } from '../../config/env';
+import { supabase } from '../supabase';
+
+async function getAuthTokenForApi(): Promise<{ token: string | null; source: string; isAuthenticated: boolean; hasSessionObj: boolean }> {
+  const state = useStore.getState();
+  const isAuthenticated = !!state.user && state.user.id !== 'guest' && state.user.id !== 'guest_stub';
+  
+  if (state.sessionToken) {
+    return { token: state.sessionToken, source: 'store_sessionToken', isAuthenticated, hasSessionObj: false };
+  }
+
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token || null;
+    if (token) {
+      useStore.getState().setSessionToken(token);
+      return { token, source: 'supabase_getSession', isAuthenticated, hasSessionObj: !!data?.session };
+    }
+  } catch (err) {
+    console.warn('[getAuthTokenForApi] Supabase getSession error:', err);
+  }
+
+  return { token: null, source: 'none', isAuthenticated, hasSessionObj: false };
+}
 
 // ── Backend canonical response shapes ──────────────────────────────────────────
 
@@ -149,12 +172,12 @@ export async function generateInsightsV2(context: any, analysis?: Analysis): Pro
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 45000);
     
-    const state = useStore.getState();
-    const token = state.sessionToken;
+    const { token, source, isAuthenticated, hasSessionObj } = await getAuthTokenForApi();
 
     const isDemo = analysis?.source === 'demo';
     const endpointFinal = `${AI_GATEWAY_BASE_URL}/ai-gateway/generate-v2`;
     
+    console.log(`[R5C7_AUTH_TOKEN] isAuthenticatedFromStore=${isAuthenticated} | hasSessionObject=${hasSessionObj} | hasSessionToken=${!!token} | hasSupabaseSession=${source==='supabase_getSession'} | tokenLength=${token ? token.length : 0} | tokenSource=${source} | endpoint=${endpointFinal} | willSendAuthorization=${!!token}`);
     console.log(`[R5C6_AI_V2_CLIENT] requestWillStart | isDemo=${isDemo} | hasToken=${!!token} | tokenLength=${token ? token.length : 0} | backendUrl=${AI_GATEWAY_BASE_URL} | endpointFinal=${endpointFinal}`);
 
     if (!AI_GATEWAY_BASE_URL) {
