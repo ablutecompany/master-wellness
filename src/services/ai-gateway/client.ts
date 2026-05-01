@@ -7,6 +7,7 @@
 
 import { Analysis } from '../../store/types';
 import { useStore } from '../../store/useStore';
+import { ENV } from '../../config/env';
 
 // ── Backend canonical response shapes ──────────────────────────────────────────
 
@@ -52,10 +53,7 @@ function buildRequestFromAnalysis(analysis: Analysis) {
 
 // ── Configuration ──────────────────────────────────────────────────────────────
 
-const AI_GATEWAY_BASE_URL =
-  typeof window !== 'undefined' && (window as any).__AI_GATEWAY_URL
-    ? (window as any).__AI_GATEWAY_URL
-    : 'http://localhost:3000';
+const AI_GATEWAY_BASE_URL = ENV.BACKEND_URL || 'http://localhost:3000';
 
 // ── Client ─────────────────────────────────────────────────────────────────────
 
@@ -181,13 +179,18 @@ export async function generateInsightsV2(context: any, analysis?: Analysis): Pro
 
     if (!res.ok) {
       if (res.status === 401) {
+        console.warn('[R5C4_AI_V2_CLIENT] UNAUTHORIZED (401)');
         return { ok: false, error: { code: 'UNAUTHORIZED', message: 'Não autorizado' } };
       }
-      return { ok: false, error: { code: 'SERVER_ERROR', message: 'Erro no servidor' } };
+      console.warn(`[R5C4_AI_V2_CLIENT] SERVER_ERROR (${res.status})`);
+      return { ok: false, error: { code: `SERVER_ERROR_${res.status}`, message: 'Erro no servidor' } };
     }
 
-    return await res.json() as AiGatewayResponse;
+    const json = await res.json() as AiGatewayResponse;
+    console.log(`[R5C4_AI_V2_CLIENT] SUCCESS | engineSource=${(json as AiGatewaySuccess).meta?.engineSource}`);
+    return json;
   } catch (err: any) {
+    console.error('[R5C4_AI_V2_CLIENT] FETCH_ERROR:', err.message);
     if (requestId !== activeRequestId) return null;
     return { ok: false, error: { code: 'NETWORK_ERROR', message: err.message || 'Falha de rede' } };
   }

@@ -96,6 +96,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
   const [aiReading, setAiReading] = useState<AIReading | null>(null);
   const [readingSource, setReadingSource] = useState<string>('local_fallback');
+  const [fallbackReason, setFallbackReason] = useState<string | null>(null);
   const [isRefining, setIsRefining] = useState(false);
 
   const [selectedDimId, setSelectedDimId] = useState<string | null>(null);
@@ -109,6 +110,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   useEffect(() => {
     setAiReading(null);
     setReadingSource('local_fallback');
+    setFallbackReason(null);
     setIsRefining(false);
     if (!ENABLE_OPENAI_READING || !activeAnalysis) return;
 
@@ -126,12 +128,20 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           normalized.summary.mode = isDemoMode ? 'simulation' : 'real';
           setAiReading(normalized);
           setReadingSource(response.meta?.engineSource || 'backend_openai_v2');
-        } catch (normErr) { setReadingSource('local_fallback'); }
-      } else { setReadingSource('local_fallback'); }
+          setFallbackReason(null);
+        } catch (normErr: any) { 
+          setReadingSource('local_fallback'); 
+          setFallbackReason('normalization_error');
+        }
+      } else { 
+        setReadingSource('local_fallback'); 
+        setFallbackReason(response?.error?.code || 'unknown_error');
+      }
       setIsRefining(false);
-    }).catch(() => {
+    }).catch((err: any) => {
       if (cancelled) return;
       setReadingSource('local_fallback');
+      setFallbackReason('catch_error');
       setIsRefining(false);
     });
 
@@ -174,6 +184,9 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
               <Typography variant="h1" style={styles.title}>Leitura AI</Typography>
               {readingSource === 'cached' && (
                 <Typography style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 8 }}>Recuperada</Typography>
+              )}
+              {fallbackReason && (
+                <Typography style={{ fontSize: 10, color: '#FFB800', marginTop: 8 }}>Fonte: local_fallback · {fallbackReason}</Typography>
               )}
               {isDemoMode && (
                 <View style={styles.demoBadge}>
