@@ -175,10 +175,14 @@ export async function generateInsightsV2(context: any, analysis?: Analysis): Pro
     const { token, source, isAuthenticated, hasSessionObj } = await getAuthTokenForApi();
 
     const isDemo = analysis?.source === 'demo';
-    const isDemoId = analysis?.id?.startsWith('demo_analysis');
+    const isDemoId = analysis?.id?.startsWith('demo_analysis') || false;
     const effectivelyDemo = isDemo || isDemoId;
     
     const endpointFinal = `${AI_GATEWAY_BASE_URL}/ai-gateway/generate-v2`;
+    
+    const dimensionsCount = Object.keys(context?.dimensions || {}).length;
+    
+    console.log(`[R5C9_AI_V2_PAYLOAD_CLIENT] endpoint=${endpointFinal} | hasToken=${!!token} | isDemo=${effectivelyDemo} | analysisSessionId=${analysis?.id} | analysisSessionIdIsNull=${analysis?.id == null} | analysisIdLooksDemo=${isDemoId} | hasSourcePayload=${!!context} | hasContextV2=true | hasDimensions=${dimensionsCount > 0} | dimensionsCount=${dimensionsCount} | hasSourceSnapshotHash=true | sourceSnapshotHashShort=${context ? JSON.stringify(context).length + 'B' : 'none'} | bodySizeApprox=${context ? JSON.stringify(context).length : 0}`);
     
     console.log(`[R5C8_AI_V2_REQUEST] endpoint=${endpointFinal} | hasToken=${!!token} | isDemo=${effectivelyDemo} | analysisId=${analysis?.id} | hasSourcePayload=${!!context} | sourceSnapshotHash=${context ? JSON.stringify(context).length + ' bytes' : 'none'}`);
     

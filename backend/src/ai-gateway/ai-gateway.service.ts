@@ -177,7 +177,7 @@ export class AiGatewayService {
                   whyItMatters: { type: 'string' as const },
                   caution: { type: 'string' as const }
                 },
-                required: ['factor', 'explanation', 'whyItMatters'],
+                required: ['factor', 'observedValue', 'explanation', 'whyItMatters', 'caution'],
                 additionalProperties: false
               }
             }
@@ -196,7 +196,7 @@ export class AiGatewayService {
             linkedDimensionId: { type: 'string' as const },
             priority: { type: 'string' as const, enum: ['low', 'medium', 'high'] }
           },
-          required: ['text', 'reason', 'priority'],
+          required: ['text', 'reason', 'linkedDimensionId', 'priority'],
           additionalProperties: false
         }
       },
@@ -211,6 +211,11 @@ export class AiGatewayService {
     const startMs = Date.now();
     const { activeMemberId, analysisSessionId, forceRegenerate, sourcePayload } = body;
     const isDemo = sourcePayload?.isDemo === true;
+    
+    const dimensionsCount = sourcePayload?.dimensions ? Object.keys(sourcePayload.dimensions).length : 0;
+    
+    this.logger.log(`[R5C9_AI_V2_PAYLOAD_SERVER] requestReceived=true | hasAuth=${!!userId} | isDemo=${isDemo} | analysisSessionId=${analysisSessionId} | analysisSessionIdIsNull=${analysisSessionId == null} | hasSourcePayload=${!!sourcePayload} | hasContextV2=true | hasDimensions=${dimensionsCount > 0} | dimensionsCount=${dimensionsCount} | bodyKeys=${Object.keys(body).join(',')}`);
+    
     
     const hasAuth = !!userId;
     
@@ -578,7 +583,7 @@ export class AiGatewayService {
     
     if (status === 401 || msg.includes('api key')) return 'AUTH_FAILED';
     if (status === 429 || msg.includes('rate limit')) return 'RATE_LIMITED';
-    if (status === 400 || msg.includes('schema') || msg.includes('invalid')) return 'INVALID_REQUEST';
+    if (status === 400 || msg.includes('schema') || msg.includes('invalid')) return 'OPENAI_INVALID_REQUEST';
     if (status === 404 || msg.includes('model')) return 'MODEL_NOT_FOUND';
     if (msg.includes('timeout') || msg.includes('econnrefused')) return 'PROVIDER_UNREACHABLE';
     
