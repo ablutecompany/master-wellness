@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { StyleSheet, View, ScrollView, Platform, TouchableOpacity, LayoutAnimation, Modal } from 'react-native';
 import { Container, Typography, BlurView } from '../components/Base';
 import { useStore } from '../store/useStore';
+import { Analysis, AnalysisMeasurement } from '../store/types';
 import { selectDailySynthesis, selectContextualResults, selectDataFreshness } from '../store/selectors';
 import { computeAIReadingFromData, AIReading } from '../services/semantic-output/ai-reading-engine';
 import { normalizeAIReadingResponse } from '../services/semantic-output/ai-reading-adapter';
@@ -11,6 +12,12 @@ import {
   Activity, Zap, Target, Heart, Moon, FlaskConical, X, 
   ShieldAlert, Info, CheckCircle2, Eye, ChevronRight
 } from 'lucide-react-native';
+
+const buildAnalysisValuesHash = (analysis: Analysis | null | undefined) => {
+  if (!analysis) return 'none';
+  const markers = analysis.measurements?.map((m: AnalysisMeasurement) => `${m.marker || m.type}=${typeof m.value === 'object' ? JSON.stringify(m.value) : m.value}`).sort().join('|') || '';
+  return `${analysis.id}-${analysis.demoScenarioKey || 'real'}-${markers}`;
+};
 
 const ENABLE_OPENAI_READING = (
   typeof process !== 'undefined' &&
@@ -69,9 +76,9 @@ const DimensionGridCard = ({ id, label, score, icon: Icon, color, isSelected, on
 };
 
 export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
-  const store = useStore();
-  
-  const { isDemoMode, analyses, demoAnalysis } = store;
+  const isDemoMode = useStore(state => state.isDemoMode);
+  const analyses = useStore(state => state.analyses);
+  const demoAnalysis = useStore(state => state.demoAnalysis);
   
   // No modo DEMO, consome o snapshot em tempo real do demoAnalysis
   const activeAnalysis = isDemoMode && demoAnalysis ? demoAnalysis : analyses[0];
@@ -95,8 +102,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
   // [R4F6_AI_READING_REACTIVITY] Hash determinístico do estado actual
   const sourceSnapshotHash = useMemo(() => {
-    if (!activeAnalysis) return 'none';
-    return `${activeAnalysis.id}-${activeAnalysis.demoScenarioKey || 'real'}-${activeAnalysis.measurements?.length ?? 0}`;
+    return buildAnalysisValuesHash(activeAnalysis);
   }, [activeAnalysis]);
 
   useEffect(() => {
@@ -254,6 +260,20 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         
+        {/* R4F7 DEBUG TEMPORÁRIO */}
+        <View style={{ backgroundColor: '#1A1A1A', padding: 10, borderRadius: 8, marginBottom: 16, borderWidth: 1, borderColor: '#333' }}>
+          <Typography style={{ color: '#FF3B30', fontSize: 10, fontWeight: 'bold' }}>R4F7 DEBUG PIPELINE</Typography>
+          <Typography style={{ color: '#AAA', fontSize: 10 }}>isDemoMode: {String(isDemoMode)}</Typography>
+          <Typography style={{ color: '#AAA', fontSize: 10 }}>scenarioKey: {activeAnalysis?.demoScenarioKey || 'none'}</Typography>
+          <Typography style={{ color: '#AAA', fontSize: 10 }}>analysisId: {activeAnalysis?.id}</Typography>
+          <Typography style={{ color: '#AAA', fontSize: 10 }}>measurementsCount: {activeAnalysis?.measurements?.length}</Typography>
+          <Typography style={{ color: '#AAA', fontSize: 10 }}>sourceHash: {sourceSnapshotHash}</Typography>
+          <Typography style={{ color: '#AAA', fontSize: 10 }}>engineSource: {readingSource}</Typography>
+          <Typography style={{ color: '#AAA', fontSize: 10 }}>firstVal: {activeAnalysis?.measurements?.[0]?.marker}={String(activeAnalysis?.measurements?.[0]?.value)}</Typography>
+          <Typography style={{ color: '#FFF', fontSize: 10 }}>title: {reading.summary.title}</Typography>
+          <Typography style={{ color: '#FFF', fontSize: 10 }}>score[0]: {normalizedDimensions[0]?.score}</Typography>
+        </View>
+
         {/* HEADER */}
         <View style={styles.header}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
