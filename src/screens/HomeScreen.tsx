@@ -162,6 +162,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [showNfcModal, setShowNfcModal] = useState(false);
   const [showTokensModal, setShowTokensModal] = useState(false);
   const [expandedAppId, setExpandedAppId] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<any>(null);
   const [demoDaysCounter, setDemoDaysCounter] = useState(0);
 
   // Real Store State
@@ -774,17 +775,25 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 {MINI_APP_CATALOG.filter(app => app.availabilityStatus === 'available').map((app) => {
                   const isInstalled = (installedAppIds || []).includes(app.id);
                   return (
-                    <TouchableOpacity 
-                      key={app.id} 
-                      style={[styles.downloadRow, isInstalled && styles.downloadRowInstalled]}
-                      activeOpacity={isInstalled ? 0.7 : 1}
-                      onPress={() => {
-                        if (isInstalled) {
-                          handleOpenApp(app);
-                        }
-                      }}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View key={app.id} style={[styles.downloadRow, isInstalled && styles.downloadRowInstalled]}>
+                      <TouchableOpacity 
+                        activeOpacity={isInstalled ? 0.7 : 1}
+                        onPress={() => {
+                          if (expandedAppId === app.id) {
+                            // Se estiver expandido, tocar no topo não faz nada ou apenas colapsa.
+                            // Mas a regra diz: "cartão fechado pode ter onPress global; cartão expandido não deve ter onPress global"
+                            // Vamos manter o botão colapsar
+                            setExpandedAppId(null);
+                          } else {
+                            if (isInstalled) {
+                              handleOpenApp(app);
+                            } else {
+                              setExpandedAppId(app.id);
+                            }
+                          }
+                        }}
+                        style={{ flexDirection: 'row', alignItems: 'center' }}
+                      >
                         <View style={[
                           styles.rowIcon, 
                           { backgroundColor: isInstalled ? app.iconBg : 'rgba(255,255,255,0.03)' }
@@ -802,7 +811,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                           <TouchableOpacity 
                             style={styles.actionBtn}
                             onPress={(e) => {
-                              e.stopPropagation(); // Prevenir abertura da app
+                              e.stopPropagation(); // Prevenir abertura da app no cartão fechado
                               setExpandedAppId(expandedAppId === app.id ? null : app.id);
                             }}
                           >
@@ -833,7 +842,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                             </TouchableOpacity>
                           )}
                         </View>
-                      </View>
+                      </TouchableOpacity>
                       
                       {expandedAppId === app.id && (
                         <Animated.View style={styles.expandedCard}>
@@ -853,6 +862,19 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                             </View>
                           </View>
 
+                          {/* BOTÃO ABRIR APP NO CARTÃO EXPANDIDO */}
+                          {isInstalled && (
+                            <TouchableOpacity 
+                              style={[styles.saveBtn, { marginBottom: 20 }]}
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                handleOpenApp(app);
+                              }}
+                            >
+                              <Typography style={styles.saveBtnText}>ABRIR APP</Typography>
+                            </TouchableOpacity>
+                          )}
+
                           {/* SCREENSHOTS AREA */}
                           <ScrollView 
                             horizontal 
@@ -860,12 +882,24 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                             style={styles.screenshotScroll}
                             contentContainerStyle={{ gap: 12, paddingRight: 20 }}
                           >
-                            {(app.screenshots && app.screenshots.length > 0) ? app.screenshots.map((ss, idx) => (
-                              <Image key={idx} source={typeof ss === 'string' ? { uri: ss } : ss} style={styles.screenshotImg} />
-                            )) : (
-                              // Fallback elegante se não houver imagens
+                            {(app.screenshots && app.screenshots.length > 0) ? app.screenshots.map((ss: any, idx: number) => {
+                              const imgSrc = typeof ss === 'string' ? { uri: ss } : ss;
+                              return (
+                                <TouchableOpacity 
+                                  key={idx}
+                                  activeOpacity={0.8}
+                                  onPress={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedImage(imgSrc);
+                                  }}
+                                >
+                                  <Image source={imgSrc} style={[styles.screenshotImg, { width: 160, height: 280, borderRadius: 18, resizeMode: 'cover' }]} />
+                                </TouchableOpacity>
+                              );
+                            }) : (
+                              // Fallback
                               [1, 2].map((_, idx) => (
-                                <View key={idx} style={[styles.screenshotImg, { backgroundColor: 'rgba(255,255,255,0.02)', justifyContent: 'center', alignItems: 'center', borderStyle: 'dashed', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }]}>
+                                <View key={idx} style={[styles.screenshotImg, { width: 160, height: 280, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.02)', justifyContent: 'center', alignItems: 'center', borderStyle: 'dashed', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }]}>
                                   <Typography style={{ color: 'rgba(255,255,255,0.1)', fontSize: 10 }}>SCREENSHOT {idx + 1}</Typography>
                                 </View>
                               ))
@@ -882,7 +916,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
                           {/* FOOTER ACTIONS */}
                           <View style={[styles.expandedFooter, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
-                            {isInstalled && (
+                            {isInstalled ? (
                               <TouchableOpacity 
                                 style={[styles.closeExpandedBtn, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}
                                 onPress={(e) => {
@@ -895,7 +929,8 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                               >
                                 <Typography style={[styles.closeExpandedText, { color: '#EF4444' }]}>Desinstalar</Typography>
                               </TouchableOpacity>
-                            )}
+                            ) : <View />}
+                            
                             <TouchableOpacity 
                               style={styles.closeExpandedBtn}
                               onPress={(e) => {
@@ -908,7 +943,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                           </View>
                         </Animated.View>
                       )}
-                    </TouchableOpacity>
+                    </View>
                   );
                 })}
 
@@ -1083,6 +1118,29 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
       {/* ── FOOTER PADDING FOR GESTURES ──────────────────────────────────── */}
       <View style={{ height: 20 }} />
+
+      {/* ── IMAGE PREVIEW MODAL ────────────────────────────────────────────────── */}
+      <Modal
+        visible={!!selectedImage}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedImage(null)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' }}>
+          <TouchableOpacity 
+            style={{ position: 'absolute', top: 50, right: 20, zIndex: 10, padding: 10, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 }}
+            onPress={() => setSelectedImage(null)}
+          >
+            <Typography style={{ color: '#fff', fontWeight: 'bold' }}>FECHAR</Typography>
+          </TouchableOpacity>
+          {selectedImage && (
+            <Image 
+              source={selectedImage} 
+              style={{ width: width * 0.9, height: height * 0.8, resizeMode: 'contain' }} 
+            />
+          )}
+        </View>
+      </Modal>
 
     </Container>
   );
