@@ -5,7 +5,7 @@ import { Container, Typography } from '../components/Base';
 import { theme } from '../theme';
 import { BrandLogo } from '../components/BrandLogo';
 import { ThemeCard } from '../components/ThemeCard';
-import { Utensils, Star, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, ChevronRight, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, LogIn, LogOut, Globe, Users, ChevronDown } from 'lucide-react-native';
+import { Utensils, Star, Zap, SlidersHorizontal, Activity, Database, Smartphone, X, User, ChevronRight, ChevronLeft, Menu, Battery, Heart, Scale, Droplets, Target, Settings, RefreshCw, Moon, Droplet, Brain, LogIn, LogOut, Globe, Users, ChevronDown } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { Video, ResizeMode } from 'expo-av';
@@ -162,7 +162,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [showNfcModal, setShowNfcModal] = useState(false);
   const [showTokensModal, setShowTokensModal] = useState(false);
   const [expandedAppId, setExpandedAppId] = useState<string | null>(null);
-  const [selectedImage, setSelectedImage] = useState<any>(null);
+  const [galleryState, setGalleryState] = useState<{ images: any[], index: number } | null>(null);
   const [demoDaysCounter, setDemoDaysCounter] = useState(0);
 
   // Real Store State
@@ -197,6 +197,35 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       Linking.openURL(app.url).catch(err => console.log('Error opening app', err));
     }
   };
+
+  const goToNextPreview = useCallback(() => {
+    setGalleryState(prev => {
+      if (!prev) return prev;
+      return { ...prev, index: (prev.index + 1) % prev.images.length };
+    });
+  }, []);
+
+  const goToPreviousPreview = useCallback(() => {
+    setGalleryState(prev => {
+      if (!prev) return prev;
+      return { ...prev, index: (prev.index - 1 + prev.images.length) % prev.images.length };
+    });
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !galleryState) return;
+    const handleKeyDown = (e: any) => {
+      if (e.key === 'ArrowRight') {
+        goToNextPreview();
+      } else if (e.key === 'ArrowLeft') {
+        goToPreviousPreview();
+      } else if (e.key === 'Escape') {
+        setGalleryState(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [galleryState, goToNextPreview, goToPreviousPreview]);
 
   const incrementDemoDays = useCallback(() => {
     if (!isDemoMode) return;
@@ -877,7 +906,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                                   activeOpacity={0.8}
                                   onPress={(e) => {
                                     e.stopPropagation();
-                                    setSelectedImage(imgSrc);
+                                    setGalleryState({ images: app.screenshots, index: idx });
                                   }}
                                 >
                                   <Image source={imgSrc} style={[styles.screenshotImg, { width: 160, height: 280, borderRadius: 18, resizeMode: 'cover' }]} />
@@ -1108,23 +1137,59 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
       {/* ── IMAGE PREVIEW MODAL ────────────────────────────────────────────────── */}
       <Modal
-        visible={!!selectedImage}
+        visible={!!galleryState}
         transparent
         animationType="fade"
-        onRequestClose={() => setSelectedImage(null)}
+        onRequestClose={() => setGalleryState(null)}
       >
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' }}>
+          
+          {/* BOTÃO FECHAR */}
           <TouchableOpacity 
-            style={{ position: 'absolute', top: 50, right: 20, zIndex: 10, padding: 10, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 }}
-            onPress={() => setSelectedImage(null)}
+            style={{ position: 'absolute', top: 50, right: 20, zIndex: 20, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 }}
+            onPress={() => setGalleryState(null)}
           >
             <Typography style={{ color: '#fff', fontWeight: 'bold' }}>FECHAR</Typography>
           </TouchableOpacity>
-          {selectedImage && (
-            <Image 
-              source={selectedImage} 
-              style={{ width: width * 0.9, height: height * 0.8, resizeMode: 'contain' }} 
-            />
+
+          {/* NAVEGAÇÃO LATERAL */}
+          {galleryState && galleryState.images.length > 1 && (
+            <>
+              <TouchableOpacity 
+                style={{ position: 'absolute', left: 20, top: '50%', zIndex: 10, padding: 15, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 40, transform: [{ translateY: -25 }] }}
+                onPress={goToPreviousPreview}
+              >
+                <ChevronLeft color="#fff" size={32} />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={{ position: 'absolute', right: 20, top: '50%', zIndex: 10, padding: 15, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 40, transform: [{ translateY: -25 }] }}
+                onPress={goToNextPreview}
+              >
+                <ChevronRight color="#fff" size={32} />
+              </TouchableOpacity>
+            </>
+          )}
+
+          {/* IMAGEM CENTRAL */}
+          {galleryState && (
+            <TouchableOpacity activeOpacity={1} style={{ flex: 1, width: '100%', justifyContent: 'center', alignItems: 'center' }} onPress={() => setGalleryState(null)}>
+              <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+                <Image 
+                  source={typeof galleryState.images[galleryState.index] === 'string' ? { uri: galleryState.images[galleryState.index] } : galleryState.images[galleryState.index]} 
+                  style={{ width: width * 0.9, height: height * 0.8, resizeMode: 'contain', borderRadius: 12 }} 
+                />
+              </TouchableOpacity>
+            </TouchableOpacity>
+          )}
+
+          {/* INDICADOR N / TOTAL */}
+          {galleryState && galleryState.images.length > 1 && (
+            <View style={{ position: 'absolute', bottom: 40, backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20 }}>
+              <Typography style={{ color: 'rgba(255,255,255,0.7)', fontWeight: 'bold', fontSize: 13, letterSpacing: 1 }}>
+                {galleryState.index + 1} / {galleryState.images.length}
+              </Typography>
+            </View>
           )}
         </View>
       </Modal>
