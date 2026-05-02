@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
   container: { backgroundColor: '#05070A', flex: 1 },
   atmosphere: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
   aura: { position: 'absolute', width: 600, height: 600, borderRadius: 300, top: -200, right: -200, opacity: 0.3, ...(Platform.OS === 'web' ? { filter: 'blur(120px)' } : {}) },
-  scroll: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 },
+  scroll: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 40 },
   header: { marginBottom: 8, paddingHorizontal: 20 },
   title: { color: '#ffffff', fontSize: 24, fontWeight: '700', flexShrink: 1 },
   demoBadge: { borderColor: '#00F2FF', borderWidth: 1, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, justifyContent: 'center', height: 20 },
@@ -500,8 +500,8 @@ const styles = StyleSheet.create({
   
   messageAreaCard: { padding: 14, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', marginBottom: 12, backgroundColor: 'rgba(255,255,255,0.03)' },
   sectionTitle: { color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, marginBottom: 4 },
-  messageTitle: { color: '#ffffff', fontSize: 14, fontWeight: '600', marginBottom: 4 },
-  messageText: { color: 'rgba(255,255,255,0.75)', fontSize: 12, lineHeight: 18, fontWeight: '400' },
+  messageTitle: { color: '#ffffff', fontSize: 15, fontWeight: '800', marginBottom: 6, lineHeight: 18 },
+  messageText: { color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 19, fontWeight: '500' },
   statusMiniBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
   statusMiniText: { fontSize: 8, fontWeight: '800', letterSpacing: 0.5 },
 
