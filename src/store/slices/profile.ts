@@ -38,6 +38,62 @@ export interface ProfileSlice {
   disconnectHouseholdMember: (memberId: string) => Promise<boolean>;
 }
 
+export const normalizeProfile = (rawProfile: any): UserProfile | null => {
+  if (!rawProfile || typeof rawProfile !== 'object') return null;
+  if (!rawProfile.id) {
+    console.error('[P0_PROFILE_NORMALIZE] Missing mandatory id in rawProfile');
+    return null;
+  }
+
+  const invalidFields: string[] = [];
+  const normalized: any = { ...rawProfile };
+
+  if (typeof normalized.name !== 'string') {
+    normalized.name = normalized.email ? normalized.email.split('@')[0] : 'Utilizador';
+    invalidFields.push('name');
+  }
+
+  if (normalized.dateOfBirth) {
+    const d = new Date(normalized.dateOfBirth);
+    if (isNaN(d.getTime())) {
+      invalidFields.push('dateOfBirth');
+      delete normalized.dateOfBirth;
+      delete normalized.dateOfBirthPrecision;
+    }
+  }
+
+  if (normalized.height !== undefined && normalized.height !== null) {
+    const h = Number(normalized.height);
+    if (isNaN(h) || h <= 0) {
+      invalidFields.push('height');
+      delete normalized.height;
+    } else {
+      normalized.height = h;
+    }
+  }
+
+  if (normalized.weight !== undefined && normalized.weight !== null && typeof normalized.weight === 'object') {
+    if (normalized.weight.value !== undefined && normalized.weight.value !== null) {
+      const w = Number(normalized.weight.value);
+      if (isNaN(w) || w <= 0) {
+        invalidFields.push('weight.value');
+      } else {
+        normalized.weight.value = w;
+      }
+    }
+  }
+
+  if (invalidFields.length > 0) {
+    console.warn('[P0_PROFILE_NORMALIZE] Normalized invalid fields:', {
+      inputKeys: Object.keys(rawProfile),
+      invalidFields,
+      outputKeys: Object.keys(normalized)
+    });
+  }
+
+  return normalized as UserProfile;
+};
+
 export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = (set, get) => ({
   user: null,
   authAccount: null,
@@ -102,14 +158,15 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
       }
       
       // Validação extra para garantir que não recebemos um objecto vazio que "pise" o user
-      if (Object.keys(result.profile).length < 3 || !result.profile.id) {
+      const normalizedResponse = normalizeProfile(result.profile);
+      if (!normalizedResponse) {
         console.error('[ProfileSlice] Backend returned incomplete profile. Reverting optimistic state.');
         set({ user: previousUser });
         return false;
       }
 
       // 2. Reflete resposta consolidada devolvida
-      set({ user: result.profile });
+      set({ user: normalizedResponse });
       return true;
     } catch (err) {
       console.error('[ProfileSlice] Exception during updateAuthenticatedProfile:', err);

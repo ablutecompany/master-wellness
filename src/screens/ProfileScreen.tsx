@@ -52,14 +52,6 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     }
   }, [user]);
 
-  // Se não houver draft, mostrar indicador de carregamento
-  if (!hasHydrated || !profileDraft) {
-    return (
-      <View style={[styles.outerContainer, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator color="#00F2FF" size="large" />
-      </View>
-    );
-  }
 
   // Helper para atualizar o draft localmente (marca como dirty)
   const updateDraft = (updates: any) => {
@@ -91,7 +83,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     return `aprox. ${age} anos`;
   };
 
-  const ageDisplay = useMemo(() => calculateAge(profileDraft.dateOfBirth, profileDraft.dateOfBirthPrecision), [profileDraft.dateOfBirth, profileDraft.dateOfBirthPrecision]);
+  const ageDisplay = useMemo(() => calculateAge(profileDraft?.dateOfBirth, profileDraft?.dateOfBirthPrecision), [profileDraft?.dateOfBirth, profileDraft?.dateOfBirthPrecision]);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 2. MODAL STATE
@@ -441,6 +433,14 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   // ─────────────────────────────────────────────────────────────────────────────
   // 5. MAIN RENDER
   // ─────────────────────────────────────────────────────────────────────────────
+  if (!hasHydrated || !profileDraft) {
+    return (
+      <View style={[styles.outerContainer, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator color="#00F2FF" size="large" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.outerContainer}>
       <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />

@@ -31,6 +31,7 @@ import { useStore } from './src/store/useStore';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { Session } from '@supabase/supabase-js';
 import { ProfileService } from './src/services/user/profileService';
+import { normalizeProfile } from './src/store/slices/profile';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -172,19 +173,26 @@ export default function App() {
     };
 
     const setLoaded = async (profile: any) => {
+      const normalized = normalizeProfile(profile);
+      if (!normalized) {
+        console.warn('[P0_PROFILE_BOOT] authMeSuccess returned invalid shape, using fallback', { profile });
+        await setFallback('authMe returned invalid profile shape');
+        return;
+      }
+
       console.log('[P0_PROFILE_BOOT] authMeSuccess: true');
       console.log('[P0_AUTH_ME]', {
-        userId: profile.id,
+        userId: normalized.id,
         userFound: true,
         profileFound: true,
-        returnedFields: Object.keys(profile)
+        returnedFields: Object.keys(normalized)
       });
-      setUser(profile);
-      if (profile?.household) setHousehold(profile.household);
+      setUser(normalized);
+      if ((normalized as any)?.household) setHousehold((normalized as any).household);
       await trySyncAnalyses();
       setProfileStatus('loaded');
       isSyncingRef.current = false;
-      console.warn('[AUTH_DIAG] syncProfile success: profile loaded', { userId: profile.id });
+      console.warn('[AUTH_DIAG] syncProfile success: profile loaded', { userId: normalized.id });
       onDone?.('Main');
     };
 
