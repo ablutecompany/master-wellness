@@ -173,7 +173,12 @@ export default function App() {
 
     const setLoaded = async (profile: any) => {
       console.log('[P0_PROFILE_BOOT] authMeSuccess: true');
-      console.log('[P0_PROFILE_BOOT] profileFieldsLoaded:', Object.keys(profile));
+      console.log('[P0_AUTH_ME]', {
+        userId: profile.id,
+        userFound: true,
+        profileFound: true,
+        returnedFields: Object.keys(profile)
+      });
       setUser(profile);
       if (profile?.household) setHousehold(profile.household);
       await trySyncAnalyses();

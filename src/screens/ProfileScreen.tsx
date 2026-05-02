@@ -31,17 +31,49 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const setActiveMember = useStore(state => state.setActiveMember);
   const hasHydrated = useStore(state => state.hasHydrated);
 
+  const [profileDraft, setProfileDraft] = useState<any>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Inicializar / Sincronizar o draft a partir da store
+  useEffect(() => {
+    if (user && !isDirty) {
+      console.log('[P0_PROFILE_FORM]', { event: 'mount/sync', storeValue: user, isDirty });
+      setProfileDraft({ ...user });
+    } else if (user && isDirty) {
+      // OVERWRITE GUARD
+      console.log('[P0_PROFILE_OVERWRITE_GUARD]', {
+        attemptedOverwrite: true,
+        reason: 'Store user updated while form is dirty',
+        blocked: true,
+        incomingProfileKeys: Object.keys(user),
+        existingDraftKeys: profileDraft ? Object.keys(profileDraft) : []
+      });
+    }
+  }, [user]);
+
+  // Se não houver draft, mostrar indicador de carregamento
+  if (!hasHydrated || !profileDraft) {
+    return (
+      <View style={[styles.outerContainer, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator color="#00F2FF" size="large" />
+      </View>
+    );
+  }
+
+  // Helper para atualizar o draft localmente (marca como dirty)
+  const updateDraft = (updates: any) => {
+    setProfileDraft((prev: any) => {
+      const next = { ...prev, ...updates };
+      console.log('[P0_PROFILE_FORM]', { event: 'input_change', field: Object.keys(updates), draftValue: next });
+      return next;
+    });
+    setIsDirty(true);
+  };
+
   // ─────────────────────────────────────────────────────────────────────────────
   // 1. DATA HANDLERS
   // ─────────────────────────────────────────────────────────────────────────────
-  const updateProfileField = (updates: any) => {
-    if (isGuestMode) {
-      useStore.getState().updateGuestProfile(updates);
-    } else {
-      useStore.getState().updateAuthenticatedProfile(updates);
-    }
-  };
-
   const calculateAge = (dobStr: string | undefined, precision: string | undefined | null): string => {
     if (!dobStr) return '—';
     const dob = new Date(dobStr);
@@ -59,7 +91,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     return `aprox. ${age} anos`;
   };
 
-  const ageDisplay = useMemo(() => calculateAge(user?.dateOfBirth, user?.dateOfBirthPrecision), [user?.dateOfBirth, user?.dateOfBirthPrecision]);
+  const ageDisplay = useMemo(() => calculateAge(profileDraft.dateOfBirth, profileDraft.dateOfBirthPrecision), [profileDraft.dateOfBirth, profileDraft.dateOfBirthPrecision]);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 2. MODAL STATE
@@ -79,8 +111,8 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
   const openModal = (type: 'birthday' | 'height' | 'sex' | 'weight' | 'name' | 'email' | 'avatar', title: string) => {
     if (type === 'birthday') {
-      const dob = user?.dateOfBirth;
-      const precision = user?.dateOfBirthPrecision;
+      const dob = profileDraft.dateOfBirth;
+      const precision = profileDraft.dateOfBirthPrecision;
       if (dob) {
         const parts = dob.split('-');
         setTempDate({
@@ -92,16 +124,16 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         setTempDate({ year: 2006, month: null, day: null });
       }
     } else if (type === 'height') {
-      setTempHeight(user?.height || 175);
+      setTempHeight(profileDraft.height || 175);
     } else if (type === 'weight') {
-      const w = user?.weight?.manualValue || user?.weight?.value;
+      const w = profileDraft.weight?.manualValue || profileDraft.weight?.value;
       setTempWeight(w ? Math.round(w) : 60);
     } else if (type === 'name') {
-      setTempName(user?.name || user?.fullName || '');
+      setTempName(profileDraft.name || profileDraft.fullName || '');
     } else if (type === 'email') {
-      setTempEmail(user?.email || authAccount?.email || '');
+      setTempEmail(profileDraft.email || authAccount?.email || '');
     } else if (type === 'avatar') {
-      setTempAvatar(user?.avatarUrl || '');
+      setTempAvatar(profileDraft.avatarUrl || '');
     }
     setModalConfig({ visible: true, type, title });
   };
@@ -109,8 +141,35 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const closeModal = () => setModalConfig(prev => ({ ...prev, visible: false }));
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 3. EDIT ACTIONS
+  // 3. EDIT ACTIONS (Apply to draft & Trigger Save)
   // ─────────────────────────────────────────────────────────────────────────────
+  const triggerSave = async (updates: any) => {
+    console.log('[P0_PROFILE_FORM]', { event: 'save_start', field: Object.keys(updates), draftValue: { ...profileDraft, ...updates }, isSaving: true });
+    setIsSaving(true);
+    
+    // Optimistic local update of draft
+    setProfileDraft((prev: any) => ({ ...prev, ...updates }));
+    
+    let success = false;
+    if (isGuestMode) {
+      useStore.getState().updateGuestProfile(updates);
+      success = true;
+    } else {
+      success = await useStore.getState().updateAuthenticatedProfile(updates);
+    }
+
+    if (success) {
+      console.log('[P0_PROFILE_FORM]', { event: 'save_success', field: Object.keys(updates) });
+      setIsDirty(false); // Clean state after successful save
+    } else {
+      console.log('[P0_PROFILE_FORM]', { event: 'save_error', field: Object.keys(updates) });
+      Alert.alert('Erro', 'Ocorreu um erro ao guardar as tuas alterações.');
+      // Keep isDirty true so the draft isn't overwritten by stale store data
+    }
+    
+    setIsSaving(false);
+  };
+
   const saveBirthday = () => {
     let dob = `${tempDate.year}`;
     let precision: 'year' | 'month' | 'day' = 'year';
@@ -124,17 +183,17 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       }
     }
     
-    updateProfileField({ dateOfBirth: dob, dateOfBirthPrecision: precision });
+    triggerSave({ dateOfBirth: dob, dateOfBirthPrecision: precision });
     closeModal();
   };
 
   const saveHeight = () => {
-    updateProfileField({ height: tempHeight });
+    triggerSave({ height: tempHeight });
     closeModal();
   };
 
   const saveWeight = () => {
-    updateProfileField({ 
+    triggerSave({ 
       weight: { 
         value: tempWeight, 
         manualValue: tempWeight, 
@@ -147,12 +206,12 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   };
 
   const saveName = () => {
-    updateProfileField({ name: tempName });
+    triggerSave({ name: tempName });
     closeModal();
   };
 
   const saveAvatar = () => {
-    updateProfileField({ avatarUrl: tempAvatar });
+    triggerSave({ avatarUrl: tempAvatar });
     closeModal();
   };
 
@@ -313,13 +372,14 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         {options.map(opt => (
           <TouchableOpacity 
             key={String(opt.value)}
-            style={[styles.choiceBtn, user?.sex === opt.value ? styles.choiceBtnActive : {}]}
+            style={[styles.choiceBtn, profileDraft.sex === opt.value ? styles.choiceBtnActive : {}]}
             onPress={() => {
-              updateProfileField({ sex: opt.value });
+              updateDraft({ sex: opt.value });
+              triggerSave({ sex: opt.value });
               closeModal();
             }}
           >
-            <Typography style={[styles.choiceText, user?.sex === opt.value ? styles.choiceTextActive : {}]}>{opt.label}</Typography>
+            <Typography style={[styles.choiceText, profileDraft.sex === opt.value ? styles.choiceTextActive : {}]}>{opt.label}</Typography>
           </TouchableOpacity>
         ))}
       </View>
@@ -331,7 +391,14 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       <TextInput
         style={styles.textInputField}
         value={tempName}
-        onChangeText={setTempName}
+        onChangeText={(txt) => {
+          setTempName(txt);
+          updateDraft({ name: txt });
+        }}
+        onBlur={() => {
+          console.log('[P0_PROFILE_FORM]', { event: 'blur', field: 'name' });
+          if (isDirty) triggerSave({ name: tempName });
+        }}
         placeholder="O teu nome"
         placeholderTextColor="rgba(255,255,255,0.3)"
       />
@@ -374,14 +441,6 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   // ─────────────────────────────────────────────────────────────────────────────
   // 5. MAIN RENDER
   // ─────────────────────────────────────────────────────────────────────────────
-  if (!hasHydrated) {
-    return (
-      <View style={[styles.outerContainer, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator color="#00F2FF" size="large" />
-      </View>
-    );
-  }
-
   return (
     <View style={styles.outerContainer}>
       <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
@@ -408,8 +467,8 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
             {/* HERO SECTION */}
             <View style={styles.heroSection}>
               <TouchableOpacity style={styles.avatarContainer} onPress={() => openModal('avatar', 'Alterar Foto')}>
-                {user?.avatarUrl ? (
-                  <Image source={{ uri: user.avatarUrl }} style={styles.avatarImg} />
+                {profileDraft.avatarUrl ? (
+                  <Image source={{ uri: profileDraft.avatarUrl }} style={styles.avatarImg} />
                 ) : (
                   <User size={32} color="white" />
                 )}
@@ -421,14 +480,14 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
               <View style={styles.nameBlock}>
                 <TouchableOpacity onPress={() => openModal('name', 'Editar Nome')} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Typography variant="h2" style={styles.profileName}>
-                    {user?.name || user?.fullName || (isGuestMode ? 'Convidada' : 'Utilizadora')}
+                    {profileDraft.name || profileDraft.fullName || (isGuestMode ? 'Convidada' : 'Utilizadora')}
                   </Typography>
                   <Edit2 size={14} color="rgba(255,255,255,0.4)" />
                 </TouchableOpacity>
                 
                 <TouchableOpacity onPress={() => openModal('email', 'Alterar Email')} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Typography variant="caption" style={styles.profileEmail}>
-                    {user?.email || authAccount?.email || 'MODO GUEST LOCAL'}
+                    {profileDraft.email || authAccount?.email || 'MODO GUEST LOCAL'}
                   </Typography>
                   {!isGuestMode && <Edit2 size={12} color="rgba(255,255,255,0.4)" style={{ marginTop: 4 }} />}
                 </TouchableOpacity>
@@ -452,7 +511,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                     <Dna size={14} color="#A020F0" />
                   </View>
                   <Typography style={styles.bioValue}>
-                    {user?.sex === 'male' ? 'Homem' : user?.sex === 'female' ? 'Mulher' : '?'}
+                    {profileDraft.sex === 'male' ? 'Homem' : profileDraft.sex === 'female' ? 'Mulher' : '?'}
                   </Typography>
                   <Typography variant="caption" style={styles.bioLabel}>Sexo</Typography>
                 </TouchableOpacity>
@@ -471,7 +530,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                   <View style={[styles.iconBox, { backgroundColor: 'rgba(0, 242, 255, 0.1)' }]}>
                     <Ruler size={14} color="#00F2FF" />
                   </View>
-                  <Typography style={styles.bioValue}>{user?.height || 175}</Typography>
+                  <Typography style={styles.bioValue}>{profileDraft.height || 175}</Typography>
                   <Typography variant="caption" style={styles.bioLabel}>cm</Typography>
                 </TouchableOpacity>
 
@@ -590,7 +649,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                   else if (modalConfig.type === 'avatar') saveAvatar();
                 }}
               >
-                <Typography style={styles.saveBtnText}>CONFIRMAR</Typography>
+                <Typography style={styles.saveBtnText}>{isSaving ? 'A GUARDAR...' : 'CONFIRMAR'}</Typography>
               </TouchableOpacity>
             )}
             

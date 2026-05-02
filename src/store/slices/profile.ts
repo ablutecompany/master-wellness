@@ -87,16 +87,26 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
     // 1. Gravação no Backend // Retorna a versão canónica!
     try {
       const result = await ProfileService.updateProfile(sessionToken, updates);
+      
+      console.log('[P0_PROFILE_PATCH]', {
+        userId: user?.id,
+        fieldsReceived: updates,
+        readBackSuccess: result.ok && !!result.profile,
+        returnedFields: result.profile ? Object.keys(result.profile) : []
+      });
+
       if (!result.ok || !result.profile) {
         console.error('[ProfileSlice] Backend update failed. Reverting optimistic state.');
         set({ user: previousUser }); // Rollback!
         return false;
       }
       
-      console.log('[P0_PROFILE_SAVE] userUpdated: true');
-      console.log('[P0_PROFILE_SAVE] profileUpserted: true');
-      console.log('[P0_PROFILE_SAVE] readBackSuccess: true');
-      console.log('[P0_PROFILE_SAVE] savedFields:', result.profile);
+      // Validação extra para garantir que não recebemos um objecto vazio que "pise" o user
+      if (Object.keys(result.profile).length < 3 || !result.profile.id) {
+        console.error('[ProfileSlice] Backend returned incomplete profile. Reverting optimistic state.');
+        set({ user: previousUser });
+        return false;
+      }
 
       // 2. Reflete resposta consolidada devolvida
       set({ user: result.profile });
