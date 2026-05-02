@@ -161,10 +161,20 @@ export class UserService {
       goals, activityLevel, dietaryRestrictions
     } = updates;
     
+    console.log('[P0_PROFILE_PATCH] FieldsReceived:', JSON.stringify(updates));
+    console.log(`[P0_PROFILE_PATCH] dateOfBirthReceived: ${dateOfBirth}, sexReceived: ${sex}, avatarUrlReceived: ${avatarUrl}`);
+
     // 1. Preparar dados para o User
     const userData: any = {};
     if (name !== undefined) userData.name = name;
-    if (dateOfBirth !== undefined) userData.dateOfBirth = new Date(dateOfBirth);
+    if (dateOfBirth !== undefined) {
+      const parsedDate = new Date(dateOfBirth);
+      if (!isNaN(parsedDate.getTime())) {
+        userData.dateOfBirth = parsedDate;
+      } else {
+        console.warn(`[P0_PROFILE_PATCH] Invalid dateOfBirth received: ${dateOfBirth}`);
+      }
+    }
     if (sex !== undefined) userData.sex = sex;
     if (timezone !== undefined) userData.timezone = timezone;
     if (country !== undefined) userData.country = country;
@@ -177,12 +187,14 @@ export class UserService {
         where: { id: userId },
         data: userData
       });
+      console.log(`[P0_PROFILE_PATCH] userUpdated: true, fields: ${Object.keys(userData).join(', ')}`);
     }
 
     // Como avatarUrl, date_of_birth_precision e weight não estão no schema de User nem de UserProfile originais, e eram adicionados à tabela profiles (UserProfile), precisamos de usar raw sql apenas para estes campos, OU ignorar se os tipos falharem.
     if (avatarUrl !== undefined) {
       try { await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT`); } catch (e) {}
       await this.prisma.$executeRaw`UPDATE public.profiles SET avatar_url = ${avatarUrl}, updated_at = now() WHERE id = ${userId}::uuid`;
+      console.log(`[P0_PROFILE_PATCH] avatarUrlSaved: ${avatarUrl}`);
     }
 
     if (dateOfBirthPrecision !== undefined) {
@@ -282,7 +294,7 @@ export class UserService {
       isDiscrepant: manualWt !== null && latestMeasuredWeight !== null && Math.abs(manualWt - latestMeasuredWeight) >= 2.5
     };
 
-    return {
+    const finalProfile = {
       id: user.id,
       email: user.email,
       name: user.name,
@@ -300,8 +312,11 @@ export class UserService {
       activityLevel: user.profile?.activityLevel || null,
       dietaryRestrictions: user.profile?.dietaryRestrictions || [],
       activeAnalysisId: user.profile?.activeAnalysisId || null,
-      household: householdData || null
+      household: householdData || null,
     };
+    
+    console.log(`[P0_PROFILE_PATCH] readBackDateOfBirth: ${finalProfile.dateOfBirth}, readBackSex: ${finalProfile.sex}`);
+    return finalProfile;
   }
 
   async updateActiveAnalysis(userId: string, analysisId: string | null) {

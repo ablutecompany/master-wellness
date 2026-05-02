@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, ScrollView, Platform, Image, Alert, Modal, SafeAreaView, Dimensions, FlatList, ActivityIndicator, TextInput } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Container, Typography, BlurView } from '../components/Base';
 import { theme } from '../theme';
 import { 
@@ -209,6 +210,53 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     closeModal();
   };
 
+  const handlePickAvatar = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permissão Recusada', 'A app precisa de acesso às fotografias para escolher uma imagem de perfil. Pode alterar esta opção nas definições do dispositivo.');
+        console.log('[P0_AVATAR_PICKER]', { action: 'gallery', permissionStatus: status });
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+      console.log('[P0_AVATAR_PICKER]', { action: 'gallery', permissionStatus: status, imageSelected: !result.canceled });
+      if (!result.canceled) {
+        setTempAvatar(result.assets[0].uri);
+        Alert.alert('Nota', 'A imagem foi carregada localmente. A persistência na cloud com Supabase Storage chegará na próxima atualização.');
+      }
+    } catch (e) {
+      console.error('[P0_AVATAR_PICKER] Error picking image:', e);
+    }
+  };
+
+  const handleTakeAvatar = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permissão Recusada', 'A app precisa de acesso à câmara para tirar uma fotografia de perfil. Pode alterar esta opção nas definições do dispositivo.');
+        console.log('[P0_AVATAR_PICKER]', { action: 'camera', permissionStatus: status });
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+      console.log('[P0_AVATAR_PICKER]', { action: 'camera', permissionStatus: status, imageSelected: !result.canceled });
+      if (!result.canceled) {
+        setTempAvatar(result.assets[0].uri);
+        Alert.alert('Nota', 'A imagem foi capturada localmente. A persistência na cloud com Supabase Storage chegará na próxima atualização.');
+      }
+    } catch (e) {
+      console.error('[P0_AVATAR_PICKER] Error taking image:', e);
+    }
+  };
+
   const saveEmail = async () => {
     if (!tempEmail || !tempEmail.includes('@')) {
       Alert.alert('Erro', 'Por favor, insere um email válido.');
@@ -414,17 +462,23 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   );
 
   const renderAvatarInput = () => (
-    <View style={styles.textInputContainer}>
-      <TextInput
-        style={styles.textInputField}
-        value={tempAvatar}
-        onChangeText={setTempAvatar}
-        placeholder="URL da tua foto"
-        autoCapitalize="none"
-        placeholderTextColor="rgba(255,255,255,0.3)"
-      />
+    <View style={{ gap: 12 }}>
+      <TouchableOpacity style={styles.actionBtn} onPress={handleTakeAvatar}>
+        <Typography style={styles.actionBtnText}>Tirar Foto</Typography>
+      </TouchableOpacity>
+      
+      <TouchableOpacity style={styles.actionBtn} onPress={handlePickAvatar}>
+        <Typography style={styles.actionBtnText}>Escolher da Galeria</Typography>
+      </TouchableOpacity>
+
+      {tempAvatar ? (
+        <TouchableOpacity style={[styles.actionBtn, { borderColor: '#FF3B30' }]} onPress={() => setTempAvatar('')}>
+          <Typography style={[styles.actionBtnText, { color: '#FF3B30' }]}>Remover Foto</Typography>
+        </TouchableOpacity>
+      ) : null}
+
       <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginTop: 8 }}>
-        Coloca um URL válido para a tua foto de perfil. (Upload nativo chegará em breve).
+        Opções nativas para avatar. A integração definitiva com Supabase Storage estará ativa brevemente.
       </Typography>
     </View>
   );
@@ -1150,6 +1204,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+  tokensCardValue: {
+    fontWeight: '700',
+    fontSize: 18,
+    color: theme.colors.text,
+  },
+  actionBtn: {
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)'
+  },
+  actionBtnText: {
+    fontWeight: '500',
+    fontSize: 16,
+    color: '#00F2FF',
+  },
   tokensCardSubtitle: {
     color: 'rgba(255,255,255,0.4)',
     fontSize: 12,
@@ -1164,11 +1237,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     gap: 8,
   },
-  tokensCardValue: {
-    color: '#00F2FF',
-    fontWeight: '800',
-    fontSize: 16,
-  },
+
   tokenPackCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
