@@ -1803,8 +1803,8 @@ const styles = StyleSheet.create({
     borderRadius: 52,
     backgroundColor: '#000',
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   particle: {
     position: 'absolute',
@@ -1868,14 +1868,14 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
   return (
     <View style={styles.orbitalCore}>
       {/* Deep Atmosphere */}
-      <View style={styles.lensBase}>
+      <View style={[styles.lensBase, { borderColor: `${glowColor}50` }]}>
          <LinearGradient
            colors={['rgba(5, 10, 20, 0.4)', 'rgba(0, 0, 0, 0.95)']}
            style={StyleSheet.absoluteFillObject}
          />
          <Video
             source={require('../../assets/video (3).mp4')}
-            style={[StyleSheet.absoluteFillObject, { opacity: 0.5 }]}
+            style={[StyleSheet.absoluteFillObject, { opacity: 0.65 }]}
             resizeMode={ResizeMode.COVER}
             rate={0.5}
             shouldPlay
@@ -1889,13 +1889,13 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
       <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ rotate: spin }] }]}>
          <View style={[styles.particle, { top: 20, left: 40, backgroundColor: glowColor, shadowColor: glowColor, opacity: 1 }]} />
          <View style={[styles.particle, { bottom: 25, right: 35, opacity: 0.7 }]} />
-         <View style={[styles.orbitalRing, { width: 84, height: 84, borderRadius: 42, opacity: 0.3, alignSelf: 'center', marginTop: 16 }]} />
+         <View style={[styles.orbitalRing, { width: 84, height: 84, borderRadius: 42, opacity: 0.5, alignSelf: 'center', marginTop: 16 }]} />
       </Animated.View>
 
       {/* Orbit 2: Slow & Large */}
       <Animated.View style={[StyleSheet.absoluteFill, { transform: [{ rotate: reverseSpin }] }]}>
          <View style={[styles.particle, { top: 50, left: 15, width: 3, height: 3, backgroundColor: '#fff', opacity: 0.9 }]} />
-         <View style={[styles.orbitalRing, { width: 98, height: 98, borderRadius: 49, opacity: 0.15, alignSelf: 'center', marginTop: 9 }]} />
+         <View style={[styles.orbitalRing, { width: 98, height: 98, borderRadius: 49, opacity: 0.3, alignSelf: 'center', marginTop: 9 }]} />
       </Animated.View>
 
       {/* Curved Text - ÚLTIMA ANÁLISE */}
