@@ -77,9 +77,9 @@ const DimensionGridCard = ({ dimension, isSelected, onPress, onInfoPress }: { di
   const Icon = getDimensionIcon(dimension.id);
   const color = dimension.color;
   const score = dimension.score !== null ? dimension.score : '--';
-  const radius = 23;
-  const strokeWidth = 5;
-  const size = 52;
+  const radius = 21;
+  const strokeWidth = 4;
+  const size = 48;
   const center = size / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = dimension.score !== null ? circumference - (dimension.score / 100) * circumference : circumference;
@@ -112,12 +112,12 @@ const DimensionGridCard = ({ dimension, isSelected, onPress, onInfoPress }: { di
           </View>
         </View>
         <View style={styles.gridRightContent}>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 4 }}>
-            <Icon size={20} color={color} style={{ marginRight: 6, marginTop: 1 }} />
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 2 }}>
+            <Icon size={19} color={color} style={{ marginRight: 6, marginTop: 1 }} />
             <Typography style={styles.gridLabel} numberOfLines={2}>{dimension.title}</Typography>
           </View>
           <View style={[styles.statusMiniBadge, { backgroundColor: `${color}15`, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 6 }]}>
-            <Typography style={[styles.statusMiniText, { color, fontSize: 10, fontWeight: '700' }]}>{dimension.status.toUpperCase()}</Typography>
+            <Typography style={[styles.statusMiniText, { color, fontSize: 9, fontWeight: '700' }]}>{dimension.status.toUpperCase()}</Typography>
           </View>
         </View>
       </View>
@@ -257,7 +257,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         <View style={styles.header}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 12, flex: 1 }}>
-              <Typography variant="h1" style={styles.title}>Interpretação Das Análises Com IA</Typography>
+              <Typography variant="h1" style={styles.title}>Leitura AI</Typography>
               { (ENV.IS_DEV || ENV.SHOW_AI_DEBUG_BADGE) ? (
                 <Typography style={{ fontSize: 10, color: fallbackReason ? '#FFB800' : 'rgba(255,255,255,0.5)', marginTop: 8 }}>
                   Fonte: {readingSource}{readingSource === 'cached' ? ' · Recuperada' : ''}{fallbackReason && fallbackReason !== 'LOADING' ? ` · ${fallbackReason}` : (fallbackReason === 'LOADING' ? ' · A carregar...' : (readingSource === 'local_fallback' ? ' · UNKNOWN_FALLBACK_REASON' : ''))}
@@ -518,8 +518,8 @@ const styles = StyleSheet.create({
   atmosphere: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
   aura: { position: 'absolute', width: 600, height: 600, borderRadius: 300, top: -200, right: -200, opacity: 0.3, ...(Platform.OS === 'web' ? { filter: 'blur(120px)' } : {}) },
   scroll: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 40 },
-  header: { marginBottom: 8, marginLeft: 10 },
-  title: { color: '#ffffff', fontSize: 20, fontWeight: '700', flexShrink: 1 },
+  header: { marginBottom: 8, paddingHorizontal: 20 },
+  title: { color: '#ffffff', fontSize: 24, fontWeight: '700', flexShrink: 1 },
   demoBadge: { borderColor: '#00F2FF', borderWidth: 1, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, justifyContent: 'center', height: 20 },
   demoLabel: { color: '#00F2FF', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   iconBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
@@ -536,16 +536,16 @@ const styles = StyleSheet.create({
   tabBtnText: { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600' },
   tabContentArea: { paddingVertical: 4 },
 
-  gridWrapper: { paddingHorizontal: 16, paddingBottom: Platform.OS === 'ios' ? 40 : 24, paddingTop: 12 },
-  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between' },
-  gridCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', padding: 10, height: 96, maxHeight: 100, justifyContent: 'center' },
+  gridWrapper: { paddingHorizontal: 20, paddingBottom: Platform.OS === 'ios' ? 40 : 24, paddingTop: 12 },
+  gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between' },
+  gridCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 14, paddingVertical: 12, height: 86, maxHeight: 90, justifyContent: 'center' },
   gridCardSelected: { backgroundColor: 'rgba(255,255,255,0.06)' },
   gridCardContent: { flexDirection: 'row', alignItems: 'center', width: '100%' },
-  ringContainer: { position: 'relative', width: 52, height: 52, justifyContent: 'center', alignItems: 'center' },
+  ringContainer: { position: 'relative', width: 48, height: 48, justifyContent: 'center', alignItems: 'center' },
   ringInnerContent: { position: 'absolute', alignItems: 'center', justifyContent: 'center', top: 0, left: 0, right: 0, bottom: 0 },
   gridRightContent: { flex: 1, paddingLeft: 8, justifyContent: 'center', alignItems: 'flex-start' },
-  gridScore: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  gridLabel: { color: 'rgba(255,255,255,0.9)', fontSize: 16, fontWeight: '600', lineHeight: 20, flexShrink: 1 },
+  gridScore: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  gridLabel: { color: 'rgba(255,255,255,0.9)', fontSize: 15, fontWeight: '600', lineHeight: 18, flexShrink: 1 },
 
   modalOverlay: { flex: 1, justifyContent: 'center', padding: 24 },
   modalCentered: { flex: 1, justifyContent: 'center' },
