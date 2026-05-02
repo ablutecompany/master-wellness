@@ -266,12 +266,17 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const switchAnim = useRef(new Animated.Value(0)).current; // 0 = UP, MAX_DRAG = DOWN
   const isOff = useRef(false);
 
+  const DRAWER_DOWN = height - 160;
+  const DRAWER_UP = 0;
+  const lastDrawerY = useRef(DRAWER_DOWN);
+  const drawerAnim = useRef(new Animated.Value(DRAWER_DOWN)).current;
+
   const switchPanResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onStartShouldSetPanResponderCapture: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponderCapture: () => true,
+      onStartShouldSetPanResponder: () => lastDrawerY.current === DRAWER_DOWN,
+      onStartShouldSetPanResponderCapture: () => lastDrawerY.current === DRAWER_DOWN,
+      onMoveShouldSetPanResponder: () => lastDrawerY.current === DRAWER_DOWN,
+      onMoveShouldSetPanResponderCapture: () => lastDrawerY.current === DRAWER_DOWN,
       onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: () => {
         switchAnim.stopAnimation();
@@ -307,10 +312,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     })
   ).current;
 
-  const DRAWER_DOWN = height - 160; // Ajustado para revelar o dock de favoritas sem ficar demasiado alto
-  const DRAWER_UP = 0;
-  const lastDrawerY = useRef(DRAWER_DOWN);
-  const drawerAnim = useRef(new Animated.Value(DRAWER_DOWN)).current;
 
   // Force sync positions on hot reload/mount
   React.useEffect(() => {
@@ -492,6 +493,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, { dx, dy }) => Math.abs(dx) > 10 || Math.abs(dy) > 10,
       onPanResponderRelease: (_, { x0, dx, dy }) => {
+        // Se a App Place estiver aberta e houver deslize para baixo, fechar a gaveta
+        if (lastDrawerY.current === DRAWER_UP && dy > 40) {
+          Animated.spring(drawerAnim, { toValue: DRAWER_DOWN, useNativeDriver: false }).start(() => lastDrawerY.current = DRAWER_DOWN);
+          return;
+        }
+
         // Left Half Swipe -> AI Reading (avoids OS edge gestures)
         if (x0 < width / 2 && dx > 40 && Math.abs(dy) < 150) {
           navigation.navigate('Leitura AI');
