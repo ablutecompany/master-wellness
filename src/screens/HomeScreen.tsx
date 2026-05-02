@@ -758,27 +758,35 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
             {/* Footer Icons (Favoritos) ficam fora do PanResponder para garantir clique imaculado */}
             <Animated.View style={[styles.footerIconsRow, { opacity: footerIconsOpacity }]} pointerEvents="box-none">
                 {(() => {
-                  const footerApps = favoriteAppIds.filter(id => installedAppIds.includes(id)).slice(0, 5);
+                  const footerApps = favoriteAppIds.slice(0, 4);
                   if (footerApps.length > 0) {
                     return footerApps.map(id => {
                       const app = MINI_APP_CATALOG.find(a => a.id === id);
                       if (!app) return null;
-                    return (
-                      <TouchableOpacity 
-                        key={id} 
-                        style={styles.footerIconWrapper}
-                        onPress={() => handleOpenApp(app)}
-                        activeOpacity={0.7}
-                      >
-                        <View style={styles.footerIconCircle}>
-                           {(() => {
-                             const IconComp = { Brain, Utensils, Moon, Activity }[app.iconName || 'Activity'] || Activity;
-                             return <IconComp size={22} color={app.iconColor || '#fff'} strokeWidth={1.2} />;
-                           })()}
-                        </View>
-                        <Typography style={styles.footerIconLabel} numberOfLines={1}>{app.name.replace(/_/g, '').toUpperCase()}</Typography>
-                      </TouchableOpacity>
-                    );
+                      
+                      let displayName = app.name.replace(/_/g, '').trim().toUpperCase();
+                      if (displayName.length > 8) displayName = displayName.substring(0, 6) + '...';
+
+                      return (
+                        <TouchableOpacity 
+                          key={id} 
+                          style={styles.footerIconWrapper}
+                          onPress={() => {
+                            if (installedAppIds.includes(id) || app.availabilityStatus === 'available') {
+                              handleOpenApp(app);
+                            }
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <View style={[styles.footerIconCircle, { borderColor: `${app.iconColor}40` }]}>
+                             {(() => {
+                               const IconComp = { Brain, Utensils, Moon, Activity, Zap, Heart, Droplets, Target }[app.iconName || 'Activity'] || Activity;
+                               return <IconComp size={20} color={app.iconColor || '#fff'} strokeWidth={1.5} />;
+                             })()}
+                          </View>
+                          <Typography style={styles.footerIconLabel} numberOfLines={1}>{displayName}</Typography>
+                        </TouchableOpacity>
+                      );
                     });
                   } else {
                     return (
