@@ -351,6 +351,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     extrapolate: 'clamp',
   });
 
+  const overlayOpacity = drawerAnim.interpolate({
+    inputRange: [DRAWER_UP, DRAWER_DOWN],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+
   const drawerPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
@@ -370,12 +376,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
         // Se estiver aberto (UP) e puxar para baixo (dy > 0), fechar (DOWN)
         if (lastDrawerY.current === DRAWER_UP) {
-          if (dy > 80 || vy > 0.5) toValue = DRAWER_DOWN;
+          if (dy > 40 || vy > 0.3) toValue = DRAWER_DOWN;
           else toValue = DRAWER_UP;
         } 
         // Se estiver fechado (DOWN) e puxar para cima (dy < 0), abrir (UP)
         else {
-          if (dy < -80 || vy < -0.5) toValue = DRAWER_UP;
+          if (dy < -40 || vy < -0.3) toValue = DRAWER_UP;
           else toValue = DRAWER_DOWN;
         }
 
@@ -487,15 +493,15 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       onMoveShouldSetPanResponder: (_, { dx, dy }) => Math.abs(dx) > 10 || Math.abs(dy) > 10,
       onPanResponderRelease: (_, { x0, dx, dy }) => {
         // Left Edge Swipe -> AI Reading
-        if (x0 < 60 && dx > 80) {
+        if (x0 < 80 && dx > 40 && Math.abs(dy) < 150) {
           navigation.navigate('Leitura AI');
         }
         // Right Edge Swipe -> Results
-        if (x0 > width - 60 && dx < -80) {
+        else if (x0 > width - 80 && dx < -40 && Math.abs(dy) < 150) {
           navigation.navigate('Resultados');
         }
         // Bottom Swipe Up -> App Drawer
-        if (dy < -60) {
+        else if (dy < -40 && Math.abs(dx) < 150) {
           Animated.spring(drawerAnim, { toValue: DRAWER_UP, useNativeDriver: false }).start(() => lastDrawerY.current = DRAWER_UP);
         }
       },
@@ -690,7 +696,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         {/* Trigger inside drawer now handles interactions */}
       </View>
 
-
+      {/* FULL SCREEN DARKENING OVERLAY WHEN DRAWER OPENS */}
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.6)', opacity: overlayOpacity, zIndex: 300 }]}>
+         <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFillObject} />
+      </Animated.View>
 
       {/* ── BOTTOM DRAWER: APPS ───────────────────────────────────────────── */}
       <Animated.View
