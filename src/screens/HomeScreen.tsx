@@ -160,7 +160,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const { width, height } = useWindowDimensions();
   const [showControl, setShowControl] = useState(false);
   const [showNfcModal, setShowNfcModal] = useState(false);
-  const [showTokensModal, setShowTokensModal] = useState(false);
+
   const [expandedAppId, setExpandedAppId] = useState<string | null>(null);
   const [galleryState, setGalleryState] = useState<{ images: any[], index: number } | null>(null);
   const [demoDaysCounter, setDemoDaysCounter] = useState(0);
@@ -579,24 +579,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
           <View style={styles.headerRight}>
             <View style={styles.topIconRow}>
-              <TouchableOpacity 
-                style={styles.iconCircle} 
-                onPress={() => setShowTokensModal(true)}
-              >
-                <Animated.View style={{ transform: [{ scale: credits === 0 ? nudgeAnim : 1 }] }}>
-                  <Image 
-                    source={require('../../assets/token_abl.png')} 
-                    style={{ 
-                      width: 24,
-                      height: 24, 
-                      tintColor: credits === 0 ? theme.colors.primary : '#fff',
-                      opacity: credits === 0 ? 0.7 : 0.95
-                    }} 
-                    resizeMode="contain"
-                  />
-                </Animated.View>
-              </TouchableOpacity>
-              
+
               <TouchableOpacity style={styles.iconCircle} onPress={() => navigation.navigate('Settings')}>
                 <SlidersHorizontal size={20} color="#fff" />
               </TouchableOpacity>
@@ -1111,41 +1094,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         </TouchableOpacity>
       </Modal>
 
-      {/* ── TOKENS INFORMATION MODAL ────────────────────────────────────── */}
-      <Modal visible={showTokensModal} transparent animationType="fade" onRequestClose={() => setShowTokensModal(false)}>
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowTokensModal(false)}>
-          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
-            <BlurView intensity={80} tint="dark" style={[styles.modalContent, { alignItems: 'center' }]}>
-              
-              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255, 255, 255, 0.05)', justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}>
-                <Image 
-                  source={require('../../assets/token_abl.png')} 
-                  style={{ width: 40, height: 40 }} 
-                  resizeMode="contain"
-                />
-              </View>
-              
-              <Typography variant="h2" style={{ textAlign: 'center', color: '#fff', marginBottom: 12 }}>Créditos</Typography>
-              
-              <Typography style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 20, marginBottom: 24 }}>
-                Os créditos serão usados para análises, interpretações e ações avançadas dentro do ecossistema ablute_.
-              </Typography>
-
-              <View style={{ width: '100%', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: 16, marginBottom: 24, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
-                <Typography style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: 2, marginBottom: 4 }}>SALDO ATUAL</Typography>
-                <Typography style={{ fontSize: 24, color: '#00F2FF', fontWeight: '800' }}>{credits ?? 0} TOKENS</Typography>
-              </View>
-              
-              <TouchableOpacity
-                style={[styles.saveBtn, { width: '100%' }]}
-                onPress={() => setShowTokensModal(false)}
-              >
-                <Typography style={styles.saveBtnText}>FECHAR</Typography>
-              </TouchableOpacity>
-            </BlurView>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
 
       {/* ── FOOTER PADDING FOR GESTURES ──────────────────────────────────── */}
       <View style={{ height: 20 }} />

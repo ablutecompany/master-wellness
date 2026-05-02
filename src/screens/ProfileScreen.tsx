@@ -34,6 +34,8 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const [profileDraft, setProfileDraft] = useState<any>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showTokensModal, setShowTokensModal] = useState(false);
+  const credits = useStore(state => state.credits);
 
   // Inicializar / Sincronizar o draft a partir da store
   useEffect(() => {
@@ -537,6 +539,32 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
               </View>
             </View>
 
+            {/* CRÉDITOS / TOKENS */}
+            <View style={styles.menuSection}>
+              <TouchableOpacity 
+                style={styles.tokensCard} 
+                onPress={() => setShowTokensModal(true)}
+              >
+                <View style={styles.tokensCardLeft}>
+                  <View style={styles.tokensIconContainer}>
+                    <Image 
+                      source={require('../../assets/token_abl.png')} 
+                      style={styles.tokensIconImg} 
+                      resizeMode="contain"
+                    />
+                  </View>
+                  <View>
+                    <Typography style={styles.tokensCardTitle}>Créditos / Tokens</Typography>
+                    <Typography style={styles.tokensCardSubtitle}>Saldo atual e compra de planos</Typography>
+                  </View>
+                </View>
+                <View style={styles.tokensCardRight}>
+                  <Typography style={styles.tokensCardValue}>{credits ?? 0}</Typography>
+                  <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
+                </View>
+              </TouchableOpacity>
+            </View>
+
             {/* MEMBROS AGREGADOS */}
             <View style={styles.menuSection}>
               <Typography variant="caption" style={styles.sectionLabel}>MEMBROS AGREGADOS</Typography>
@@ -659,6 +687,74 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           </BlurView>
         </TouchableOpacity>
       </Modal>
+
+      {/* ── TOKENS INFORMATION MODAL ────────────────────────────────────── */}
+      <Modal visible={showTokensModal} transparent animationType="slide" onRequestClose={() => setShowTokensModal(false)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowTokensModal(false)}>
+          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+            <BlurView intensity={95} tint="dark" style={[styles.pickerSheet, { paddingHorizontal: 24 }]}>
+              <View style={styles.sheetHandle} />
+              
+              <View style={{ alignItems: 'center', marginBottom: 24 }}>
+                <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(255, 255, 255, 0.05)', justifyContent: 'center', alignItems: 'center', marginBottom: 16 }}>
+                  <Image 
+                    source={require('../../assets/token_abl.png')} 
+                    style={{ width: 40, height: 40 }} 
+                    resizeMode="contain"
+                  />
+                </View>
+                <Typography variant="h2" style={{ textAlign: 'center', color: '#fff', marginBottom: 8 }}>Tokens ablute_</Typography>
+                <Typography style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: 13, lineHeight: 20 }}>
+                  Os tokens são usados para funcionalidades inteligentes e interações avançadas da app.
+                </Typography>
+              </View>
+
+              <View style={{ width: '100%', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 20, padding: 20, marginBottom: 24, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+                <Typography style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: 2, marginBottom: 8, fontWeight: '800' }}>SALDO DISPONÍVEL</Typography>
+                <Typography style={{ fontSize: 32, color: '#00F2FF', fontWeight: '800' }}>{credits ?? 0}</Typography>
+              </View>
+              
+              <Typography style={{ fontSize: 14, fontWeight: '700', color: '#fff', marginBottom: 16 }}>Planos de Créditos</Typography>
+              
+              <View style={{ gap: 12, marginBottom: 24 }}>
+                <TouchableOpacity style={styles.tokenPackCard} onPress={() => Alert.alert('Brevemente', 'Compra será ligada numa fase seguinte.')}>
+                  <View>
+                    <Typography style={styles.tokenPackTitle}>Pack Pequeno</Typography>
+                    <Typography style={styles.tokenPackDesc}>Ideal para utilização ocasional</Typography>
+                  </View>
+                  <View style={styles.tokenPackRight}>
+                    <Typography style={styles.tokenPackPrice}>4,99 €</Typography>
+                    <View style={styles.tokenPackAmount}>
+                      <Typography style={styles.tokenPackAmountText}>500</Typography>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.tokenPackCard} onPress={() => Alert.alert('Brevemente', 'Compra será ligada numa fase seguinte.')}>
+                  <View>
+                    <Typography style={styles.tokenPackTitle}>Pack Médio</Typography>
+                    <Typography style={styles.tokenPackDesc}>O melhor equilíbrio para uso regular</Typography>
+                  </View>
+                  <View style={styles.tokenPackRight}>
+                    <Typography style={styles.tokenPackPrice}>9,99 €</Typography>
+                    <View style={styles.tokenPackAmount}>
+                      <Typography style={styles.tokenPackAmountText}>1200</Typography>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.saveBtn, { width: '100%', marginTop: 0 }]}
+                onPress={() => setShowTokensModal(false)}
+              >
+                <Typography style={styles.saveBtnText}>FECHAR</Typography>
+              </TouchableOpacity>
+            </BlurView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
     </View>
   );
 };
@@ -1022,5 +1118,96 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     height: 52,
     fontSize: 16,
+  },
+  tokensCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 242, 255, 0.05)',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 242, 255, 0.2)',
+    padding: 16,
+  },
+  tokensCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  tokensIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(0, 242, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tokensIconImg: {
+    width: 28,
+    height: 28,
+  },
+  tokensCardTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  tokensCardSubtitle: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  tokensCardRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    gap: 8,
+  },
+  tokensCardValue: {
+    color: '#00F2FF',
+    fontWeight: '800',
+    fontSize: 16,
+  },
+  tokenPackCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    padding: 16,
+  },
+  tokenPackTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  tokenPackDesc: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  tokenPackRight: {
+    alignItems: 'flex-end',
+  },
+  tokenPackPrice: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  tokenPackAmount: {
+    backgroundColor: 'rgba(0, 242, 255, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  tokenPackAmountText: {
+    color: '#00F2FF',
+    fontSize: 12,
+    fontWeight: '800',
   },
 });
