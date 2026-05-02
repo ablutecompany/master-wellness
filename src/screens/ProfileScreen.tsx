@@ -389,12 +389,9 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           setTempName(txt);
           updateDraft({ name: txt });
         }}
-        onBlur={() => {
-          console.log('[P0_PROFILE_FORM]', { event: 'blur', field: 'name' });
-          if (isDirty) triggerSave({ name: tempName });
-        }}
         placeholder="O teu nome"
         placeholderTextColor="rgba(255,255,255,0.3)"
+        autoFocus={true}
       />
     </View>
   );
@@ -402,16 +399,16 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const renderEmailInput = () => (
     <View style={styles.textInputContainer}>
       <TextInput
-        style={styles.textInputField}
+        style={[styles.textInputField, { opacity: 0.5 }]}
         value={tempEmail}
-        onChangeText={setTempEmail}
+        editable={false}
         placeholder="O teu email"
         keyboardType="email-address"
         autoCapitalize="none"
         placeholderTextColor="rgba(255,255,255,0.3)"
       />
       <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginTop: 8 }}>
-        Iremos enviar um link de confirmação. O teu email atual manter-se-á até confirmares.
+        O email da conta é gerido na autenticação.
       </Typography>
     </View>
   );
@@ -651,8 +648,9 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       {/* REUSABLE PICKER MODAL */}
       <Modal visible={modalConfig.visible} animationType="slide" transparent>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={closeModal}>
-          <BlurView intensity={95} tint="dark" style={styles.pickerSheet}>
-            <View style={styles.sheetHandle} />
+          <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+            <BlurView intensity={95} tint="dark" style={styles.pickerSheet}>
+              <View style={styles.sheetHandle} />
             <Typography variant="h3" style={styles.sheetTitle}>{modalConfig.title}</Typography>
             
             <View style={styles.sheetContent}>
@@ -681,10 +679,11 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
               </TouchableOpacity>
             )}
             
-            <TouchableOpacity style={styles.cancelBtn} onPress={closeModal}>
-               <Typography style={styles.cancelBtnText}>FECHAR</Typography>
-            </TouchableOpacity>
-          </BlurView>
+              <TouchableOpacity style={styles.cancelBtn} onPress={closeModal}>
+                 <Typography style={styles.cancelBtnText}>FECHAR</Typography>
+              </TouchableOpacity>
+            </BlurView>
+          </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
 
