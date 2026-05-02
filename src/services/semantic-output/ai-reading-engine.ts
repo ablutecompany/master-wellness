@@ -235,7 +235,7 @@ export function computeAIReadingFromData(
     { val: glicose === 1 ? 1 : 0, weight: 10, evaluate: v => v === 1 ? 20 : 100 }
   ]);
 
-  // D8. Sinais de Rotina
+  // D8. Juvenialidade
   const rotScore = computeDimensionScore([
     { val: uACR, weight: 25, evaluate: v => score01(v, 30, 5) },
     { val: creatinina, weight: 10, evaluate: v => score01(v, 250, 80) },
@@ -270,12 +270,14 @@ export function computeAIReadingFromData(
     return 'priority';
   };
 
-  const genHolistic = (id: string, title: string, color: string, scoreRes: {score: number|null, confidence: any}, summaries: {good:string, warn:string}): HolisticDimension => ({
+  const genHolistic = (id: string, title: string, color: string, scoreRes: {score: number|null, confidence: any}, summaries: {good:string, warn:string, priority?:string}): HolisticDimension => ({
     id, title, color,
     score: scoreRes.score,
     confidence: scoreRes.confidence,
     status: getStatus(scoreRes.score),
-    summary: scoreRes.score === null ? 'Dados insuficientes para avaliar.' : (scoreRes.score >= 60 ? summaries.good : summaries.warn),
+    summary: scoreRes.score === null 
+      ? 'Dados insuficientes para avaliar.' 
+      : (scoreRes.score >= 70 ? summaries.good : (scoreRes.score < 40 && summaries.priority ? summaries.priority : summaries.warn)),
     topDrivers: [],
     recommendations: [],
     references: [],
@@ -311,9 +313,10 @@ export function computeAIReadingFromData(
       good: 'Os sinais vitais e de perfusão apontam para um estado de repouso ou exigência mínima.',
       warn: 'Os indicadores sugerem um nível elevado de exigência ou tensão fisiológica no momento.'
     }),
-    genHolistic('routine_signals', 'Sinais de rotina', '#8B5CF6', rotScore, {
-      good: 'Não existem marcadores fora do padrão que exijam acompanhamento atípico.',
-      warn: 'Há marcadores a observar. Estes sinais isolados não indicam alarme clínico, mas merecem atenção nas próximas leituras.'
+    genHolistic('routine_signals', 'Juvenialidade', '#8B5CF6', rotScore, {
+      good: 'Os sinais longitudinais desta leitura sugerem estabilidade geral dos padrões acompanhados. A Juvenialidade é mais informativa quando comparada com leituras anteriores.',
+      warn: 'Alguns sinais merecem acompanhamento ao longo das próximas leituras. A Juvenialidade depende da repetição dos dados para distinguir variação pontual de tendência.',
+      priority: 'Esta leitura sugere que alguns padrões longitudinais merecem atenção. O valor da Juvenialidade está em confirmar se estes sinais se repetem ou regressam ao padrão habitual.'
     })
   ];
 

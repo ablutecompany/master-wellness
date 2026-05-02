@@ -52,8 +52,8 @@ const DIMENSION_INFO: Record<string, { title: string, description: string }> = {
     description: 'Avalia sinais de tensão ou exigência corporal no momento da leitura. Pode considerar frequência cardíaca, temperatura, saturação, ECG/PPG, impedância, peso/contexto corporal e desvios face ao padrão habitual. Serve para perceber se o corpo está calmo e estável ou se há sinais de maior exigência, fadiga ou stress fisiológico.'
   },
   routine_signals: {
-    title: 'Sinais de rotina',
-    description: 'Agrupa marcadores que ganham valor quando acompanhados ao longo do tempo. Pode incluir albumina/uACR, NGAL, KIM-1, cistatina C, nitritos, pH ou marcadores experimentais. Serve para observar repetição, tendência e necessidade de acompanhamento, sem tirar conclusões fortes de uma leitura isolada.'
+    title: 'Juvenialidade',
+    description: 'Acompanha sinais de vitalidade e continuidade que ganham valor quando observados ao longo do tempo. Pode integrar biomarcadores experimentais e histórico longitudinal de análises do perfil, ajudando a perceber tendências, repetição de padrões e estabilidade geral. Não mede rejuvenescimento clínico nem idade biológica.'
   }
 };
 
@@ -267,7 +267,9 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   }, [selectedHistoryId, historyReadings]);
 
   const reading: AIReading = selectedHistoryReading ?? aiReading ?? localReading;
-  const dimensions = reading.dimensions || [];
+  const dimensions = (reading.dimensions || []).map(d => 
+    d.title === 'Sinais de rotina' ? { ...d, title: 'Juvenialidade' } : d
+  );
 
   const getDimensionIcon = (id: string) => {
     switch(id) {
