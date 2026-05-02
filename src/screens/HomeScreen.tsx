@@ -862,19 +862,6 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                             </View>
                           </View>
 
-                          {/* BOTÃO ABRIR APP NO CARTÃO EXPANDIDO */}
-                          {isInstalled && (
-                            <TouchableOpacity 
-                              style={[styles.saveBtn, { marginBottom: 20 }]}
-                              onPress={(e) => {
-                                e.stopPropagation();
-                                handleOpenApp(app);
-                              }}
-                            >
-                              <Typography style={styles.saveBtnText}>ABRIR APP</Typography>
-                            </TouchableOpacity>
-                          )}
-
                           {/* SCREENSHOTS AREA */}
                           <ScrollView 
                             horizontal 
