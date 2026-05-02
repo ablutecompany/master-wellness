@@ -176,6 +176,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const cycleDemoPersona = useStore(state => state.cycleDemoPersona);
   const setIsDemoMode = useStore(state => state.setIsDemoMode);
   const setDemoAnalysis = useStore(state => state.setDemoAnalysis);
+  const demoAnalysis = useStore(state => state.demoAnalysis);
   const installedAppIds = useStore(state => state.installedAppIds) || [];
   const favoriteAppIds = useStore(state => state.favoriteAppIds) || [];
   const installApp = useStore(state => state.installApp);
@@ -222,34 +223,33 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
 
   // ── Dynamic Glow Logic (Lowest-Link Priority with Identity Colors) ─────────────────────────
   const glowColor = useMemo(() => {
-    if (isDemoMode) {
-      const persona = DEMO_BIOMARKER_PERSONAS[currentDemoPersonaIndex % DEMO_BIOMARKER_PERSONAS.length];
-      const score = persona.aiMeanScore;
-      if (score >= 80) return '#FFD700'; // amarelo/dourado vivo
-      if (score >= 60) return '#FFBF00'; // amarelo-âmbar
-      if (score >= 40) return '#FF9500'; // laranja
-      return '#FF3B30'; // vermelho vivo
-    }
-
-    const lastAnalysis = analyses[0];
+    const activeAnalysis = isDemoMode && demoAnalysis ? demoAnalysis : analyses[0];
     const reading = computeAIReadingFromData(
-      lastAnalysis?.measurements || [],
-      lastAnalysis?.ecosystemFacts || [],
+      activeAnalysis?.measurements || [],
+      activeAnalysis?.ecosystemFacts || [],
       isDemoMode
     );
     
     const domains = reading.dimensions || [];
 
-    // Se não houver dados nenhuns (ex: sem demo e sem histórico), o anel fica apagado.
-    if (domains.length === 0) return 'rgba(255, 255, 255, 0.05)'; 
+    if (domains.length === 0) {
+      if (isDemoMode) {
+        return '#00F2FF'; // fallback demo
+      }
+      return 'rgba(255, 255, 255, 0.05)'; 
+    }
 
-    const focusDim = domains.find(d => d.id === 'next_focus');
-    if (focusDim && focusDim.color !== '#AAA') {
-      return focusDim.color;
+    // A cor irradiada deve ser a da dimensão com o menor valor
+    const scoredDomains = domains.filter(d => d.score !== null);
+    if (scoredDomains.length > 0) {
+      const lowestDomain = scoredDomains.reduce((min, d) => (d.score! < min.score!) ? d : min, scoredDomains[0]);
+      if (lowestDomain && lowestDomain.color) {
+        return lowestDomain.color;
+      }
     }
 
     return '#00FF9D'; // fallback brand green
-  }, [isDemoMode, currentDemoPersonaIndex, analyses]);
+  }, [isDemoMode, demoAnalysis, analyses]);
 
   const glowRadiusFactor = Math.min(daysSince, 30) / 30;
   const dynamicGlowRadius = 120 + (glowRadiusFactor * 100); 
