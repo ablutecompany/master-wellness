@@ -412,10 +412,10 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                      <Typography style={[styles.tabBtnText, activeTab === 'summary' ? { color } : {}] as any}>Resumo</Typography>
                    </TouchableOpacity>
                    <TouchableOpacity onPress={() => setActiveTab('recommendations')} style={[styles.tabBtn, activeTab === 'recommendations' ? { backgroundColor: `${color}20` } : {}]}>
-                     <Typography style={[styles.tabBtnText, activeTab === 'recommendations' ? { color } : {}] as any}>Ações</Typography>
+                     <Typography style={[styles.tabBtnText, activeTab === 'recommendations' ? { color } : {}] as any}>Sugestões</Typography>
                    </TouchableOpacity>
                    <TouchableOpacity onPress={() => setActiveTab('references')} style={[styles.tabBtn, activeTab === 'references' ? { backgroundColor: `${color}20` } : {}]}>
-                     <Typography style={[styles.tabBtnText, activeTab === 'references' ? { color } : {}] as any}>Refs</Typography>
+                     <Typography style={[styles.tabBtnText, activeTab === 'references' ? { color } : {}] as any}>Referências</Typography>
                    </TouchableOpacity>
                  </View>
 
