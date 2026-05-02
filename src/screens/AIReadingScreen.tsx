@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
   atmosphere: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
   aura: { position: 'absolute', width: 600, height: 600, borderRadius: 300, top: -200, right: -200, opacity: 0.3, ...(Platform.OS === 'web' ? { filter: 'blur(120px)' } : {}) },
   scroll: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 40 },
-  header: { marginBottom: 8, paddingHorizontal: 20 },
+  header: { marginTop: 24, marginBottom: 20, paddingHorizontal: 20 },
   title: { color: '#ffffff', fontSize: 24, fontWeight: '700', flexShrink: 1 },
   demoBadge: { borderColor: '#00F2FF', borderWidth: 1, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, justifyContent: 'center', height: 20 },
   demoLabel: { color: '#00F2FF', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
