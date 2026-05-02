@@ -78,9 +78,9 @@ const DimensionGridCard = ({ dimension, isSelected, isFocus, onPress, onInfoPres
   const Icon = getDimensionIcon(dimension.id);
   const color = dimension.color;
   const score = dimension.score !== null ? dimension.score : '--';
-  const radius = 21;
+  const radius = 19;
   const strokeWidth = 4;
-  const size = 48;
+  const size = 42;
   const center = size / 2;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = dimension.score !== null ? circumference - (dimension.score / 100) * circumference : circumference;
@@ -132,11 +132,11 @@ const DimensionGridCard = ({ dimension, isSelected, isFocus, onPress, onInfoPres
         </View>
       )}
       <TouchableOpacity 
-        style={{ position: 'absolute', top: 6, right: 6, zIndex: 10, padding: 4 }} 
+        style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, padding: 4 }} 
         onPress={(e) => { e.stopPropagation(); onInfoPress(); }}
         hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
       >
-        <Info size={18} color="rgba(255,255,255,0.7)" />
+        <Info size={17} color="rgba(255,255,255,0.7)" />
       </TouchableOpacity>
       <View style={styles.gridCardContent}>
         <View style={styles.ringContainer}>
@@ -149,9 +149,9 @@ const DimensionGridCard = ({ dimension, isSelected, isFocus, onPress, onInfoPres
           </View>
         </View>
         <View style={styles.gridRightContent}>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 2, paddingRight: 14 }}>
-            <Icon size={20} color={color} style={{ marginRight: 6, marginTop: 1 }} />
-            <Typography style={styles.gridLabel} numberOfLines={2}>{dimension.title}</Typography>
+          <View style={styles.gridTitleRow}>
+            <Icon size={17} color={color} style={{ marginRight: 6, marginTop: 1, flexShrink: 0 }} />
+            <Typography style={styles.gridLabel} numberOfLines={2} ellipsizeMode="tail">{dimension.title}</Typography>
           </View>
           <View style={[styles.statusMiniBadge, { backgroundColor: `${color}15` }]}>
             <Typography style={[styles.statusMiniText, { color }]}>{dimension.status.toUpperCase()}</Typography>
@@ -558,19 +558,20 @@ const styles = StyleSheet.create({
   tabBtnText: { color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '600' },
   tabContentArea: { paddingVertical: 4 },
 
-  gridWrapper: { paddingHorizontal: 16, paddingBottom: Platform.OS === 'ios' ? 40 : 24, paddingTop: 12 },
+  gridWrapper: { paddingHorizontal: 20, paddingBottom: Platform.OS === 'ios' ? 40 : 24, paddingTop: 12 },
   gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between' },
-  gridCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 12, paddingVertical: 10, height: 86, maxHeight: 90, justifyContent: 'center' },
+  gridCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 10, paddingVertical: 8, height: 84, minHeight: 84, maxHeight: 86, justifyContent: 'center', overflow: 'hidden' },
   gridCardSelected: { backgroundColor: 'rgba(255,255,255,0.06)' },
   gridCardContent: { flexDirection: 'row', alignItems: 'center', width: '100%' },
-  ringContainer: { position: 'relative', width: 48, height: 48, justifyContent: 'center', alignItems: 'center' },
+  ringContainer: { position: 'relative', width: 42, height: 42, justifyContent: 'center', alignItems: 'center', marginRight: 8, flexShrink: 0 },
   ringInnerContent: { position: 'absolute', alignItems: 'center', justifyContent: 'center', top: 0, left: 0, right: 0, bottom: 0 },
-  gridRightContent: { flex: 1, paddingLeft: 8, justifyContent: 'center', alignItems: 'flex-start' },
-  gridScore: { color: '#fff', fontSize: 16, fontWeight: '800' },
-  gridLabel: { color: '#ffffff', fontSize: 15.5, fontWeight: '700', lineHeight: 18, flexShrink: 1 },
+  gridRightContent: { flex: 1, justifyContent: 'center', minWidth: 0 },
+  gridTitleRow: { flexDirection: 'row', alignItems: 'center', paddingRight: 24 },
+  gridScore: { color: '#fff', fontSize: 14.5, fontWeight: '700' },
+  gridLabel: { color: '#ffffff', fontSize: 14.5, fontWeight: '700', lineHeight: 17, flexShrink: 1, minWidth: 0 },
 
-  statusMiniBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignSelf: 'flex-start' },
-  statusMiniText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
+  statusMiniBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, alignSelf: 'flex-start', marginTop: 4 },
+  statusMiniText: { fontSize: 8.5, fontWeight: '800', lineHeight: 11 },
 
   modalOverlay: { flex: 1, justifyContent: 'center', padding: 24 },
   modalCentered: { flex: 1, justifyContent: 'center' },
