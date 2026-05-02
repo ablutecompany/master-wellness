@@ -293,3 +293,32 @@ export async function generateInsightsV2(context: any, analysis?: Analysis): Pro
 export function cancelPendingInsights() {
   activeRequestId++;
 }
+
+/**
+ * Fetch AI reading history for the current user.
+ */
+export async function getReadingHistory(includeDemo = false): Promise<{ ok: true; readings: any[] } | AiGatewayError> {
+  try {
+    const { token } = await getAuthTokenForApi();
+    
+    if (!token) {
+      return normaliseAiGatewayError({ code: 'NO_TOKEN', message: 'Autenticação necessária para obter histórico' });
+    }
+
+    const res = await fetch(`${AI_GATEWAY_BASE_URL}/ai-gateway/readings/history?includeDemo=${includeDemo}`, {
+      method: 'GET',
+      headers: { 
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    const rawData = await res.json();
+    if (!res.ok) {
+      return normaliseAiGatewayError(rawData?.error || rawData, res.status);
+    }
+
+    return rawData as { ok: true; readings: any[] };
+  } catch (err: any) {
+    return normaliseAiGatewayError({ code: 'NETWORK_ERROR', message: err.message || 'Falha de rede ao obter histórico' });
+  }
+}

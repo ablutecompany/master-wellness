@@ -5,7 +5,7 @@ import { useStore } from '../store/useStore';
 import { Analysis, AnalysisMeasurement } from '../store/types';
 import { computeAIReadingFromData, AIReading, HolisticDimension, buildAiReadingLLMContextV2 } from '../services/semantic-output/ai-reading-engine';
 import { normalizeAIReadingResponse } from '../services/semantic-output/ai-reading-adapter';
-import { generateInsightsV2, cancelPendingInsights } from '../services/ai-gateway/client';
+import { generateInsightsV2, cancelPendingInsights, getReadingHistory } from '../services/ai-gateway/client';
 import { ENV } from '../config/env';
 import Svg, { Circle } from 'react-native-svg';
 import { 
@@ -63,13 +63,13 @@ const DimensionGridCard = ({ dimension, isSelected, isFocus, onPress, onInfoPres
   const getDimensionIcon = (id: string) => {
     switch(id) {
       case 'readiness_today': return Zap;
-      case 'recovery_load': return BatteryCharging;
-      case 'internal_balance': return Scale;
+      case 'recovery_load': return Moon;
+      case 'internal_balance': return Droplets; // Update internal balance to Droplets like in HomeScreen
       case 'metabolic_rhythm': return Flame;
       case 'digestive_comfort': return Leaf;
       case 'food_adjustments': return Utensils;
       case 'physiological_load': return Activity;
-      case 'routine_signals': return Radar;
+      case 'routine_signals': return Target;
       case 'next_focus': return Focus;
       default: return Info;
     }
@@ -77,77 +77,53 @@ const DimensionGridCard = ({ dimension, isSelected, isFocus, onPress, onInfoPres
 
   const Icon = getDimensionIcon(dimension.id);
   const color = dimension.color;
-  const score = dimension.score !== null ? dimension.score : '--';
-  const radius = 19;
-  const strokeWidth = 4;
-  const size = 42;
-  const center = size / 2;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = dimension.score !== null ? circumference - (dimension.score / 100) * circumference : circumference;
-
-  const shimmerValue = React.useRef(new Animated.Value(-1)).current;
-
-  React.useEffect(() => {
-    if (isFocus) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(shimmerValue, {
-            toValue: 2,
-            duration: 1800,
-            useNativeDriver: true,
-          }),
-          Animated.delay(3500)
-        ])
-      ).start();
-    } else {
-      shimmerValue.setValue(-1);
-    }
-  }, [isFocus, shimmerValue]);
-
-  const shimmerTranslateX = shimmerValue.interpolate({
-    inputRange: [-1, 2],
-    outputRange: [-200, 300]
-  });
+  
+  // Decide badge color
+  const statusUpper = dimension.status.toUpperCase();
+  let badgeBg = 'rgba(255,255,255,0.05)';
+  let badgeColor = 'rgba(255,255,255,0.6)';
+  
+  if (statusUpper.includes('PRIORITY') || statusUpper.includes('ATENÇÃO')) {
+    badgeBg = `${color}20`;
+    badgeColor = color;
+  } else if (statusUpper.includes('WATCH') || statusUpper.includes('CAUTELA')) {
+    badgeBg = `${color}15`;
+    badgeColor = `${color}dd`;
+  } // Stable remains neutral
 
   return (
     <TouchableOpacity 
       style={[
         styles.gridCard, 
         isSelected && styles.gridCardSelected,
-        isSelected && { borderColor: color, shadowColor: color, shadowOffset: {width:0, height:0}, shadowOpacity: 0.3, shadowRadius: 8 }
+        isSelected && { borderColor: `${color}60`, backgroundColor: 'rgba(255,255,255,0.03)' }
       ]}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      {isFocus && (
-        <View style={{ ...StyleSheet.absoluteFillObject, overflow: 'hidden', borderRadius: 18 }}>
-          <Animated.View style={{ ...StyleSheet.absoluteFillObject, transform: [{ translateX: shimmerTranslateX }] }}>
-            <LinearGradient 
-              colors={['transparent', `${color}60`, 'transparent']} 
-              start={{ x: 0, y: 0 }} 
-              end={{ x: 1, y: 1 }} 
-              style={{ width: '50%', height: '150%', position: 'absolute', top: '-25%', left: '0%' }} 
-            />
-          </Animated.View>
-        </View>
-      )}
+      {/* Subtle Background Icon */}
+      <View style={{ position: 'absolute', bottom: -10, right: -10, opacity: 0.12 }}>
+        <Icon size={70} color={color} strokeWidth={1} />
+      </View>
+
+      {/* "i" button */}
       <TouchableOpacity 
         style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, padding: 4 }} 
         onPress={(e) => { e.stopPropagation(); onInfoPress(); }}
         hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
       >
-        <Info size={17} color="rgba(255,255,255,0.7)" />
+        <Info size={18} color="rgba(255,255,255,0.6)" />
       </TouchableOpacity>
-      <View style={styles.gridCardContent}>
-        <Icon size={26} color={color} style={{ marginRight: 10, flexShrink: 0 }} />
-        <View style={styles.gridRightContent}>
-          <View style={styles.gridTitleRow}>
-            <Typography style={styles.gridLabel} numberOfLines={2} ellipsizeMode="tail">{dimension.title}</Typography>
-          </View>
-          <View style={[styles.statusMiniBadge, { backgroundColor: `${color}15` }]}>
-            <Typography style={[styles.statusMiniText, { color }]}>{dimension.status.toUpperCase()}</Typography>
-          </View>
-        </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, paddingRight: 24 }}>
+        <Icon size={24} color={color} style={{ marginRight: 8, flexShrink: 0 }} />
+        <Typography style={[styles.gridLabel, { fontSize: 14 }]} numberOfLines={2} ellipsizeMode="tail">
+          {dimension.title}
+        </Typography>
+      </View>
+      
+      <View style={[styles.statusMiniBadge, { backgroundColor: badgeBg, alignSelf: 'flex-start' }]}>
+        <Typography style={[styles.statusMiniText, { color: badgeColor }]}>{statusUpper}</Typography>
       </View>
     </TouchableOpacity>
   );
@@ -188,9 +164,30 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   const [requestStarted, setRequestStarted] = useState(false);
   const [responseStatus, setResponseStatus] = useState<string | number>('n/a');
 
+  // History State
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyReadings, setHistoryReadings] = useState<any[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
+
+  const fetchHistory = async () => {
+    setIsLoadingHistory(true);
+    const res = await getReadingHistory(isDemoMode);
+    setIsLoadingHistory(false);
+    if (res.ok) {
+      setHistoryReadings(res.readings || []);
+    }
+  };
+
   const sourceSnapshotHash = useMemo(() => {
     return buildAnalysisValuesHash(activeAnalysis);
   }, [activeAnalysis]);
+
+  useEffect(() => {
+    if (showHistoryModal && historyReadings.length === 0) {
+      fetchHistory();
+    }
+  }, [showHistoryModal, isDemoMode]);
 
   useEffect(() => {
     setAiReading(null);
@@ -252,7 +249,24 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
     return () => { cancelled = true; cancelPendingInsights(); };
   }, [sourceSnapshotHash, isDemoMode]);
 
-  const reading: AIReading = aiReading ?? localReading;
+  const selectedHistoryReading = useMemo(() => {
+    if (!selectedHistoryId) return null;
+    const rec = historyReadings.find(r => r.id === selectedHistoryId);
+    if (!rec) return null;
+    return {
+      summary: {
+        title: 'Síntese do Momento',
+        text: rec.narrative || '',
+        status: 'stable',
+        mode: rec.safetyFlagsJson?.includes('demo_data') ? 'simulation' : 'real'
+      },
+      dimensions: rec.themesJson || [],
+      nextFocus: null,
+      nutrientPriorities: rec.nutrientSuggestionsJson?.nutrientPriorities || []
+    } as any as AIReading;
+  }, [selectedHistoryId, historyReadings]);
+
+  const reading: AIReading = selectedHistoryReading ?? aiReading ?? localReading;
   const dimensions = reading.dimensions || [];
 
   const getDimensionIcon = (id: string) => {
@@ -342,10 +356,29 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           </View>
         </View>
 
+        {/* METADATA ROW */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 16 }}>
+          <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '500' }}>
+            {selectedHistoryReading 
+              ? new Date(historyReadings.find(r => r.id === selectedHistoryId)?.analysisDate || new Date()).toLocaleString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' ·') 
+              : (activeAnalysis?.analysisDate ? new Date(activeAnalysis.analysisDate).toLocaleString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' ·') : '--')
+            }
+          </Typography>
+          <TouchableOpacity onPress={() => setShowHistoryModal(true)}>
+            <Typography style={{ color: '#00F2FF', fontSize: 13, fontWeight: '600' }}>Histórico {'>'}</Typography>
+          </TouchableOpacity>
+        </View>
+
         <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {/* ÁREA DE TEXTO */}
         {(() => {
           if (!selectedDim) {
+             const recommendedFocus = dimensions.reduce((prev, curr) => {
+               if (curr.score === null) return prev;
+               if (!prev || prev.score === null) return curr;
+               return curr.score < prev.score ? curr : prev;
+             }, null as HolisticDimension | null);
+             
              return (
                <View>
                  <BlurView intensity={20} tint="dark" style={[styles.messageAreaCard, { minHeight: 120, marginBottom: 12 }]}>
@@ -355,6 +388,19 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                      {renderTextWithDimensionHighlights(reading.summary.text, dimensions)}
                    </Typography>
                  </BlurView>
+                 
+                 {recommendedFocus && (
+                   <View style={[styles.messageAreaCard, { borderColor: `${recommendedFocus.color}40`, backgroundColor: 'rgba(255,255,255,0.03)' }]}>
+                      <Typography style={[styles.sectionTitle, { color: recommendedFocus.color }]}>FOCO RECOMENDADO</Typography>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                        {React.createElement(getDimensionIcon(recommendedFocus.id), { size: 18, color: recommendedFocus.color, style: { marginRight: 8 } })}
+                        <Typography style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>{recommendedFocus.title}</Typography>
+                      </View>
+                      <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, marginTop: 6 }}>
+                        {recommendedFocus.recommendations?.[0]?.text || 'Foco sugerido para otimização com base nos sinais actuais.'}
+                      </Typography>
+                   </View>
+                 )}
                </View>
              );
           }
@@ -412,7 +458,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
                  <View style={styles.tabContentArea}>
                     {activeTab === 'summary' && (
-                      <Typography style={styles.messageText}>{selectedDim.summary}</Typography>
+                      <Typography style={styles.messageText}>{selectedDim.summary || (selectedDim as any).refinedSummary}</Typography>
                     )}
                     {activeTab === 'recommendations' && (
                       <View>
@@ -439,7 +485,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                              </Typography>
                            )
                         ) : (
-                          selectedDim.recommendations?.length > 0 ? selectedDim.recommendations.map((r, i) => (
+                          (selectedDim.recommendations || (selectedDim as any).refinedRecommendations)?.length > 0 ? (selectedDim.recommendations || (selectedDim as any).refinedRecommendations).map((r: any, i: number) => (
                             <View key={i} style={{ marginBottom: 10 }}>
                               <Typography style={{ color: '#E2E8F0', fontSize: 13, fontWeight: '500' }}>• {r.text}</Typography>
                               <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, lineHeight: 16 }}>{r.reason}</Typography>
@@ -450,10 +496,10 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                     )}
                     {activeTab === 'references' && (
                       <View>
-                        {selectedDim.references?.length > 0 ? selectedDim.references.map((r, i) => (
+                        {(selectedDim.references || (selectedDim as any).refinedReferences)?.length > 0 ? (selectedDim.references || (selectedDim as any).refinedReferences).map((r: any, i: number) => (
                           <View key={i} style={{ marginBottom: 10 }}>
                             <Typography style={{ color: '#E2E8F0', fontSize: 13, fontWeight: '500' }}>{r.factor} {r.observedValue ? `(${r.observedValue})` : ''}</Typography>
-                            <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, lineHeight: 16 }}>{r.whyItMatters}</Typography>
+                            <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, lineHeight: 16 }}>{r.whyItMatters || r.explanation}</Typography>
                           </View>
                         )) : <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>Refs incorporadas no resumo holístico.</Typography>}
                       </View>
@@ -521,6 +567,63 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
               </View>
             </View>
          </BlurView>
+      </Modal>
+
+      {/* POPUP: HISTORY */}
+      <Modal visible={showHistoryModal} transparent animationType="slide">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'flex-end' }}>
+          <TouchableOpacity style={{ flex: 1 }} onPress={() => setShowHistoryModal(false)} activeOpacity={1}/>
+          <View style={{ backgroundColor: '#0A0D12', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '80%' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <Typography variant="h3" style={{ color: '#fff' }}>Histórico {isDemoMode ? '(Simulações)' : ''}</Typography>
+              <TouchableOpacity onPress={() => setShowHistoryModal(false)}>
+                <X size={20} color="rgba(255,255,255,0.6)" />
+              </TouchableOpacity>
+            </View>
+            
+            {isLoadingHistory ? (
+              <View style={{ padding: 40, alignItems: 'center' }}>
+                <Typography style={{ color: 'rgba(255,255,255,0.5)' }}>A carregar histórico...</Typography>
+              </View>
+            ) : historyReadings.length === 0 ? (
+              <View style={{ padding: 40, alignItems: 'center' }}>
+                <Typography style={{ color: 'rgba(255,255,255,0.5)' }}>Sem leituras guardadas.</Typography>
+              </View>
+            ) : (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {/* Always add an option to return to "Current" if viewing history */}
+                <TouchableOpacity 
+                    style={{ padding: 16, backgroundColor: selectedHistoryId === null ? 'rgba(0,242,255,0.1)' : 'rgba(255,255,255,0.03)', borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: selectedHistoryId === null ? '#00F2FF' : 'transparent' }}
+                    onPress={() => {
+                      setSelectedHistoryId(null);
+                      setShowHistoryModal(false);
+                      setSelectedDimId(null);
+                    }}
+                  >
+                    <Typography style={{ color: '#fff', fontWeight: '700' }}>Leitura Actual</Typography>
+                    <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>Regressar à última análise recolhida</Typography>
+                </TouchableOpacity>
+
+                {historyReadings.map(r => (
+                  <TouchableOpacity 
+                    key={r.id}
+                    style={{ padding: 16, backgroundColor: selectedHistoryId === r.id ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.03)', borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: selectedHistoryId === r.id ? 'rgba(255,255,255,0.3)' : 'transparent' }}
+                    onPress={() => {
+                      setSelectedHistoryId(r.id);
+                      setShowHistoryModal(false);
+                      setSelectedDimId(null);
+                    }}
+                  >
+                    <Typography style={{ color: '#fff', fontWeight: '600' }}>{new Date(r.analysisDate || r.generatedAt).toLocaleString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' ·')}</Typography>
+                    <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 4 }} numberOfLines={2}>
+                      {r.narrative}
+                    </Typography>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </View>
       </Modal>
 
     </Container>

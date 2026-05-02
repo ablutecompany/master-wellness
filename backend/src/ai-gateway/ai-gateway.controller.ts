@@ -4,6 +4,8 @@ import {
   HttpCode,
   HttpStatus,
   Post,
+  Get,
+  Query,
   UsePipes,
   ValidationPipe,
   UseGuards,
@@ -107,6 +109,26 @@ export class AiGatewayController {
         return { ok: false, error: { code: err.code, message: err.message, details: err.details } };
       }
       return { ok: false, error: { code: 'INTERNAL_ERROR', message: (err as Error).message || 'Erro inesperado' } };
+    }
+  }
+  /**
+   * GET /ai-gateway/readings/history
+   * Obtém o histórico longitudinal de leituras AI do utilizador.
+   * Requer autenticação (JWT).
+   */
+  @UseGuards(JwtAuthGuard)
+  @Get('readings/history')
+  async getReadingHistory(@Request() req: any, @Query('includeDemo') includeDemo?: string) {
+    try {
+      const userId = req.user.userId;
+      const isDemo = includeDemo === 'true';
+      const result = await this.service.getAiReadingHistory(userId, { includeDemo: isDemo });
+      return { ok: true, readings: result };
+    } catch (err) {
+      if (err instanceof AiGatewayError) {
+        return { ok: false, error: { code: err.code, message: err.message, details: err.details } };
+      }
+      return { ok: false, error: { code: 'INTERNAL_ERROR', message: (err as Error).message || 'Erro inesperado ao obter histórico' } };
     }
   }
 }
