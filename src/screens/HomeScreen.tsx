@@ -1391,7 +1391,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   bioUnit: {
-    color: 'rgba(255,255,255,0.3)',
+    color: 'rgba(255,255,255,0.6)',
     fontSize: 10,
   },
   // Main View
@@ -1415,7 +1415,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: 2,
-    opacity: 0.6,
+    opacity: 0.8,
   },
   appGridSub: {
     flexDirection: 'row',
@@ -1443,7 +1443,7 @@ const styles = StyleSheet.create({
   },
   drawerTitle: {
     letterSpacing: 4,
-    color: 'rgba(255,255,255,0.8)',
+    color: '#fff',
     fontWeight: '800',
   },
   appGrid: {
@@ -1478,7 +1478,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 2,
-    opacity: 0.4,
+    opacity: 0.7,
     marginBottom: 16,
     marginLeft: 8,
     textTransform: 'uppercase',
@@ -1605,8 +1605,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   settingsLabel: {
-    color: 'rgba(255,255,255,0.8)',
+    color: '#ffffff',
     fontSize: 14,
+    opacity: 0.9,
   },
   settingsValue: {
     color: '#fff',
@@ -1699,7 +1700,7 @@ const styles = StyleSheet.create({
   expandedPublisher: {
     fontSize: 10,
     fontWeight: '800',
-    color: 'rgba(255,255,255,0.3)',
+    color: 'rgba(255,255,255,0.6)',
     letterSpacing: 2,
     marginBottom: 8,
     textTransform: 'uppercase',
@@ -1719,7 +1720,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   closeExpandedText: {
-    color: 'rgba(255,255,255,0.4)',
+    color: 'rgba(255,255,255,0.7)',
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 2,
@@ -1754,7 +1755,7 @@ const styles = StyleSheet.create({
   footerIconLabel: {
     fontSize: 9,
     fontWeight: '900',
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(255,255,255,0.8)',
     letterSpacing: 1.5,
     textAlign: 'center',
     lineHeight: 12,

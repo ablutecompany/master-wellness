@@ -10,8 +10,8 @@ export const palette = {
   warning: '#FFD700', // Gold accent
   error: '#FF3B60',
   text: '#FFFFFF',
-  textSecondary: 'rgba(255, 255, 255, 0.6)',
-  textMuted: 'rgba(255, 255, 255, 0.35)',
+  textSecondary: 'rgba(255, 255, 255, 0.8)',
+  textMuted: 'rgba(255, 255, 255, 0.55)',
   overlay: 'rgba(2, 4, 10, 0.85)',
   glass: 'rgba(255, 255, 255, 0.03)',
   glassBorder: 'rgba(255, 255, 255, 0.12)',

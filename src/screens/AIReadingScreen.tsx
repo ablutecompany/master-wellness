@@ -136,7 +136,7 @@ const DimensionGridCard = ({ dimension, isSelected, isFocus, onPress, onInfoPres
         onPress={(e) => { e.stopPropagation(); onInfoPress(); }}
         hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
       >
-        <Info size={18} color="rgba(255,255,255,0.4)" />
+        <Info size={20} color="rgba(255,255,255,0.7)" />
       </TouchableOpacity>
       <View style={styles.gridCardContent}>
         <View style={styles.ringContainer}>
@@ -321,7 +321,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
             </View>
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <TouchableOpacity onPress={() => setShowGlobalInfo(true)} style={styles.iconBtn}>
-                <Info size={18} color="rgba(255,255,255,0.6)" />
+                <Info size={20} color="rgba(255,255,255,0.8)" />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconBtn}>
                 <X size={18} color="#fff" />
@@ -525,15 +525,15 @@ const styles = StyleSheet.create({
   iconBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
   
   messageAreaCard: { padding: 14, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', marginBottom: 12, backgroundColor: 'rgba(255,255,255,0.03)' },
-  sectionTitle: { color: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, marginBottom: 4 },
+  sectionTitle: { color: 'rgba(255,255,255,0.6)', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, marginBottom: 4 },
   messageTitle: { color: '#ffffff', fontSize: 15, fontWeight: '800', marginBottom: 6, lineHeight: 18 },
-  messageText: { color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 19, fontWeight: '500' },
+  messageText: { color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 19, fontWeight: '500' },
   statusMiniBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
   statusMiniText: { fontSize: 8, fontWeight: '800', letterSpacing: 0.5 },
 
   tabsContainer: { flexDirection: 'row', gap: 6, marginTop: 12, marginBottom: 8 },
   tabBtn: { flex: 1, paddingVertical: 6, borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center' },
-  tabBtnText: { color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: '600' },
+  tabBtnText: { color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '600' },
   tabContentArea: { paddingVertical: 4 },
 
   gridWrapper: { paddingHorizontal: 20, paddingBottom: Platform.OS === 'ios' ? 40 : 24, paddingTop: 12 },
@@ -544,8 +544,8 @@ const styles = StyleSheet.create({
   ringContainer: { position: 'relative', width: 48, height: 48, justifyContent: 'center', alignItems: 'center' },
   ringInnerContent: { position: 'absolute', alignItems: 'center', justifyContent: 'center', top: 0, left: 0, right: 0, bottom: 0 },
   gridRightContent: { flex: 1, paddingLeft: 8, justifyContent: 'center', alignItems: 'flex-start' },
-  gridScore: { color: '#fff', fontSize: 15, fontWeight: '700' },
-  gridLabel: { color: 'rgba(255,255,255,0.9)', fontSize: 15, fontWeight: '600', lineHeight: 18, flexShrink: 1 },
+  gridScore: { color: '#fff', fontSize: 15, fontWeight: '800' },
+  gridLabel: { color: '#ffffff', fontSize: 15, fontWeight: '700', lineHeight: 18, flexShrink: 1 },
 
   modalOverlay: { flex: 1, justifyContent: 'center', padding: 24 },
   modalCentered: { flex: 1, justifyContent: 'center' },
