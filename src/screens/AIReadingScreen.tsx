@@ -12,6 +12,7 @@ import {
   Activity, Zap, Target, Heart, Moon, FlaskConical, X, 
   ShieldAlert, Info, Focus, Droplets
 } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const buildAnalysisValuesHash = (analysis: Analysis | null | undefined) => {
   if (!analysis) return 'none';
@@ -58,7 +59,7 @@ const DIMENSION_INFO: Record<string, { title: string, description: string }> = {
 
 type ReadingSource = 'local' | 'openai' | 'fallback';
 
-const DimensionGridCard = ({ dimension, isSelected, onPress, onInfoPress }: { dimension: HolisticDimension, isSelected: boolean, onPress: () => void, onInfoPress: () => void }) => {
+const DimensionGridCard = ({ dimension, isSelected, isFocus, onPress, onInfoPress }: { dimension: HolisticDimension, isSelected: boolean, isFocus?: boolean, onPress: () => void, onInfoPress: () => void }) => {
   const getDimensionIcon = (id: string) => {
     switch(id) {
       case 'readiness_today': return Zap;
@@ -94,6 +95,16 @@ const DimensionGridCard = ({ dimension, isSelected, onPress, onInfoPress }: { di
       onPress={onPress}
       activeOpacity={0.7}
     >
+      {isFocus && (
+        <View style={{ ...StyleSheet.absoluteFillObject, overflow: 'hidden', borderRadius: 18 }}>
+          <LinearGradient 
+            colors={['transparent', `${color}15`, 'transparent']} 
+            start={{ x: 0, y: 0 }} 
+            end={{ x: 1, y: 1 }} 
+            style={{ width: '150%', height: '150%', position: 'absolute', top: '-25%', left: '-25%', opacity: 0.6 }} 
+          />
+        </View>
+      )}
       <TouchableOpacity 
         style={{ position: 'absolute', top: 8, right: 8, zIndex: 10, padding: 4 }} 
         onPress={(e) => { e.stopPropagation(); onInfoPress(); }}
@@ -294,7 +305,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         </View>
 
         <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        {/* ÁREA DE TEXTO / MENSAGEM */}
+        {/* ÁREA DE TEXTO */}
         {(() => {
           if (!selectedDim) {
              return (
@@ -304,44 +315,6 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                    <Typography style={styles.messageTitle}>{reading.summary.title}</Typography>
                    <Typography style={styles.messageText}>{reading.summary.text}</Typography>
                  </BlurView>
-                 
-                 {reading.nextFocus && (() => {
-                   const fDim = dimensions.find(d => d.id === reading.nextFocus!.dimensionId);
-                   if (!fDim) return null;
-                   const FIcon = getDimensionIcon(fDim.id);
-                   const recAction = fDim.recommendations?.[0]?.text || 'Explorar detalhes para mais ações.';
-                   return (
-                     <TouchableOpacity 
-                       onPress={() => setSelectedDimId(fDim.id)}
-                       style={[styles.messageAreaCard, { padding: 16, flexDirection: 'row', alignItems: 'center', borderColor: `${fDim.color}40`, backgroundColor: 'rgba(255,255,255,0.02)' }]}
-                       activeOpacity={0.7}
-                     >
-                       <View style={{ flex: 1, paddingRight: 16 }}>
-                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                            <Focus size={16} color="rgba(255,255,255,0.5)" style={{ marginRight: 6 }} />
-                            <Typography style={{ color: 'rgba(255,255,255,0.9)', fontSize: 14, fontWeight: '700' }}>Foco recomendado</Typography>
-                         </View>
-                         <Typography style={{ color: fDim.color, fontSize: 15, fontWeight: '700', marginBottom: 6 }}>{fDim.title}</Typography>
-                         <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginBottom: 8, lineHeight: 18 }}>É a dimensão com maior margem de melhoria nesta leitura.</Typography>
-                         <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, lineHeight: 18 }}>
-                            <Typography style={{ color: fDim.color, fontWeight: '600' }}>Ação sugerida: </Typography>{recAction}
-                         </Typography>
-                       </View>
-                       
-                       {fDim.score !== null && (
-                         <View style={{ alignItems: 'flex-start', paddingLeft: 16, paddingVertical: 8, borderLeftWidth: 1, borderLeftColor: 'rgba(255,255,255,0.08)' }}>
-                           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                             <FIcon size={12} color="rgba(255,255,255,0.4)" style={{ marginRight: 4 }} />
-                             <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10 }}>Score atual</Typography>
-                           </View>
-                           <Typography style={{ color: '#fff', fontSize: 24, fontWeight: '800', marginBottom: 8 }}>{fDim.score}</Typography>
-                           <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, marginBottom: 2 }}>Estado</Typography>
-                           <Typography style={{ color: fDim.color, fontSize: 10, fontWeight: '800' }}>{fDim.status.toUpperCase()}</Typography>
-                         </View>
-                       )}
-                     </TouchableOpacity>
-                   );
-                 })()}
                </View>
              );
           }
@@ -461,6 +434,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                 key={d.id}
                 dimension={d}
                 isSelected={selectedDimId === d.id}
+                isFocus={reading.nextFocus?.dimensionId === d.id}
                 onPress={() => {
                   if (selectedDimId !== d.id) setActiveTab('summary');
                   setSelectedDimId(prev => prev === d.id ? null : d.id);
