@@ -139,18 +139,9 @@ const DimensionGridCard = ({ dimension, isSelected, isFocus, onPress, onInfoPres
         <Info size={17} color="rgba(255,255,255,0.7)" />
       </TouchableOpacity>
       <View style={styles.gridCardContent}>
-        <View style={styles.ringContainer}>
-          <Svg width={size} height={size} style={{ transform: [{ rotate: '90deg' }] }}>
-            <Circle cx={center} cy={center} r={radius} stroke="rgba(255,255,255,0.05)" strokeWidth={strokeWidth} fill="transparent" />
-            <Circle cx={center} cy={center} r={radius} stroke={color} strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" fill="transparent" />
-          </Svg>
-          <View style={styles.ringInnerContent}>
-            <Typography style={styles.gridScore}>{score}</Typography>
-          </View>
-        </View>
+        <Icon size={26} color={color} style={{ marginRight: 10, flexShrink: 0 }} />
         <View style={styles.gridRightContent}>
           <View style={styles.gridTitleRow}>
-            <Icon size={17} color={color} style={{ marginRight: 6, marginTop: 1, flexShrink: 0 }} />
             <Typography style={styles.gridLabel} numberOfLines={2} ellipsizeMode="tail">{dimension.title}</Typography>
           </View>
           <View style={[styles.statusMiniBadge, { backgroundColor: `${color}15` }]}>
@@ -560,18 +551,15 @@ const styles = StyleSheet.create({
 
   gridWrapper: { paddingHorizontal: 20, paddingBottom: Platform.OS === 'ios' ? 40 : 24, paddingTop: 12 },
   gridContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between' },
-  gridCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 10, paddingVertical: 8, height: 84, minHeight: 84, maxHeight: 86, justifyContent: 'center', overflow: 'hidden' },
+  gridCard: { width: '48%', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 14, paddingVertical: 10, height: 78, minHeight: 78, maxHeight: 86, justifyContent: 'center', overflow: 'hidden' },
   gridCardSelected: { backgroundColor: 'rgba(255,255,255,0.06)' },
   gridCardContent: { flexDirection: 'row', alignItems: 'center', width: '100%' },
-  ringContainer: { position: 'relative', width: 42, height: 42, justifyContent: 'center', alignItems: 'center', marginRight: 8, flexShrink: 0 },
-  ringInnerContent: { position: 'absolute', alignItems: 'center', justifyContent: 'center', top: 0, left: 0, right: 0, bottom: 0 },
   gridRightContent: { flex: 1, justifyContent: 'center', minWidth: 0 },
-  gridTitleRow: { flexDirection: 'row', alignItems: 'center', paddingRight: 24 },
-  gridScore: { color: '#fff', fontSize: 14.5, fontWeight: '700' },
-  gridLabel: { color: '#ffffff', fontSize: 14.5, fontWeight: '700', lineHeight: 17, flexShrink: 1, minWidth: 0 },
+  gridTitleRow: { flexDirection: 'row', alignItems: 'center', paddingRight: 20 },
+  gridLabel: { color: '#ffffff', fontSize: 17, fontWeight: '700', lineHeight: 20, flexShrink: 1, minWidth: 0 },
 
-  statusMiniBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5, alignSelf: 'flex-start', marginTop: 4 },
-  statusMiniText: { fontSize: 8.5, fontWeight: '800', lineHeight: 11 },
+  statusMiniBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, alignSelf: 'flex-start', marginTop: 4 },
+  statusMiniText: { fontSize: 9.5, fontWeight: '800', lineHeight: 12 },
 
   modalOverlay: { flex: 1, justifyContent: 'center', padding: 24 },
   modalCentered: { flex: 1, justifyContent: 'center' },
