@@ -8,7 +8,9 @@ export type MiniAppCategory =
   | 'nutrition'
   | 'mental'
   | 'fitness'
-  | 'longevity';
+  | 'longevity'
+  | 'medical'
+  | 'mens-health';
 
 export type Permission =
   | 'PROFILE_READ'
@@ -59,10 +61,12 @@ export const PERMISSION_LABELS: Record<Permission, { label: string; desc: string
 
 export const CATEGORY_LABELS: Record<MiniAppCategory, string> = {
   'female-health': 'Saúde Feminina',
+  'mens-health': 'Saúde Masculina',
+  'medical': 'Saúde e Clínica',
   'sleep': 'Sono',
   'nutrition': 'Nutrição Personalizada',
   'mental': 'Autoconhecimento',
-  'fitness': 'Fitness',
+  'fitness': 'Movimento',
   'longevity': 'Longevidade',
 };
 
