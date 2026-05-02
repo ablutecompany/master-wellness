@@ -10,7 +10,7 @@ import { ENV } from '../config/env';
 import Svg, { Circle } from 'react-native-svg';
 import { 
   Activity, Zap, Target, Heart, Moon, FlaskConical, X, 
-  ShieldAlert, Info, Focus, Droplets
+  ShieldAlert, Info, Focus, Droplets, BatteryCharging, Scale, Flame, Leaf, Utensils, Radar
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -63,13 +63,13 @@ const DimensionGridCard = ({ dimension, isSelected, isFocus, onPress, onInfoPres
   const getDimensionIcon = (id: string) => {
     switch(id) {
       case 'readiness_today': return Zap;
-      case 'recovery_load': return Moon;
-      case 'internal_balance': return Droplets;
-      case 'metabolic_rhythm': return Heart;
-      case 'digestive_comfort': return Target;
-      case 'food_adjustments': return FlaskConical;
+      case 'recovery_load': return BatteryCharging;
+      case 'internal_balance': return Scale;
+      case 'metabolic_rhythm': return Flame;
+      case 'digestive_comfort': return Leaf;
+      case 'food_adjustments': return Utensils;
       case 'physiological_load': return Activity;
-      case 'routine_signals': return ShieldAlert;
+      case 'routine_signals': return Radar;
       case 'next_focus': return Focus;
       default: return Info;
     }
