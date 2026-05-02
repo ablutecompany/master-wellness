@@ -1941,24 +1941,24 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
   return (
     <View style={styles.orbitalCore}>
       {/* Deep Atmosphere */}
-      <View style={[styles.lensBase, { borderColor: `${glowColor}50` }]}>
+      <View style={[styles.lensBase, { borderColor: `${glowColor}50`, overflow: 'hidden' }]}>
          <Image 
             source={require('../../assets/orbital_bg.png')}
             style={[StyleSheet.absoluteFillObject, { opacity: 0.5, resizeMode: 'cover' }]}
          />
-         <LinearGradient
-           colors={['rgba(5, 10, 20, 0.4)', 'rgba(0, 0, 0, 0.95)']}
-           style={StyleSheet.absoluteFillObject}
-         />
          <Video
-            source={require('../../assets/video (3).mp4')}
-            style={[StyleSheet.absoluteFillObject, { opacity: 0.65 }]}
+            source={require('../../assets/eye.mp4')}
+            style={[StyleSheet.absoluteFillObject, { opacity: 0.5 }]}
             resizeMode={ResizeMode.COVER}
-            rate={0.5}
             shouldPlay
             isLooping
             isMuted
             pointerEvents="none"
+         />
+         <LinearGradient
+           colors={['rgba(5, 10, 20, 0.4)', 'rgba(0, 0, 0, 0.7)']}
+           style={StyleSheet.absoluteFillObject}
+           pointerEvents="none"
          />
       </View>
 
