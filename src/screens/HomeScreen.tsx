@@ -492,12 +492,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: (_, { dx, dy }) => Math.abs(dx) > 10 || Math.abs(dy) > 10,
       onPanResponderRelease: (_, { x0, dx, dy }) => {
-        // Left Edge Swipe -> AI Reading
-        if (x0 < 80 && dx > 40 && Math.abs(dy) < 150) {
+        // Left Half Swipe -> AI Reading (avoids OS edge gestures)
+        if (x0 < width / 2 && dx > 40 && Math.abs(dy) < 150) {
           navigation.navigate('Leitura AI');
         }
-        // Right Edge Swipe -> Results
-        else if (x0 > width - 80 && dx < -40 && Math.abs(dy) < 150) {
+        // Right Half Swipe -> Resultados (avoids OS edge gestures)
+        else if (x0 >= width / 2 && dx < -40 && Math.abs(dy) < 150) {
           navigation.navigate('Resultados');
         }
         // Bottom Swipe Up -> App Drawer
