@@ -913,12 +913,19 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                                 </TouchableOpacity>
                               );
                             }) : (
-                              // Fallback
-                              [1, 2].map((_, idx) => (
-                                <View key={idx} style={[styles.screenshotImg, { width: 160, height: 280, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.02)', justifyContent: 'center', alignItems: 'center', borderStyle: 'dashed', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }]}>
-                                  <Typography style={{ color: 'rgba(255,255,255,0.1)', fontSize: 10 }}>SCREENSHOT {idx + 1}</Typography>
-                                </View>
-                              ))
+                              // Fallback elegante se não houver imagens
+                              [1, 2].map((_, idx) => {
+                                const IconComp = { Brain, Utensils, Moon, Activity }[app.iconName || 'Activity'] || Activity;
+                                return (
+                                  <View key={idx} style={[styles.screenshotImg, { width: 160, height: 280, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.02)', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }]}>
+                                    <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: app.iconBg || 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center', marginBottom: 12 }}>
+                                      <IconComp size={24} color={app.iconColor || '#fff'} opacity={0.5} />
+                                    </View>
+                                    <Typography style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14, fontWeight: '700', textAlign: 'center', paddingHorizontal: 10 }}>{app.name}</Typography>
+                                    <Typography style={{ color: 'rgba(255,255,255,0.2)', fontSize: 10, marginTop: 4 }}>{CATEGORY_LABELS[app.category] || 'Preview'}</Typography>
+                                  </View>
+                                );
+                              })
                             )}
                           </ScrollView>
 
