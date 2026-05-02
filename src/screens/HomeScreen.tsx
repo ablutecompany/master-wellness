@@ -1305,20 +1305,20 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   edgeLabelContainer: {
-    width: 140, 
+    width: 160, 
     height: 42,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0, // Garantir que não colapse em mobile estreito
   },
   edgeLabel: {
-    fontSize: 9,
+    fontSize: 12,
     fontWeight: '900',
     letterSpacing: 1.5,
     color: '#fff',
     transform: [{ rotate: '90deg' }],
-    width: 140,
-    minWidth: 140, // Reforço de largura útil
+    width: 160,
+    minWidth: 160, // Reforço de largura útil
     textAlign: 'center',
     opacity: 0.9,
     // Estilos Web para evitar elipse/truncamento
