@@ -57,7 +57,12 @@ export const MINI_APP_CATALOG: MiniAppManifest[] = [
     reviewCount: 31,
     description: 'Planeie refeições em família de acordo com requisitos nutricionais reais, restrições e participantes por refeição, ajustando quantidades e preferências. Automatize a lista de compras e encomende diretamente para casa.',
     publisher: 'ablute_ official',
-    screenshots: [],
+    screenshots: [
+      require('../../assets/meal_planner/plano.png'),
+      require('../../assets/meal_planner/receitas.png'),
+      require('../../assets/meal_planner/ingredientes.png'),
+      require('../../assets/meal_planner/agregado.png')
+    ],
     releaseDate: '2024-04-15',
     availabilityStatus: 'available',
     consumedDomains: ['nutrition'],

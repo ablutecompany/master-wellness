@@ -861,7 +861,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                             contentContainerStyle={{ gap: 12, paddingRight: 20 }}
                           >
                             {(app.screenshots && app.screenshots.length > 0) ? app.screenshots.map((ss, idx) => (
-                              <Image key={idx} source={{ uri: ss }} style={styles.screenshotImg} />
+                              <Image key={idx} source={typeof ss === 'string' ? { uri: ss } : ss} style={styles.screenshotImg} />
                             )) : (
                               // Fallback elegante se não houver imagens
                               [1, 2].map((_, idx) => (

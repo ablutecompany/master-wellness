@@ -85,7 +85,7 @@ export interface MiniAppManifest {
   reviewCount?: number;
   description?: string;
   publisher?: string;      // Ex: 'ablute_ official'
-  screenshots?: string[];  // Array de URLs de imagens/screenshots
+  screenshots?: any[];  // Array de URLs de imagens/screenshots ou assets via require()
   releaseDate?: string;    // ISO date string
   availabilityStatus?: 'available' | 'coming_soon';
   accentColor?: string;
