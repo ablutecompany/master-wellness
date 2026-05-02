@@ -77,6 +77,8 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
       return false;
     }
     
+    console.log('[P0_PROFILE_SAVE] fieldsReceived:', updates);
+
     // Optimista
     const previousUser = user;
     const nextUser = previousUser ? { ...previousUser, ...updates } : { id: 'auth_stub', name: 'Utilizador', ...updates };
@@ -86,19 +88,22 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
     try {
       const result = await ProfileService.updateProfile(sessionToken, updates);
       if (!result.ok || !result.profile) {
-        console.error('[ProfileSlice] Backend update failed, keeping optimistic state but logging error.');
-        // We keep the optimistic update so the UI doesn't flicker/reset, 
-        // unless it's a catastrophic failure where we'd want to rollback.
+        console.error('[ProfileSlice] Backend update failed. Reverting optimistic state.');
+        set({ user: previousUser }); // Rollback!
         return false;
       }
       
+      console.log('[P0_PROFILE_SAVE] userUpdated: true');
+      console.log('[P0_PROFILE_SAVE] profileUpserted: true');
+      console.log('[P0_PROFILE_SAVE] readBackSuccess: true');
+      console.log('[P0_PROFILE_SAVE] savedFields:', result.profile);
+
       // 2. Reflete resposta consolidada devolvida
-      console.warn(`[ProfileSlice] Store user updated after backend sync:`, JSON.stringify(result.profile));
       set({ user: result.profile });
       return true;
     } catch (err) {
       console.error('[ProfileSlice] Exception during updateAuthenticatedProfile:', err);
-      // set({ user: previousUser }); // Rollback if exception
+      set({ user: previousUser }); // Rollback if exception
       return false;
     }
   },

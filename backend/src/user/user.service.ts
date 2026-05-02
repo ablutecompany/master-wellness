@@ -138,177 +138,169 @@ export class UserService {
     return { ...hh, ownerId };
   }
 
-  async updateCombinedProfile(userId: string, updates: { name?: string, avatarUrl?: string, dateOfBirth?: string, dateOfBirthPrecision?: string, height?: number, sex?: string, timezone?: string, country?: string, weight?: { manualValue?: number | null } }) {
-    const { name, avatarUrl, dateOfBirth, dateOfBirthPrecision, height, sex, timezone, country, weight } = updates;
+  async updateCombinedProfile(
+    userId: string, 
+    updates: { 
+      name?: string, 
+      avatarUrl?: string, 
+      dateOfBirth?: string, 
+      dateOfBirthPrecision?: string, 
+      height?: number, 
+      sex?: string, 
+      timezone?: string, 
+      country?: string, 
+      weight?: { manualValue?: number | null },
+      goals?: string[],
+      activityLevel?: string,
+      dietaryRestrictions?: string[]
+    }
+  ) {
+    const { 
+      name, avatarUrl, dateOfBirth, dateOfBirthPrecision, 
+      height, sex, timezone, country, weight,
+      goals, activityLevel, dietaryRestrictions
+    } = updates;
     
-    // Update name directly in public.profiles since public.User doesn't exist
-    if (name !== undefined) {
-      await this.prisma.$executeRaw`
-        UPDATE public.profiles 
-        SET name = ${name}, updated_at = now()
-        WHERE id = ${userId}::uuid
-      `;
+    // 1. Preparar dados para o User
+    const userData: any = {};
+    if (name !== undefined) userData.name = name;
+    if (dateOfBirth !== undefined) userData.dateOfBirth = new Date(dateOfBirth);
+    if (sex !== undefined) userData.sex = sex;
+    if (timezone !== undefined) userData.timezone = timezone;
+    if (country !== undefined) userData.country = country;
+
+    // Campos adicionados manualmente (fora do schema Prisma) devem ser atualizados via raw sql na tabela 'User' ou 'profiles'
+    // Mas note: o schema Prisma para UserProfile mapeia para 'profiles'.
+    
+    if (Object.keys(userData).length > 0) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: userData
+      });
     }
 
+    // Como avatarUrl, date_of_birth_precision e weight não estão no schema de User nem de UserProfile originais, e eram adicionados à tabela profiles (UserProfile), precisamos de usar raw sql apenas para estes campos, OU ignorar se os tipos falharem.
     if (avatarUrl !== undefined) {
-      await this.prisma.$executeRaw`
-        UPDATE public.profiles 
-        SET avatar_url = ${avatarUrl}, updated_at = now()
-        WHERE id = ${userId}::uuid
-      `;
-    }
-
-    if (dateOfBirth !== undefined) {
-      await this.prisma.$executeRaw`
-        UPDATE public.profiles 
-        SET date_of_birth = ${dateOfBirth}::date, updated_at = now()
-        WHERE id = ${userId}::uuid
-      `;
+      try { await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT`); } catch (e) {}
+      await this.prisma.$executeRaw`UPDATE public.profiles SET avatar_url = ${avatarUrl}, updated_at = now() WHERE id = ${userId}::uuid`;
     }
 
     if (dateOfBirthPrecision !== undefined) {
-      try {
-        await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS date_of_birth_precision TEXT`);
-      } catch (e) {}
-      await this.prisma.$executeRaw`
-        UPDATE public.profiles 
-        SET date_of_birth_precision = ${dateOfBirthPrecision}, updated_at = now()
-        WHERE id = ${userId}::uuid
-      `;
-    }
-
-    if (height !== undefined) {
-      await this.prisma.$executeRaw`
-        UPDATE public.profiles 
-        SET height = ${height}::numeric, updated_at = now()
-        WHERE id = ${userId}::uuid
-      `;
-    }
-
-    if (sex !== undefined) {
-      await this.prisma.$executeRaw`
-        UPDATE public.profiles 
-        SET sex = ${sex}, updated_at = now()
-        WHERE id = ${userId}::uuid
-      `;
-    }
-
-    if (timezone !== undefined) {
-      await this.prisma.$executeRaw`
-        UPDATE public.profiles 
-        SET timezone = ${timezone}, updated_at = now()
-        WHERE id = ${userId}::uuid
-      `;
-    }
-
-    if (country !== undefined) {
-      await this.prisma.$executeRaw`
-        UPDATE public.profiles 
-        SET country = ${country}, updated_at = now()
-        WHERE id = ${userId}::uuid
-      `;
+      try { await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS date_of_birth_precision TEXT`); } catch (e) {}
+      await this.prisma.$executeRaw`UPDATE public.profiles SET date_of_birth_precision = ${dateOfBirthPrecision}, updated_at = now() WHERE id = ${userId}::uuid`;
     }
 
     if (weight && weight.manualValue !== undefined) {
       if (weight.manualValue === null) {
-        await this.prisma.$executeRaw`
-          UPDATE public.profiles 
-          SET weight = NULL, updated_at = now()
-          WHERE id = ${userId}::uuid
-        `;
+        await this.prisma.$executeRaw`UPDATE public.profiles SET weight = NULL, updated_at = now() WHERE id = ${userId}::uuid`;
       } else {
-        await this.prisma.$executeRaw`
-          UPDATE public.profiles 
-          SET weight = ${weight.manualValue}::numeric, updated_at = now()
-          WHERE id = ${userId}::uuid
-        `;
+        await this.prisma.$executeRaw`UPDATE public.profiles SET weight = ${weight.manualValue}::numeric, updated_at = now() WHERE id = ${userId}::uuid`;
       }
     }
 
-    // Update height in UserProfile table
-    if (height !== undefined) {
+    // 2. Preparar dados para o UserProfile
+    const profileData: any = {};
+    if (height !== undefined) profileData.height = height;
+    if (goals !== undefined && goals.length > 0) {
+      profileData.mainGoal = goals[0];
+      profileData.secondaryGoals = goals.slice(1);
+    } else if (goals !== undefined && goals.length === 0) {
+      profileData.mainGoal = 'none';
+      profileData.secondaryGoals = [];
+    }
+    if (activityLevel !== undefined) profileData.activityLevel = activityLevel;
+    if (dietaryRestrictions !== undefined) profileData.dietaryRestrictions = dietaryRestrictions;
+
+    if (Object.keys(profileData).length > 0 || height !== undefined) {
       await this.prisma.userProfile.upsert({
         where: { id: userId },
-        update: { height: height },
+        update: profileData,
         create: {
           id: userId,
-          height: height,
+          height: profileData.height !== undefined ? profileData.height : 170,
           baseWeight: 0,
-          mainGoal: 'none',
-          activityLevel: 'sedentary'
+          mainGoal: profileData.mainGoal || 'general_wellness',
+          secondaryGoals: profileData.secondaryGoals || [],
+          activityLevel: profileData.activityLevel || 'sedentary',
+          dietaryRestrictions: profileData.dietaryRestrictions || []
         },
       });
     }
-    
-    // Fetch the updated profile using raw query to avoid Prisma map crashes
-    const profiles = await this.prisma.$queryRaw<any[]>`
-      SELECT id, email, name, avatar_url as "avatarUrl", TO_CHAR(date_of_birth, 'YYYY-MM-DD') as "dateOfBirth", date_of_birth_precision as "dateOfBirthPrecision", height as "heightCm", sex, timezone, country, weight as "manualWeight", active_analysis_id as "activeAnalysisId", household_data as "householdData"
-      FROM public.profiles 
-      WHERE id = ${userId}::uuid
-    `;
 
-    if (!profiles || profiles.length === 0) throw new Error('Profile not found after update in public.profiles');
-    
-    const p = profiles[0];
+    // 3. Read back (usando a mesma lógica do getProfileByUid para coerência)
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true }
+    });
 
-    let pPrisma: any = null;
+    if (!user) throw new Error('User not found after update');
+
+    let householdData = null;
+    let avatarRaw = null;
+    let dobPrec = null;
+    let manualWt: number | null = null;
+
     try {
-       pPrisma = await this.prisma.userProfile.findUnique({ where: { id: userId } });
-    } catch(e) {}
+      const extra = await this.prisma.$queryRaw<any[]>`SELECT avatar_url as "avatarUrl", date_of_birth_precision as "dobPrec", weight as "manualWeight", household_data as "householdData" FROM public.profiles WHERE id = ${userId}::uuid`;
+      if (extra && extra.length > 0) {
+        householdData = extra[0].householdData;
+        avatarRaw = extra[0].avatarUrl;
+        dobPrec = extra[0].dobPrec;
+        manualWt = extra[0].manualWeight !== null ? Number(extra[0].manualWeight) : null;
+      }
+    } catch (e) {}
 
     let latestMeasuredWeight: number | null = null;
     try {
       const measurements = await this.prisma.$queryRaw<any[]>`
-        SELECT m.value
-        FROM public.analysis_measurements m
+        SELECT m.value FROM public.analysis_measurements m
         JOIN public.analyses a ON m.analysis_id = a.id
         WHERE a.owner_id = ${userId}::uuid AND m.type = 'weight'
-        ORDER BY m.measured_at DESC, m.created_at DESC
-        LIMIT 1
+        ORDER BY m.measured_at DESC, m.created_at DESC LIMIT 1
       `;
       if (measurements && measurements.length > 0 && measurements[0].value) {
         latestMeasuredWeight = Number(measurements[0].value);
       }
     } catch (e) {}
 
-    const parsedManualWeight = p.manualWeight !== null ? Number(p.manualWeight) : null;
     let weightSource: 'measured' | 'manual' | 'missing' = 'missing';
     let currentWeightValue: number | null = null;
     
-    if (parsedManualWeight !== null) {
+    if (manualWt !== null) {
       weightSource = 'manual';
-      currentWeightValue = parsedManualWeight;
+      currentWeightValue = manualWt;
     } else if (latestMeasuredWeight !== null) {
       weightSource = 'measured';
       currentWeightValue = latestMeasuredWeight;
     }
 
-    const isDiscrepant = parsedManualWeight !== null && latestMeasuredWeight !== null && Math.abs(parsedManualWeight - latestMeasuredWeight) >= 2.5;
-
     const weightObj = {
       value: currentWeightValue,
       source: weightSource,
-      manualValue: parsedManualWeight,
+      manualValue: manualWt,
       measuredValue: latestMeasuredWeight,
-      isDiscrepant
+      isDiscrepant: manualWt !== null && latestMeasuredWeight !== null && Math.abs(manualWt - latestMeasuredWeight) >= 2.5
     };
 
     return {
-      id: p.id,
-      email: p.email,
-      name: p.name,
-      avatarUrl: p.avatarUrl || null,
-      height: p.heightCm !== null ? Number(p.heightCm) : (pPrisma?.height || null),
-      dateOfBirth: p.dateOfBirth || null,
-      dateOfBirthPrecision: p.dateOfBirthPrecision || null,
-      sex: p.sex || null,
-      timezone: p.timezone || null,
-      country: p.country || null,
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      avatarUrl: avatarRaw || null,
+      height: user.profile?.height || null,
+      dateOfBirth: user.dateOfBirth ? user.dateOfBirth.toISOString().split('T')[0] : null,
+      dateOfBirthPrecision: dobPrec || null,
+      sex: user.sex || null,
+      timezone: user.timezone || null,
+      country: user.country || null,
       weight: weightObj,
-      baseWeight: pPrisma?.baseWeight || null,
-      mainGoal: pPrisma?.mainGoal || null,
-      activeAnalysisId: p.activeAnalysisId,
-      household: p.householdData || null
+      baseWeight: user.profile?.baseWeight || null,
+      mainGoal: user.profile?.mainGoal || null,
+      goals: user.profile?.mainGoal ? [user.profile.mainGoal, ...(user.profile.secondaryGoals || [])] : [],
+      activityLevel: user.profile?.activityLevel || null,
+      dietaryRestrictions: user.profile?.dietaryRestrictions || [],
+      activeAnalysisId: user.profile?.activeAnalysisId || null,
+      household: householdData || null
     };
   }
 

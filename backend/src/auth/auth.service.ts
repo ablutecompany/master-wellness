@@ -9,29 +9,29 @@ export class AuthService {
   /**
    * Obter perfil do utilizador diretamente da tabela "profiles" via UUID do Supabase.
    */
-  /**
-   * Obter perfil do utilizador diretamente da tabela "profiles" via UUID do Supabase.
-   * Transforma em contrato canónico para o frontend.
-   */
   async getProfileByUid(uid: string) {
     try {
-      try { await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS household_data JSONB`); } catch (e) {}
-      const profiles = await this.prisma.$queryRaw<any[]>`
-        SELECT id, email, name, TO_CHAR(date_of_birth, 'YYYY-MM-DD') as "dateOfBirth", sex, timezone, country, height as "heightCm", weight as "manualWeight", active_analysis_id as "activeAnalysisId", household_data as "householdData"
-        FROM public.profiles 
-        WHERE id = ${uid}::uuid
-      `;
-      
-      if (!profiles || profiles.length === 0) return null;
-      
-      const p = profiles[0];
-      
-      let pPrisma: any = null;
+      // 1. Obter Household Data separadamente, pois foi adicionado por script manual à tabela profiles
+      let householdData = null;
       try {
-         // Silently safely attempt to read the rest from UserProfile
-         pPrisma = await this.prisma.userProfile.findUnique({ where: { id: uid } });
-      } catch (e) {}
+        await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS household_data JSONB`);
+        const hhRes = await this.prisma.$queryRaw<any[]>`SELECT household_data as "householdData" FROM public.profiles WHERE id = ${uid}::uuid`;
+        if (hhRes && hhRes.length > 0) {
+          householdData = hhRes[0].householdData;
+        }
+      } catch (e) {
+        // Ignorar falha estrutural do household
+      }
 
+      // 2. Obter Perfil Canónico usando Prisma de forma segura
+      const user = await this.prisma.user.findUnique({
+        where: { id: uid },
+        include: { profile: true }
+      });
+
+      if (!user) return null;
+
+      // 3. Obter o último peso medido nas análises, se existir
       let latestMeasuredWeight: number | null = null;
       try {
         const measurements = await this.prisma.$queryRaw<any[]>`
@@ -47,7 +47,15 @@ export class AuthService {
         }
       } catch (e) {}
 
-      const parsedManualWeight = p.manualWeight !== null ? Number(p.manualWeight) : null;
+      // 4. Lidar com o campo 'manualWeight' (antigamente na profiles, podemos verificar se ainda existe ou se era falso)
+      let parsedManualWeight: number | null = null;
+      try {
+        const wtRes = await this.prisma.$queryRaw<any[]>`SELECT weight as "manualWeight" FROM public.profiles WHERE id = ${uid}::uuid`;
+        if (wtRes && wtRes.length > 0 && wtRes[0].manualWeight !== null) {
+          parsedManualWeight = Number(wtRes[0].manualWeight);
+        }
+      } catch(e) {}
+
       let weightSource: 'measured' | 'manual' | 'missing' = 'missing';
       let currentWeightValue: number | null = null;
       
@@ -69,25 +77,32 @@ export class AuthService {
         isDiscrepant
       };
 
+      // 5. Retornar contrato canónico esperado pelo frontend
       return {
-        id: p.id,
-        email: p.email,
-        name: p.name,
+        id: user.id,
+        email: user.email,
+        name: user.name,
         // Canonical shape mapping
-        height: p.heightCm !== null ? Number(p.heightCm) : (pPrisma?.height || null),
-        dateOfBirth: p.dateOfBirth || null,
-        sex: p.sex || null,
-        timezone: p.timezone || null,
-        country: p.country || null,
+        height: user.profile?.height || null,
+        dateOfBirth: user.dateOfBirth ? user.dateOfBirth.toISOString().split('T')[0] : null,
+        sex: user.sex || null,
+        timezone: user.timezone || null,
+        country: user.country || null,
         weight: weightObj,
-        baseWeight: pPrisma?.baseWeight || null,
-        mainGoal: pPrisma?.mainGoal || null,
-        activeAnalysisId: p.activeAnalysisId,
-        household: p.householdData || null
+        baseWeight: user.profile?.baseWeight || null,
+        mainGoal: user.profile?.mainGoal || null,
+        goals: user.profile?.mainGoal ? [user.profile.mainGoal, ...(user.profile.secondaryGoals || [])] : [],
+        activityLevel: user.profile?.activityLevel || null,
+        dietaryRestrictions: user.profile?.dietaryRestrictions || [],
+        activeAnalysisId: user.profile?.activeAnalysisId || null,
+        household: householdData || null,
+        // Outros metadados disponíveis na tabela profile
       };
-    } catch (err) {
-      console.warn(`[getProfileByUid] Validation or lookup error for ${uid}, treating as missing:`, err.message);
-      return null;
+    } catch (err: any) {
+      console.warn(`[getProfileByUid] Erro grave:`, err.message);
+      // Aqui NÃO podemos retornar null silenciosamente se falhar, caso contrário cai no fallback.
+      // Se estoirou a este ponto (ex: prisma off), lança o erro para o controlador
+      throw err;
     }
   }
 

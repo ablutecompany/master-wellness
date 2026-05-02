@@ -141,6 +141,10 @@ export default function App() {
   const bootCompletedRef = React.useRef(false);
 
   const syncProfile = React.useCallback(async (session: Session | null, onDone?: (dest: 'Main' | 'Welcome') => void) => {
+    console.log('[P0_PROFILE_BOOT] hasSession:', !!session);
+    console.log('[P0_PROFILE_BOOT] hasToken:', !!session?.access_token);
+    console.log('[P0_PROFILE_BOOT] userId:', session?.user?.id);
+
     if (!session?.user || !session.access_token) {
       setUser(null);
       setProfileStatus('idle');
@@ -168,6 +172,8 @@ export default function App() {
     };
 
     const setLoaded = async (profile: any) => {
+      console.log('[P0_PROFILE_BOOT] authMeSuccess: true');
+      console.log('[P0_PROFILE_BOOT] profileFieldsLoaded:', Object.keys(profile));
       setUser(profile);
       if (profile?.household) setHousehold(profile.household);
       await trySyncAnalyses();
@@ -177,7 +183,20 @@ export default function App() {
       onDone?.('Main');
     };
 
-    const setFallback = async () => {
+    const setFallback = async (reason: string) => {
+      console.log('[P0_PROFILE_BOOT] fallbackUsed: true');
+      console.log('[P0_PROFILE_BOOT] fallbackReason:', reason);
+      
+      const prevUser = useStore.getState().user;
+      if (prevUser && prevUser.id === session.user.id) {
+         console.warn('[P0_PROFILE_BOOT] Keeping existing local profile despite fetch failure.');
+         await trySyncAnalyses();
+         setProfileStatus('error');
+         isSyncingRef.current = false;
+         onDone?.('Main');
+         return;
+      }
+
       const fallback = {
         id: session.user.id,
         email: session.user.email,
@@ -188,13 +207,14 @@ export default function App() {
       };
       setUser(fallback as any);
       await trySyncAnalyses();
-      setProfileStatus('loaded');
+      setProfileStatus('error'); // Tratar como fallback de erro
       isSyncingRef.current = false;
       console.warn('[AUTH_DIAG] syncProfile success: fallback used', { userId: fallback.id });
       onDone?.('Main');
     };
 
     try {
+      console.log('[P0_PROFILE_BOOT] authMeStarted: true');
       const meRes = await fetch(`${ENV.BACKEND_URL}/auth/me`, {
         headers: { 'Authorization': `Bearer ${session.access_token}` }
       });
@@ -206,6 +226,8 @@ export default function App() {
           return; 
         }
       }
+
+      console.log('[P0_PROFILE_BOOT] authMeError: fetch failed or returned false. Attempting initialize.');
 
       try {
         const initRes = await fetch(`${ENV.BACKEND_URL}/auth/initialize`, {
@@ -228,15 +250,14 @@ export default function App() {
             }
           }
         }
-        setFallback();
-      } catch (err) {
-        setFallback();
+        setFallback('Initialize failed or /me after initialize failed');
+      } catch (err: any) {
+        setFallback('Exception during initialization: ' + err.message);
       }
     } catch (err: any) {
       console.error('[AUTH_DIAG] syncProfile critical error:', err);
-      setProfileStatus('error');
-      isSyncingRef.current = false;
-      onDone?.('Welcome');
+      console.log('[P0_PROFILE_BOOT] authMeError:', err.message);
+      setFallback('Critical exception during authMe: ' + err.message);
     }
   }, [setUser, setProfileStatus, setSessionToken, setHousehold, setAnalyses]);
 
