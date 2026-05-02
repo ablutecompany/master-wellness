@@ -1994,6 +1994,10 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
     <View style={styles.orbitalCore}>
       {/* Deep Atmosphere */}
       <View style={[styles.lensBase, { borderColor: `${glowColor}50` }]}>
+         <Image 
+            source={require('../../assets/orbital_bg.png')}
+            style={[StyleSheet.absoluteFillObject, { opacity: 0.5, resizeMode: 'cover' }]}
+         />
          <LinearGradient
            colors={['rgba(5, 10, 20, 0.4)', 'rgba(0, 0, 0, 0.95)']}
            style={StyleSheet.absoluteFillObject}
