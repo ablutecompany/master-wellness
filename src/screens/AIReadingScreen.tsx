@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { StyleSheet, View, ScrollView, Platform, TouchableOpacity, Modal } from 'react-native';
+import { StyleSheet, View, ScrollView, Platform, TouchableOpacity, Modal, Animated } from 'react-native';
 import { Container, Typography, BlurView } from '../components/Base';
 import { useStore } from '../store/useStore';
 import { Analysis, AnalysisMeasurement } from '../store/types';
@@ -85,6 +85,30 @@ const DimensionGridCard = ({ dimension, isSelected, isFocus, onPress, onInfoPres
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = dimension.score !== null ? circumference - (dimension.score / 100) * circumference : circumference;
 
+  const shimmerValue = React.useRef(new Animated.Value(-1)).current;
+
+  React.useEffect(() => {
+    if (isFocus) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(shimmerValue, {
+            toValue: 2,
+            duration: 1800,
+            useNativeDriver: true,
+          }),
+          Animated.delay(3500)
+        ])
+      ).start();
+    } else {
+      shimmerValue.setValue(-1);
+    }
+  }, [isFocus, shimmerValue]);
+
+  const shimmerTranslateX = shimmerValue.interpolate({
+    inputRange: [-1, 2],
+    outputRange: [-200, 300]
+  });
+
   return (
     <TouchableOpacity 
       style={[
@@ -97,12 +121,14 @@ const DimensionGridCard = ({ dimension, isSelected, isFocus, onPress, onInfoPres
     >
       {isFocus && (
         <View style={{ ...StyleSheet.absoluteFillObject, overflow: 'hidden', borderRadius: 18 }}>
-          <LinearGradient 
-            colors={['transparent', `${color}15`, 'transparent']} 
-            start={{ x: 0, y: 0 }} 
-            end={{ x: 1, y: 1 }} 
-            style={{ width: '150%', height: '150%', position: 'absolute', top: '-25%', left: '-25%', opacity: 0.6 }} 
-          />
+          <Animated.View style={{ ...StyleSheet.absoluteFillObject, transform: [{ translateX: shimmerTranslateX }] }}>
+            <LinearGradient 
+              colors={['transparent', `${color}60`, 'transparent']} 
+              start={{ x: 0, y: 0 }} 
+              end={{ x: 1, y: 1 }} 
+              style={{ width: '50%', height: '150%', position: 'absolute', top: '-25%', left: '0%' }} 
+            />
+          </Animated.View>
         </View>
       )}
       <TouchableOpacity 
