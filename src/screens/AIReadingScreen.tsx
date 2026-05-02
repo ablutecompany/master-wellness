@@ -283,6 +283,27 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   const focusDim = reading.nextFocus ? dimensions.find(d => d.id === reading.nextFocus!.dimensionId) : null;
   const auraColor = focusDim && focusDim.color !== '#AAA' ? focusDim.color : '#00FF9D';
 
+  const renderTextWithDimensionHighlights = (text: string, dims: typeof dimensions) => {
+    if (!text) return null;
+    const sortedDims = [...dims].sort((a, b) => b.title.length - a.title.length);
+    if (sortedDims.length === 0) return text;
+    const pattern = sortedDims.map(d => d.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+    const regex = new RegExp(`(${pattern})`, 'gi');
+    const parts = text.split(regex);
+    
+    return parts.map((part, index) => {
+      const matchedDim = sortedDims.find(d => d.title.toLowerCase() === part.toLowerCase());
+      if (matchedDim) {
+        return (
+          <Typography key={index} style={{ color: matchedDim.color, fontWeight: '700' }}>
+            {part}
+          </Typography>
+        );
+      }
+      return <React.Fragment key={index}>{part}</React.Fragment>;
+    });
+  };
+
   return (
     <Container safe style={styles.container}>
       <View style={styles.atmosphere}>
@@ -339,7 +360,9 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                  <BlurView intensity={20} tint="dark" style={[styles.messageAreaCard, { minHeight: 120, marginBottom: 12 }]}>
                    <Typography style={styles.sectionTitle}>SÍNTESE DO MOMENTO</Typography>
                    <Typography style={styles.messageTitle}>{reading.summary.title}</Typography>
-                   <Typography style={styles.messageText}>{reading.summary.text}</Typography>
+                   <Typography style={styles.messageText}>
+                     {renderTextWithDimensionHighlights(reading.summary.text, dimensions)}
+                   </Typography>
                  </BlurView>
                </View>
              );
@@ -518,7 +541,7 @@ const styles = StyleSheet.create({
   atmosphere: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
   aura: { position: 'absolute', width: 600, height: 600, borderRadius: 300, top: -200, right: -200, opacity: 0.3, ...(Platform.OS === 'web' ? { filter: 'blur(120px)' } : {}) },
   scroll: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 40 },
-  header: { marginTop: 24, marginBottom: 20, paddingHorizontal: 20 },
+  header: { marginTop: 40, marginBottom: 20, paddingHorizontal: 20 },
   title: { color: '#ffffff', fontSize: 24, fontWeight: '700', flexShrink: 1 },
   demoBadge: { borderColor: '#00F2FF', borderWidth: 1, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, justifyContent: 'center', height: 20 },
   demoLabel: { color: '#00F2FF', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
