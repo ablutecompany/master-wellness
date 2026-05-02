@@ -283,27 +283,41 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
       {/* DETAIL MODAL */}
       <Modal visible={!!selectedItem} transparent animationType="fade" onRequestClose={() => setSelectedItem(null)}>
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setSelectedItem(null)}>
-           <BlurView intensity={90} tint="dark" style={[styles.modalContent, { maxHeight: '90%' }]}>
+           <View style={[styles.modalContent, { maxHeight: '90%' }]}>
               <View style={styles.modalHandle} />
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
-                <Typography variant="h3" style={styles.modalName}>
-                  {selectedItem?.name && BIOMARKER_INFO[selectedItem.name]?.label ? BIOMARKER_INFO[selectedItem.name].label : selectedItem?.name}
-                </Typography>
-                <Typography variant="caption" style={styles.modalDate}>{selectedItem?.dateStr}</Typography>
-                
-                <View style={styles.modalValueBox}>
-                   <Typography style={styles.modalValue}>
-                     {selectedItem?.name === 'ECG' && isDemoMode ? 'Simulação' : selectedItem?.value}
-                   </Typography>
-                   <Typography style={styles.modalUnit}>
-                     {selectedItem?.name !== 'ECG' ? selectedItem?.unit : ''}
-                   </Typography>
-                   {isDemoMode && (
-                     <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 8, alignSelf: 'center' }}>
-                       <Typography style={{ color: '#F59E0B', fontSize: 10, fontWeight: 'bold' }}>SIMULAÇÃO</Typography>
-                     </View>
-                   )}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <Typography variant="h3" style={[styles.modalName, { flex: 1 }]}>
+                    {selectedItem?.name && BIOMARKER_INFO[selectedItem.name]?.label ? BIOMARKER_INFO[selectedItem.name].label : selectedItem?.name}
+                  </Typography>
+                  <TouchableOpacity onPress={() => setSelectedItem(null)} style={{ padding: 4, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 16, marginLeft: 16 }}>
+                    <X size={20} color="rgba(255,255,255,0.6)" />
+                  </TouchableOpacity>
                 </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 16 }}>
+                  <Typography variant="caption" style={styles.modalDate}>{selectedItem?.dateStr}</Typography>
+                  {isDemoMode && selectedItem?.name === 'Caracterização Óptica' && (
+                    <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                      <Typography style={{ color: '#F59E0B', fontSize: 10, fontWeight: 'bold' }}>SIMULAÇÃO</Typography>
+                    </View>
+                  )}
+                </View>
+                
+                {selectedItem?.name !== 'Caracterização Óptica' && (
+                  <View style={styles.modalValueBox}>
+                     <Typography style={styles.modalValue}>
+                       {selectedItem?.name === 'ECG' && isDemoMode ? 'Simulação' : selectedItem?.value}
+                     </Typography>
+                     <Typography style={styles.modalUnit}>
+                       {selectedItem?.name !== 'ECG' ? selectedItem?.unit : ''}
+                     </Typography>
+                     {isDemoMode && (
+                       <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginLeft: 8, alignSelf: 'center' }}>
+                         <Typography style={{ color: '#F59E0B', fontSize: 10, fontWeight: 'bold' }}>SIMULAÇÃO</Typography>
+                       </View>
+                     )}
+                  </View>
+                )}
 
                 {(() => {
                   if (!selectedItem) return null;
@@ -343,31 +357,39 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                     const opticaData: any = fullOpticaEntry?.value || {};
                     const hasSangueVisivel = opticaData.sangueVisivel && opticaData.sangueVisivel.toLowerCase() !== 'não observado' && opticaData.sangueVisivel.toLowerCase() !== 'ausente';
 
+                    const classification = selectedItem.value;
+                    const bristolType = opticaData.bristol || 'Bristol não classificado';
+                    const bristolStr = bristolType.toLowerCase().includes('bristol') ? bristolType : `Bristol ${bristolType}`;
+
                     return (
                       <>
-                        <View style={{ marginBottom: 16 }}>
-                           <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 8, letterSpacing: 1 }}>RESUMO</Typography>
-                           <Typography style={{ color: '#FFF', fontSize: 16, fontWeight: '600', textTransform: 'capitalize' }}>
-                             {selectedItem.value}
+                        <View style={{ marginBottom: 24, backgroundColor: '#131820', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+                           <View style={{ marginBottom: 12 }}>
+                             <Typography style={{ color: '#00F2FF', fontSize: 24, fontWeight: '800', textTransform: 'capitalize', marginBottom: 4 }}>
+                               {classification}
+                             </Typography>
+                             <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '600' }}>
+                               {bristolStr}
+                             </Typography>
+                           </View>
+                           <Typography style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, lineHeight: 20 }}>
+                             O padrão fecal desta leitura está próximo de uma forma regular, o que apoia uma leitura positiva do conforto digestivo.
                            </Typography>
                         </View>
 
-                        <View style={{ marginBottom: 24 }}>
-                           <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 12, letterSpacing: 1 }}>DESCRIÇÃO OBSERVACIONAL</Typography>
-                           {['bristol', 'consistencia', 'forma', 'superficie', 'cor', 'fragmentacao', 'mucoVisivel', 'sangueVisivel', 'aspetoGorduroso', 'interpretacaoWellness', 'confiancaImagem'].map((key) => {
+                        <View style={{ marginBottom: 24, backgroundColor: '#131820', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+                           <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 12, letterSpacing: 1 }}>OBSERVAÇÃO VISUAL</Typography>
+                           {['forma', 'consistencia', 'superficie', 'cor', 'fragmentacao', 'mucoVisivel', 'sangueVisivel', 'aspetoGorduroso'].map((key) => {
                              if (!opticaData[key]) return null;
                              const labels: Record<string, string> = {
-                               bristol: 'Bristol',
-                               consistencia: 'Consistência',
                                forma: 'Forma',
+                               consistencia: 'Consistência',
                                superficie: 'Superfície',
                                cor: 'Cor',
                                fragmentacao: 'Fragmentação',
                                mucoVisivel: 'Muco visível',
                                sangueVisivel: 'Sangue visível',
-                               aspetoGorduroso: 'Aspeto gorduroso',
-                               interpretacaoWellness: 'Interpretação wellness',
-                               confiancaImagem: 'Confiança da avaliação por imagem'
+                               aspetoGorduroso: 'Aspeto gorduroso'
                              };
                              const isAlert = key === 'sangueVisivel' && hasSangueVisivel;
                              return (
@@ -381,21 +403,27 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                            })}
                         </View>
 
-                        <View style={{ marginBottom: 16, backgroundColor: 'rgba(0, 242, 255, 0.05)', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.1)' }}>
-                           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                             <Info size={14} color="#00F2FF" style={{ marginRight: 6 }} />
-                             <Typography variant="caption" style={{ color: '#00F2FF', letterSpacing: 1 }}>
-                               LIMITES
-                             </Typography>
-                           </View>
-                           <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 }}>
-                             Esta caracterização é observacional e depende da qualidade da imagem, iluminação, visibilidade e contexto. Não constitui diagnóstico.
+                        <View style={{ marginBottom: 24, backgroundColor: '#131820', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+                           <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 12, letterSpacing: 1 }}>LEITURA PRÁTICA</Typography>
+                           <Typography style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, lineHeight: 20 }}>
+                             A observação visual é compatível com fezes {String(classification).toLowerCase()}, próximas de {bristolStr}. Nesta leitura, isso tende a associar-se a maior regularidade e melhor conforto digestivo.
                            </Typography>
+                           
                            {hasSangueVisivel && (
                              <Typography style={{ color: '#EF4444', fontSize: 13, lineHeight: 18, marginTop: 12, fontWeight: '600' }}>
-                               Este campo refere-se apenas a sangue visível exteriormente. Se existir persistência ou dúvida, deve ser considerada avaliação.
+                               Nota: Foi detetado sangue visível. Se houver persistência, considere avaliação especializada.
                              </Typography>
                            )}
+                        </View>
+                        
+                        <View style={{ marginBottom: 24, backgroundColor: 'rgba(0, 242, 255, 0.05)', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.1)' }}>
+                           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                             <Info size={14} color="#00F2FF" style={{ marginRight: 6 }} />
+                             <Typography variant="caption" style={{ color: '#00F2FF', letterSpacing: 1 }}>LIMITES</Typography>
+                           </View>
+                           <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 }}>
+                             Esta caracterização é observacional e depende da qualidade da imagem, iluminação, visibilidade e contexto. Não constitui diagnóstico clínico.
+                           </Typography>
                         </View>
                       </>
                     );
@@ -528,17 +556,19 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                   );
                 })()}
 
-                <View style={styles.infoBox}>
-                   <Typography style={styles.infoText}>
-                     {BIOMARKER_INFO[selectedItem?.name || '']?.limitation || 'Esta leitura é observacional e não substitui avaliação clínica quando existirem sintomas, persistência ou preocupação.'}
-                   </Typography>
-                </View>
+                {selectedItem?.name !== 'Caracterização Óptica' && (
+                  <View style={styles.infoBox}>
+                     <Typography style={styles.infoText}>
+                       {BIOMARKER_INFO[selectedItem?.name || '']?.limitation || 'Esta leitura é observacional e não substitui avaliação clínica quando existirem sintomas, persistência ou preocupação.'}
+                     </Typography>
+                  </View>
+                )}
 
                 <TouchableOpacity style={styles.closeBtn} onPress={() => setSelectedItem(null)}>
                    <Typography style={styles.closeBtnText}>FECHAR</Typography>
                 </TouchableOpacity>
               </ScrollView>
-           </BlurView>
+           </View>
         </TouchableOpacity>
       </Modal>
     </Container>
