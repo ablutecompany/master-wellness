@@ -699,8 +699,8 @@ const styles = StyleSheet.create({
   
   messageAreaCard: { padding: 14, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', marginBottom: 12, backgroundColor: 'rgba(255,255,255,0.03)' },
   sectionTitle: { color: 'rgba(255,255,255,0.6)', fontSize: 9, fontWeight: '700', letterSpacing: 1.2, marginBottom: 4 },
-  messageTitle: { color: '#ffffff', fontSize: 15, fontWeight: '800', marginBottom: 6, lineHeight: 18 },
-  messageText: { color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 19, fontWeight: '500' },
+  messageTitle: { color: '#ffffff', fontSize: 15, fontWeight: '800', marginBottom: 6, lineHeight: 18, textAlign: 'left' },
+  messageText: { color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 19, fontWeight: '500', textAlign: 'justify' },
 
 
   tabsContainer: { flexDirection: 'row', gap: 6, marginTop: 12, marginBottom: 8 },
