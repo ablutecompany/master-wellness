@@ -23,48 +23,59 @@ export class AuthService {
         // Ignorar falha estrutural do household
       }
 
-      // 2. Obter Perfil Base usando Prisma de forma segura
-      let profileBase = await this.prisma.userProfile.findUnique({
-        where: { id: uid }
-      });
-
-      if (!profileBase) {
-        profileBase = await this.prisma.userProfile.create({
-          data: {
-            id: uid,
-            height: 170,
-            baseWeight: 70,
-            mainGoal: 'general_wellness',
-            secondaryGoals: [],
-            activityLevel: 'moderate',
-            dietaryRestrictions: [],
-            allergies: [],
-            currentSupplementation: [],
-            reportedMedication: [],
-            reportedSymptoms: [],
-          }
-        });
+      // 2. Garantir que o perfil base existe na tabela profiles
+      try {
+        await this.prisma.$executeRawUnsafe(`
+          INSERT INTO public.profiles (id, height, base_weight, main_goal, secondary_goals, activity_level, dietary_restrictions, allergies, current_supplementation, reported_medication, reported_symptoms, updated_at)
+          VALUES (${uid}::uuid, 170, 70, 'general_wellness', '{}', 'moderate', '{}', '{}', '{}', '{}', '{}', now())
+          ON CONFLICT (id) DO NOTHING
+        `);
+      } catch (e) {
+        // Ignorar se a tabela não suportar algumas destas colunas, fazemos um insert básico
+        try {
+          await this.prisma.$executeRawUnsafe(`
+            INSERT INTO public.profiles (id, updated_at)
+            VALUES (${uid}::uuid, now())
+            ON CONFLICT (id) DO NOTHING
+          `);
+        } catch (e2) {}
       }
 
-      // 3. Obter dados estendidos guardados na tabela 'profiles' via raw SQL (name, date_of_birth, sex, timezone, country, avatar_url)
+      // 3. Obter dados guardados na tabela 'profiles' via raw SQL (bypassing Prisma strict schema)
       let extendedData: any = {};
       try {
-        const extRes = await this.prisma.$queryRaw<any[]>`SELECT name, date_of_birth as "dateOfBirth", sex, timezone, country, avatar_url as "avatarUrl" FROM public.profiles WHERE id = ${uid}::uuid`;
+        const extRes = await this.prisma.$queryRaw<any[]>`
+          SELECT 
+            name, date_of_birth as "dateOfBirth", sex, timezone, country, avatar_url as "avatarUrl",
+            height, base_weight as "baseWeight", main_goal as "mainGoal", 
+            secondary_goals as "secondaryGoals", activity_level as "activityLevel",
+            dietary_restrictions as "dietaryRestrictions", active_analysis_id as "activeAnalysisId"
+          FROM public.profiles 
+          WHERE id = ${uid}::uuid
+        `;
         if (extRes && extRes.length > 0) {
           extendedData = extRes[0];
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('[getProfileByUid] raw query errored, falling back', e);
+      }
 
       const user = {
         id: uid,
-        email: profileBase.id, // Em M5 vamos usar o email do token auth, por agora stub
+        email: uid, // Em M5 vamos usar o email do token auth, por agora stub
         name: extendedData.name || 'Utilizador',
         dateOfBirth: extendedData.dateOfBirth || null,
         sex: extendedData.sex || null,
         timezone: extendedData.timezone || null,
         country: extendedData.country || null,
         profile: {
-          ...profileBase,
+          height: extendedData.height || 170,
+          baseWeight: extendedData.baseWeight || 70,
+          mainGoal: extendedData.mainGoal || 'general_wellness',
+          secondaryGoals: extendedData.secondaryGoals || [],
+          activityLevel: extendedData.activityLevel || 'moderate',
+          dietaryRestrictions: extendedData.dietaryRestrictions || [],
+          activeAnalysisId: extendedData.activeAnalysisId || null,
           avatarUrl: extendedData.avatarUrl || null
         }
       };
@@ -160,23 +171,21 @@ export class AuthService {
       await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS timezone TEXT`);
     } catch (e) {}
 
-    const profile = await this.prisma.userProfile.upsert({
-      where: { id: targetUserId },
-      update: {},
-      create: {
-        id: targetUserId,
-        height: 170,
-        baseWeight: 70,
-        mainGoal: 'general_wellness',
-        secondaryGoals: [],
-        activityLevel: 'moderate',
-        dietaryRestrictions: [],
-        allergies: [],
-        currentSupplementation: [],
-        reportedMedication: [],
-        reportedSymptoms: [],
-      },
-    });
+    try {
+      await this.prisma.$executeRawUnsafe(`
+        INSERT INTO public.profiles (id, height, base_weight, main_goal, secondary_goals, activity_level, dietary_restrictions, allergies, current_supplementation, reported_medication, reported_symptoms, updated_at)
+        VALUES (${targetUserId}::uuid, 170, 70, 'general_wellness', '{}', 'moderate', '{}', '{}', '{}', '{}', '{}', now())
+        ON CONFLICT (id) DO NOTHING
+      `);
+    } catch (e) {
+      try {
+        await this.prisma.$executeRawUnsafe(`
+          INSERT INTO public.profiles (id, updated_at)
+          VALUES (${targetUserId}::uuid, now())
+          ON CONFLICT (id) DO NOTHING
+        `);
+      } catch (e2) {}
+    }
 
     const displayNameValue = displayName || email.split('@')[0];
     try {
@@ -192,7 +201,7 @@ export class AuthService {
       `;
     } catch (e) {}
 
-    return profile;
+    return { id: targetUserId };
   }
 
   /**

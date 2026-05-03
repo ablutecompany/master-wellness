@@ -180,19 +180,21 @@ export class UserService {
     if (country !== undefined) userData.country = country;
 
     // Garantir que a linha existe na tabela profiles antes de fazer o raw SQL UPDATE
-    await this.prisma.userProfile.upsert({
-      where: { id: userId },
-      update: {},
-      create: {
-        id: userId,
-        height: height !== undefined ? height : 170,
-        baseWeight: 0,
-        mainGoal: goals && goals.length > 0 ? goals[0] : 'general_wellness',
-        secondaryGoals: goals && goals.length > 1 ? goals.slice(1) : [],
-        activityLevel: activityLevel || 'sedentary',
-        dietaryRestrictions: dietaryRestrictions || []
-      },
-    });
+    try {
+      await this.prisma.$executeRawUnsafe(`
+        INSERT INTO public.profiles (id, height, base_weight, main_goal, secondary_goals, activity_level, dietary_restrictions, allergies, current_supplementation, reported_medication, reported_symptoms, updated_at)
+        VALUES (${userId}::uuid, 170, 70, 'general_wellness', '{}', 'sedentary', '{}', '{}', '{}', '{}', '{}', now())
+        ON CONFLICT (id) DO NOTHING
+      `);
+    } catch (e) {
+      try {
+        await this.prisma.$executeRawUnsafe(`
+          INSERT INTO public.profiles (id, updated_at)
+          VALUES (${userId}::uuid, now())
+          ON CONFLICT (id) DO NOTHING
+        `);
+      } catch (e2) {}
+    }
 
     // Como a tabela public.User não existe no atual estado da BD, temos de gravar estas propriedades base diretamente na public.profiles usando raw SQL
     try {
@@ -255,10 +257,18 @@ export class UserService {
     if (dietaryRestrictions !== undefined) profileData.dietaryRestrictions = dietaryRestrictions;
 
     if (Object.keys(profileData).length > 0 || height !== undefined) {
-      await this.prisma.userProfile.update({
-        where: { id: userId },
-        data: profileData,
-      });
+      if (profileData.height !== undefined) {
+        try { await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS height NUMERIC`); } catch (e) {}
+        await this.prisma.$executeRaw`UPDATE public.profiles SET height = ${profileData.height}::numeric, updated_at = now() WHERE id = ${userId}::uuid`;
+      }
+      if (profileData.mainGoal !== undefined) {
+        try { await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS main_goal TEXT`); } catch (e) {}
+        await this.prisma.$executeRaw`UPDATE public.profiles SET main_goal = ${profileData.mainGoal}, updated_at = now() WHERE id = ${userId}::uuid`;
+      }
+      if (profileData.activityLevel !== undefined) {
+        try { await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS activity_level TEXT`); } catch (e) {}
+        await this.prisma.$executeRaw`UPDATE public.profiles SET activity_level = ${profileData.activityLevel}, updated_at = now() WHERE id = ${userId}::uuid`;
+      }
     }
 
     // 3. Read back (usando a mesma lógica do getProfileByUid para coerência)
