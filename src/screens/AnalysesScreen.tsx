@@ -31,6 +31,50 @@ const { width } = Dimensions.get('window');
 
 type ResultsTab = 'urina' | 'fezes' | 'fisiologicos' | 'contextuais';
 
+const buildFecalOpticalAssessment = (rawLabel: string, rawData: any = {}) => {
+  const baseLabel = String(rawLabel || 'Desconhecido').toLowerCase();
+  
+  if (baseLabel.includes('formada') || (rawData.label && String(rawData.label).toLowerCase().includes('formada'))) {
+    return {
+      label: "Padrão formado",
+      bristolLabel: "Compatível com Bristol tipo 4",
+      summary: "O padrão fecal desta leitura está próximo de uma forma regular, o que apoia uma leitura positiva do conforto digestivo.",
+      visualObservation: {
+        shape: "formada/cilíndrica",
+        consistency: "regular",
+        surface: "lisa a ligeiramente irregular",
+        colour: "castanho médio",
+        fragmentation: "baixa",
+        dryness: "baixa",
+        mucusVisible: "não observado",
+        visibleBlood: "não observado",
+        confidence: "moderada"
+      },
+      practicalReading: "Nesta leitura, o padrão observado tende a associar-se a maior regularidade intestinal e melhor conforto digestivo. Manter hidratação, rotina alimentar e ingestão adequada de fibra ajuda a preservar este padrão.",
+      limitations: "Esta caracterização é observacional e depende da qualidade da imagem, iluminação, visibilidade e contexto. Não constitui diagnóstico clínico."
+    };
+  }
+  
+  return {
+    label: rawLabel || "Desconhecido",
+    bristolLabel: "Bristol não disponível",
+    summary: "A leitura atual não possui dados visuais suficientes para um resumo detalhado.",
+    visualObservation: {
+      shape: "não disponível",
+      consistency: "não disponível",
+      surface: "não disponível",
+      colour: "não disponível",
+      fragmentation: "não disponível",
+      dryness: "não disponível",
+      mucusVisible: "não disponível",
+      visibleBlood: "não disponível",
+      confidence: "não disponível"
+    },
+    practicalReading: `A observação visual registou um padrão classificado como ${rawLabel || 'Desconhecido'}. Sem dados detalhados, não é possível extrair conclusões precisas sobre o conforto digestivo.`,
+    limitations: "Esta caracterização é observacional e depende da qualidade da imagem, iluminação, visibilidade e contexto. Não constitui diagnóstico clínico."
+  };
+};
+
 interface FormattedResult {
   id: string;
   name: string;
@@ -282,8 +326,11 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 
       {/* DETAIL MODAL */}
       <Modal visible={!!selectedItem} transparent animationType="fade" onRequestClose={() => setSelectedItem(null)}>
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setSelectedItem(null)}>
-           <View style={[styles.modalContent, { maxHeight: '90%' }]}>
+        {(() => {
+          const isFecalOptica = selectedItem?.name?.toLowerCase() === 'caracterização óptica' || selectedItem?.name?.toLowerCase() === 'caracterizacao optica';
+          return (
+            <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setSelectedItem(null)}>
+               <View style={[styles.modalContent, { maxHeight: '90%' }]}>
               <View style={styles.modalHandle} />
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -296,14 +343,14 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                 </View>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4, marginBottom: 16 }}>
                   <Typography variant="caption" style={styles.modalDate}>{selectedItem?.dateStr}</Typography>
-                  {isDemoMode && selectedItem?.name === 'Caracterização Óptica' && (
+                  {isDemoMode && isFecalOptica && (
                     <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
                       <Typography style={{ color: '#F59E0B', fontSize: 10, fontWeight: 'bold' }}>SIMULAÇÃO</Typography>
                     </View>
                   )}
                 </View>
                 
-                {selectedItem?.name !== 'Caracterização Óptica' && (
+                {!isFecalOptica && (
                   <View style={styles.modalValueBox}>
                      <Typography style={styles.modalValue}>
                        {selectedItem?.name === 'ECG' && isDemoMode ? 'Simulação' : selectedItem?.value}
@@ -322,7 +369,6 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                 {(() => {
                   if (!selectedItem) return null;
                   const isEcg = selectedItem.name === 'ECG';
-                  const isFecalOptica = selectedItem.name === 'Caracterização Óptica';
                   const isBristol = selectedItem.name === 'Bristol';
                   const meta = BIOMARKER_INFO[selectedItem.name] || BIOMARKER_INFO['Caracterização Óptica Completa'];
                   
@@ -354,122 +400,48 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 
                   if (isFecalOptica) {
                     const fullOpticaEntry = allResults.find(r => r.name === 'Caracterização Óptica Completa' && r.timestamp === selectedItem.timestamp);
-                    let opticaData: any = fullOpticaEntry?.value || {};
-                    
-                    // FALLBACK PARA DEMO OU DADOS INCOMPLETOS
-                    if (Object.keys(opticaData).length === 0) {
-                      const baseLabel = String(selectedItem.value || 'Desconhecido').toLowerCase();
-                      if (baseLabel.includes('formada')) {
-                        opticaData = {
-                          label: "Padrão formado",
-                          bristolType: 4,
-                          bristolRange: "3–4",
-                          consistency: "regular",
-                          shape: "cilíndrica/formada",
-                          surface: "lisa a ligeiramente irregular",
-                          colour: "castanho médio",
-                          fragmentation: "baixa",
-                          dryness: "baixa",
-                          mucusVisible: "não observado",
-                          visibleBlood: "não observado",
-                          greasyAspect: "não observado",
-                          confidence: "moderada",
-                          userVisibleSummary: "O padrão fecal desta leitura está próximo de uma forma regular, o que apoia uma leitura positiva do conforto digestivo.",
-                          practicalReading: "A observação visual é compatível com um padrão formado, próximo de Bristol tipo 4. Nesta leitura, isso tende a associar-se a maior regularidade intestinal e melhor conforto digestivo.",
-                          limitations: "Esta caracterização é observacional e depende da qualidade da imagem, iluminação, visibilidade e contexto. Não constitui diagnóstico clínico."
-                        };
-                      } else {
-                        // Fallback genérico para outros casos caso existam no futuro em demo
-                        opticaData = {
-                          label: selectedItem.value,
-                          bristolType: "Desconhecido",
-                          bristolRange: "Desconhecido",
-                          consistency: "não disponível",
-                          shape: "não disponível",
-                          surface: "não disponível",
-                          colour: "não disponível",
-                          fragmentation: "não disponível",
-                          dryness: "não disponível",
-                          mucusVisible: "não disponível",
-                          visibleBlood: "não disponível",
-                          greasyAspect: "não disponível",
-                          confidence: "não disponível",
-                          userVisibleSummary: "A leitura atual não possui dados visuais suficientes para um resumo detalhado.",
-                          practicalReading: `A observação visual registou um padrão classificado como ${selectedItem.value}. Sem dados detalhados, não é possível extrair conclusões precisas sobre o conforto digestivo.`,
-                          limitations: "Esta caracterização é observacional e depende da qualidade da imagem, iluminação, visibilidade e contexto. Não constitui diagnóstico clínico."
-                        };
-                      }
-                    }
-
-                    const hasSangueVisivel = opticaData.visibleBlood && opticaData.visibleBlood.toLowerCase() !== 'não observado' && opticaData.visibleBlood.toLowerCase() !== 'ausente' && opticaData.visibleBlood.toLowerCase() !== 'não disponível';
-
-                    const classification = opticaData.label || selectedItem.value;
-                    
-                    let bristolStr = 'Bristol não disponível';
-                    if (opticaData.bristolType && opticaData.bristolType !== 'Desconhecido') {
-                      bristolStr = `Bristol tipo ${opticaData.bristolType}`;
-                    } else if (opticaData.bristolRange && opticaData.bristolRange !== 'Desconhecido') {
-                      bristolStr = `Compatível com Bristol ${opticaData.bristolRange}`;
-                    } else if (opticaData.bristol) {
-                      bristolStr = opticaData.bristol.toLowerCase().includes('bristol') ? opticaData.bristol : `Bristol ${opticaData.bristol}`;
-                    }
+                    const rawData: any = fullOpticaEntry?.value || {};
+                    const assessment = buildFecalOpticalAssessment(selectedItem.value, rawData);
+                    const hasSangueVisivel = assessment.visualObservation.visibleBlood && assessment.visualObservation.visibleBlood !== 'não observado' && assessment.visualObservation.visibleBlood !== 'não disponível';
 
                     return (
                       <>
-                        <View style={{ marginBottom: 24, backgroundColor: '#131820', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
-                           <View style={{ marginBottom: 12 }}>
-                             <Typography style={{ color: '#00F2FF', fontSize: 24, fontWeight: '800', textTransform: 'capitalize', marginBottom: 4 }}>
-                               {classification}
-                             </Typography>
-                             <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '600' }}>
-                               {bristolStr}
-                             </Typography>
-                           </View>
+                        <View style={{ marginBottom: 16, backgroundColor: '#131820', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+                           <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 8, letterSpacing: 1 }}>PADRÃO OBSERVADO</Typography>
+                           <Typography style={{ color: '#00F2FF', fontSize: 20, fontWeight: '800', marginBottom: 2 }}>
+                             {assessment.label}
+                           </Typography>
+                           <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: '600', marginBottom: 12 }}>
+                             {assessment.bristolLabel}
+                           </Typography>
                            <Typography style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, lineHeight: 20 }}>
-                             {opticaData.userVisibleSummary || 'Resumo não disponível.'}
+                             {assessment.summary}
                            </Typography>
                         </View>
 
-                        <View style={{ marginBottom: 24, backgroundColor: '#131820', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+                        <View style={{ marginBottom: 16, backgroundColor: '#131820', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
                            <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 12, letterSpacing: 1 }}>OBSERVAÇÃO VISUAL</Typography>
-                           {['shape', 'consistency', 'surface', 'colour', 'fragmentation', 'dryness', 'mucusVisible', 'visibleBlood', 'greasyAspect', 'confidence'].map((key) => {
-                             const value = opticaData[key] || opticaData[key.replace(/([A-Z])/g, "_$1").toLowerCase()]; // fallback mapping if older snake_case or missing
-                             if (!value) return null;
+                           {Object.entries(assessment.visualObservation).map(([key, value]) => {
                              const labels: Record<string, string> = {
-                               shape: 'Forma',
-                               consistency: 'Consistência',
-                               surface: 'Superfície',
-                               colour: 'Cor',
-                               fragmentation: 'Fragmentação',
-                               dryness: 'Secura',
-                               mucusVisible: 'Muco visível',
-                               visibleBlood: 'Sangue visível',
-                               greasyAspect: 'Aspeto gorduroso',
-                               confidence: 'Confiança'
+                               shape: 'Forma', consistency: 'Consistência', surface: 'Superfície', colour: 'Cor', fragmentation: 'Fragmentação', dryness: 'Secura', mucusVisible: 'Muco visível', visibleBlood: 'Sangue visível', confidence: 'Confiança'
                              };
                              const isAlert = key === 'visibleBlood' && hasSangueVisivel;
                              return (
                                <View key={key} style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)', paddingVertical: 8 }}>
                                  <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>{labels[key] || key}</Typography>
                                  <Typography style={{ color: isAlert ? '#EF4444' : '#FFF', fontSize: 13, flex: 1, textAlign: 'right', marginLeft: 16 }}>
-                                   {value}
+                                   {String(value)}
                                  </Typography>
                                </View>
                              );
                            })}
                         </View>
 
-                        <View style={{ marginBottom: 24, backgroundColor: '#131820', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
+                        <View style={{ marginBottom: 16, backgroundColor: '#131820', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)' }}>
                            <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 12, letterSpacing: 1 }}>LEITURA PRÁTICA</Typography>
                            <Typography style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, lineHeight: 20 }}>
-                             {opticaData.practicalReading || `A observação visual registou um padrão classificado como ${classification}.`}
+                             {assessment.practicalReading}
                            </Typography>
-                           
-                           {hasSangueVisivel && (
-                             <Typography style={{ color: '#EF4444', fontSize: 13, lineHeight: 18, marginTop: 12, fontWeight: '600' }}>
-                               Nota: Foi detetado sangue visível. Se houver persistência, considere avaliação especializada.
-                             </Typography>
-                           )}
                         </View>
                         
                         <View style={{ marginBottom: 24, backgroundColor: 'rgba(0, 242, 255, 0.05)', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.1)' }}>
@@ -478,7 +450,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                              <Typography variant="caption" style={{ color: '#00F2FF', letterSpacing: 1 }}>LIMITES</Typography>
                            </View>
                            <Typography style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 18 }}>
-                             {opticaData.limitations || "Esta caracterização é observacional e depende da qualidade da imagem, iluminação, visibilidade e contexto. Não constitui diagnóstico clínico."}
+                             {assessment.limitations}
                            </Typography>
                         </View>
                       </>
@@ -584,7 +556,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                          </Typography>
                       </View>
 
-                      {meta && (
+                      {!isFecalOptica && meta && (
                         <View style={{ marginBottom: 16, backgroundColor: 'rgba(0, 242, 255, 0.05)', padding: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.1)' }}>
                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
                              <Info size={14} color="#00F2FF" style={{ marginRight: 6 }} />
@@ -612,7 +584,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                   );
                 })()}
 
-                {selectedItem?.name !== 'Caracterização Óptica' && (
+                {!isFecalOptica && selectedItem?.name !== 'Caracterização Óptica' && (
                   <View style={styles.infoBox}>
                      <Typography style={styles.infoText}>
                        {BIOMARKER_INFO[selectedItem?.name || '']?.limitation || 'Esta leitura é observacional e não substitui avaliação clínica quando existirem sintomas, persistência ou preocupação.'}
@@ -626,6 +598,8 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
               </ScrollView>
            </View>
         </TouchableOpacity>
+          );
+        })()}
       </Modal>
     </Container>
   );
