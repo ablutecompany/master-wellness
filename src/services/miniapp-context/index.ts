@@ -71,7 +71,6 @@ export function buildContextPayload(appId: string, state: AppState) {
     ? {
         name: user?.name || null,
         goals: user?.goals || [],
-        habits: user?.habits || [],
       }
     : null;
 

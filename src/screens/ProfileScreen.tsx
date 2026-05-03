@@ -210,6 +210,20 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     closeModal();
   };
 
+  const processAvatarAsset = (asset: any) => {
+    const dataUrl = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+    if (asset.base64) {
+      // Calcular tamanho em bytes do base64 (aprox)
+      const sizeInBytes = (asset.base64.length * 3) / 4;
+      const sizeInMb = sizeInBytes / (1024 * 1024);
+      if (sizeInMb > 1) {
+        Alert.alert('Imagem demasiado pesada', `A imagem selecionada tem cerca de ${sizeInMb.toFixed(1)}MB. O limite máximo atual é de 1MB. Por favor, tira outra foto com menos resolução ou escolhe outra.`);
+        return;
+      }
+    }
+    setTempAvatar(dataUrl);
+  };
+
   const handlePickAvatar = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -227,9 +241,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       });
       console.log('[P0_AVATAR_PICKER]', { action: 'gallery', permissionStatus: status, imageSelected: !result.canceled, hasBase64: !!result.assets?.[0]?.base64 });
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-        const dataUrl = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
-        setTempAvatar(dataUrl);
+        processAvatarAsset(result.assets[0]);
       }
     } catch (e) {
       console.error('[P0_AVATAR_PICKER] Error picking image:', e);
@@ -257,9 +269,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       });
       console.log('[P0_AVATAR_PICKER]', { action: 'camera', permissionStatus: status, imageSelected: !result.canceled, hasBase64: !!result.assets?.[0]?.base64 });
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        const asset = result.assets[0];
-        const dataUrl = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
-        setTempAvatar(dataUrl);
+        processAvatarAsset(result.assets[0]);
       }
     } catch (e) {
       console.error('[P0_AVATAR_PICKER] Error taking image:', e);

@@ -203,6 +203,7 @@ export default function App() {
       const prevUser = useStore.getState().user;
       if (prevUser && prevUser.id === session.user.id) {
          console.warn('[P0_PROFILE_BOOT] Keeping existing local profile despite fetch failure.');
+         console.warn('[P0_DATA_FALLBACK_BLOCKED] Prevented fallback from overwriting existing profile data for user:', session.user.id);
          await trySyncAnalyses();
          setProfileStatus('error');
          isSyncingRef.current = false;

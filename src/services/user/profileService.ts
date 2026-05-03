@@ -4,12 +4,15 @@ export class ProfileService {
   /**
    * Persistir dados combinados do perfil (Nome, Objetivos, etc).
    */
-  static async updateProfile(token: string, updates: { name?: string; goals?: string[]; [key: string]: any }): Promise<{ ok: boolean, profile?: any }> {
+  static async updateProfile(token: string, updates: Partial<import('../../store/state-types').UserProfile>): Promise<{ ok: boolean, profile?: any }> {
     try {
       const allowedKeys = ['name', 'goals', 'dateOfBirth', 'dateOfBirthPrecision', 'height', 'sex', 'timezone', 'country', 'weight', 'avatarUrl'];
       const payload: any = {};
       for (const k of allowedKeys) {
-        if (k in updates) payload[k] = updates[k];
+        const key = k as keyof import('../../store/state-types').UserProfile;
+        if (key in updates && updates[key] !== undefined) {
+          payload[key] = updates[key];
+        }
       }
 
       console.warn(`[DEV NAME 3] payload to backend:`, JSON.stringify(payload));

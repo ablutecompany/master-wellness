@@ -48,9 +48,9 @@ export const normalizeProfile = (rawProfile: any): UserProfile | null => {
   const invalidFields: string[] = [];
   const normalized: any = { ...rawProfile };
 
-  // Extracção do avatarUrl se estiver nested no backend (p. ex. GET /auth/me -> rawProfile.profile.avatarUrl)
-  if (!normalized.avatarUrl && rawProfile.profile && rawProfile.profile.avatarUrl) {
-    normalized.avatarUrl = rawProfile.profile.avatarUrl;
+  // A backend agora envia o avatarUrl na raiz
+  if (!normalized.avatarUrl && rawProfile.avatar_url) {
+    normalized.avatarUrl = rawProfile.avatar_url; // just in case legacy snake case appears
   }
 
   if (typeof normalized.name !== 'string') {
@@ -175,10 +175,19 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
         return false;
       }
 
-      // Merge seguro: se o backend devolveu sucesso mas sem avatarUrl, e tínhamos um, preservar. 
+      // Merge seguro: se o backend devolveu sucesso mas sem campos essenciais, e tínhamos, preservar. 
       // (Só removemos se o utilizador enviou explicitamente null)
       if (!normalizedResponse.avatarUrl && nextUser.avatarUrl && updates.avatarUrl !== null) {
          normalizedResponse.avatarUrl = nextUser.avatarUrl;
+      }
+      if (normalizedResponse.name === 'Utilizador' && previousUser?.name && previousUser.name !== 'Utilizador' && updates.name !== null) {
+         normalizedResponse.name = previousUser.name;
+      }
+      if (!normalizedResponse.dateOfBirth && previousUser?.dateOfBirth && updates.dateOfBirth !== null) {
+         normalizedResponse.dateOfBirth = previousUser.dateOfBirth;
+      }
+      if (!normalizedResponse.sex && previousUser?.sex && updates.sex !== null) {
+         normalizedResponse.sex = previousUser.sex;
       }
 
       // 2. Reflete resposta consolidada devolvida

@@ -106,13 +106,13 @@ export const resolveMotionContextBundle = (state: AppState, targetAppId?: string
   // 6. SINTOMAS / LIMITAÇÕES (Real se no perfil)
   const symptomsItem: ContextBundleItem = {
     key: 'symptoms_limitations',
-    value: { limitations: user?.habits?.includes('lesão') ? ['knee_pain'] : [], symptoms: [] },
+    value: { limitations: user?.goals?.includes('lesão') ? ['knee_pain'] : [], symptoms: [] },
     observed_at: now,
     updated_at: now,
     source: 'user_profile',
     confidence: 0.9,
     status: 'fresh',
-    origin_mode: user?.habits ? 'real' : 'mock'
+    origin_mode: user?.goals ? 'real' : 'mock'
   };
 
   // 7. ESFORÇO RECENTE (Mock)

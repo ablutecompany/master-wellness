@@ -2,22 +2,22 @@ import { MiniAppManifest, Permission, MiniAppEvent, AppContributionEvent, Contri
 
 export interface UserProfile {
   id: string; // The canonical ID of this specific profile
-  name: string;
-  fullName?: string;
   email?: string;
-  avatarUrl?: string;
-  habits?: string[];
-  age?: number;
+  name: string | null;
+  avatarUrl?: string | null;
+  dateOfBirth?: string | null;
+  dateOfBirthPrecision?: string | null;
+  sex?: string | null;
+  height?: number | null;
   weight?: SourcedMetric<number>;
-  height?: number;
-  dateOfBirth?: string;
-  dateOfBirthPrecision?: 'year' | 'month' | 'day' | null;
-  sex?: 'male' | 'female' | 'undisclosed' | null;
-  timezone?: string;
-  country?: string;
-  location?: string;
+  country?: string | null;
+  timezone?: string | null;
+  mainGoal?: string | null;
   goals?: string[];
-  activeAnalysisId?: string;
+  activityLevel?: string | null;
+  dietaryRestrictions?: string[];
+  activeAnalysisId?: string | null;
+  household?: any;
 }
 
 export interface SourcedMetric<T = number> {

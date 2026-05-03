@@ -218,7 +218,23 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
     setRequestStarted(true);
     setFallbackReason('LOADING');
 
-    const llmContext = buildAiReadingLLMContextV2(localReading, isDemoMode);
+    const ecosystemConfig = useStore.getState().ecosystemConfig || {};
+    const aiConfig: any = ecosystemConfig['ai_config'] || { urinalysis: true, stool: true, physiology: true, context: true };
+    
+    let llmContext = buildAiReadingLLMContextV2(localReading, isDemoMode);
+    
+    if (!aiConfig.urinalysis) {
+      delete (llmContext as any).dimensions?.['equilíbrio interno'];
+    }
+    if (!aiConfig.stool) {
+      delete (llmContext as any).dimensions?.['saúde digestiva'];
+    }
+    if (!aiConfig.physiology) {
+      delete (llmContext as any).dimensions?.['carga fisiológica'];
+    }
+    if (!aiConfig.context) {
+      delete (llmContext as any).contexto;
+    }
 
     console.log(`[R5C10_AI_READING_STATE] requestStarted=true | clientReturnedOk=pending | provider=pending | fallbackReasonFromClient=pending | fallbackReasonFinal=LOADING | readingSourceFinal=local_fallback`);
 

@@ -147,22 +147,20 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        // Canonical shape mapping
-        height: user.profile?.height || null,
+        avatarUrl: user.profile?.avatarUrl || null,
         dateOfBirth: user.dateOfBirth ? (typeof user.dateOfBirth === 'string' ? user.dateOfBirth.split('T')[0] : user.dateOfBirth.toISOString().split('T')[0]) : null,
         dateOfBirthPrecision: user.dateOfBirthPrecision || null,
         sex: user.sex || null,
-        timezone: user.timezone || null,
-        country: user.country || null,
+        height: user.profile?.height || null,
         weight: weightObj,
-        baseWeight: user.profile?.baseWeight || null,
+        country: user.country || null,
+        timezone: user.timezone || null,
         mainGoal: user.profile?.mainGoal || null,
         goals: user.profile?.mainGoal ? [user.profile.mainGoal, ...(user.profile.secondaryGoals || [])] : [],
         activityLevel: user.profile?.activityLevel || null,
         dietaryRestrictions: user.profile?.dietaryRestrictions || [],
         activeAnalysisId: user.profile?.activeAnalysisId || null,
         household: householdData || null,
-        // Outros metadados disponíveis na tabela profile
       };
     } catch (err: any) {
       console.warn(`[getProfileByUid] Erro grave:`, err.message);
