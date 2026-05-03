@@ -179,6 +179,21 @@ export class UserService {
     if (timezone !== undefined) userData.timezone = timezone;
     if (country !== undefined) userData.country = country;
 
+    // Garantir que a linha existe na tabela profiles antes de fazer o raw SQL UPDATE
+    await this.prisma.userProfile.upsert({
+      where: { id: userId },
+      update: {},
+      create: {
+        id: userId,
+        height: height !== undefined ? height : 170,
+        baseWeight: 0,
+        mainGoal: goals && goals.length > 0 ? goals[0] : 'general_wellness',
+        secondaryGoals: goals && goals.length > 1 ? goals.slice(1) : [],
+        activityLevel: activityLevel || 'sedentary',
+        dietaryRestrictions: dietaryRestrictions || []
+      },
+    });
+
     // Como a tabela public.User não existe no atual estado da BD, temos de gravar estas propriedades base diretamente na public.profiles usando raw SQL
     try {
       await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS name TEXT`);
@@ -240,18 +255,9 @@ export class UserService {
     if (dietaryRestrictions !== undefined) profileData.dietaryRestrictions = dietaryRestrictions;
 
     if (Object.keys(profileData).length > 0 || height !== undefined) {
-      await this.prisma.userProfile.upsert({
+      await this.prisma.userProfile.update({
         where: { id: userId },
-        update: profileData,
-        create: {
-          id: userId,
-          height: profileData.height !== undefined ? profileData.height : 170,
-          baseWeight: 0,
-          mainGoal: profileData.mainGoal || 'general_wellness',
-          secondaryGoals: profileData.secondaryGoals || [],
-          activityLevel: profileData.activityLevel || 'sedentary',
-          dietaryRestrictions: profileData.dietaryRestrictions || []
-        },
+        data: profileData,
       });
     }
 

@@ -24,11 +24,27 @@ export class AuthService {
       }
 
       // 2. Obter Perfil Base usando Prisma de forma segura
-      const profileBase = await this.prisma.userProfile.findUnique({
+      let profileBase = await this.prisma.userProfile.findUnique({
         where: { id: uid }
       });
 
-      if (!profileBase) return null;
+      if (!profileBase) {
+        profileBase = await this.prisma.userProfile.create({
+          data: {
+            id: uid,
+            height: 170,
+            baseWeight: 70,
+            mainGoal: 'general_wellness',
+            secondaryGoals: [],
+            activityLevel: 'moderate',
+            dietaryRestrictions: [],
+            allergies: [],
+            currentSupplementation: [],
+            reportedMedication: [],
+            reportedSymptoms: [],
+          }
+        });
+      }
 
       // 3. Obter dados estendidos guardados na tabela 'profiles' via raw SQL (name, date_of_birth, sex, timezone, country, avatar_url)
       let extendedData: any = {};
@@ -106,7 +122,7 @@ export class AuthService {
         name: user.name,
         // Canonical shape mapping
         height: user.profile?.height || null,
-        dateOfBirth: user.dateOfBirth ? user.dateOfBirth.toISOString().split('T')[0] : null,
+        dateOfBirth: user.dateOfBirth ? (typeof user.dateOfBirth === 'string' ? user.dateOfBirth.split('T')[0] : user.dateOfBirth.toISOString().split('T')[0]) : null,
         sex: user.sex || null,
         timezone: user.timezone || null,
         country: user.country || null,
