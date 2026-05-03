@@ -164,6 +164,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const [expandedAppId, setExpandedAppId] = useState<string | null>(null);
   const [galleryState, setGalleryState] = useState<{ images: any[], index: number } | null>(null);
   const [demoDaysCounter, setDemoDaysCounter] = useState(0);
+  const [localDaysOverride, setLocalDaysOverride] = useState<number | null>(null);
 
   // Real Store State
   const user = useStore(state => state.user);
@@ -243,11 +244,12 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const nudgeAnim = useRef(new Animated.Value(0)).current;
 
   const daysSince = useMemo(() => {
+    if (localDaysOverride !== null) return localDaysOverride;
     if (isDemoMode) return demoDaysCounter;
     const lastAnalysisDate = user?.lastAnalysisDate;
     if (!lastAnalysisDate) return 14; // Default para demonstrar aura se não houver data
     return Math.floor((Date.now() - new Date(lastAnalysisDate).getTime()) / (1000 * 60 * 60 * 24));
-  }, [user?.lastAnalysisDate, isDemoMode, demoDaysCounter]);
+  }, [user?.lastAnalysisDate, isDemoMode, demoDaysCounter, localDaysOverride]);
 
   const daysSinceText = daysSince === 0 ? 'HOJE' : `${daysSince} DIAS`;
 
@@ -1070,6 +1072,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                   if (isDemoMode) {
                     setDemoDaysCounter(0);
                   }
+                  setLocalDaysOverride(0);
                   // Simula o fecho do modal após "emparelhar" na demo
                   setShowNfcModal(false);
                   isOff.current = false;
@@ -1942,10 +1945,10 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
     <View style={styles.orbitalCore}>
       {/* Deep Atmosphere */}
       <View style={[styles.lensBase, { borderColor: `${glowColor}50`, overflow: 'hidden' }]}>
-         <Image 
-            source={require('../../assets/orbital_bg.png')}
-            style={[StyleSheet.absoluteFillObject, { opacity: 0.5, resizeMode: 'cover' }]}
-         />
+         {/* 1. fundo/base escura */}
+         <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#050A14' }]} />
+         
+         {/* 2. vídeo eye.mp4 com opacity 0.5 */}
          <Video
             source={require('../../assets/eye.mp4')}
             style={[StyleSheet.absoluteFillObject, { opacity: 0.5 }]}
@@ -1955,8 +1958,10 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
             isMuted
             pointerEvents="none"
          />
+         
+         {/* 3. overlay escuro/gradiente subtil para garantir legibilidade */}
          <LinearGradient
-           colors={['rgba(5, 10, 20, 0.4)', 'rgba(0, 0, 0, 0.7)']}
+           colors={['rgba(5, 10, 20, 0.2)', 'rgba(0, 0, 0, 0.6)']}
            style={StyleSheet.absoluteFillObject}
            pointerEvents="none"
          />
