@@ -13,7 +13,16 @@ export function loadFromStorage(): {
   try {
     if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) return { appEvents: [], appContributionEvents: [], ...JSON.parse(raw) };
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return { 
+          installedAppIds: Array.isArray(parsed.installedAppIds) ? parsed.installedAppIds : [],
+          favoriteAppIds: Array.isArray(parsed.favoriteAppIds) ? parsed.favoriteAppIds : [],
+          grantedPermissions: parsed.grantedPermissions || {},
+          appEvents: Array.isArray(parsed.appEvents) ? parsed.appEvents : [],
+          appContributionEvents: Array.isArray(parsed.appContributionEvents) ? parsed.appContributionEvents : []
+        };
+      }
     }
   } catch {}
   return { installedAppIds: [], favoriteAppIds: [], grantedPermissions: {}, appEvents: [], appContributionEvents: [] };

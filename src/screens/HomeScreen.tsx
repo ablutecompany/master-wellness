@@ -179,8 +179,10 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const setIsDemoMode = useStore(state => state.setIsDemoMode);
   const setDemoAnalysis = useStore(state => state.setDemoAnalysis);
   const demoAnalysis = useStore(state => state.demoAnalysis);
-  const installedAppIds = useStore(state => state.installedAppIds) || [];
-  const favoriteAppIds = useStore(state => state.favoriteAppIds) || [];
+  const rawInstalledAppIds = useStore(state => state.installedAppIds);
+  const installedAppIds = Array.isArray(rawInstalledAppIds) ? rawInstalledAppIds : [];
+  const rawFavoriteAppIds = useStore(state => state.favoriteAppIds);
+  const favoriteAppIds = Array.isArray(rawFavoriteAppIds) ? rawFavoriteAppIds : [];
   const installApp = useStore(state => state.installApp);
   const uninstallApp = useStore(state => state.uninstallApp);
   const toggleFavoriteApp = useStore(state => state.toggleFavoriteApp);
