@@ -214,7 +214,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permissão Recusada', 'A app precisa de acesso às fotografias para escolher uma imagem de perfil. Pode alterar esta opção nas definições do dispositivo.');
+        Alert.alert('Permissão Recusada', 'A app precisa de acesso às fotografias. Pode alterar isto nas definições do seu dispositivo.');
         console.log('[P0_AVATAR_PICKER]', { action: 'gallery', permissionStatus: status });
         return;
       }
@@ -222,12 +222,14 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.5,
+        quality: 0.1, // High compression for base64 limits
+        base64: true,
       });
-      console.log('[P0_AVATAR_PICKER]', { action: 'gallery', permissionStatus: status, imageSelected: !result.canceled });
-      if (!result.canceled) {
-        setTempAvatar(result.assets[0].uri);
-        Alert.alert('Nota', 'A imagem foi carregada localmente. A persistência na cloud com Supabase Storage chegará na próxima atualização.');
+      console.log('[P0_AVATAR_PICKER]', { action: 'gallery', permissionStatus: status, imageSelected: !result.canceled, hasBase64: !!result.assets?.[0]?.base64 });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const dataUrl = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        setTempAvatar(dataUrl);
       }
     } catch (e) {
       console.error('[P0_AVATAR_PICKER] Error picking image:', e);
@@ -235,25 +237,33 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   };
 
   const handleTakeAvatar = async () => {
+    if (Platform.OS === 'web') {
+      // On some web environments, camera API isn't fully supported via launchCameraAsync
+      Alert.alert('Câmara não suportada', 'O acesso direto à câmara pode não ser suportado neste browser. Utilize a opção "Escolher da Galeria" e, se o browser permitir, poderá tirar foto a partir daí.');
+    }
+    
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permissão Recusada', 'A app precisa de acesso à câmara para tirar uma fotografia de perfil. Pode alterar esta opção nas definições do dispositivo.');
+        Alert.alert('Permissão Recusada', 'A app precisa de acesso à câmara. Altere esta opção nas definições.');
         console.log('[P0_AVATAR_PICKER]', { action: 'camera', permissionStatus: status });
         return;
       }
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.5,
+        quality: 0.1,
+        base64: true,
       });
-      console.log('[P0_AVATAR_PICKER]', { action: 'camera', permissionStatus: status, imageSelected: !result.canceled });
-      if (!result.canceled) {
-        setTempAvatar(result.assets[0].uri);
-        Alert.alert('Nota', 'A imagem foi capturada localmente. A persistência na cloud com Supabase Storage chegará na próxima atualização.');
+      console.log('[P0_AVATAR_PICKER]', { action: 'camera', permissionStatus: status, imageSelected: !result.canceled, hasBase64: !!result.assets?.[0]?.base64 });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const dataUrl = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        setTempAvatar(dataUrl);
       }
     } catch (e) {
       console.error('[P0_AVATAR_PICKER] Error taking image:', e);
+      Alert.alert('Erro na câmara', 'Não foi possível iniciar a câmara. Tente a opção Galeria.');
     }
   };
 
@@ -538,12 +548,11 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                   <Edit2 size={14} color="rgba(255,255,255,0.4)" />
                 </TouchableOpacity>
                 
-                <TouchableOpacity onPress={() => openModal('email', 'Alterar Email')} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Typography variant="caption" style={styles.profileEmail}>
                     {profileDraft.email || authAccount?.email || 'MODO GUEST LOCAL'}
                   </Typography>
-                  {!isGuestMode && <Edit2 size={12} color="rgba(255,255,255,0.4)" style={{ marginTop: 4 }} />}
-                </TouchableOpacity>
+                </View>
                 <View style={styles.badgeRow}>
                    <Typography style={styles.versionBadge}>BUILD 2.7 • STABLE</Typography>
                    <Typography style={[styles.modeBadge, { backgroundColor: isGuestMode ? 'rgba(255,255,255,0.1)' : 'rgba(0, 242, 255, 0.1)' }]}>

@@ -60,7 +60,7 @@ export class AuthService {
 
         const extRes = await this.prisma.$queryRaw<any[]>`
           SELECT 
-            name, date_of_birth as "dateOfBirth", sex, timezone, country, avatar_url as "avatarUrl",
+            name, to_char(date_of_birth, 'YYYY-MM-DD') as "dateOfBirth", sex, timezone, country, avatar_url as "avatarUrl",
             height, base_weight as "baseWeight", main_goal as "mainGoal", 
             secondary_goals as "secondaryGoals", activity_level as "activityLevel",
             dietary_restrictions as "dietaryRestrictions", active_analysis_id as "activeAnalysisId"

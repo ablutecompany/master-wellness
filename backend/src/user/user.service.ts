@@ -168,9 +168,10 @@ export class UserService {
     const userData: any = {};
     if (name !== undefined) userData.name = name;
     if (dateOfBirth !== undefined) {
-      const parsedDate = new Date(dateOfBirth);
-      if (!isNaN(parsedDate.getTime())) {
-        userData.dateOfBirth = parsedDate;
+      // Validate string YYYY or YYYY-MM or YYYY-MM-DD
+      const dateRegex = /^\d{4}(-\d{2})?(-\d{2})?$/;
+      if (typeof dateOfBirth === 'string' && dateRegex.test(dateOfBirth)) {
+        userData.dateOfBirth = dateOfBirth;
       } else {
         console.warn(`[P0_PROFILE_PATCH] Invalid dateOfBirth received: ${dateOfBirth}`);
       }
@@ -209,7 +210,7 @@ export class UserService {
       await this.prisma.$executeRaw`UPDATE public.profiles SET name = ${userData.name}, updated_at = now() WHERE id = ${userId}::uuid`;
     }
     if (userData.dateOfBirth !== undefined) {
-      await this.prisma.$executeRaw`UPDATE public.profiles SET date_of_birth = ${userData.dateOfBirth}, updated_at = now() WHERE id = ${userId}::uuid`;
+      await this.prisma.$executeRaw`UPDATE public.profiles SET date_of_birth = ${userData.dateOfBirth}::timestamp, updated_at = now() WHERE id = ${userId}::uuid`;
     }
     if (userData.sex !== undefined) {
       await this.prisma.$executeRaw`UPDATE public.profiles SET sex = ${userData.sex}, updated_at = now() WHERE id = ${userId}::uuid`;
@@ -339,7 +340,7 @@ export class UserService {
     let extCountry = null;
 
     try {
-      const dbExt = await this.prisma.$queryRaw<any[]>`SELECT name, date_of_birth as "dateOfBirth", sex, timezone, country FROM public.profiles WHERE id = ${userId}::uuid`;
+      const dbExt = await this.prisma.$queryRaw<any[]>`SELECT name, to_char(date_of_birth, 'YYYY-MM-DD') as "dateOfBirth", sex, timezone, country FROM public.profiles WHERE id = ${userId}::uuid`;
       if (dbExt && dbExt.length > 0) {
         extName = dbExt[0].name;
         extDateOfBirth = dbExt[0].dateOfBirth;
@@ -354,7 +355,7 @@ export class UserService {
       email: '', 
       name: extName || null,
       avatarUrl: avatarRaw || null,
-      dateOfBirth: extDateOfBirth ? new Date(extDateOfBirth).toISOString().split('T')[0] : null,
+      dateOfBirth: extDateOfBirth ? (typeof (extDateOfBirth as any) === 'string' ? (extDateOfBirth as any).split('T')[0] : (extDateOfBirth as any).toISOString().split('T')[0]) : null,
       dateOfBirthPrecision: dobPrec || null,
       height: profileBase?.height || null,
       sex: extSex || null,
