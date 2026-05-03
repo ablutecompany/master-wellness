@@ -205,24 +205,64 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
     </TouchableOpacity>
   );
 
-  const renderResultRow = (item: FormattedResult) => (
-    <TouchableOpacity 
-      key={item.id} 
-      style={styles.resultRow}
-      onPress={() => setSelectedItem(item)}
-    >
-      <View style={styles.rowLeft}>
-        <Typography style={styles.rowName} numberOfLines={1}>{item.name}</Typography>
-        {item.type === 'contextual' && (
-           <Typography variant="caption" style={styles.rowCategory}>{item.category?.toUpperCase()}</Typography>
-        )}
-      </View>
-      <View style={styles.rowRight}>
-        <Typography style={styles.rowValue}>{item.value}</Typography>
-        {!!item.unit && <Typography style={styles.rowUnit}>{item.unit}</Typography>}
-      </View>
-    </TouchableOpacity>
-  );
+  const renderResultRow = (item: FormattedResult) => {
+    if (item.name.toLowerCase() === 'caracterização óptica' || item.name.toLowerCase() === 'caracterizacao optica') {
+      const assessment = buildFecalOpticalAssessment(item.value, activeAnalysis?.measurements?.find(m => m.id === item.id)?.rawData || {});
+      return (
+        <TouchableOpacity 
+          key={item.id} 
+          style={[styles.resultRow, { flexDirection: 'column', alignItems: 'flex-start', paddingVertical: 16, paddingHorizontal: 16, backgroundColor: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderRadius: 16, height: 'auto' }]}
+          onPress={() => setSelectedItem(item)}
+        >
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginBottom: 12, alignItems: 'center' }}>
+            <Typography style={[styles.rowName, { color: '#ffffff', fontWeight: '700' }]}>Caracterização óptica</Typography>
+            <View style={{ backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
+              <Typography style={{ color: '#fff', fontSize: 10, fontWeight: '600' }}>Detalhe {'>'}</Typography>
+            </View>
+          </View>
+          
+          <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: '600', marginBottom: 12 }}>
+            {assessment.label} · {assessment.bristolLabel.replace('Compatível com ', '')}
+          </Typography>
+
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {assessment.visualObservation && Object.entries(assessment.visualObservation)
+              .filter(([k]) => ['shape', 'consistency', 'colour', 'fragmentation', 'confidence'].includes(k))
+              .map(([k, v]) => {
+                const labelMap: Record<string, string> = {
+                  shape: 'Forma', consistency: 'Consistência', colour: 'Cor', fragmentation: 'Fragmentação', confidence: 'Confiança'
+                };
+                return (
+                  <View key={k} style={{ backgroundColor: 'rgba(255,255,255,0.05)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, flexDirection: 'row', alignItems: 'center' }}>
+                    <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginRight: 4 }}>{labelMap[k]}:</Typography>
+                    <Typography style={{ color: '#fff', fontSize: 11, fontWeight: '500' }}>{String(v)}</Typography>
+                  </View>
+                );
+              })}
+          </View>
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <TouchableOpacity 
+        key={item.id} 
+        style={styles.resultRow}
+        onPress={() => setSelectedItem(item)}
+      >
+        <View style={styles.rowLeft}>
+          <Typography style={styles.rowName} numberOfLines={1}>{item.name}</Typography>
+          {item.type === 'contextual' && (
+             <Typography variant="caption" style={styles.rowCategory}>{item.category?.toUpperCase()}</Typography>
+          )}
+        </View>
+        <View style={styles.rowRight}>
+          <Typography style={styles.rowValue}>{item.value}</Typography>
+          {!!item.unit && <Typography style={styles.rowUnit}>{item.unit}</Typography>}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <Container safe style={styles.container}>
