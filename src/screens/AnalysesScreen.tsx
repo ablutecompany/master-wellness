@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useMemo } from 'react';
-import { StyleSheet, View, ScrollView, TouchableOpacity, Modal, Platform, Dimensions, Alert } from 'react-native';
+import { StyleSheet, View, ScrollView, TouchableOpacity, Modal, Platform, Dimensions, Alert, Image } from 'react-native';
 import { Container, Typography, LinearGradient, BlurView } from '../components/Base';
 import { theme } from '../theme';
 import { 
@@ -102,7 +102,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   const isDemoMode = useStore(state => state.isDemoMode);
   const dataFreshness = useStore(useShallow(Selectors.selectDataFreshness));
 
-  const [ecgZoom, setEcgZoom] = useState(1);
+  const [showNoHistoryModal, setShowNoHistoryModal] = useState(false);
 
   // 1. Mapeamento e Normalização de Dados
   const allResults = useMemo(() => {
@@ -259,9 +259,13 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           </Typography>
           <TouchableOpacity 
             onPress={() => {
-              const msg = 'O histórico biográfico consolidado está a ser processado para este membro.';
-              if (Platform.OS === 'web') window.alert(msg);
-              else Alert.alert('Histórico', msg);
+              if (isDemoMode) {
+                setShowNoHistoryModal(true);
+              } else {
+                const msg = 'O histórico biográfico consolidado está a ser processado para este membro.';
+                if (Platform.OS === 'web') window.alert(msg);
+                else Alert.alert('Histórico', msg);
+              }
             }} 
             style={styles.historyShortcut}
           >
@@ -377,23 +381,32 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                       <View style={{ marginBottom: 24 }}>
                         <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 12, letterSpacing: 1, textAlign: 'center' }}>REGISTO VISUAL</Typography>
                         <View style={{ height: 120, backgroundColor: 'rgba(0, 242, 255, 0.05)', borderRadius: 8, borderWidth: 1, borderColor: 'rgba(0, 242, 255, 0.1)', overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }}>
-                          <View style={{ transform: [{ scale: ecgZoom }], flexDirection: 'row', width: '200%', justifyContent: 'space-around', opacity: 0.8 }}>
-                            <Activity size={80} color="#00F2FF" strokeWidth={1} />
-                            <Activity size={80} color="#00F2FF" strokeWidth={1} />
-                            <Activity size={80} color="#00F2FF" strokeWidth={1} />
+                          {isDemoMode ? (
+                            <Image 
+                              source={require('../../assets/ecg-demo.png')} 
+                              style={{ width: '100%', height: '100%', resizeMode: 'contain', opacity: 0.9 }} 
+                            />
+                          ) : (
+                            <View style={{ transform: [{ scale: ecgZoom }], flexDirection: 'row', width: '200%', justifyContent: 'space-around', opacity: 0.8 }}>
+                              <Activity size={80} color="#00F2FF" strokeWidth={1} />
+                              <Activity size={80} color="#00F2FF" strokeWidth={1} />
+                              <Activity size={80} color="#00F2FF" strokeWidth={1} />
+                            </View>
+                          )}
+                        </View>
+                        {!isDemoMode && (
+                          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 12 }}>
+                            <TouchableOpacity onPress={() => setEcgZoom(Math.max(1, ecgZoom - 0.5))} style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 }}>
+                              <Typography style={{ color: '#FFF', fontSize: 16, fontWeight: 'bold', width: 16, textAlign: 'center' }}>-</Typography>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setEcgZoom(1)} style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 }}>
+                              <Typography style={{ color: '#FFF', fontSize: 12, fontWeight: '600' }}>Repor</Typography>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setEcgZoom(Math.min(3, ecgZoom + 0.5))} style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 }}>
+                              <Typography style={{ color: '#FFF', fontSize: 16, fontWeight: 'bold', width: 16, textAlign: 'center' }}>+</Typography>
+                            </TouchableOpacity>
                           </View>
-                        </View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16, marginTop: 12 }}>
-                          <TouchableOpacity onPress={() => setEcgZoom(Math.max(1, ecgZoom - 0.5))} style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 }}>
-                            <Typography style={{ color: '#FFF', fontSize: 16, fontWeight: 'bold', width: 16, textAlign: 'center' }}>-</Typography>
-                          </TouchableOpacity>
-                          <TouchableOpacity onPress={() => setEcgZoom(1)} style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 }}>
-                            <Typography style={{ color: '#FFF', fontSize: 12, fontWeight: '600' }}>Repor</Typography>
-                          </TouchableOpacity>
-                          <TouchableOpacity onPress={() => setEcgZoom(Math.min(3, ecgZoom + 0.5))} style={{ padding: 8, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 20 }}>
-                            <Typography style={{ color: '#FFF', fontSize: 16, fontWeight: 'bold', width: 16, textAlign: 'center' }}>+</Typography>
-                          </TouchableOpacity>
-                        </View>
+                        )}
                       </View>
                     );
                   }
@@ -486,21 +499,43 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
                   }
 
                   // Simulated history for Demo mode
-                  let simHistory = null;
+                  let simHistory: { date: string, value: string }[] | null = null;
                   if (isDemoMode && selectedItem.type !== 'fecal' && selectedItem.type !== 'contextual') {
                     const baseVal = parseFloat(selectedItem.value);
                     if (!isNaN(baseVal)) {
                       const variation = baseVal * 0.05;
+                      let h1 = (baseVal - variation).toFixed(1);
+                      let h2 = (baseVal + variation * 0.5).toFixed(1);
+                      let h3 = (baseVal - variation * 0.2).toFixed(1);
+                      
+                      if (selectedItem.name.toLowerCase() === 'saturação de oxigénio') {
+                        h1 = Math.min(100, Math.max(0, parseFloat(h1))).toFixed(1);
+                        h2 = Math.min(100, Math.max(0, parseFloat(h2))).toFixed(1);
+                        h3 = Math.min(100, Math.max(0, parseFloat(h3))).toFixed(1);
+                      }
+                      
                       simHistory = [
-                        { date: 'Há 2 dias', value: (baseVal - variation).toFixed(1) },
-                        { date: 'Há 5 dias', value: (baseVal + variation * 0.5).toFixed(1) },
-                        { date: 'Há 8 dias', value: (baseVal - variation * 0.2).toFixed(1) }
+                        { date: 'Há 2 dias', value: h1 },
+                        { date: 'Há 5 dias', value: h2 },
+                        { date: 'Há 8 dias', value: h3 }
                       ];
                     }
                   }
 
+                  const showResumoDemo = isDemoMode && (selectedItem.name === 'Impedância' || selectedItem.name === 'Stress');
+
                   return (
                     <>
+                      {showResumoDemo && (
+                        <View style={{ marginBottom: 16 }}>
+                          <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 8, letterSpacing: 1 }}>RESUMO</Typography>
+                          <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, lineHeight: 20 }}>
+                            {selectedItem.name === 'Impedância' 
+                              ? 'A impedância simulada não mostra alteração relevante nesta leitura. Em contexto real, este parâmetro ganha utilidade quando comparado com medições repetidas do mesmo perfil.'
+                              : 'Os sinais de contexto desta simulação apontam para o nível de stress indicado no momento.'}
+                          </Typography>
+                        </View>
+                      )}
                       <View style={{ marginBottom: 16 }}>
                          <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginBottom: 8, letterSpacing: 1 }}>HISTÓRICO RECENTE</Typography>
                          {simHistory ? (
@@ -601,6 +636,25 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           );
         })()}
       </Modal>
+
+      {/* NO HISTORY MODAL */}
+      <Modal visible={showNoHistoryModal} transparent animationType="fade" onRequestClose={() => setShowNoHistoryModal(false)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowNoHistoryModal(false)}>
+          <View style={[styles.modalContent, { backgroundColor: '#131820', maxWidth: 400, width: '100%' }]}>
+            <Typography variant="h3" style={{ color: '#00F2FF', marginBottom: 12 }}>Histórico indisponível</Typography>
+            <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, lineHeight: 20, marginBottom: 8 }}>
+              Ainda não existe histórico suficiente para este parâmetro. Faça mais análises para criar uma base de comparação.
+            </Typography>
+            <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, lineHeight: 18, marginBottom: 24 }}>
+              Quando existirem leituras repetidas, esta área mostrará evolução, baseline pessoal e tendências.
+            </Typography>
+            <TouchableOpacity style={styles.closeBtn} onPress={() => setShowNoHistoryModal(false)}>
+              <Typography style={styles.closeBtnText}>FECHAR</Typography>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
     </Container>
   );
 };

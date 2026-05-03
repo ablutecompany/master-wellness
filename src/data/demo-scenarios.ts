@@ -40,7 +40,6 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
     contextual: {
       sono: { value: '7h30', unit: '', name: 'Sono' },
       passos: { value: 8200, unit: 'passos', name: 'Passos' },
-      hidratacao: { value: 'regular', unit: '', name: 'Hidratação' },
       stress: { value: 'baixo', unit: '', name: 'Stress' },
       recuperacao: { value: 86, unit: '%', name: 'Recuperação' }
     },
@@ -99,7 +98,6 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
     contextual: {
       sono: { value: '6h20', unit: '', name: 'Sono' },
       passos: { value: 11800, unit: 'passos', name: 'Passos' },
-      hidratacao: { value: 'irregular', unit: '', name: 'Hidratação' },
       stress: { value: 'médio', unit: '', name: 'Stress' },
       recuperacao: { value: 68, unit: '%', name: 'Recuperação' }
     },
@@ -158,7 +156,6 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
     contextual: {
       sono: { value: '6h50', unit: '', name: 'Sono' },
       passos: { value: 6500, unit: 'passos', name: 'Passos' },
-      hidratacao: { value: 'média', unit: '', name: 'Hidratação' },
       stress: { value: 'médio', unit: '', name: 'Stress' },
       recuperacao: { value: 61, unit: '%', name: 'Recuperação' }
     },
@@ -217,7 +214,6 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
     contextual: {
       sono: { value: '6h10', unit: '', name: 'Sono' },
       passos: { value: 7200, unit: 'passos', name: 'Passos' },
-      hidratacao: { value: 'média', unit: '', name: 'Hidratação' },
       stress: { value: 'médio', unit: '', name: 'Stress' },
       recuperacao: { value: 58, unit: '%', name: 'Recuperação' },
       contexto_alimentar: { value: 'refeição rica em hidratos nas últimas horas', unit: '', name: 'Contexto alimentar' }
@@ -260,7 +256,6 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
     contextual: {
       sono: { value: '5h50', unit: '', name: 'Sono' },
       passos: { value: 9400, unit: 'passos', name: 'Passos' },
-      hidratacao: { value: 'irregular', unit: '', name: 'Hidratação' },
       stress: { value: 'elevado', unit: '', name: 'Stress' },
       recuperacao: { value: 49, unit: '%', name: 'Recuperação' }
     },
@@ -319,7 +314,6 @@ export const DEMO_BIOMARKER_PERSONAS: DemoPersona[] = [
     contextual: {
       sono: { value: '4h55', unit: '', name: 'Sono' },
       passos: { value: 13200, unit: 'passos', name: 'Passos' },
-      hidratacao: { value: 'irregular', unit: '', name: 'Hidratação' },
       stress: { value: 'elevado', unit: '', name: 'Stress' },
       recuperacao: { value: 37, unit: '%', name: 'Recuperação' }
     },

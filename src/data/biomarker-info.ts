@@ -220,8 +220,8 @@ export const BIOMARKER_INFO: Record<string, BiomarkerMetadata> = {
     family: 'physiological',
     unit: '%',
     referenceStatus: 'contextual',
-    generalReferenceLabel: 'Tipicamente > 95%',
-    educationalMeaning: 'A saturação de oxigénio indica a percentagem aproximada de oxigénio transportado no sangue no momento da medição. Deve ser lida com contexto e repetição.',
+    generalReferenceLabel: 'Tipicamente ≥ 95%, dependendo de contexto e método.',
+    educationalMeaning: 'A saturação de oxigénio indica a percentagem aproximada de oxigénio transportado no sangue no momento da medição. Deve ser contextualizada com método, movimento e qualidade do sinal.',
     limitation: 'Leitura dependente das condições da pele e do sensor.'
   },
   'Temperatura': {
@@ -250,8 +250,8 @@ export const BIOMARKER_INFO: Record<string, BiomarkerMetadata> = {
     family: 'physiological',
     unit: '',
     referenceStatus: 'contextual',
-    generalReferenceLabel: 'Relativa ao utilizador',
-    educationalMeaning: 'A impedância é uma medição elétrica indireta que pode ajudar a contextualizar composição corporal e hidratação, mas deve ser interpretada com prudência.',
+    generalReferenceLabel: 'Valor dependente de método, contacto, hidratação, composição corporal e contexto da medição.',
+    educationalMeaning: 'A impedância é uma medição elétrica indireta que pode ajudar a contextualizar composição corporal, hidratação e variações de fluidos. Deve ser interpretada com prudência e sempre em comparação com o próprio histórico.',
     limitation: 'Leitura estimada, não serve de diagnóstico.'
   },
   'ECG': {

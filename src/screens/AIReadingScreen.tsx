@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { StyleSheet, View, ScrollView, Platform, TouchableOpacity, Modal, Animated } from 'react-native';
+import { StyleSheet, View, ScrollView, Platform, TouchableOpacity, Modal, Animated, Alert } from 'react-native';
 import { Container, Typography, BlurView } from '../components/Base';
 import { useStore } from '../store/useStore';
 import { Analysis, AnalysisMeasurement } from '../store/types';
@@ -630,22 +630,52 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                     <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>Regressar à última análise recolhida</Typography>
                 </TouchableOpacity>
 
-                {historyReadings.map(r => (
-                  <TouchableOpacity 
-                    key={r.id}
-                    style={{ padding: 16, backgroundColor: selectedHistoryId === r.id ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.03)', borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: selectedHistoryId === r.id ? 'rgba(255,255,255,0.3)' : 'transparent' }}
-                    onPress={() => {
-                      setSelectedHistoryId(r.id);
-                      setShowHistoryModal(false);
-                      setSelectedDimId(null);
-                    }}
-                  >
-                    <Typography style={{ color: '#fff', fontWeight: '600' }}>{new Date(r.analysisDate || r.generatedAt).toLocaleString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' ·')}</Typography>
-                    <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 4 }} numberOfLines={2}>
-                      {r.narrative}
-                    </Typography>
-                  </TouchableOpacity>
-                ))}
+                {historyReadings.map(r => {
+                  const isDemoPlaceholder = isDemoMode && (!r.themesJson || (Array.isArray(r.themesJson) && r.themesJson.length === 0));
+                  
+                  return (
+                    <TouchableOpacity 
+                      key={r.id}
+                      style={{ 
+                        padding: 16, 
+                        backgroundColor: selectedHistoryId === r.id ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.03)', 
+                        borderRadius: 12, 
+                        marginBottom: 8, 
+                        borderWidth: 1, 
+                        borderColor: selectedHistoryId === r.id ? 'rgba(255,255,255,0.3)' : 'transparent',
+                        opacity: isDemoPlaceholder ? 0.5 : 1
+                      }}
+                      onPress={() => {
+                        try {
+                          if (isDemoPlaceholder) {
+                            if (Platform.OS === 'web') window.alert('Modo de simulação — dados históricos não disponíveis para esta data.');
+                            else Alert.alert('Modo de simulação', 'Modo de simulação — dados históricos não disponíveis para esta data.');
+                            return;
+                          }
+                          setSelectedHistoryId(r.id);
+                          setShowHistoryModal(false);
+                          setSelectedDimId(null);
+                        } catch (err) {
+                          console.log('[AI_HISTORY_SELECT_ERROR]', err);
+                          if (Platform.OS === 'web') window.alert('Não foi possível abrir esta leitura.');
+                          else Alert.alert('Erro', 'Não foi possível abrir esta leitura.');
+                        }
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography style={{ color: '#fff', fontWeight: '600' }}>{new Date(r.analysisDate || r.generatedAt).toLocaleString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' ·')}</Typography>
+                        {isDemoPlaceholder && (
+                          <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                            <Typography style={{ color: '#F59E0B', fontSize: 9, fontWeight: 'bold' }}>SIMULAÇÃO</Typography>
+                          </View>
+                        )}
+                      </View>
+                      <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 4 }} numberOfLines={2}>
+                        {isDemoPlaceholder ? 'Exemplo sem leitura detalhada' : r.narrative}
+                      </Typography>
+                    </TouchableOpacity>
+                  );
+                })}
               </ScrollView>
             )}
           </View>
