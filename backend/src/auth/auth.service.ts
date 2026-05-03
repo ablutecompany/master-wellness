@@ -44,6 +44,20 @@ export class AuthService {
       // 3. Obter dados guardados na tabela 'profiles' via raw SQL (bypassing Prisma strict schema)
       let extendedData: any = {};
       try {
+        await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS name TEXT`);
+        await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS date_of_birth TIMESTAMP`);
+        await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS sex TEXT`);
+        await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS timezone TEXT`);
+        await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS country TEXT`);
+        await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT`);
+        await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS height NUMERIC`);
+        await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS base_weight NUMERIC`);
+        await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS main_goal TEXT`);
+        await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS secondary_goals TEXT[]`);
+        await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS activity_level TEXT`);
+        await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS dietary_restrictions TEXT[]`);
+        await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS active_analysis_id TEXT`);
+
         const extRes = await this.prisma.$queryRaw<any[]>`
           SELECT 
             name, date_of_birth as "dateOfBirth", sex, timezone, country, avatar_url as "avatarUrl",
