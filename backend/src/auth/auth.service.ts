@@ -23,13 +23,35 @@ export class AuthService {
         // Ignorar falha estrutural do household
       }
 
-      // 2. Obter Perfil Canónico usando Prisma de forma segura
-      const user = await this.prisma.user.findUnique({
-        where: { id: uid },
-        include: { profile: true }
+      // 2. Obter Perfil Base usando Prisma de forma segura
+      const profileBase = await this.prisma.userProfile.findUnique({
+        where: { id: uid }
       });
 
-      if (!user) return null;
+      if (!profileBase) return null;
+
+      // 3. Obter dados estendidos guardados na tabela 'profiles' via raw SQL (name, date_of_birth, sex, timezone, country, avatar_url)
+      let extendedData: any = {};
+      try {
+        const extRes = await this.prisma.$queryRaw<any[]>`SELECT name, date_of_birth as "dateOfBirth", sex, timezone, country, avatar_url as "avatarUrl" FROM public.profiles WHERE id = ${uid}::uuid`;
+        if (extRes && extRes.length > 0) {
+          extendedData = extRes[0];
+        }
+      } catch (e) {}
+
+      const user = {
+        id: uid,
+        email: profileBase.id, // Em M5 vamos usar o email do token auth, por agora stub
+        name: extendedData.name || 'Utilizador',
+        dateOfBirth: extendedData.dateOfBirth || null,
+        sex: extendedData.sex || null,
+        timezone: extendedData.timezone || null,
+        country: extendedData.country || null,
+        profile: {
+          ...profileBase,
+          avatarUrl: extendedData.avatarUrl || null
+        }
+      };
 
       // 3. Obter o último peso medido nas análises, se existir
       let latestMeasuredWeight: number | null = null;
@@ -111,29 +133,17 @@ export class AuthService {
    * Cria o User e o UserProfile com valores base seguros.
    */
   async initializeProfile(uid: string, email: string, displayName?: string) {
-    // Upsert the base User record
-    const user = await this.prisma.user.upsert({
-      where: { email },
-      update: {},
-      create: {
-        id: uid,
-        email,
-        name: displayName || email.split('@')[0],
-        dateOfBirth: new Date('1990-01-01'),
-        sex: 'other',
-        country: 'PT',
-        timezone: 'Europe/Lisbon',
-        passwordHash: 'SUPABASE_MANAGED',
-        role: UserRole.END_USER,
-      },
-    });
+    // Upsert the UserProfile directly. We skip User since it doesn't exist in the DB.
+    const targetUserId = uid;
 
-    // Verify that the User's id matches the Supabase uid
-    // If the User already existed with a different id, we need to look up by uid directly
-    const existingById = await this.prisma.user.findUnique({ where: { id: uid } });
-    const targetUserId = existingById ? uid : user.id;
+    try {
+      await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS name TEXT`);
+      await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS date_of_birth TIMESTAMP`);
+      await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS sex TEXT`);
+      await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS country TEXT`);
+      await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS timezone TEXT`);
+    } catch (e) {}
 
-    // Upsert the UserProfile
     const profile = await this.prisma.userProfile.upsert({
       where: { id: targetUserId },
       update: {},
@@ -151,6 +161,20 @@ export class AuthService {
         reportedSymptoms: [],
       },
     });
+
+    const displayNameValue = displayName || email.split('@')[0];
+    try {
+      await this.prisma.$executeRaw`
+        UPDATE public.profiles 
+        SET name = COALESCE(name, ${displayNameValue}), 
+            date_of_birth = COALESCE(date_of_birth, '1990-01-01'::timestamp), 
+            sex = COALESCE(sex, 'other'), 
+            country = COALESCE(country, 'PT'), 
+            timezone = COALESCE(timezone, 'Europe/Lisbon'),
+            updated_at = now()
+        WHERE id = ${targetUserId}::uuid
+      `;
+    } catch (e) {}
 
     return profile;
   }

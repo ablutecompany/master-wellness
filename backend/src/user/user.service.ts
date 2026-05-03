@@ -179,16 +179,32 @@ export class UserService {
     if (timezone !== undefined) userData.timezone = timezone;
     if (country !== undefined) userData.country = country;
 
-    // Campos adicionados manualmente (fora do schema Prisma) devem ser atualizados via raw sql na tabela 'User' ou 'profiles'
-    // Mas note: o schema Prisma para UserProfile mapeia para 'profiles'.
-    
-    if (Object.keys(userData).length > 0) {
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: userData
-      });
-      console.log(`[P0_PROFILE_PATCH] userUpdated: true, fields: ${Object.keys(userData).join(', ')}`);
+    // Como a tabela public.User não existe no atual estado da BD, temos de gravar estas propriedades base diretamente na public.profiles usando raw SQL
+    try {
+      await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS name TEXT`);
+      await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS date_of_birth TIMESTAMP`);
+      await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS sex TEXT`);
+      await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS timezone TEXT`);
+      await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS country TEXT`);
+    } catch (e) {}
+
+    if (userData.name !== undefined) {
+      await this.prisma.$executeRaw`UPDATE public.profiles SET name = ${userData.name}, updated_at = now() WHERE id = ${userId}::uuid`;
     }
+    if (userData.dateOfBirth !== undefined) {
+      await this.prisma.$executeRaw`UPDATE public.profiles SET date_of_birth = ${userData.dateOfBirth}, updated_at = now() WHERE id = ${userId}::uuid`;
+    }
+    if (userData.sex !== undefined) {
+      await this.prisma.$executeRaw`UPDATE public.profiles SET sex = ${userData.sex}, updated_at = now() WHERE id = ${userId}::uuid`;
+    }
+    if (userData.timezone !== undefined) {
+      await this.prisma.$executeRaw`UPDATE public.profiles SET timezone = ${userData.timezone}, updated_at = now() WHERE id = ${userId}::uuid`;
+    }
+    if (userData.country !== undefined) {
+      await this.prisma.$executeRaw`UPDATE public.profiles SET country = ${userData.country}, updated_at = now() WHERE id = ${userId}::uuid`;
+    }
+    
+    console.log(`[P0_PROFILE_PATCH] userUpdated via raw SQL: true, fields: ${Object.keys(userData).join(', ')}`);
 
     // Como avatarUrl, date_of_birth_precision e weight não estão no schema de User nem de UserProfile originais, e eram adicionados à tabela profiles (UserProfile), precisamos de usar raw sql apenas para estes campos, OU ignorar se os tipos falharem.
     if (avatarUrl !== undefined) {
