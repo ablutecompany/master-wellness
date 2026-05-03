@@ -48,6 +48,11 @@ export const normalizeProfile = (rawProfile: any): UserProfile | null => {
   const invalidFields: string[] = [];
   const normalized: any = { ...rawProfile };
 
+  // Extracção do avatarUrl se estiver nested no backend (p. ex. GET /auth/me -> rawProfile.profile.avatarUrl)
+  if (!normalized.avatarUrl && rawProfile.profile && rawProfile.profile.avatarUrl) {
+    normalized.avatarUrl = rawProfile.profile.avatarUrl;
+  }
+
   if (typeof normalized.name !== 'string') {
     normalized.name = normalized.email ? normalized.email.split('@')[0] : 'Utilizador';
     invalidFields.push('name');
@@ -140,7 +145,7 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
     const nextUser = previousUser ? { ...previousUser, ...updates } : { id: 'auth_stub', name: 'Utilizador', ...updates };
     set({ user: nextUser });
     
-    // 1. Gravação no Backend // Retorna a versão canónica!
+    // 1. Gravação no Backend
     try {
       const result = await ProfileService.updateProfile(sessionToken, updates);
       
@@ -152,12 +157,17 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
       });
 
       if (!result.ok || !result.profile) {
-        console.error('[ProfileSlice] Backend update failed. Reverting optimistic state.');
-        set({ user: previousUser }); // Rollback!
+        console.error('[ProfileSlice] Backend update failed. Reverting optimistic state, but keeping avatar if it was just changed.');
+        const rollbackUser = previousUser ? { ...previousUser } : { id: 'auth_stub', name: 'Utilizador', ...updates } as any;
+        // Se a falha foi payload too large ou network, manter o preview do avatar local para o utilizador poder tentar novamente ou pelo menos não ver o fallback
+        if (updates.avatarUrl !== undefined) {
+           rollbackUser.avatarUrl = updates.avatarUrl;
+        }
+        set({ user: rollbackUser as UserProfile });
         return false;
       }
       
-      // Validação extra para garantir que não recebemos um objecto vazio que "pise" o user
+      // Validação extra
       const normalizedResponse = normalizeProfile(result.profile);
       if (!normalizedResponse) {
         console.error('[ProfileSlice] Backend returned incomplete profile. Reverting optimistic state.');
@@ -165,12 +175,22 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
         return false;
       }
 
+      // Merge seguro: se o backend devolveu sucesso mas sem avatarUrl, e tínhamos um, preservar. 
+      // (Só removemos se o utilizador enviou explicitamente null)
+      if (!normalizedResponse.avatarUrl && nextUser.avatarUrl && updates.avatarUrl !== null) {
+         normalizedResponse.avatarUrl = nextUser.avatarUrl;
+      }
+
       // 2. Reflete resposta consolidada devolvida
       set({ user: normalizedResponse });
       return true;
     } catch (err) {
       console.error('[ProfileSlice] Exception during updateAuthenticatedProfile:', err);
-      set({ user: previousUser }); // Rollback if exception
+      const rollbackUser = previousUser ? { ...previousUser } : { id: 'auth_stub', name: 'Utilizador', ...updates } as any;
+      if (updates.avatarUrl !== undefined) {
+         rollbackUser.avatarUrl = updates.avatarUrl;
+      }
+      set({ user: rollbackUser as UserProfile }); 
       return false;
     }
   },
