@@ -181,18 +181,18 @@ export class UserService {
 
     // Garantir que a linha existe na tabela profiles antes de fazer o raw SQL UPDATE
     try {
-      await this.prisma.$executeRawUnsafe(`
+      await this.prisma.$executeRaw`
         INSERT INTO public.profiles (id, height, base_weight, main_goal, secondary_goals, activity_level, dietary_restrictions, allergies, current_supplementation, reported_medication, reported_symptoms, updated_at)
         VALUES (${userId}::uuid, 170, 70, 'general_wellness', '{}', 'sedentary', '{}', '{}', '{}', '{}', '{}', now())
         ON CONFLICT (id) DO NOTHING
-      `);
+      `;
     } catch (e) {
       try {
-        await this.prisma.$executeRawUnsafe(`
+        await this.prisma.$executeRaw`
           INSERT INTO public.profiles (id, updated_at)
           VALUES (${userId}::uuid, now())
           ON CONFLICT (id) DO NOTHING
-        `);
+        `;
       } catch (e2) {}
     }
 

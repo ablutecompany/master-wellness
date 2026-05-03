@@ -25,19 +25,19 @@ export class AuthService {
 
       // 2. Garantir que o perfil base existe na tabela profiles
       try {
-        await this.prisma.$executeRawUnsafe(`
+        await this.prisma.$executeRaw`
           INSERT INTO public.profiles (id, height, base_weight, main_goal, secondary_goals, activity_level, dietary_restrictions, allergies, current_supplementation, reported_medication, reported_symptoms, updated_at)
           VALUES (${uid}::uuid, 170, 70, 'general_wellness', '{}', 'moderate', '{}', '{}', '{}', '{}', '{}', now())
           ON CONFLICT (id) DO NOTHING
-        `);
+        `;
       } catch (e) {
         // Ignorar se a tabela não suportar algumas destas colunas, fazemos um insert básico
         try {
-          await this.prisma.$executeRawUnsafe(`
+          await this.prisma.$executeRaw`
             INSERT INTO public.profiles (id, updated_at)
             VALUES (${uid}::uuid, now())
             ON CONFLICT (id) DO NOTHING
-          `);
+          `;
         } catch (e2) {}
       }
 
@@ -172,18 +172,18 @@ export class AuthService {
     } catch (e) {}
 
     try {
-      await this.prisma.$executeRawUnsafe(`
+      await this.prisma.$executeRaw`
         INSERT INTO public.profiles (id, height, base_weight, main_goal, secondary_goals, activity_level, dietary_restrictions, allergies, current_supplementation, reported_medication, reported_symptoms, updated_at)
         VALUES (${targetUserId}::uuid, 170, 70, 'general_wellness', '{}', 'moderate', '{}', '{}', '{}', '{}', '{}', now())
         ON CONFLICT (id) DO NOTHING
-      `);
+      `;
     } catch (e) {
       try {
-        await this.prisma.$executeRawUnsafe(`
+        await this.prisma.$executeRaw`
           INSERT INTO public.profiles (id, updated_at)
           VALUES (${targetUserId}::uuid, now())
           ON CONFLICT (id) DO NOTHING
-        `);
+        `;
       } catch (e2) {}
     }
 
