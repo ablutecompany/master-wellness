@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { StyleSheet, View, TouchableOpacity, ScrollView, Platform, TextInput, SafeAreaView, Switch, Modal, Alert } from 'react-native';
 import { Typography, BlurView } from '../components/Base';
 import { theme } from '../theme';
@@ -6,6 +6,7 @@ import { ChevronRight, Globe, Activity, Settings, Shield, Bell, X, Droplet, Layo
 import { useStore } from '../store/useStore';
 import { MINI_APP_CATALOG } from '../miniapps/catalog';
 import { ENV } from '../config/env';
+import { getAllSelectableProfiles } from '../utils/household';
 import * as Location from 'expo-location';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -72,13 +73,11 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 
   // Household data for analysis mode
   const household = useStore(state => state.household);
-  const householdMembers = household?.members || [];
   
   // Available profiles
-  const availableProfiles = [
-    { id: user?.id || 'main_user', name: user?.name || 'Eu' },
-    ...householdMembers.map((m: any) => ({ id: m.id, name: m.profile?.name || 'Membro' }))
-  ];
+  const availableProfiles = useMemo(() => {
+    return getAllSelectableProfiles(user, household?.members);
+  }, [user, household?.members]);
 
   // Analysis Mode State
   const [selectedProfileId, setSelectedProfileId] = useState(user?.id || 'main_user');

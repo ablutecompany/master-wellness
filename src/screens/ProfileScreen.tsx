@@ -20,6 +20,7 @@ import { GatingOverlay } from '../components/GatingOverlay';
 import { useStore } from '../store/useStore';
 import * as Selectors from '../store/selectors';
 import { supabase } from '../services/supabase';
+import { getAllSelectableProfiles } from '../utils/household';
 
 const { width } = Dimensions.get('window');
 
@@ -31,6 +32,12 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const activeMemberId = useStore(Selectors.selectActiveMemberId);
   const setActiveMember = useStore(state => state.setActiveMember);
   const hasHydrated = useStore(state => state.hasHydrated);
+
+  const availableProfiles = useMemo(() => {
+    return getAllSelectableProfiles(user, household?.members);
+  }, [user, household?.members]);
+
+  const activeProfile = availableProfiles.find(p => p.id === activeMemberId) || availableProfiles[0];
 
   const [profileDraft, setProfileDraft] = useState<any>(null);
   const [isDirty, setIsDirty] = useState(false);
@@ -103,6 +110,19 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const [tempName, setTempName] = useState('');
   const [tempEmail, setTempEmail] = useState('');
   const [tempAvatar, setTempAvatar] = useState('');
+
+  // Modais de Membro
+  const [memberModalVisible, setMemberModalVisible] = useState(false);
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [tempMember, setTempMember] = useState({ name: '', relationship: 'Filho/a', sex: 'male', dateOfBirth: '' });
+
+  const [memberActionModalVisible, setMemberActionModalVisible] = useState(false);
+  const [targetMember, setTargetMember] = useState<any>(null);
+
+  const openMemberAction = (member: any) => {
+    setTargetMember(member);
+    setMemberActionModalVisible(true);
+  };
 
   const openModal = (type: 'birthday' | 'height' | 'sex' | 'weight' | 'name' | 'email' | 'avatar', title: string) => {
     if (type === 'birthday') {
@@ -208,6 +228,65 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const saveAvatar = () => {
     triggerSave({ avatarUrl: tempAvatar });
     closeModal();
+  };
+
+  const removeAvatar = () => {
+    triggerSave({ avatarUrl: null });
+    closeModal();
+  };
+
+  const handleSaveMember = () => {
+    if (!tempMember.name.trim()) {
+      Alert.alert('Erro', 'O nome do membro é obrigatório.');
+      return;
+    }
+    const store = useStore.getState();
+    if (editingMemberId) {
+      const hh = store.household;
+      if (hh) {
+        const newMembers = hh.members.map((m:any) => m.id === editingMemberId ? { ...m, name: tempMember.name, relationship: tempMember.relationship, sex: tempMember.sex, dateOfBirth: tempMember.dateOfBirth } : m);
+        store.setHousehold({ ...hh, members: newMembers });
+      }
+    } else {
+      const newMember = {
+        id: `member_${Date.now()}_${Math.floor(Math.random()*1000)}`,
+        name: tempMember.name,
+        relationship: tempMember.relationship,
+        dateOfBirth: tempMember.dateOfBirth || null,
+        sex: tempMember.sex || null,
+        heightCm: null,
+        weightKg: null,
+        avatarUrl: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      console.log('[P0_MEMBER_CREATE]', { memberId: newMember.id, name: newMember.name, relationship: newMember.relationship });
+      store.addHouseholdMember(newMember);
+      
+      Alert.alert('Sucesso', 'Membro adicionado ao agregado.', [
+        { text: 'Não ativar' },
+        { text: 'Tornar ativo agora', onPress: () => store.setActiveMember(newMember.id) }
+      ]);
+    }
+    setMemberModalVisible(false);
+  };
+
+  const handleArchiveMember = (member: any) => {
+    if (member.isPrimary) {
+      Alert.alert('Erro', 'Não pode arquivar o Perfil principal.');
+      return;
+    }
+    Alert.alert(
+      'Arquivar Membro',
+      'Arquivar este membro remove-o da lista ativa. Dados históricos associados poderão deixar de aparecer nas vistas principais. (Persistência local nesta fase).',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Arquivar', style: 'destructive', onPress: () => {
+          useStore.getState().archiveHouseholdMember(member.id);
+          setMemberActionModalVisible(false);
+        }}
+      ]
+    );
   };
 
   const processAvatarAsset = (asset: any) => {
@@ -523,7 +602,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           <View style={styles.modalHeader}>
             <View>
               <Typography variant="h3" style={{ fontWeight: '700', color: '#fff' }}>Perfil</Typography>
-              <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>CONFIGURAÇÃO BIOGRÁFICA</Typography>
+              <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{`PERFIL ATIVO: ${activeProfile?.name?.toUpperCase()}`}</Typography>
             </View>
             <TouchableOpacity 
               onPress={() => navigation.goBack()} 
@@ -637,55 +716,49 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
             {/* MEMBROS AGREGADOS */}
             <View style={styles.menuSection}>
-              <Typography variant="caption" style={styles.sectionLabel}>MEMBROS AGREGADOS</Typography>
+              <Typography variant="caption" style={styles.sectionLabel}>MEMBROS DO AGREGADO</Typography>
               <View style={styles.cardGroup}>
+                {availableProfiles.map((p, index) => (
+                  <TouchableOpacity 
+                    key={p.id}
+                    style={[styles.groupItem, index === availableProfiles.length - 1 && { borderBottomWidth: 0 }]} 
+                    onPress={() => {
+                      if (p.isPrimary) {
+                        Alert.alert('Perfil Principal', 'Edite os seus dados na área principal do Perfil.');
+                      } else {
+                        openMemberAction(p);
+                      }
+                    }}
+                  >
+                    <View style={styles.itemLeft}>
+                      <View style={[styles.iconBox, { backgroundColor: p.isPrimary ? 'rgba(0, 242, 255, 0.1)' : 'rgba(255, 255, 255, 0.1)' }]}>
+                        {p.isPrimary ? <User size={14} color="#00F2FF" /> : <Users size={14} color="#fff" />}
+                      </View>
+                      <View>
+                        <Typography style={styles.itemTitle}>{p.name} {p.isPrimary && '(Eu)'}</Typography>
+                        <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>{p.relationship}</Typography>
+                      </View>
+                    </View>
+                    <View style={styles.itemRight}>
+                      {activeMemberId === p.id && (
+                        <View style={{ backgroundColor: 'rgba(0,242,255,0.2)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, marginRight: 8 }}>
+                          <Typography style={{ color: '#00F2FF', fontSize: 10, fontWeight: '800' }}>ATIVO</Typography>
+                        </View>
+                      )}
+                      <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
+                    </View>
+                  </TouchableOpacity>
+                ))}
                 <TouchableOpacity 
-                  style={[styles.groupItem, { borderBottomWidth: 0 }]} 
+                  style={[styles.groupItem, { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', justifyContent: 'center' }]} 
                   onPress={() => {
-                    // Aqui futuramente abrirá a gestão de membros
-                    // Por agora mantemos a UI estável
-                    Alert.alert('Brevemente', 'Gestão de membros agregados estará disponível em breve.');
+                    setEditingMemberId(null);
+                    setTempMember({ name: '', relationship: 'Filho/a', sex: 'male', dateOfBirth: '' });
+                    setMemberModalVisible(true);
                   }}
                 >
-                  <View style={styles.itemLeft}>
-                    <View style={[styles.iconBox, { backgroundColor: 'rgba(0, 242, 255, 0.1)' }]}>
-                      <Users size={14} color="#00F2FF" />
-                    </View>
-                    <View>
-                      <Typography style={styles.itemTitle}>Membros do Agregado</Typography>
-                      <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.3)', marginTop: 2 }}>Gerir membros e perfis associados</Typography>
-                    </View>
-                  </View>
-                  <View style={styles.itemRight}>
-                    <ChevronRight size={16} color="rgba(255,255,255,0.2)" />
-                  </View>
+                  <Typography style={{ color: '#00F2FF', fontWeight: '600' }}>+ Adicionar membro</Typography>
                 </TouchableOpacity>
-
-                {/* Lista horizontal rápida de troca de membro se houver household */}
-                {household && household.members.length > 0 && (
-                  <View style={{ borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.03)' }}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 10 }}>
-                      <TouchableOpacity 
-                        onPress={() => setActiveMember(null)}
-                        style={[styles.memberCard, !activeMemberId && styles.memberCardActive]}
-                      >
-                        <User size={14} color={!activeMemberId ? '#000' : '#fff'} />
-                        <Typography style={[styles.memberName, { color: !activeMemberId ? '#000' : '#fff' }]}>Eu</Typography>
-                      </TouchableOpacity>
-
-                      {household.members.map(m => (
-                        <TouchableOpacity 
-                          key={m.id}
-                          onPress={() => setActiveMember(m.id)}
-                          style={[styles.memberCard, activeMemberId === m.id && styles.memberCardActive]}
-                        >
-                          <User size={14} color={activeMemberId === m.id ? '#000' : '#fff'} />
-                          <Typography style={[styles.memberName, { color: activeMemberId === m.id ? '#000' : '#fff' }]}>{m.profile.name}</Typography>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
-                )}
               </View>
             </View>
 

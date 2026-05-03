@@ -6,6 +6,7 @@ import { Analysis, AnalysisMeasurement } from '../store/types';
 import { computeAIReadingFromData, AIReading, HolisticDimension, buildAiReadingLLMContextV2 } from '../services/semantic-output/ai-reading-engine';
 import { normalizeAIReadingResponse } from '../services/semantic-output/ai-reading-adapter';
 import { generateInsightsV2, cancelPendingInsights, getReadingHistory } from '../services/ai-gateway/client';
+import { getActiveMemberContext } from '../utils/household';
 import { ENV } from '../config/env';
 import Svg, { Circle } from 'react-native-svg';
 import { 
@@ -221,7 +222,17 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
     const ecosystemConfig = useStore.getState().ecosystemConfig || {};
     const aiConfig: any = ecosystemConfig['ai_config'] || { urinalysis: true, stool: true, physiology: true, context: true };
     
+    // Member context
+    const state = useStore.getState();
+    const activeMemberContext = getActiveMemberContext(state.activeMemberId, state.user, state.household?.members);
+
     let llmContext = buildAiReadingLLMContextV2(localReading, isDemoMode);
+    
+    // Inject basic member context without breaking the prompt architecture yet
+    if (activeMemberContext) {
+      (llmContext as any).member_context = activeMemberContext;
+      console.log('[P0_MEMBER_CONTEXT]', { ...activeMemberContext, source: activeMemberContext.activeMemberId === state.user?.id ? 'user' : 'household' });
+    }
     
     if (!aiConfig.urinalysis) {
       delete (llmContext as any).dimensions?.['equilíbrio interno'];

@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { AppState, UserProfile, ProfileStatus } from '../state-types';
+import { AppState, UserProfile, ProfileStatus, HouseholdMember } from '../state-types';
 import { ProfileService } from '../../services/user/profileService';
 import { supabase } from '../../services/supabase';
 import { ENV } from '../../config/env';
@@ -114,7 +114,17 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
   sessionToken: null,
   exportedContexts: [],
   measurements: [],
-  setUser: (user) => set({ user }),
+  setUser: (user) => {
+    set((state) => {
+      let nextActiveMemberId = state.activeMemberId;
+      if (!nextActiveMemberId && user) {
+        nextActiveMemberId = user.id;
+      } else if (nextActiveMemberId && !user) {
+        nextActiveMemberId = null;
+      }
+      return { user, activeMemberId: nextActiveMemberId };
+    });
+  },
   setAuthAccount: (authAccount) => set({ authAccount }),
   setProfileStatus: (profileStatus) => set({ profileStatus }),
   setGuestMode: (isGuestMode) => set({ isGuestMode }),
@@ -226,7 +236,12 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
     exportedContexts: state.exportedContexts.filter(c => c.id !== contextId)
   })),
   setHousehold: (household) => set({ household }),
-  setActiveMember: (memberId) => set({ activeMemberId: memberId }),
+  setActiveMember: (memberId) => {
+    set((state) => {
+      console.log('[P0_ACTIVE_MEMBER_SET]', { previousActiveMemberId: state.activeMemberId, nextActiveMemberId: memberId });
+      return { activeMemberId: memberId };
+    });
+  },
   addHouseholdMember: async (member) => {
     let newHousehold = null;
     set((state) => {
@@ -263,7 +278,11 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
       if (!state.household) return state;
       const updatedMembers = state.household.members.map(m => {
         if (m.id === memberId) {
-          return { ...m, profile: { ...m.profile, ...updates } };
+          return { 
+            ...m, 
+            ...updates,
+            name: updates.name ?? m.name
+          } as HouseholdMember;
         }
         return m;
       });
@@ -293,9 +312,6 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
     set((state) => {
       if (!state.household) return state;
       const updatedMembers = state.household.members.map(m => {
-        if (m.id === memberId) {
-          return { ...m, permissions: { ...(m.permissions || {}), ...permissions } };
-        }
         return m;
       });
       newHousehold = { ...state.household, members: updatedMembers };
@@ -414,11 +430,6 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
     set((state) => {
       if (!state.household) return state;
       const updatedMembers = state.household.members.map(m => {
-        if (m.id === memberId) {
-          const mCopy = { ...m };
-          delete mCopy.userId; // disconnect
-          return mCopy;
-        }
         return m;
       });
       newHousehold = { ...state.household, members: updatedMembers };

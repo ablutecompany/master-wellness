@@ -91,10 +91,15 @@ export interface MemberPermissions {
 
 export interface HouseholdMember {
   id: string;
-  userId?: string; // if a registered user
-  role: HouseholdRole;
-  profile: UserProfile; 
-  permissions: MemberPermissions;
+  name: string;
+  relationship: string;
+  dateOfBirth: string | null;
+  sex: string | null;
+  heightCm: number | null;
+  weightKg: number | null;
+  avatarUrl: string | null;
+  isPrimary?: boolean;
+  archived?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -193,6 +198,7 @@ export interface AppState {
   acceptHouseholdInvite: (inviteId: string) => Promise<boolean>;
   cancelHouseholdInvite: (inviteId: string) => Promise<boolean>;
   removeHouseholdMember: (memberId: string) => Promise<boolean>;
+  archiveHouseholdMember: (memberId: string) => Promise<boolean>;
   disconnectHouseholdMember: (memberId: string) => Promise<boolean>;
 
   setExportedContext: (context: AppExportedContext) => void;
