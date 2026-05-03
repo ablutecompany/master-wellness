@@ -256,12 +256,17 @@ export class UserService {
     }
 
     // 3. Read back (usando a mesma lógica do getProfileByUid para coerência)
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: { profile: true }
-    });
+    let profileBase;
+    try {
+      profileBase = await this.prisma.userProfile.findUnique({
+        where: { id: userId }
+      });
+    } catch (err: any) {
+      console.warn(`[P0_PROFILE_PATCH] profile fetch fallback`);
+      profileBase = null;
+    }
 
-    if (!user) throw new Error('User not found after update');
+    if (!profileBase) throw new Error('User not found after update');
 
     let householdData = null;
     let avatarRaw = null;
@@ -310,24 +315,41 @@ export class UserService {
       isDiscrepant: manualWt !== null && latestMeasuredWeight !== null && Math.abs(manualWt - latestMeasuredWeight) >= 2.5
     };
 
+    let extName = null;
+    let extDateOfBirth = null;
+    let extSex = null;
+    let extTimezone = null;
+    let extCountry = null;
+
+    try {
+      const dbExt = await this.prisma.$queryRaw<any[]>`SELECT name, date_of_birth as "dateOfBirth", sex, timezone, country FROM public.profiles WHERE id = ${userId}::uuid`;
+      if (dbExt && dbExt.length > 0) {
+        extName = dbExt[0].name;
+        extDateOfBirth = dbExt[0].dateOfBirth;
+        extSex = dbExt[0].sex;
+        extTimezone = dbExt[0].timezone;
+        extCountry = dbExt[0].country;
+      }
+    } catch (e) {}
+
     const finalProfile = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
+      id: userId,
+      email: '', 
+      name: extName || null,
       avatarUrl: avatarRaw || null,
-      height: user.profile?.height || null,
-      dateOfBirth: user.dateOfBirth ? user.dateOfBirth.toISOString().split('T')[0] : null,
+      dateOfBirth: extDateOfBirth ? new Date(extDateOfBirth).toISOString().split('T')[0] : null,
       dateOfBirthPrecision: dobPrec || null,
-      sex: user.sex || null,
-      timezone: user.timezone || null,
-      country: user.country || null,
+      height: profileBase?.height || null,
+      sex: extSex || null,
+      timezone: extTimezone || null,
+      country: extCountry || null,
       weight: weightObj,
-      baseWeight: user.profile?.baseWeight || null,
-      mainGoal: user.profile?.mainGoal || null,
-      goals: user.profile?.mainGoal ? [user.profile.mainGoal, ...(user.profile.secondaryGoals || [])] : [],
-      activityLevel: user.profile?.activityLevel || null,
-      dietaryRestrictions: user.profile?.dietaryRestrictions || [],
-      activeAnalysisId: user.profile?.activeAnalysisId || null,
+      baseWeight: profileBase?.baseWeight || null,
+      mainGoal: profileBase?.mainGoal || null,
+      goals: profileBase?.mainGoal ? [profileBase.mainGoal, ...(profileBase.secondaryGoals || [])] : [],
+      activityLevel: profileBase?.activityLevel || null,
+      dietaryRestrictions: profileBase?.dietaryRestrictions || [],
+      activeAnalysisId: profileBase?.activeAnalysisId || null,
       household: householdData || null,
     };
     
