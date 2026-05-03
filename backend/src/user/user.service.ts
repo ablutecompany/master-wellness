@@ -266,7 +266,8 @@ export class UserService {
       profileBase = null;
     }
 
-    if (!profileBase) throw new Error('User not found after update');
+    // Não lançamos erro se profileBase falhar, pois a tabela profiles pode não ter este ID explicitamente na Prisma mas o utilizador existe.
+    // O resto do código já suporta profileBase?.height, etc.
 
     let householdData = null;
     let avatarRaw = null;
