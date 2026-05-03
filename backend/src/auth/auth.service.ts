@@ -57,10 +57,11 @@ export class AuthService {
         await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS activity_level TEXT`);
         await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS dietary_restrictions TEXT[]`);
         await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS active_analysis_id TEXT`);
+        await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS date_of_birth_precision TEXT`);
 
         const extRes = await this.prisma.$queryRaw<any[]>`
           SELECT 
-            name, to_char(date_of_birth, 'YYYY-MM-DD') as "dateOfBirth", sex, timezone, country, avatar_url as "avatarUrl",
+            name, to_char(date_of_birth, 'YYYY-MM-DD') as "dateOfBirth", date_of_birth_precision as "dateOfBirthPrecision", sex, timezone, country, avatar_url as "avatarUrl",
             height, base_weight as "baseWeight", main_goal as "mainGoal", 
             secondary_goals as "secondaryGoals", activity_level as "activityLevel",
             dietary_restrictions as "dietaryRestrictions", active_analysis_id as "activeAnalysisId"
@@ -79,6 +80,7 @@ export class AuthService {
         email: uid, // Em M5 vamos usar o email do token auth, por agora stub
         name: extendedData.name || 'Utilizador',
         dateOfBirth: extendedData.dateOfBirth || null,
+        dateOfBirthPrecision: extendedData.dateOfBirthPrecision || null,
         sex: extendedData.sex || null,
         timezone: extendedData.timezone || null,
         country: extendedData.country || null,
@@ -148,6 +150,7 @@ export class AuthService {
         // Canonical shape mapping
         height: user.profile?.height || null,
         dateOfBirth: user.dateOfBirth ? (typeof user.dateOfBirth === 'string' ? user.dateOfBirth.split('T')[0] : user.dateOfBirth.toISOString().split('T')[0]) : null,
+        dateOfBirthPrecision: user.dateOfBirthPrecision || null,
         sex: user.sex || null,
         timezone: user.timezone || null,
         country: user.country || null,
