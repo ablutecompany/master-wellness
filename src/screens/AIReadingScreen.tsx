@@ -59,7 +59,7 @@ const DIMENSION_INFO: Record<string, { title: string, description: string }> = {
 
 type ReadingSource = 'local' | 'openai' | 'fallback';
 
-const DimensionGridCard = ({ dimension, isSelected, isFocus, onPress, onInfoPress }: { dimension: HolisticDimension, isSelected: boolean, isFocus?: boolean, onPress: () => void, onInfoPress: () => void }) => {
+const DimensionGridCard = ({ dimension, isSelected, isFocus, isLowestScore, onPress, onInfoPress }: { dimension: HolisticDimension, isSelected: boolean, isFocus?: boolean, isLowestScore?: boolean, onPress: () => void, onInfoPress: () => void }) => {
   const getDimensionIcon = (id: string) => {
     switch(id) {
       case 'readiness_today': return Zap;
@@ -101,18 +101,29 @@ const DimensionGridCard = ({ dimension, isSelected, isFocus, onPress, onInfoPres
       onPress={onPress}
       activeOpacity={0.7}
     >
+      {/* Light Beam for Lowest Score */}
+      {isLowestScore && (
+        <LinearGradient
+          colors={['transparent', `${color}40`, 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[StyleSheet.absoluteFillObject, { opacity: 0.5 }]}
+          pointerEvents="none"
+        />
+      )}
+
       {/* Subtle Background Icon */}
-      <View style={{ position: 'absolute', bottom: -10, right: -10, opacity: 0.12 }}>
+      <View style={{ position: 'absolute', bottom: -10, right: -10, opacity: 0.12 }} pointerEvents="none">
         <Icon size={70} color={color} strokeWidth={1} />
       </View>
 
       {/* "i" button */}
       <TouchableOpacity 
-        style={{ position: 'absolute', top: 10, right: 10, zIndex: 10, padding: 4 }} 
+        style={[{ position: 'absolute', top: 8, right: 8, zIndex: 10, padding: 4 }, isSelected && { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', top: 6, right: 6 }]} 
         onPress={(e) => { e.stopPropagation(); onInfoPress(); }}
         hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
       >
-        <Info size={18} color="rgba(255,255,255,0.6)" />
+        <Info size={isSelected ? 20 : 18} color={isSelected ? '#fff' : "rgba(255,255,255,0.6)"} />
       </TouchableOpacity>
 
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8, paddingRight: 24 }}>
@@ -271,6 +282,18 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
     d.title === 'Sinais de rotina' ? { ...d, title: 'Juvenialidade' } : d
   );
 
+  const lowestScoreDimId = useMemo(() => {
+    let lowestId = null;
+    let lowestScore = Infinity;
+    for (const d of dimensions) {
+      if (d.score !== null && d.score < lowestScore) {
+        lowestScore = d.score;
+        lowestId = d.id;
+      }
+    }
+    return lowestId;
+  }, [dimensions]);
+
   const getDimensionIcon = (id: string) => {
     switch(id) {
       case 'readiness_today': return Zap;
@@ -359,15 +382,15 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         </View>
 
         {/* METADATA ROW */}
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 16 }}>
-          <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '500' }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginBottom: 12 }}>
+          <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: '500' }}>
             {selectedHistoryReading 
-              ? new Date(historyReadings.find(r => r.id === selectedHistoryId)?.analysisDate || new Date()).toLocaleString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' ·') 
-              : (activeAnalysis?.analysisDate ? new Date(activeAnalysis.analysisDate).toLocaleString('pt-PT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' ·') : '--')
+              ? `Interpretação das análises efetuadas a: ${new Date(historyReadings.find(r => r.id === selectedHistoryId)?.analysisDate || new Date()).toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })}` 
+              : (activeAnalysis?.analysisDate ? `Interpretação das análises efetuadas a: ${new Date(activeAnalysis.analysisDate).toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })}` : '--')
             }
           </Typography>
           <TouchableOpacity onPress={() => setShowHistoryModal(true)}>
-            <Typography style={{ color: '#00F2FF', fontSize: 13, fontWeight: '600' }}>Histórico {'>'}</Typography>
+            <Typography style={{ color: '#00F2FF', fontSize: 12, fontWeight: '600' }}>Histórico {'>'}</Typography>
           </TouchableOpacity>
         </View>
 
@@ -523,6 +546,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                 dimension={d}
                 isSelected={selectedDimId === d.id}
                 isFocus={reading.nextFocus?.dimensionId === d.id}
+                isLowestScore={lowestScoreDimId === d.id}
                 onPress={() => {
                   if (selectedDimId !== d.id) setActiveTab('summary');
                   setSelectedDimId(prev => prev === d.id ? null : d.id);
@@ -637,7 +661,7 @@ const styles = StyleSheet.create({
   atmosphere: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
   aura: { position: 'absolute', width: 600, height: 600, borderRadius: 300, top: -200, right: -200, opacity: 0.3, ...(Platform.OS === 'web' ? { filter: 'blur(120px)' } : {}) },
   scroll: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 40 },
-  header: { marginTop: 40, marginBottom: 20, paddingHorizontal: 20 },
+  header: { marginTop: 24, marginBottom: 8, paddingHorizontal: 20 },
   title: { color: '#ffffff', fontSize: 24, fontWeight: '700', flexShrink: 1 },
   demoBadge: { borderColor: '#00F2FF', borderWidth: 1, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, justifyContent: 'center', height: 20 },
   demoLabel: { color: '#00F2FF', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
