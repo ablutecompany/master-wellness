@@ -300,7 +300,9 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
   const switchAnim = useRef(new Animated.Value(0)).current; // 0 = UP, MAX_DRAG = DOWN
   const isOff = useRef(false);
 
-  const DRAWER_DOWN = height - 160;
+  const DRAWER_HEIGHT = 750;
+  const VISIBLE_DRAWER_HEIGHT = 170; // handle + icons + paddings
+  const DRAWER_DOWN = DRAWER_HEIGHT - VISIBLE_DRAWER_HEIGHT;
   const DRAWER_UP = 0;
   const lastDrawerY = useRef(DRAWER_DOWN);
   const drawerAnim = useRef(new Animated.Value(DRAWER_DOWN)).current;
