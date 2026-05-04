@@ -439,7 +439,12 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                    <Typography style={styles.sectionTitle}>SÍNTESE DO MOMENTO</Typography>
                    <Typography style={styles.messageTitle}>{reading.summary.title}</Typography>
                    <Typography style={styles.messageText}>
-                     {renderTextWithDimensionHighlights(reading.summary.text, dimensions)}
+                     {renderTextWithDimensionHighlights(
+                        (readingSource === 'local_fallback' && fallbackReason !== 'LOADING' && (reading.summary as any).fallbackText) 
+                        ? (reading.summary as any).fallbackText 
+                        : reading.summary.text, 
+                        dimensions
+                     )}
                    </Typography>
                  </BlurView>
                  

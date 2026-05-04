@@ -17,6 +17,47 @@ function cleanForbiddenPlaceholders(text: string): string {
   return clean;
 }
 
+function normalizeReferenceText(text: string, dimensionId?: string): string {
+  if (!text) return '';
+  let clean = text;
+
+  // Remover prefixos "entre outras"
+  clean = clean.replace(/^entre outras[.,]?\s*/i, '');
+  clean = clean.replace(/^entre outros[.,]?\s*/i, '');
+
+  // Capitalizar primeira letra
+  clean = clean.charAt(0).toUpperCase() + clean.slice(1);
+
+  // Dicionário de tradução
+  const dictionary: Record<string, string> = {
+    'fC': 'Frequência cardíaca',
+    'HRV': 'Variabilidade da frequência cardíaca',
+    'SpO2': 'Saturação de oxigénio',
+    'DOB': 'Data de nascimento',
+    'urineDensity': 'Densidade urinária',
+    'naKRatio': 'Rácio sódio/potássio',
+    'bristol': 'Escala de Bristol',
+    'fecalOptical': 'Caracterização óptica das fezes',
+    'internal_balance': 'Equilíbrio interno',
+    'recovery': 'Recuperação',
+    'physiological_load': 'Carga fisiológica'
+  };
+
+  // Humanização de impactos
+  clean = clean.replace(/impacta negativamente na avaliação/gi, 'reduziu a pontuação por apresentar sinais que merecem atenção');
+  clean = clean.replace(/contribui negativamente/gi, 'reduziu a pontuação por apresentar sinais que merecem atenção');
+  clean = clean.replace(/contribui positivamente/gi, 'ajudou a sustentar uma leitura mais favorável nesta dimensão');
+  clean = clean.replace(/aumento na avaliação/gi, 'contribuiu positivamente para a leitura');
+
+  // Traduzir termos do dicionário
+  Object.keys(dictionary).forEach(key => {
+    const regex = new RegExp(`\\b${key}\\b`, 'gi');
+    clean = clean.replace(regex, dictionary[key]);
+  });
+
+  return clean;
+}
+
 function ensureDimensionTabsContent(dim: HolisticDimension, nutrientPriorities: any[] = []) {
   dim.summary = cleanForbiddenPlaceholders(dim.summary || '');
   if (!dim.summary) {
@@ -99,9 +140,8 @@ export function normalizeAIReadingResponse(rawOutput: any, localReading: AIReadi
 
         if (Array.isArray(v2Dim.references)) {
           localDim.references = v2Dim.references.map((ref: string) => {
-            const factorText = ref.toLowerCase().startsWith('entre outras') ? ref : `Entre outras, ${ref.charAt(0).toLowerCase() + ref.slice(1)}`;
             return {
-              factor: factorText,
+              factor: normalizeReferenceText(ref, v2Dim.id),
               observedValue: '',
               whyItMatters: '',
               influenceOnScore: ''

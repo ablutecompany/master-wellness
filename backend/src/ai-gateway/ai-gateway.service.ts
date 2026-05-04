@@ -207,8 +207,9 @@ export class AiGatewayService {
        throw new AiGatewayError('UNAUTHORIZED', 'Autenticação obrigatória para utilizar a IA Avançada. (401)');
     }
 
-    // 1. Identificar Source Hash
-    const hashStr = sourcePayload ? Buffer.from(JSON.stringify(sourcePayload)).toString('base64').substring(0, 32) : 'unknown';
+    // 1. Identificar Source Hash com versionamento R6.1
+    const promptVersion = 'R6.1.1';
+    const hashStr = sourcePayload ? Buffer.from(JSON.stringify(sourcePayload)).toString('base64').substring(0, 32) + '_' + promptVersion : 'unknown_' + promptVersion;
     
     // 2. Verificar cache se forceRegenerate=false e não for DEMO
     if (!forceRegenerate && !isDemo) {
@@ -257,14 +258,15 @@ export class AiGatewayService {
       isDemo ? `[ALERTA DE SISTEMA]: Os dados desta leitura são simulados/demo e variam com o cenário. A resposta deve refletir exatamente os dados deste cenário DEMO, gerando scores, resumos e ações específicas à concentração ou carga reportada, e incluir a safetyFlag "demo_data".` : ``,
       `O motor local já calculou os scores baseados nas fontes. O teu papel é explicar as 8 dimensões canónicas em português de Portugal.`,
       `Regras de tom: wellness, premium, claro, não paternalista, nunca alarmista, e NÃO clíníco (isMedicalDiagnosis: false).`,
-      `Não aceites texto estático. O conteúdo (Síntese, Scores, Referências e Ações) TEM DE VARIAR dependendo dos resultados da análise enviados.`,
+      `PROIBIDO usar introduções genéricas na Síntese (ex: "Análise de Bem-Estar de [nome]" ou "Nesta leitura exploramos..."). A Síntese DEVE focar-se imediatamente nos resultados: mencione 1 a 2 dimensões relevantes, cite o foco recomendado, inclua os drivers processados, e defina uma prioridade prática. Exemplo bom: "Hoje a leitura aponta para boa estabilidade geral, mas com atenção ao equilíbrio interno devido a sinais de concentração elevada."`,
+      `O conteúdo (Síntese, Scores, Referências e Ações) TEM DE VARIAR dependendo dos resultados da análise enviados.`,
       `Se uma fonte (urine, feces, physiological, context, miniapps) estiver 'excluded_by_user', a dimensão afetada não pode presumir os dados e deve declarar essa exclusão nas "references" ou "limits".`,
       `Vitalidade deve ser prudente se não houver histórico suficiente. Se confidence for 'low', explica que é uma leitura preliminar isolada.`,
       `OBRIGATÓRIO PARA CADA DIMENSÃO:`,
       `- summary: explica os dados fornecidos e como afetam o estado da pessoa neste momento específico.`,
-      `- actions: pelo menos 1 item accionável pragmático (ex: manter hidratação, privilegiar fibras). Não inventes suplementos.`,
-      `- references: indica claramente 1 a 3 fatores (drivers) do motor que justificam o score. Ex: "Esta leitura considerou densidade urinária e rácio Na/K." ou "Dados fecais excluídos nas Configurações."`,
-      `- limits: explica as limitações da avaliação (ex: sem histórico, fonte desligada, poucos dados). Se não houver limitações usa "Nenhuma limitação aparente.".`,
+      `- actions: pelo menos 1 item accionável pragmático. Não inventes suplementos.`,
+      `- references: indica claramente 1 a 3 fatores (drivers) do motor que justificam o score em linguagem humana (não usar camelCase ou frases de robô como "impacta negativamente na avaliação"). Não repetir a expressão "Entre outras" em cada item.`,
+      `- limits: explica as limitações da avaliação (ex: sem histórico, fonte desligada, poucos dados).`,
       `Nunca uses a frase "Dados insuficientes" de forma vaga.`,
       ``,
       `Contexto estrutural gerado pelo motor local (JSON):`,

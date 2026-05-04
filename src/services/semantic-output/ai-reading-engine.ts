@@ -401,6 +401,15 @@ export function computeAIReadingFromData(
     color: nextFocusDimension.color
   } : undefined;
 
+  // Fallback Summary Generator for failures
+  let localSummaryFallback = '';
+  if (nextFocusDimension) {
+     const fdDrivers = nextFocusDimension.topDrivers.map(d => d.label).join(', ');
+     localSummaryFallback = `Hoje a leitura aponta para estabilidade, mas com atenção especial a ${nextFocusDimension.title.toLowerCase()}. A interpretação foi influenciada sobretudo pelos sinais de ${fdDrivers || 'avaliação'}. A prioridade prática é acompanhar a evolução desta dimensão na próxima análise.`;
+  } else {
+     localSummaryFallback = `A sua sessão de hoje revela um estado geral estável e consistente nas várias dimensões. A interpretação dos sinais indica ausência de desvios prioritários. A prioridade prática é manter a rotina atual.`;
+  }
+
   // R5D Nutrient Priorities Fallback (simplified for engine build)
   const nutrientPriorities: NutrientPriority[] = [];
   if (gravidade > 1.025 && sourcePolicy.urine !== "excluded_by_user") {
@@ -413,10 +422,11 @@ export function computeAIReadingFromData(
   return {
     summary: { 
       title: 'Leitura Pronta', 
-      text: 'Resumo pendente OpenAI.', 
+      text: 'Interpretação dos resultados pela IA está dependente o processamento. Por favor, aguarde reposta do motor de IA.', 
       confidence: 0.85, 
-      mode: isDemo ? 'simulation' : 'real' 
-    },
+      mode: isDemo ? 'simulation' : 'real',
+      fallbackText: localSummaryFallback
+    } as any,
     dimensions,
     nextFocus,
     nutrientPriorities
