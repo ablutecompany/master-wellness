@@ -650,7 +650,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   // ─────────────────────────────────────────────────────────────────────────────
   // 5. MAIN RENDER
   // ─────────────────────────────────────────────────────────────────────────────
-  if (profileStatus !== 'loaded' && profileStatus !== 'error') {
+  if (!hasHydrated || profileStatus === 'loading') {
     return (
       <View style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#00F2FF" />
@@ -658,13 +658,26 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     );
   }
 
-  if (!activeProfile) {
+  // Se já carregou mas falha em ter user ou profileDraft, mostra fallback
+  if ((profileStatus === 'loaded' || profileStatus === 'error') && (!profileDraft || !activeProfile)) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#00F2FF" />
+      <View style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+        <Typography variant="h3" style={{ color: '#fff', textAlign: 'center', marginBottom: 12 }}>
+          Perfil indisponível
+        </Typography>
+        <Typography variant="body" style={{ color: 'rgba(255,255,255,0.7)', textAlign: 'center', marginBottom: 24 }}>
+          Não foi possível carregar o perfil local. Tente terminar sessão e voltar a entrar.
+        </Typography>
+        <TouchableOpacity style={[styles.actionBtn, { borderColor: '#FF3B30' }]} onPress={() => useStore.getState().clearSensitiveState()}>
+          <Typography style={[styles.actionBtnText, { color: '#FF3B30' }]}>Terminar Sessão</Typography>
+        </TouchableOpacity>
       </View>
     );
   }
+
+  // Prevenir qualquer renderização caso profileDraft seja null 
+  // (só para TypeScript e safety extra, o bloco acima já captura isto)
+  if (!profileDraft) return null;
 
   return (
     <View style={styles.outerContainer}>
