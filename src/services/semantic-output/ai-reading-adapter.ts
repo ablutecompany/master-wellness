@@ -98,12 +98,15 @@ export function normalizeAIReadingResponse(rawOutput: any, localReading: AIReadi
         }
 
         if (Array.isArray(v2Dim.references)) {
-          localDim.references = v2Dim.references.map((ref: string) => ({
-            factor: ref,
-            observedValue: '',
-            whyItMatters: '',
-            influenceOnScore: ''
-          }));
+          localDim.references = v2Dim.references.map((ref: string) => {
+            const factorText = ref.toLowerCase().startsWith('entre outras') ? ref : `Entre outras, ${ref.charAt(0).toLowerCase() + ref.slice(1)}`;
+            return {
+              factor: factorText,
+              observedValue: '',
+              whyItMatters: '',
+              influenceOnScore: ''
+            };
+          });
         }
 
         // Apply R6.1 limitations if defined

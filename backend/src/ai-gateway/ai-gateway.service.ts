@@ -210,8 +210,8 @@ export class AiGatewayService {
     // 1. Identificar Source Hash
     const hashStr = sourcePayload ? Buffer.from(JSON.stringify(sourcePayload)).toString('base64').substring(0, 32) : 'unknown';
     
-    // 2. Verificar cache se forceRegenerate=false
-    if (!forceRegenerate) {
+    // 2. Verificar cache se forceRegenerate=false e não for DEMO
+    if (!forceRegenerate && !isDemo) {
        let cached;
        if (analysisSessionId) {
           cached = await this.prisma.aiReadingRecord.findFirst({

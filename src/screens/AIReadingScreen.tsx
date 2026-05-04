@@ -349,11 +349,15 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
     return parts.map((part, index) => {
       const matchedDim = sortedDims.find(d => d.title.toLowerCase() === part.toLowerCase());
       if (matchedDim) {
-        return (
-          <Typography key={index} style={{ color: matchedDim.color, fontWeight: '700' }}>
-            {part}
-          </Typography>
-        );
+        // Só faz highlight se a dimensão não for estável (for foco/atenção/prioridade) ou se for o foco principal
+        const shouldHighlight = matchedDim.status !== 'stable' || matchedDim.id === lowestScoreDimId;
+        if (shouldHighlight) {
+          return (
+            <Typography key={index} style={{ color: matchedDim.color, fontWeight: '700' }}>
+              {part}
+            </Typography>
+          );
+        }
       }
       return <React.Fragment key={index}>{part}</React.Fragment>;
     });

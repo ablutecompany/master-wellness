@@ -334,14 +334,39 @@ export function computeAIReadingFromData(
        });
     }
 
+    const statusObj = getStatus(res.score);
+    const ptStatus = statusObj === 'stable' ? 'estável' : (statusObj === 'priority' ? 'prioritária' : 'em atenção');
+
+    let fallbackSummary = 'A aguardar mais dados...';
+    if (res.score !== null) {
+      const driversDesc = res.drivers.length > 0 ? res.drivers.map(d => d.label).join(', ') : 'os sinais gerais';
+      if (id === 'energy') {
+        fallbackSummary = `Esta dimensão reflete a energia funcional disponível nesta leitura. Os dados atuais sugerem uma condição ${ptStatus}, considerando sobretudo ${driversDesc}.`;
+      } else if (id === 'intestinal_state') {
+        fallbackSummary = `Esta dimensão considera os dados fecais disponíveis. Nesta leitura, os sinais sugerem uma condição ${ptStatus}, com impacto de ${driversDesc}.`;
+      } else if (id === 'physiological_load') {
+        fallbackSummary = `Reflete a tensão fisiológica ou exigência detetada. O corpo apresenta um estado ${ptStatus}, influenciado por marcadores como ${driversDesc}.`;
+      } else if (id === 'recovery') {
+        fallbackSummary = `Avalia a resposta do corpo face à carga recente. Os sinais vitais apontam para uma recuperação ${ptStatus}, destacando-se ${driversDesc}.`;
+      } else if (id === 'internal_balance') {
+        fallbackSummary = `A avaliação do equilíbrio de fluidos e minerais revela uma condição ${ptStatus}, tendo em conta ${driversDesc}.`;
+      } else if (id === 'metabolic_rhythm') {
+        fallbackSummary = `O ritmo metabólico atual reflete um estado ${ptStatus}, fundamentado em sinais como ${driversDesc}.`;
+      } else if (id === 'food_adjustments') {
+        fallbackSummary = `Com base nos sinais avaliados, os ajustes alimentares encontram-se num nível ${ptStatus}, considerando ${driversDesc}.`;
+      } else if (id === 'vitality') {
+        fallbackSummary = `A análise longitudinal e estabilidade de longo prazo apontam para um estado ${ptStatus}, refletindo ${driversDesc}.`;
+      } else {
+        fallbackSummary = `A análise preliminar encontra-se num estado ${ptStatus}, impulsionada por ${driversDesc}.`;
+      }
+    }
+
     return {
       id, title, color,
       score: res.score,
       confidence: finalConfidence,
-      status: getStatus(res.score),
-      summary: res.score === null 
-        ? 'A aguardar mais dados...' 
-        : `Análise preliminar em estado: ${getStatus(res.score)}.`,
+      status: statusObj,
+      summary: fallbackSummary,
       topDrivers: res.drivers,
       recommendations: [],
       references: baseReferences,
