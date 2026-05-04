@@ -1926,6 +1926,14 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
   const rotation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    console.log('[HOME_EYE_VIDEO]', {
+      assetLoaded: true,
+      platform: Platform.OS,
+      renderer: Platform.OS === 'web' ? 'html-video' : 'expo-av',
+      mounted: true,
+      wheelContainerFound: true
+    });
+
     Animated.loop(
       Animated.timing(rotation, {
         toValue: 1,
@@ -1953,15 +1961,31 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#050A14' }]} />
          
          {/* 2. vídeo eye.mp4 com opacity 0.5 */}
-         <Video
-            source={require('../../assets/eye.mp4')}
-            style={[StyleSheet.absoluteFillObject, { opacity: 0.5 }]}
-            resizeMode={ResizeMode.COVER}
-            shouldPlay
-            isLooping
-            isMuted
-            pointerEvents="none"
-         />
+         {Platform.OS === 'web' ? (
+           // @ts-ignore
+           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.5, pointerEvents: 'none' }}>
+             {/* @ts-ignore */}
+             <video 
+               src={require('../../assets/eye.mp4')} 
+               autoPlay 
+               loop 
+               muted 
+               playsInline 
+               controls={false}
+               style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+             />
+           </div>
+         ) : (
+           <Video
+              source={require('../../assets/eye.mp4')}
+              style={[StyleSheet.absoluteFillObject, { opacity: 0.5 }]}
+              resizeMode={ResizeMode.COVER}
+              shouldPlay
+              isLooping
+              isMuted
+              pointerEvents="none"
+           />
+         )}
          
          {/* 3. overlay escuro/gradiente subtil para garantir legibilidade */}
          <LinearGradient
