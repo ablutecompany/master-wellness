@@ -102,8 +102,8 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   const isDemoMode = useStore(state => state.isDemoMode);
   const dataFreshness = useStore(useShallow(Selectors.selectDataFreshness));
   
-  const analyses = useStore(useShallow(Selectors.selectAnalyses));
-  const demoAnalysis = useStore(Selectors.selectDemoAnalysis);
+  const analyses = useStore(state => state.analyses || []);
+  const demoAnalysis = useStore(state => state.demoAnalysis);
   const activeAnalysis = isDemoMode && demoAnalysis ? demoAnalysis : analyses[0];
 
   const [showNoHistoryModal, setShowNoHistoryModal] = useState(false);
