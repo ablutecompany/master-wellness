@@ -230,13 +230,24 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [galleryState, goToNextPreview, goToPreviousPreview]);
 
-  const incrementDemoDays = useCallback(() => {
-    if (!isDemoMode) return;
-    setDemoDaysCounter(prev => {
-      const next = prev + 2;
-      return next > 30 ? 0 : next;
-    });
-  }, [isDemoMode]);
+  const incrementDays = useCallback(() => {
+    if (isDemoMode) {
+      setDemoDaysCounter(prev => {
+        const next = prev + 2;
+        return next > 30 ? 0 : next;
+      });
+    } else {
+      setLocalDaysOverride(prev => {
+        let current = prev;
+        if (current === null) {
+          const lastAnalysisDate = user?.lastAnalysisDate;
+          current = lastAnalysisDate ? Math.floor((Date.now() - new Date(lastAnalysisDate).getTime()) / (1000 * 60 * 60 * 24)) : 14;
+        }
+        const next = current + 2;
+        return next > 30 ? 0 : next;
+      });
+    }
+  }, [isDemoMode, user?.lastAnalysisDate]);
 
   // ── Animation States ──────────────────────────────────────────────────────
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -560,7 +571,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
         {/* ── HEADER ──────────────────────────────────────────────────────── */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <TouchableOpacity onPress={incrementDemoDays} activeOpacity={0.8}>
+            <TouchableOpacity onPress={incrementDays} activeOpacity={0.8}>
               <BrandLogo size="medium" />
             </TouchableOpacity>
             <TouchableOpacity 
@@ -571,7 +582,7 @@ export const HomeScreen = ({ navigation }: { navigation: any }) => {
                 } else {
                   cycleDemoPersona();
                 }
-                incrementDemoDays();
+                incrementDays();
               }}
               onLongPress={() => {
                 if (isDemoMode) setIsDemoMode(false);
