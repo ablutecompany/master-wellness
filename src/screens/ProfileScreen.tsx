@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, TouchableOpacity, ScrollView, Platform, Image, Alert, Modal, SafeAreaView, Dimensions, FlatList, ActivityIndicator, TextInput } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { Container, Typography, BlurView } from '../components/Base';
 import { theme } from '../theme';
 import { 
@@ -290,18 +291,67 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
     );
   };
 
-  const processAvatarAsset = (asset: any) => {
-    const dataUrl = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
-    if (asset.base64) {
-      // Calcular tamanho em bytes do base64 (aprox)
-      const sizeInBytes = (asset.base64.length * 3) / 4;
-      const sizeInMb = sizeInBytes / (1024 * 1024);
+  const processAvatarAsset = async (sourceUri: string, sourceFileName?: string | null) => {
+    console.log('[P0_AVATAR_PROCESSING] start processing', { sourceUri });
+    try {
+      // 1. Redimensionar para 512x512 ou max 768x768
+      let manipResult = await ImageManipulator.manipulateAsync(
+        sourceUri,
+        [{ resize: { width: 512, height: 512 } }],
+        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+      );
+
+      // 2. Verificar tamanho inicial
+      let sizeInBytes = manipResult.base64 ? (manipResult.base64.length * 3) / 4 : 0;
+      let sizeInMb = sizeInBytes / (1024 * 1024);
+
+      console.log('[P0_AVATAR_PROCESSING] first pass', { sizeInMb: sizeInMb.toFixed(2), width: manipResult.width });
+
+      // 3. Compressão agressiva se ainda > 1MB
       if (sizeInMb > 1) {
-        Alert.alert('Imagem demasiado pesada', `A imagem selecionada tem cerca de ${sizeInMb.toFixed(1)}MB. O limite máximo atual é de 1MB. Por favor, tira outra foto com menos resolução ou escolhe outra.`);
-        return;
+         console.warn('[P0_AVATAR_PROCESSING] too large, compressing further (0.3)');
+         manipResult = await ImageManipulator.manipulateAsync(
+            manipResult.uri,
+            [],
+            { compress: 0.3, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+         );
+         sizeInBytes = manipResult.base64 ? (manipResult.base64.length * 3) / 4 : 0;
+         sizeInMb = sizeInBytes / (1024 * 1024);
       }
+
+      // 4. Último nível de compressão se > 1MB
+      if (sizeInMb > 1) {
+         console.warn('[P0_AVATAR_PROCESSING] still too large, aggressive compress (0.1)');
+         manipResult = await ImageManipulator.manipulateAsync(
+            manipResult.uri,
+            [{ resize: { width: 256, height: 256 } }],
+            { compress: 0.1, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+         );
+         sizeInBytes = manipResult.base64 ? (manipResult.base64.length * 3) / 4 : 0;
+         sizeInMb = sizeInBytes / (1024 * 1024);
+      }
+
+      // 5. Validar limite final absoluto
+      if (sizeInMb > 1.2 || !manipResult.base64) {
+         console.error('[P0_AVATAR_PROCESSING] Rejeitado por tamanho final.', { sizeInMb });
+         Alert.alert('Imagem demasiado pesada', `A imagem continua demasiado pesada (${sizeInMb.toFixed(1)}MB) mesmo após compressão. Escolha outra fotografia ou um formato mais pequeno.`);
+         return;
+      }
+
+      console.log('[P0_AVATAR_PROCESSING] success', {
+         resizeApplied: true,
+         outputWidth: manipResult.width,
+         outputHeight: manipResult.height,
+         outputBase64Length: manipResult.base64?.length,
+         outputEstimatedBytes: sizeInBytes
+      });
+
+      const dataUrl = `data:image/jpeg;base64,${manipResult.base64}`;
+      setTempAvatar(dataUrl);
+    } catch (err: any) {
+      console.error('[P0_AVATAR_PROCESSING] fail', err);
+      Alert.alert('Erro ao processar', 'Não foi possível preparar esta fotografia. Pode tratar-se de um formato não suportado ou erro de memória. Tente outra imagem.');
     }
-    setTempAvatar(dataUrl);
   };
 
   const handlePickAvatar = async () => {
@@ -316,12 +366,20 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.1, // High compression for base64 limits
-        base64: true,
+        quality: 1, // Let manipulator handle compression
+        base64: false, // We don't need it yet, manipulator will create it
       });
-      console.log('[P0_AVATAR_PICKER]', { action: 'gallery', permissionStatus: status, imageSelected: !result.canceled, hasBase64: !!result.assets?.[0]?.base64 });
+
+      console.log('[P0_AVATAR_PICK_RESULT]', { 
+        source: 'gallery',
+        cancelled: result.canceled,
+        uri: result.assets?.[0]?.uri,
+        mimeType: result.assets?.[0]?.mimeType,
+        fileSize: result.assets?.[0]?.fileSize
+      });
+
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        processAvatarAsset(result.assets[0]);
+        await processAvatarAsset(result.assets[0].uri, result.assets[0].fileName);
       }
     } catch (e) {
       console.error('[P0_AVATAR_PICKER] Error picking image:', e);
@@ -344,12 +402,19 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       const result = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.1,
-        base64: true,
+        quality: 1,
+        base64: false,
       });
-      console.log('[P0_AVATAR_PICKER]', { action: 'camera', permissionStatus: status, imageSelected: !result.canceled, hasBase64: !!result.assets?.[0]?.base64 });
+
+      console.log('[P0_AVATAR_PICK_RESULT]', { 
+        source: 'camera',
+        cancelled: result.canceled,
+        uri: result.assets?.[0]?.uri,
+        fileSize: result.assets?.[0]?.fileSize
+      });
+
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        processAvatarAsset(result.assets[0]);
+        await processAvatarAsset(result.assets[0].uri, result.assets[0].fileName);
       }
     } catch (e) {
       console.error('[P0_AVATAR_PICKER] Error taking image:', e);
