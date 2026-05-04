@@ -9,9 +9,12 @@ function cleanForbiddenPlaceholders(text: string): string {
   if (!text) return "";
   const forbidden = [
     "Sem ações específicas. Manter consistência.",
+    "Sem ações específicas",
+    "Manter consistência",
+    "Continuar como está",
     "Refs incorporadas no resumo holístico.",
     "Resumo holístico.",
-    "Dados estáveis.",
+    "Dados estáveis."
   ];
   let clean = text;
   forbidden.forEach((f) => {
@@ -113,17 +116,60 @@ function ensureDimensionTabsContent(
   if (actions.length === 0) {
     if (dim.status === "stable") {
       actions.push({
-        text: "Manter a consistência actual da rotina.",
+        text: "Manter a rotina atual de descanso e atividade, acompanhando se os sinais se mantêm estáveis.",
         reason: "A dimensão encontra-se num estado favorável.",
         priority: "low",
         type: "context",
       });
+    } else if (dim.status === "watch") {
+      if (dim.id === "recovery" || dim.id === "energy") {
+        actions.push({
+          text: "Priorizar uma noite de sono mais longa ou mais regular antes da próxima leitura.",
+          reason: "Os sinais atuais sugerem uma margem de recuperação mais reduzida.",
+          priority: "medium",
+          type: "routine",
+        });
+        actions.push({
+          text: "Reduzir carga intensa nas próximas horas, privilegiando recuperação ativa ou descanso.",
+          reason: "Evitar somar esforço intenso enquanto o corpo restabelece a homeostasia.",
+          priority: "medium",
+          type: "recovery",
+        });
+      } else {
+        actions.push({
+          text: "Acompanhar a próxima leitura antes de fazer alterações relevantes.",
+          reason: "A confiança dos dados atuais aconselha observação prudente antes de sugerir um ajuste forte.",
+          priority: "medium",
+          type: "monitoring",
+        });
+      }
+    } else if (dim.status === "priority") {
+       if (dim.id === "food_adjustments" || dim.id === "internal_balance") {
+         actions.push({
+           text: "Considerar moderação imediata no consumo de sódio e reforçar a hidratação pura.",
+           reason: "Os biomarcadores sugerem concentração elevada.",
+           priority: "high",
+           type: "hydration",
+         });
+       } else {
+         actions.push({
+           text: "Considerar reduzir a carga fisiológica imediata e repetir a leitura amanhã.",
+           reason: "Os sinais prioritários sugerem uma quebra na estabilidade.",
+           priority: "high",
+           type: "recovery",
+         });
+       }
+       actions.push({
+         text: "Ponderar aconselhamento profissional caso este padrão se mantenha sistematicamente ou surjam sintomas.",
+         reason: "Sinais prioritários recorrentes devem ser enquadrados clinicamente.",
+         priority: "high",
+         type: "monitoring",
+       });
     } else {
-      actions.push({
-        text: "Observar a evolução nas próximas leituras.",
-        reason:
-          "Aguardar por mais pontos de dados para sugerir uma acção concreta.",
-        priority: "medium",
+       actions.push({
+        text: "Aguardar por mais pontos de dados para sugerir uma ação concreta.",
+        reason: "Dados insuficientes.",
+        priority: "low",
         type: "context",
       });
     }

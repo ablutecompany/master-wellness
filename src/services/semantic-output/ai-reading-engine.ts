@@ -568,39 +568,108 @@ export function computeAIReadingFromData(
       limitWarning = `Os dados de ${excludedSourceLabel} não foram considerados por estarem desativados nas Configurações.`;
     }
 
-    const baseReferences: DimensionReference[] = res.drivers.map((d) => {
-      // Normalização humana
+    // Normalizador de referências conforme exigido
+    const normalizeDriverForDisplay = (d: DimensionDriver, dimId: string): DimensionReference => {
       let factor = d.label;
+      let valRaw = d.value;
+      
       const dictionary: Record<string, string> = {
         fC: "Frequência cardíaca",
         "FC Otimizada": "Frequência cardíaca",
-        "Recuperação Base": "Recuperação",
-        Equilíbrio: "Equilíbrio interno",
+        "Recuperação Base": "Recuperação contextual",
+        Equilíbrio: "Equilíbrio", // Mantém mas com lowercase depois se precisar
         HRV: "Variabilidade da frequência cardíaca",
         SpO2: "Saturação de oxigénio",
+        sleepHours: "Sono",
+        "Sono (horas)": "Sono",
+        stress: "Stress",
+        recovery: "Recuperação",
+        steps: "Atividade diária",
+        urinarySodium: "Sódio urinário",
+        "Sódio Urinário": "Sódio urinário",
+        urineDensity: "Densidade urinária",
+        "Densidade Urinária": "Densidade urinária",
+        naKRatio: "Rácio sódio/potássio",
+        bristol: "Escala de Bristol",
+        fecalOptical: "Caracterização óptica das fezes",
+        temperature: "Temperatura",
+        Temperatura: "Temperatura"
       };
+      
       factor = dictionary[factor] || factor;
 
-      let directionMsg = "";
-      if (d.direction === "positive") {
-        directionMsg = "ajudou a sustentar uma leitura mais favorável";
-      } else {
-        if (d.label === "Sódio Urinário" && Number(d.value) > 100) {
-          directionMsg =
-            "surgiu elevado nesta leitura e teve peso na avaliação";
+      // Formatar valores
+      let displayValue = "";
+      if (valRaw !== undefined && valRaw !== null && valRaw !== "0") {
+        const numVal = Number(valRaw);
+        if (factor === "Sono") {
+          if (!isNaN(numVal)) {
+            const hrs = Math.floor(numVal);
+            const mins = Math.round((numVal - hrs) * 60);
+            displayValue = `${hrs}h${mins.toString().padStart(2, "0")}`;
+          } else {
+             displayValue = String(valRaw);
+          }
+        } else if (factor === "Atividade diária" || d.label === "Passos") {
+          displayValue = !isNaN(numVal) ? `${numVal.toLocaleString('pt-PT')} passos` : String(valRaw);
+        } else if (factor === "Recuperação contextual" || factor === "Recuperação") {
+          displayValue = !isNaN(numVal) ? `${numVal}%` : String(valRaw);
+        } else if (factor === "Temperatura") {
+          displayValue = !isNaN(numVal) ? `${numVal.toLocaleString('pt-PT')} °C` : String(valRaw);
         } else {
-          directionMsg =
-            "pesou negativamente e reduziu a margem desta dimensão";
+          displayValue = String(valRaw);
         }
       }
 
+      // Humanizar impacto
+      let influenceMsg = "";
+      if (dimId === "energy") {
+        if (d.direction === "negative") {
+           if (factor === "Sono") influenceMsg = `as ${displayValue} ficaram abaixo do desejável e reduziram a margem de energia disponível.`;
+           else if (factor === "Stress") influenceMsg = `surgiu elevado e contribuiu para maior desgaste nesta leitura.`;
+           else if (factor.includes("Recuperação")) influenceMsg = `o valor de ${displayValue} pesou negativamente na energia disponível.`;
+           else if (factor === "Atividade diária") influenceMsg = `os ${displayValue} ajudam a contextualizar a carga funcional do dia.`;
+           else influenceMsg = `pesou na margem de energia disponível.`;
+        } else {
+           influenceMsg = `ajudou a sustentar a energia nesta leitura.`;
+        }
+      } else if (dimId === "recovery") {
+        if (d.direction === "negative") {
+           if (factor === "Sono") influenceMsg = `as ${displayValue} reduzem a margem de recuperação.`;
+           else if (factor.includes("Recuperação")) influenceMsg = `o valor de ${displayValue} reforça a necessidade de acompanhar a evolução.`;
+           else if (factor === "Stress") influenceMsg = `surgiu elevado e pode dificultar a recuperação.`;
+           else influenceMsg = `pesou negativamente na recuperação.`;
+        } else {
+           influenceMsg = `ajudou a sustentar a recuperação.`;
+        }
+      } else {
+         if (d.direction === "negative") {
+           if (factor === "Sódio urinário" && Number(valRaw) > 100) {
+             influenceMsg = "surgiu elevado e teve peso na recomendação de moderar refeições muito salgadas.";
+           } else {
+             influenceMsg = `o valor de ${displayValue} pesou negativamente nesta dimensão.`;
+           }
+         } else {
+           if (factor === "Densidade urinária") influenceMsg = "ajudou a avaliar a concentração da urina.";
+           else influenceMsg = `ajudou a sustentar uma leitura mais favorável.`;
+         }
+      }
+
+      // Clean up internal labels if they still leaked
+      if (factor === "Frequência cardíaca" && displayValue === "1") {
+         influenceMsg = influenceMsg.replace(`o valor de 1 `, ``);
+         displayValue = ""; 
+      }
+
       return {
-        factor: factor,
-        observedValue: String(d.value),
-        whyItMatters: "", // Removemos o texto de debug "Sinal processado..."
-        influenceOnScore: directionMsg,
+        factor,
+        observedValue: displayValue,
+        whyItMatters: "",
+        influenceOnScore: influenceMsg,
       };
-    });
+    };
+
+    const baseReferences: DimensionReference[] = res.drivers.map((d) => normalizeDriverForDisplay(d, id));
 
     if (limitWarning) {
       baseReferences.push({
@@ -696,15 +765,16 @@ export function computeAIReadingFromData(
   // Determinar Próximo Foco
   let nextFocusDimension: HolisticDimension | null = null;
   let lowestScore = 101;
+  const hasMomentaryIssue = dimensions.some(dim => dim.score !== null && ['energy', 'recovery', 'physiological_load', 'intestinal_state', 'food_adjustments'].includes(dim.id) && (dim.status === 'priority' || dim.status === 'watch'));
+
   for (const d of dimensions) {
     if (d.score !== null && d.confidence !== "insufficient") {
       let isCandidate = true;
       if (d.id === "vitality") {
         // Vitalidade não rouba foco em simulações ou se não houver histórico robusto
-        if (isDemo || d.confidence === "low") {
+        if (isDemo || d.confidence === "low" || hasMomentaryIssue) {
           isCandidate = false;
         } else {
-          // Penalização para não roubar foco a dimensões práticas (só é foco se estiver mesmo muito mal comparada com as outras)
           if (d.score > 40) isCandidate = false;
         }
       }
