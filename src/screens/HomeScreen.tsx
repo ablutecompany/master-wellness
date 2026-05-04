@@ -2017,7 +2017,7 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
                fill="none"
                stroke="none"
             />
-            <SvgText fill="#fff" fontSize="8" fontWeight="800" letterSpacing="1.5" opacity="0.6">
+            <SvgText fill="#fff" fontSize="11.2" fontWeight="800" letterSpacing="1.5" opacity="0.6">
                <TextPath href="#arcPath" startOffset="50%" textAnchor="middle">
                   ÚLTIMA ANÁLISE
                </TextPath>
@@ -2031,9 +2031,9 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
            style={[
              styles.coreMainText, 
              { 
-               color: daysSinceText === 'HOJE' ? '#888888' : glowColor,
-               textShadowColor: daysSinceText === 'HOJE' ? 'transparent' : glowColor,
-               textShadowRadius: daysSinceText === 'HOJE' ? 0 : 6
+               color: '#DDDDDD',
+               textShadowColor: 'transparent',
+               textShadowRadius: 0
              }
            ]}
          >
