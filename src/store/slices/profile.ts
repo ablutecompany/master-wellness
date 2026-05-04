@@ -223,21 +223,37 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
 
       // Merge seguro: se o backend devolveu sucesso mas sem campos essenciais, e tínhamos, preservar. 
       // (Só removemos se o utilizador enviou explicitamente null)
-      if (!normalizedResponse.avatarUrl && nextUser.avatarUrl && updates.avatarUrl !== null) {
-         normalizedResponse.avatarUrl = nextUser.avatarUrl;
+      
+      const safeMerge = { ...normalizedResponse };
+      
+      if (!safeMerge.avatarUrl && previousUser?.avatarUrl && updates.avatarUrl !== null) {
+         safeMerge.avatarUrl = previousUser.avatarUrl;
       }
-      if (normalizedResponse.name === 'Utilizador' && previousUser?.name && previousUser.name !== 'Utilizador' && updates.name !== null) {
-         normalizedResponse.name = previousUser.name;
+      if ((!safeMerge.name || safeMerge.name === 'Utilizador') && previousUser?.name && previousUser.name !== 'Utilizador' && updates.name !== null) {
+         safeMerge.name = previousUser.name;
       }
-      if (!normalizedResponse.dateOfBirth && previousUser?.dateOfBirth && updates.dateOfBirth !== null) {
-         normalizedResponse.dateOfBirth = previousUser.dateOfBirth;
+      if (!safeMerge.dateOfBirth && previousUser?.dateOfBirth && updates.dateOfBirth !== null) {
+         safeMerge.dateOfBirth = previousUser.dateOfBirth;
       }
-      if (!normalizedResponse.sex && previousUser?.sex && updates.sex !== null) {
-         normalizedResponse.sex = previousUser.sex;
+      if (!safeMerge.dateOfBirthPrecision && previousUser?.dateOfBirthPrecision && updates.dateOfBirthPrecision !== null) {
+         safeMerge.dateOfBirthPrecision = previousUser.dateOfBirthPrecision;
+      }
+      if (safeMerge.sex === undefined || safeMerge.sex === null) {
+         if (previousUser?.sex && updates.sex !== null) {
+           safeMerge.sex = previousUser.sex;
+         }
+      }
+      if (safeMerge.height === undefined || safeMerge.height === null) {
+         if (previousUser?.height && updates.height !== null) {
+           safeMerge.height = previousUser.height;
+         }
+      }
+      if (!safeMerge.weight && previousUser?.weight && updates.weight !== null) {
+         safeMerge.weight = previousUser.weight;
       }
 
       // 2. Reflete resposta consolidada devolvida
-      set({ user: normalizedResponse });
+      set({ user: safeMerge });
       return true;
     } catch (err) {
       console.error('[ProfileSlice] Exception during updateAuthenticatedProfile:', err);
