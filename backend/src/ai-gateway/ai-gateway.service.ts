@@ -24,7 +24,8 @@ export class AiGatewayService {
       throw new Error('OPENAI_API_KEY não está definida');
     }
     this.openai = new OpenAI({ apiKey });
-    this.model = this.configService.get<string>('OPENAI_MODEL') || 'gpt-4o-mini';
+    this.model =
+      this.configService.get<string>('OPENAI_MODEL') || 'gpt-4o-mini';
   }
 
   private readonly insightsSchema = {
@@ -34,31 +35,52 @@ export class AiGatewayService {
         type: 'object' as const,
         properties: {
           title: { type: 'string' as const },
-          status: { type: 'string' as const, enum: ['stable', 'attention', 'caution', 'insufficient_data'] },
+          status: {
+            type: 'string' as const,
+            enum: ['stable', 'attention', 'caution', 'insufficient_data'],
+          },
           text: { type: 'string' as const },
           confidence: {
             type: 'object' as const,
             properties: {
-              label: { type: 'string' as const, enum: ['alta', 'moderada', 'baixa'] },
-              score: { type: 'number' as const }
+              label: {
+                type: 'string' as const,
+                enum: ['alta', 'moderada', 'baixa'],
+              },
+              score: { type: 'number' as const },
             },
             required: ['label', 'score'],
-            additionalProperties: false
-          }
+            additionalProperties: false,
+          },
         },
         required: ['title', 'status', 'text', 'confidence'],
-        additionalProperties: false
+        additionalProperties: false,
       },
       dimensions: {
         type: 'array' as const,
         items: {
           type: 'object' as const,
           properties: {
-            id: { type: 'string' as const, enum: ['energy_availability', 'recovery_load', 'hydration_urinary_balance', 'intestinal_state', 'vital_signs_physiological_balance', 'signal_oriented_nutrition', 'stress_focus_self_regulation', 'watch_signals'] },
+            id: {
+              type: 'string' as const,
+              enum: [
+                'energy_availability',
+                'recovery_load',
+                'hydration_urinary_balance',
+                'intestinal_state',
+                'vital_signs_physiological_balance',
+                'signal_oriented_nutrition',
+                'stress_focus_self_regulation',
+                'watch_signals',
+              ],
+            },
             label: { type: 'string' as const },
             shortLabel: { type: 'string' as const },
             score: { type: 'number' as const },
-            status: { type: 'string' as const, enum: ['ótimo', 'estável', 'cautela', 'atenção', 'insuficiente'] },
+            status: {
+              type: 'string' as const,
+              enum: ['ótimo', 'estável', 'cautela', 'atenção', 'insuficiente'],
+            },
             messageTitle: { type: 'string' as const },
             messageText: { type: 'string' as const },
             primaryRecommendation: { type: 'string' as const },
@@ -69,19 +91,40 @@ export class AiGatewayService {
                 properties: {
                   title: { type: 'string' as const },
                   text: { type: 'string' as const },
-                  priority: { type: 'string' as const, enum: ['alta', 'média', 'baixa'] },
-                  actionability: { type: 'string' as const, enum: ['imediata', 'próximas horas', 'próximas leituras'] }
+                  priority: {
+                    type: 'string' as const,
+                    enum: ['alta', 'média', 'baixa'],
+                  },
+                  actionability: {
+                    type: 'string' as const,
+                    enum: ['imediata', 'próximas horas', 'próximas leituras'],
+                  },
                 },
                 required: ['title', 'text', 'priority', 'actionability'],
-                additionalProperties: false
-              }
+                additionalProperties: false,
+              },
             },
             grounding: {
               type: 'object' as const,
               properties: {
-                confidenceLabel: { type: 'string' as const, enum: ['alta', 'moderada', 'baixa'] },
+                confidenceLabel: {
+                  type: 'string' as const,
+                  enum: ['alta', 'moderada', 'baixa'],
+                },
                 confidenceScore: { type: 'number' as const },
-                usedFamilies: { type: 'array' as const, items: { type: 'string' as const, enum: ['urina', 'fezes', 'fisiológicos', 'contexto', 'histórico'] } },
+                usedFamilies: {
+                  type: 'array' as const,
+                  items: {
+                    type: 'string' as const,
+                    enum: [
+                      'urina',
+                      'fezes',
+                      'fisiológicos',
+                      'contexto',
+                      'histórico',
+                    ],
+                  },
+                },
                 usedSignals: {
                   type: 'array' as const,
                   items: {
@@ -89,22 +132,43 @@ export class AiGatewayService {
                     properties: {
                       label: { type: 'string' as const },
                       value: { type: 'string' as const },
-                      contribution: { type: 'string' as const }
+                      contribution: { type: 'string' as const },
                     },
                     required: ['label', 'value', 'contribution'],
-                    additionalProperties: false
-                  }
+                    additionalProperties: false,
+                  },
                 },
                 reasoning: { type: 'string' as const },
-                limitations: { type: 'array' as const, items: { type: 'string' as const } }
+                limitations: {
+                  type: 'array' as const,
+                  items: { type: 'string' as const },
+                },
               },
-              required: ['confidenceLabel', 'confidenceScore', 'usedFamilies', 'usedSignals', 'reasoning', 'limitations'],
-              additionalProperties: false
-            }
+              required: [
+                'confidenceLabel',
+                'confidenceScore',
+                'usedFamilies',
+                'usedSignals',
+                'reasoning',
+                'limitations',
+              ],
+              additionalProperties: false,
+            },
           },
-          required: ['id', 'label', 'shortLabel', 'score', 'status', 'messageTitle', 'messageText', 'primaryRecommendation', 'recommendations', 'grounding'],
-          additionalProperties: false
-        }
+          required: [
+            'id',
+            'label',
+            'shortLabel',
+            'score',
+            'status',
+            'messageTitle',
+            'messageText',
+            'primaryRecommendation',
+            'recommendations',
+            'grounding',
+          ],
+          additionalProperties: false,
+        },
       },
       nutrientSuggestions: {
         type: 'array' as const,
@@ -113,29 +177,68 @@ export class AiGatewayService {
           properties: {
             nutrient: { type: 'string' as const },
             reason: { type: 'string' as const },
-            foodExamples: { type: 'array' as const, items: { type: 'string' as const } },
+            foodExamples: {
+              type: 'array' as const,
+              items: { type: 'string' as const },
+            },
             linkedTo: { type: 'string' as const },
-            confidence: { type: 'string' as const, enum: ['low', 'medium', 'high'] },
-            caution: { type: 'string' as const }
+            confidence: {
+              type: 'string' as const,
+              enum: ['low', 'medium', 'high'],
+            },
+            caution: { type: 'string' as const },
           },
-          required: ['nutrient', 'reason', 'foodExamples', 'linkedTo', 'confidence', 'caution'],
-          additionalProperties: false
-        }
+          required: [
+            'nutrient',
+            'reason',
+            'foodExamples',
+            'linkedTo',
+            'confidence',
+            'caution',
+          ],
+          additionalProperties: false,
+        },
       },
       globalReferences: {
         type: 'object' as const,
         properties: {
-          freshness: { type: 'string' as const, enum: ['recente', 'moderada', 'antiga'] },
+          freshness: {
+            type: 'string' as const,
+            enum: ['recente', 'moderada', 'antiga'],
+          },
           origin: { type: 'string' as const, enum: ['real', 'simulação'] },
-          engine: { type: 'string' as const, enum: ['openai', 'local', 'fallback'] },
-          usedDataFamilies: { type: 'array' as const, items: { type: 'string' as const, enum: ['urina', 'fezes', 'fisiológicos'] } },
-          limitations: { type: 'array' as const, items: { type: 'string' as const } }
+          engine: {
+            type: 'string' as const,
+            enum: ['openai', 'local', 'fallback'],
+          },
+          usedDataFamilies: {
+            type: 'array' as const,
+            items: {
+              type: 'string' as const,
+              enum: ['urina', 'fezes', 'fisiológicos'],
+            },
+          },
+          limitations: {
+            type: 'array' as const,
+            items: { type: 'string' as const },
+          },
         },
-        required: ['freshness', 'origin', 'engine', 'usedDataFamilies', 'limitations'],
-        additionalProperties: false
-      }
+        required: [
+          'freshness',
+          'origin',
+          'engine',
+          'usedDataFamilies',
+          'limitations',
+        ],
+        additionalProperties: false,
+      },
     },
-    required: ['summary', 'dimensions', 'nutrientSuggestions', 'globalReferences'],
+    required: [
+      'summary',
+      'dimensions',
+      'nutrientSuggestions',
+      'globalReferences',
+    ],
     additionalProperties: false,
   };
 
@@ -149,110 +252,204 @@ export class AiGatewayService {
           body: { type: 'string' as const },
           focusDimensionId: { type: 'string' as const },
           focusReason: { type: 'string' as const },
-          practicalOrientation: { type: 'string' as const }
+          practicalOrientation: { type: 'string' as const },
         },
-        required: ['title', 'body', 'focusDimensionId', 'focusReason', 'practicalOrientation'],
-        additionalProperties: false
+        required: [
+          'title',
+          'body',
+          'focusDimensionId',
+          'focusReason',
+          'practicalOrientation',
+        ],
+        additionalProperties: false,
       },
       dimensions: {
         type: 'array' as const,
         items: {
           type: 'object' as const,
           properties: {
-            id: { type: 'string' as const, enum: ['energy', 'recovery', 'internal_balance', 'metabolic_rhythm', 'intestinal_state', 'food_adjustments', 'physiological_load', 'vitality'] },
+            id: {
+              type: 'string' as const,
+              enum: [
+                'energy',
+                'recovery',
+                'internal_balance',
+                'metabolic_rhythm',
+                'intestinal_state',
+                'food_adjustments',
+                'physiological_load',
+                'vitality',
+              ],
+            },
             label: { type: 'string' as const },
-            type: { type: 'string' as const, enum: ['momentary', 'functional', 'longitudinal'] },
+            type: {
+              type: 'string' as const,
+              enum: ['momentary', 'functional', 'longitudinal'],
+            },
             score: { type: 'number' as const },
-            state: { type: 'string' as const, enum: ['stable', 'watch', 'priority', 'insufficient'] },
-            stateLabel: { type: 'string' as const, enum: ['Estável', 'Atenção', 'Prioritário', 'Insuficiente'] },
-            confidence: { type: 'string' as const, enum: ['low', 'medium', 'high', 'insufficient'] },
+            state: {
+              type: 'string' as const,
+              enum: ['stable', 'watch', 'priority', 'insufficient'],
+            },
+            stateLabel: {
+              type: 'string' as const,
+              enum: ['Estável', 'Atenção', 'Prioritário', 'Insuficiente'],
+            },
+            confidence: {
+              type: 'string' as const,
+              enum: ['low', 'medium', 'high', 'insufficient'],
+            },
             summary: { type: 'string' as const },
-            actions: { type: 'array' as const, items: { type: 'string' as const } },
-            referencesIntro: { type: 'string' as const, enum: ['Entre outras, esta avaliação considerou:'] },
-            references: { type: 'array' as const, items: { type: 'string' as const } },
-            limits: { type: 'string' as const }
+            actions: {
+              type: 'array' as const,
+              items: { type: 'string' as const },
+            },
+            referencesIntro: {
+              type: 'string' as const,
+              enum: ['Entre outras, esta avaliação considerou:'],
+            },
+            references: {
+              type: 'array' as const,
+              items: { type: 'string' as const },
+            },
+            limits: { type: 'string' as const },
           },
-          required: ['id', 'label', 'type', 'score', 'state', 'stateLabel', 'confidence', 'summary', 'actions', 'referencesIntro', 'references', 'limits'],
-          additionalProperties: false
-        }
+          required: [
+            'id',
+            'label',
+            'type',
+            'score',
+            'state',
+            'stateLabel',
+            'confidence',
+            'summary',
+            'actions',
+            'referencesIntro',
+            'references',
+            'limits',
+          ],
+          additionalProperties: false,
+        },
       },
       safety: {
         type: 'object' as const,
         properties: {
           isMedicalDiagnosis: { type: 'boolean' as const },
-          warnings: { type: 'array' as const, items: { type: 'string' as const } }
+          warnings: {
+            type: 'array' as const,
+            items: { type: 'string' as const },
+          },
         },
         required: ['isMedicalDiagnosis', 'warnings'],
-        additionalProperties: false
-      }
+        additionalProperties: false,
+      },
     },
     required: ['summary', 'dimensions', 'safety'],
     additionalProperties: false,
   };
 
-  async generateInsightsV2(body: any, userId?: string): Promise<{ ok: true; provider: string; model: string; insight: any; meta: any }> {
+  async generateInsightsV2(
+    body: any,
+    userId?: string,
+  ): Promise<{
+    ok: true;
+    provider: string;
+    model: string;
+    insight: any;
+    meta: any;
+  }> {
     const startMs = Date.now();
-    const { activeMemberId, analysisSessionId, forceRegenerate, sourcePayload } = body;
+    const {
+      activeMemberId,
+      analysisSessionId,
+      forceRegenerate,
+      sourcePayload,
+    } = body;
     const isDemo = sourcePayload?.isDemo === true;
-    
-    const dimensionsCount = sourcePayload?.dimensions ? Object.keys(sourcePayload.dimensions).length : 0;
-    
-    this.logger.log(`[R5C9_AI_V2_PAYLOAD_SERVER] requestReceived=true | hasAuth=${!!userId} | isDemo=${isDemo} | analysisSessionId=${analysisSessionId} | analysisSessionIdIsNull=${analysisSessionId == null} | hasSourcePayload=${!!sourcePayload} | hasContextV2=true | hasDimensions=${dimensionsCount > 0} | dimensionsCount=${dimensionsCount} | bodyKeys=${Object.keys(body).join(',')}`);
-    
-    
+
+    const dimensionsCount = sourcePayload?.dimensions
+      ? Object.keys(sourcePayload.dimensions).length
+      : 0;
+
+    this.logger.log(
+      `[R5C9_AI_V2_PAYLOAD_SERVER] requestReceived=true | hasAuth=${!!userId} | isDemo=${isDemo} | analysisSessionId=${analysisSessionId} | analysisSessionIdIsNull=${analysisSessionId == null} | hasSourcePayload=${!!sourcePayload} | hasContextV2=true | hasDimensions=${dimensionsCount > 0} | dimensionsCount=${dimensionsCount} | bodyKeys=${Object.keys(body).join(',')}`,
+    );
+
     const hasAuth = !!userId;
-    
-    this.logger.log(`[R5C6_AI_V2_SERVER] requestReceived=true | hasAuth=${hasAuth} | isDemo=${isDemo} | willCallOpenAI=${hasAuth}`);
+
+    this.logger.log(
+      `[R5C6_AI_V2_SERVER] requestReceived=true | hasAuth=${hasAuth} | isDemo=${isDemo} | willCallOpenAI=${hasAuth}`,
+    );
 
     if (!hasAuth) {
-       throw new AiGatewayError('UNAUTHORIZED', 'Autenticação obrigatória para utilizar a IA Avançada. (401)');
+      throw new AiGatewayError(
+        'UNAUTHORIZED',
+        'Autenticação obrigatória para utilizar a IA Avançada. (401)',
+      );
     }
 
     // 1. Identificar Source Hash com versionamento R6.2
     const promptVersion = 'R6.2';
-    const hashStr = sourcePayload ? Buffer.from(JSON.stringify(sourcePayload)).toString('base64').substring(0, 32) + '_' + promptVersion : 'unknown_' + promptVersion;
-    
+    const hashStr = sourcePayload
+      ? Buffer.from(JSON.stringify(sourcePayload))
+          .toString('base64')
+          .substring(0, 32) +
+        '_' +
+        promptVersion
+      : 'unknown_' + promptVersion;
+
     // 2. Verificar cache se forceRegenerate=false e não for DEMO
     if (!forceRegenerate && !isDemo) {
-       let cached;
-       if (analysisSessionId) {
-          cached = await this.prisma.aiReadingRecord.findFirst({
-             where: { analysisSessionId, status: 'completed' },
-             orderBy: { generatedAt: 'desc' }
-          });
-       } else {
-          cached = await this.prisma.aiReadingRecord.findFirst({
-             where: { sourceSnapshotHash: hashStr, status: 'completed' },
-             orderBy: { generatedAt: 'desc' }
-          });
-       }
+      let cached;
+      if (analysisSessionId) {
+        cached = await this.prisma.aiReadingRecord.findFirst({
+          where: { analysisSessionId, status: 'completed' },
+          orderBy: { generatedAt: 'desc' },
+        });
+      } else {
+        cached = await this.prisma.aiReadingRecord.findFirst({
+          where: { sourceSnapshotHash: hashStr, status: 'completed' },
+          orderBy: { generatedAt: 'desc' },
+        });
+      }
 
-       if (cached && cached.themesJson && (cached.themesJson as any[]).length > 0) {
-          this.logger.log(`[R5C6_AI_V2_SERVER] cacheHit=true | sourceSnapshotHash=${hashStr.substring(0,8)} | openaiCalled=false | prismaCreateAttempted=false`);
-          return {
-            ok: true,
-            provider: 'cached',
-            model: cached.model,
-            insight: {
-              overallNarrative: cached.narrative,
-              shortSummary: cached.themesJson[0]?.refinedSummary || '',
-              dimensions: cached.themesJson,
-              globalRecommendations: cached.recommendationsJson,
-              limitations: cached.limitationsJson ? (cached.limitationsJson as any).limitations || [] : [],
-              safetyFlags: cached.safetyFlagsJson || [],
-              nutrientPriorities: (cached.nutrientSuggestionsJson as any)?.nutrientPriorities || []
-            },
-            meta: {
-              execMillis: 0,
-              cached: true,
-              engineSource: 'cached',
-              savedRecordId: cached.id
-            }
-          };
-       }
+      if (
+        cached &&
+        cached.themesJson &&
+        (cached.themesJson as any[]).length > 0
+      ) {
+        this.logger.log(
+          `[R5C6_AI_V2_SERVER] cacheHit=true | sourceSnapshotHash=${hashStr.substring(0, 8)} | openaiCalled=false | prismaCreateAttempted=false`,
+        );
+        return {
+          ok: true,
+          provider: 'cached',
+          model: cached.model,
+          insight: {
+            overallNarrative: cached.narrative,
+            shortSummary: cached.themesJson[0]?.refinedSummary || '',
+            dimensions: cached.themesJson,
+            globalRecommendations: cached.recommendationsJson,
+            limitations: cached.limitationsJson
+              ? (cached.limitationsJson as any).limitations || []
+              : [],
+            safetyFlags: cached.safetyFlagsJson || [],
+            nutrientPriorities:
+              (cached.nutrientSuggestionsJson as any)?.nutrientPriorities || [],
+          },
+          meta: {
+            execMillis: 0,
+            cached: true,
+            engineSource: 'cached',
+            savedRecordId: cached.id,
+          },
+        };
+      }
     }
 
-    this.logger.log(`[R5C1_OPENAI_GUARD] engineSource=backend_openai_v2 | cached=false | hasAuth=${hasAuth} | isDemo=${isDemo} | willCallOpenAI=true`);
+    this.logger.log(
+      `[R5C1_OPENAI_GUARD] engineSource=backend_openai_v2 | cached=false | hasAuth=${hasAuth} | isDemo=${isDemo} | willCallOpenAI=true`,
+    );
 
     const prompt = [
       `És a camada de redação interpretativa da Leitura AI da app ablute_ wellness.`,
@@ -269,16 +466,16 @@ export class AiGatewayService {
       `A resposta deve ser sempre JSON válido, sem markdown, sem texto antes ou depois.`,
       ``,
       `REGRAS OBRIGATÓRIAS:`,
-      `1. SÍNTESE DO MOMENTO: A síntese deve ser específica da leitura. Deve conter: estado geral, foco principal, 1 a 2 drivers reais e orientação prática. Proibido: texto genérico institucional, "Análise de Bem-Estar de [nome]", "exploramos múltiplas dimensões", "cada dimensão fornece uma visão...", "Resumo pendente OpenAI", frases que servem para qualquer pessoa, e dizer que está tudo bem se houver dimensões em Atenção/Prioritário. Nunca uses a expressão "em um estado" (usa "num estado" - PT-PT puro).`,
+      `1. SÍNTESE DO MOMENTO: A síntese deve ser específica da leitura e deve obrigatoriamente mencionar e assumir a dimensão indicada em "nextFocus.dimensionId" (ou a de menor score) como o FOCO PRINCIPAL da leitura. A síntese não pode colocar outras dimensões como foco principal se não corresponderem a este ID. Proibido: texto genérico institucional, "Análise de Bem-Estar de [nome]", "Resumo pendente OpenAI", frases que servem para qualquer pessoa, e dizer que está tudo bem se houver dimensões em Atenção/Prioritário. Nunca uses a expressão "em um estado" (usa "num estado").`,
       `2. REGRAS POR ESTADO:`,
       `   - Estável: tom tranquilo; reforçar manutenção; não exagerar; não dizer "perfeito".`,
       `   - Atenção: tom prudente; indicar o que merece acompanhamento; sugerir ajuste simples; não alarmar.`,
-      `   - Prioritário: indicar prioridade prática; sugerir repetir leitura ou reduzir carga; se persistir, sugerir avaliação profissional; sem diagnóstico.`,
+      `   - Prioritário: indicar prioridade prática; sugerir repetir leitura ou reduzir carga. Se persistir, se agravar ou se houver sintomas, sugerir ponderar contacto com profissional de saúde (apenas nestes casos, sem indicar diagnóstico).`,
       `   - Insuficiente: explicar que não tem dados suficientes; indicar o que falta; não inventar score nem interpretação forte.`,
       `3. FONTES (sourcePolicy): "used" = pode usar. "missing" = indicar ausência se relevante. "excluded_by_user" = nunca usar dados dessa fonte, reduzir confiança ou explicar limite.`,
-      `4. REFERÊNCIAS: referencesIntro deve ser exatamente "Entre outras, esta avaliação considerou:". references devem ser 1 a 3 linhas compreensíveis (ex: "Densidade urinária: ajudou a avaliar a concentração da urina."). Não repetir "entre outras" em cada referência. Não usar labels crus como fC Otimizada, camelCase, nem jargões como "impacta negativamente". Proibido usar linguagem demasiado clínica como "desequilíbrios eletrolíticos" (usa termos como "equilíbrio de fluidos" ou "equilíbrio mineral").`,
-      `5. AÇÕES: 2 a 4 ações por dimensão, específicas, coerentes com estado, sem diagnóstico, sem suplementação prioritária.`,
-      `6. HISTÓRICO/VITALIDADE: Se history.available = false, não inventar tendência e indicar que a leitura é limitada. Vitalidade baixa não é mau; pode ser carga temporária.`,
+      `4. REFERÊNCIAS: referencesIntro deve ser exatamente "Entre outras, esta avaliação considerou:". references devem ser 1 a 3 linhas compreensíveis, centradas no fator concreto e impacto ("fator: explicação"). Não repetir "entre outras" em cada referência. Não usar labels crus. Se houver Sódio Urinário elevado (ex: >100 mmol/L), referir em linguagem humana como "Sódio urinário: surgiu elevado e teve peso na recomendação...". Proibido usar linguagem demasiado clínica como "desequilíbrios eletrolíticos" (usa termos como "equilíbrio de fluidos" ou "equilíbrio mineral").`,
+      `5. AÇÕES: 2 a 4 ações por dimensão, específicas, coerentes com estado. Se houver sódio urinário elevado, incluir ações de moderar sal ou reforçar hidratação. Sem diagnóstico, sem suplementação prioritária.`,
+      `6. HISTÓRICO/VITALIDADE: Se history.available = false, não inventar tendência e indicar que a leitura é limitada. Vitalidade não deve roubar foco principal em cenários momentâneos sem histórico longitudinal claro.`,
       `7. DEMO/CONVIDADO: Se isDemo = true, escrever como simulação mas variar conteúdo. Se não houver histórico, confiança mais baixa e explicar que se baseia apenas na sessão.`,
       ``,
       `DIMENSÕES CANÓNICAS (preservar IDs originais e dados base):`,
@@ -289,7 +486,9 @@ export class AiGatewayService {
     ].join('\n');
 
     try {
-      this.logger.log(`[R5C6_AI_V2_SERVER] cacheHit=false | sourceSnapshotHash=${hashStr.substring(0,8)} | openaiCalled=true`);
+      this.logger.log(
+        `[R5C6_AI_V2_SERVER] cacheHit=false | sourceSnapshotHash=${hashStr.substring(0, 8)} | openaiCalled=true`,
+      );
       const response: any = await (this.openai as any).responses.create({
         model: this.model,
         input: prompt,
@@ -317,62 +516,80 @@ export class AiGatewayService {
         source = 'output_array';
       }
 
-      if (!rawText) throw new AiGatewayError('PARSE_FAILED', 'Provider não devolveu texto legível');
+      if (!rawText)
+        throw new AiGatewayError(
+          'PARSE_FAILED',
+          'Provider não devolveu texto legível',
+        );
 
       let parsed: any;
       try {
         parsed = JSON.parse(rawText);
       } catch {
-        throw new AiGatewayError('PARSE_FAILED', 'JSON inválido devolvido pelo provider');
+        throw new AiGatewayError(
+          'PARSE_FAILED',
+          'JSON inválido devolvido pelo provider',
+        );
       }
 
-      if (isDemo && (!parsed.safetyFlags || !parsed.safetyFlags.includes('demo_data'))) {
-         parsed.safetyFlags = parsed.safetyFlags || [];
-         parsed.safetyFlags.push('demo_data');
+      if (
+        isDemo &&
+        (!parsed.safetyFlags || !parsed.safetyFlags.includes('demo_data'))
+      ) {
+        parsed.safetyFlags = parsed.safetyFlags || [];
+        parsed.safetyFlags.push('demo_data');
       }
 
       // Persist to ai_readings table
       let savedRecordId: string | undefined;
       try {
-         const limitationsObj = isDemo 
-             ? { notice: "demo_data_not_for_real_longitudinal_use" } 
-             : { execMillis, tokensUsed: response.usage?.total_tokens };
+        const limitationsObj = isDemo
+          ? { notice: 'demo_data_not_for_real_longitudinal_use' }
+          : { execMillis, tokensUsed: response.usage?.total_tokens };
 
-         const record = await this.prisma.aiReadingRecord.create({
-           data: {
-             userId: userId || 'unauthenticated-demo',
-             activeMemberId: activeMemberId || 'default',
-             analysisSessionId: analysisSessionId || null,
-             sourceSnapshotHash: hashStr,
-             sourceSnapshotJson: sourcePayload as object,
-             analysisDate: sourcePayload?.analysisDate ? new Date(sourcePayload.analysisDate) : new Date(),
-             language: 'pt-PT',
-             promptVersion: '2.0.0',
-             model: response.model || this.model,
-             contractVersion: '2.0.0',
-             status: 'completed',
-             themesJson: parsed.dimensions || [],
-             narrative: parsed.overallNarrative || '',
-             recommendationsJson: parsed.globalRecommendations || [],
-             nutrientSuggestionsJson: {
-                nutrientPriorities: sourcePayload?.nutrientPriorities || [],
-                generatedAt: new Date().toISOString(),
-                sourceOrigin: isDemo ? "demo" : "real",
-                confidence: "medium",
-                excludeFromRealPlanning: isDemo
-             },
-             longitudinalNotesJson: [],
-             limitationsJson: limitationsObj,
-             safetyFlagsJson: parsed.safetyFlags || []
-           }
-         });
-         savedRecordId = record.id;
-         this.logger.log(`[R5C6_AI_V2_SERVER] prismaCreateAttempted=true | savedRecordId=${savedRecordId}`);
+        const record = await this.prisma.aiReadingRecord.create({
+          data: {
+            userId: userId || 'unauthenticated-demo',
+            activeMemberId: activeMemberId || 'default',
+            analysisSessionId: analysisSessionId || null,
+            sourceSnapshotHash: hashStr,
+            sourceSnapshotJson: sourcePayload as object,
+            analysisDate: sourcePayload?.analysisDate
+              ? new Date(sourcePayload.analysisDate)
+              : new Date(),
+            language: 'pt-PT',
+            promptVersion: '2.0.0',
+            model: response.model || this.model,
+            contractVersion: '2.0.0',
+            status: 'completed',
+            themesJson: parsed.dimensions || [],
+            narrative: parsed.overallNarrative || '',
+            recommendationsJson: parsed.globalRecommendations || [],
+            nutrientSuggestionsJson: {
+              nutrientPriorities: sourcePayload?.nutrientPriorities || [],
+              generatedAt: new Date().toISOString(),
+              sourceOrigin: isDemo ? 'demo' : 'real',
+              confidence: 'medium',
+              excludeFromRealPlanning: isDemo,
+            },
+            longitudinalNotesJson: [],
+            limitationsJson: limitationsObj,
+            safetyFlagsJson: parsed.safetyFlags || [],
+          },
+        });
+        savedRecordId = record.id;
+        this.logger.log(
+          `[R5C6_AI_V2_SERVER] prismaCreateAttempted=true | savedRecordId=${savedRecordId}`,
+        );
       } catch (dbErr) {
-         this.logger.error(`[R5C6_AI_V2_SERVER] prismaCreateAttempted=true | errorCode=DB_PERSIST_ERROR | errorMessage=${dbErr.message}`);
+        this.logger.error(
+          `[R5C6_AI_V2_SERVER] prismaCreateAttempted=true | errorCode=DB_PERSIST_ERROR | errorMessage=${dbErr.message}`,
+        );
       }
 
-      this.logger.log(`[R5C6_AI_V2_SERVER] SUCESSO | isDemo=${isDemo} | savedRecordId=${savedRecordId || 'NONE'} | execMs=${execMillis}`);
+      this.logger.log(
+        `[R5C6_AI_V2_SERVER] SUCESSO | isDemo=${isDemo} | savedRecordId=${savedRecordId || 'NONE'} | execMs=${execMillis}`,
+      );
 
       return {
         ok: true,
@@ -384,17 +601,26 @@ export class AiGatewayService {
           tokensUsed: response.usage?.total_tokens ?? null,
           promptVersion: '2.0.0',
           engineSource: 'backend_openai_v2',
-          savedRecordId
+          savedRecordId,
         },
       };
     } catch (err: any) {
-      throw new AiGatewayError(this.classifyError(err), err.message || 'Erro V2');
+      throw new AiGatewayError(
+        this.classifyError(err),
+        err.message || 'Erro V2',
+      );
     }
   }
 
   async generateInsights(
     dto: GenerateInsightsDto,
-  ): Promise<{ ok: true; provider: string; model: string; insight: any; meta: any }> {
+  ): Promise<{
+    ok: true;
+    provider: string;
+    model: string;
+    insight: any;
+    meta: any;
+  }> {
     // 1. VERIFICAÇÃO DE CACHE (PERSISTÊNCIA) — M5 Fatia 3
     if (!dto.isDemo && dto.analysisId) {
       const existing = await this.prisma.analysisInsight.findFirst({
@@ -403,7 +629,9 @@ export class AiGatewayService {
       });
 
       if (existing) {
-        this.logger.log(`Insight reutilizado da DB para análise ${dto.analysisId}`);
+        this.logger.log(
+          `Insight reutilizado da DB para análise ${dto.analysisId}`,
+        );
         return {
           ok: true,
           provider: existing.provider,
@@ -423,7 +651,9 @@ export class AiGatewayService {
 
     const prompt = [
       `A Leitura AI é uma camada interpretativa prudente baseada nos Resultados disponíveis na plataforma ablute_ wellness.`,
-      dto.isDemo ? `[ALERTA DE SISTEMA]: Os dados desta leitura são simulados/demo e não representam uma medição real do utilizador. A resposta deve tratar o cenário como uma simulação, referindo-se aos 'dados simulados' em vez de dados reais.` : ``,
+      dto.isDemo
+        ? `[ALERTA DE SISTEMA]: Os dados desta leitura são simulados/demo e não representam uma medição real do utilizador. A resposta deve tratar o cenário como uma simulação, referindo-se aos 'dados simulados' em vez de dados reais.`
+        : ``,
       `A Leitura AI NÃO é diagnóstico.`,
       ``,
       `A AI deve:`,
@@ -489,7 +719,9 @@ export class AiGatewayService {
 
       // Fallback defensivo: extrair do array output se output_text vier vazio
       if (!rawText && response?.output && Array.isArray(response.output)) {
-        this.logger.debug('output_text vazio, a tentar extrair do array output...');
+        this.logger.debug(
+          'output_text vazio, a tentar extrair do array output...',
+        );
         rawText = response.output
           .filter((item: any) => item.content && Array.isArray(item.content))
           .flatMap((item: any) => item.content)
@@ -504,27 +736,40 @@ export class AiGatewayService {
           'Falha total de parsing: output_text e output_array vazios. Chaves: ' +
             Object.keys(response || {}).join(', '),
         );
-        throw new AiGatewayError('PARSE_FAILED', 'Provider não devolveu texto legível');
+        throw new AiGatewayError(
+          'PARSE_FAILED',
+          'Provider não devolveu texto legível',
+        );
       }
 
       let parsed: any;
       try {
         parsed = JSON.parse(rawText);
       } catch {
-        this.logger.error(`JSON inválido de ${source}: ${rawText.slice(0, 500)}`);
-        throw new AiGatewayError('PARSE_FAILED', `O texto de ${source} não é JSON válido`);
+        this.logger.error(
+          `JSON inválido de ${source}: ${rawText.slice(0, 500)}`,
+        );
+        throw new AiGatewayError(
+          'PARSE_FAILED',
+          `O texto de ${source} não é JSON válido`,
+        );
       }
 
       // Validação mínima dos campos obrigatórios do R2
       const required = ['summary', 'dimensions', 'globalReferences'];
       const missing = required.filter((k) => !(k in parsed));
       if (missing.length > 0) {
-        this.logger.error(`Campos em falta no insight (${source}): ${missing.join(', ')}`);
-        throw new AiGatewayError('SCHEMA_MISMATCH', `Campos obrigatórios em falta: ${missing.join(', ')}`);
+        this.logger.error(
+          `Campos em falta no insight (${source}): ${missing.join(', ')}`,
+        );
+        throw new AiGatewayError(
+          'SCHEMA_MISMATCH',
+          `Campos obrigatórios em falta: ${missing.join(', ')}`,
+        );
       }
 
       this.logger.log(
-        `Insight gerado [source=${source}] em ${execMillis}ms | model=${response.model || this.model} | tokens=${response.usage?.total_tokens ?? '?'}`
+        `Insight gerado [source=${source}] em ${execMillis}ms | model=${response.model || this.model} | tokens=${response.usage?.total_tokens ?? '?'}`,
       );
 
       // 3. PERSISTÊNCIA REAL — M5 Fatia 3
@@ -540,7 +785,9 @@ export class AiGatewayService {
               summaryText: parsed.summary?.text || null,
             },
           });
-          this.logger.log(`Insight persistido na DB para análise ${dto.analysisId}`);
+          this.logger.log(
+            `Insight persistido na DB para análise ${dto.analysisId}`,
+          );
         } catch (dbErr) {
           this.logger.error(`Falha ao persistir insight: ${dbErr.message}`);
           // Não bloqueamos a resposta se a escrita falhar, mas logamos o erro.
@@ -573,10 +820,14 @@ export class AiGatewayService {
         `Falha ao gerar insights [${code}] em ${execMillis}ms: ${error.message || error}`,
       );
 
-      throw new AiGatewayError(code, error.message || 'Erro inesperado do provider', {
-        execMillis,
-        model: this.model,
-      });
+      throw new AiGatewayError(
+        code,
+        error.message || 'Erro inesperado do provider',
+        {
+          execMillis,
+          model: this.model,
+        },
+      );
     }
   }
 
@@ -584,13 +835,15 @@ export class AiGatewayService {
     if (err instanceof AiGatewayError) return err.code;
     const msg = (err.message || '').toLowerCase();
     const status = err.status || err.statusCode || 0;
-    
+
     if (status === 401 || msg.includes('api key')) return 'AUTH_FAILED';
     if (status === 429 || msg.includes('rate limit')) return 'RATE_LIMITED';
-    if (status === 400 || msg.includes('schema') || msg.includes('invalid')) return 'OPENAI_INVALID_REQUEST';
+    if (status === 400 || msg.includes('schema') || msg.includes('invalid'))
+      return 'OPENAI_INVALID_REQUEST';
     if (status === 404 || msg.includes('model')) return 'MODEL_NOT_FOUND';
-    if (msg.includes('timeout') || msg.includes('econnrefused')) return 'PROVIDER_UNREACHABLE';
-    
+    if (msg.includes('timeout') || msg.includes('econnrefused'))
+      return 'PROVIDER_UNREACHABLE';
+
     return 'PROVIDER_ERROR';
   }
 
@@ -598,23 +851,32 @@ export class AiGatewayService {
    * Método híbrido (R4A) para persistência segura
    */
   async generateOrReuseAiReading(body: any, currentUserId: string) {
-    const { analysisSessionId, activeMemberId, forceRegenerate, sourcePayload } = body;
-    
+    const {
+      analysisSessionId,
+      activeMemberId,
+      forceRegenerate,
+      sourcePayload,
+    } = body;
+
     // 1. Procurar leitura existente se analysisSessionId for válido e forceRegenerate for falso
     if (analysisSessionId && !forceRegenerate) {
       const existing = await this.prisma.aiReadingRecord.findFirst({
-        where: { analysisSessionId }
+        where: { analysisSessionId },
       });
       if (existing) return existing;
     }
 
     // 2. Procurar leitura existente baseada em hash do sourcePayload se não usar DB Session
-    const hashStr = sourcePayload ? Buffer.from(JSON.stringify(sourcePayload)).toString('base64').substring(0, 32) : 'unknown';
+    const hashStr = sourcePayload
+      ? Buffer.from(JSON.stringify(sourcePayload))
+          .toString('base64')
+          .substring(0, 32)
+      : 'unknown';
     if (!analysisSessionId && !forceRegenerate && sourcePayload) {
-       const existingByHash = await this.prisma.aiReadingRecord.findFirst({
-         where: { sourceSnapshotHash: hashStr }
-       });
-       if (existingByHash) return existingByHash;
+      const existingByHash = await this.prisma.aiReadingRecord.findFirst({
+        where: { sourceSnapshotHash: hashStr },
+      });
+      if (existingByHash) return existingByHash;
     }
 
     // 3. Montar dados para a AI
@@ -624,46 +886,62 @@ export class AiGatewayService {
     if (analysisSessionId && !sourcePayload) {
       // Modo DB_SESSION
       if (!currentUserId) {
-         // DB_SESSION exige Auth.
-         throw new AiGatewayError('UNAUTHORIZED', 'Autenticação obrigatória para acesso à DB_SESSION (401)');
+        // DB_SESSION exige Auth.
+        throw new AiGatewayError(
+          'UNAUTHORIZED',
+          'Autenticação obrigatória para acesso à DB_SESSION (401)',
+        );
       }
 
       const analysis = await this.prisma.analysis.findUnique({
         where: { id: analysisSessionId },
-        include: { measurements: true, events: true }
+        include: { measurements: true, events: true },
       });
 
       if (!analysis) {
-        throw new AiGatewayError('NOT_FOUND', 'Análise não encontrada na BD (404)');
+        throw new AiGatewayError(
+          'NOT_FOUND',
+          'Análise não encontrada na BD (404)',
+        );
       }
 
       // Validação de segurança R4C (propriedade / autorização)
       if (currentUserId && analysis.ownerId !== currentUserId) {
         // Se currentUserId existir e não for dono
         // Verificar se é activeMemberId partilhado (fora do scope atual)
-        throw new AiGatewayError('FORBIDDEN', 'Análise não pertence ao utilizador autenticado (403)');
+        throw new AiGatewayError(
+          'FORBIDDEN',
+          'Análise não pertence ao utilizador autenticado (403)',
+        );
       }
 
-      finalPayload = this.buildAiReadingInputFromAnalysis(analysis, activeMemberId);
-      finalHashStr = Buffer.from(JSON.stringify(finalPayload)).toString('base64').substring(0, 32);
+      finalPayload = this.buildAiReadingInputFromAnalysis(
+        analysis,
+        activeMemberId,
+      );
+      finalHashStr = Buffer.from(JSON.stringify(finalPayload))
+        .toString('base64')
+        .substring(0, 32);
 
       // Nova tentativa de cache agora que temos a Hash real vinda da BD
       if (!forceRegenerate) {
         const existingDbSession = await this.prisma.aiReadingRecord.findFirst({
-           where: { sourceSnapshotHash: finalHashStr, analysisSessionId }
+          where: { sourceSnapshotHash: finalHashStr, analysisSessionId },
         });
         if (existingDbSession) {
           return { ...existingDbSession, cached: true };
         }
       }
-
     } else {
       // Modo Híbrido PAYLOAD_SNAPSHOT: usamos o payload enviado pelo frontend, mas guardamos de forma estruturada.
       // Limites de Segurança R4C:
       if (!sourcePayload || !Array.isArray(sourcePayload.measurements)) {
-        throw new AiGatewayError('INVALID_REQUEST', 'Payload inválido ou vazio no modo snapshot');
+        throw new AiGatewayError(
+          'INVALID_REQUEST',
+          'Payload inválido ou vazio no modo snapshot',
+        );
       }
-      
+
       // Sanitização básica
       finalPayload = {
         ...sourcePayload,
@@ -673,53 +951,61 @@ export class AiGatewayService {
 
     // 4. Gerar insights chamando o método atual
     const result = await this.generateInsights(finalPayload);
-    
+
     // 5. Mapear para AiReadingRecord e guardar
     if (result.ok) {
-       // Flag demo data
-       const isSimulated = finalPayload.isDemo === true;
-       const limitationsObj = isSimulated 
-           ? { ...result.meta, notice: "demo_data_not_for_real_longitudinal_use" } 
-           : result.meta;
+      // Flag demo data
+      const isSimulated = finalPayload.isDemo === true;
+      const limitationsObj = isSimulated
+        ? { ...result.meta, notice: 'demo_data_not_for_real_longitudinal_use' }
+        : result.meta;
 
-       const record = await this.prisma.aiReadingRecord.create({
-         data: {
-           userId: currentUserId || 'unauthenticated-r4c',
-           activeMemberId: activeMemberId || 'default',
-           analysisSessionId: analysisSessionId || null,
-           sourceSnapshotHash: hashStr,
-           sourceSnapshotJson: finalPayload as object,
-           analysisDate: finalPayload.selectedDate ? new Date(finalPayload.selectedDate) : null,
-           language: 'pt-PT',
-           promptVersion: '1.0',
-           model: result.model,
-           contractVersion: '1.0',
-           status: 'completed',
-           themesJson: result.insight.dimensions || [],
-           narrative: result.insight.summary?.text || '',
-           recommendationsJson: result.insight.priorityActions || [],
-           nutrientSuggestionsJson: result.insight.nutrientSuggestions || [],
-           longitudinalNotesJson: [],
-           limitationsJson: limitationsObj,
-           safetyFlagsJson: isSimulated ? ["demo_data"] : []
-         }
-       });
-       return record;
+      const record = await this.prisma.aiReadingRecord.create({
+        data: {
+          userId: currentUserId || 'unauthenticated-r4c',
+          activeMemberId: activeMemberId || 'default',
+          analysisSessionId: analysisSessionId || null,
+          sourceSnapshotHash: hashStr,
+          sourceSnapshotJson: finalPayload as object,
+          analysisDate: finalPayload.selectedDate
+            ? new Date(finalPayload.selectedDate)
+            : null,
+          language: 'pt-PT',
+          promptVersion: '1.0',
+          model: result.model,
+          contractVersion: '1.0',
+          status: 'completed',
+          themesJson: result.insight.dimensions || [],
+          narrative: result.insight.summary?.text || '',
+          recommendationsJson: result.insight.priorityActions || [],
+          nutrientSuggestionsJson: result.insight.nutrientSuggestions || [],
+          longitudinalNotesJson: [],
+          limitationsJson: limitationsObj,
+          safetyFlagsJson: isSimulated ? ['demo_data'] : [],
+        },
+      });
+      return record;
     }
 
-    throw new AiGatewayError('GENERATION_FAILED', 'Falha ao gerar leitura com OpenAI');
+    throw new AiGatewayError(
+      'GENERATION_FAILED',
+      'Falha ao gerar leitura com OpenAI',
+    );
   }
 
   /**
    * Obtém o histórico longitudinal de leituras AI do utilizador.
    * Por defeito, exclui leituras geradas em modo DEMO/simulação para não contaminar estatísticas reais.
    */
-  async getAiReadingHistory(userId: string, options?: { includeDemo?: boolean }) {
+  async getAiReadingHistory(
+    userId: string,
+    options?: { includeDemo?: boolean },
+  ) {
     const includeDemo = options?.includeDemo ?? false;
-    
+
     const records = await this.prisma.aiReadingRecord.findMany({
       where: { userId },
-      orderBy: { generatedAt: 'desc' }
+      orderBy: { generatedAt: 'desc' },
     });
 
     if (includeDemo) {
@@ -727,18 +1013,21 @@ export class AiGatewayService {
     }
 
     // Exclui registos marcados como "demo_data"
-    return records.filter(r => {
+    return records.filter((r) => {
       const flags = r.safetyFlagsJson as string[] | undefined;
-      return !flags || !Array.isArray(flags) || !flags.includes("demo_data");
+      return !flags || !Array.isArray(flags) || !flags.includes('demo_data');
     });
   }
 
-  private buildAiReadingInputFromAnalysis(analysis: any, activeMemberId?: string): GenerateInsightsDto {
+  private buildAiReadingInputFromAnalysis(
+    analysis: any,
+    activeMemberId?: string,
+  ): GenerateInsightsDto {
     return {
       analysisId: analysis.id,
       selectedDate: analysis.analysisDate.toISOString(),
       isDemo: false,
-      measurements: analysis.measurements.map(m => ({
+      measurements: analysis.measurements.map((m) => ({
         id: m.id,
         code: m.code,
         value: m.value,
@@ -746,18 +1035,18 @@ export class AiGatewayService {
         category: m.category,
         flags: m.flags,
       })),
-      events: analysis.events.map(e => ({
+      events: analysis.events.map((e) => ({
         id: e.id,
         code: e.code,
         type: e.type,
         data: e.data,
       })),
-      ecosystemFacts: analysis.events.map(e => ({
+      ecosystemFacts: analysis.events.map((e) => ({
         id: e.id,
         code: e.code,
         type: e.type,
         data: e.data,
-      }))
+      })),
     };
   }
 }

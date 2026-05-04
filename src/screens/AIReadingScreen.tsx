@@ -79,15 +79,24 @@ const DimensionGridCard = ({ dimension, isSelected, isFocus, isLowestScore, onPr
   const Icon = getDimensionIcon(dimension.id);
   const color = dimension.color;
   
-  // Decide badge color
-  const statusUpper = dimension.status.toUpperCase();
+  const getStatusLabel = (s: string) => {
+    switch(s.toLowerCase()) {
+      case 'stable': return 'ESTÁVEL';
+      case 'watch': return 'ATENÇÃO';
+      case 'priority': return 'PRIORITÁRIO';
+      case 'insufficient': return 'INSUFICIENTE';
+      default: return s.toUpperCase();
+    }
+  };
+  const statusLabel = getStatusLabel(dimension.status);
+  
   let badgeBg = 'rgba(255,255,255,0.05)';
   let badgeColor = 'rgba(255,255,255,0.6)';
   
-  if (statusUpper.includes('PRIORITY') || statusUpper.includes('ATENÇÃO')) {
+  if (statusLabel === 'PRIORITÁRIO' || statusLabel === 'INSUFICIENTE') {
     badgeBg = `${color}20`;
     badgeColor = color;
-  } else if (statusUpper.includes('WATCH') || statusUpper.includes('CAUTELA')) {
+  } else if (statusLabel === 'ATENÇÃO') {
     badgeBg = `${color}15`;
     badgeColor = `${color}dd`;
   } // Stable remains neutral
@@ -135,7 +144,7 @@ const DimensionGridCard = ({ dimension, isSelected, isFocus, isLowestScore, onPr
       </View>
       
       <View style={[styles.statusMiniBadge, { backgroundColor: badgeBg, alignSelf: 'flex-start' }]}>
-        <Typography style={[styles.statusMiniText, { color: badgeColor }]}>{statusUpper}</Typography>
+        <Typography style={[styles.statusMiniText, { color: badgeColor }]}>{statusLabel}</Typography>
       </View>
     </TouchableOpacity>
   );
