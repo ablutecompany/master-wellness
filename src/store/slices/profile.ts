@@ -3,6 +3,7 @@ import { AppState, UserProfile, ProfileStatus, HouseholdMember } from '../state-
 import { ProfileService } from '../../services/user/profileService';
 import { supabase } from '../../services/supabase';
 import { ENV } from '../../config/env';
+import { Platform } from 'react-native';
 
 export interface ProfileSlice {
   user: UserProfile | null;
@@ -147,6 +148,16 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
       isExplicitRemoval: updates.avatarUrl === null
     });
 
+    if (updates.avatarUrl !== undefined) {
+      console.log('[P0_AVATAR_FRONTEND_PRE_PATCH]', {
+        platform: Platform.OS,
+        source: 'camera | gallery | file (unknown at this depth)',
+        finalDataUrlLength: updates.avatarUrl ? updates.avatarUrl.length : 0,
+        finalDataUrlPrefix: updates.avatarUrl ? updates.avatarUrl.substring(0, 30) : null,
+        willSendAvatarUrl: true
+      });
+    }
+
     if (updates.avatarUrl === null && !(updates as any)._explicitAvatarRemoval) {
       console.warn('[P0_AVATAR_SAVE] Blocked implicit avatar removal');
       delete updates.avatarUrl;
@@ -180,6 +191,13 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
       console.log('[P0_AVATAR_SAVE] updateProfile response', {
         ok: result.ok,
         hasProfile: !!result.profile
+      });
+      console.log('[P0_AVATAR_PATCH_RESPONSE]', {
+        patchStatus: result.ok ? 200 : 500,
+        patchOk: result.ok,
+        responseHasAvatarUrl: result.profile && result.profile.avatarUrl !== undefined,
+        responseAvatarUrlLength: result.profile?.avatarUrl ? result.profile.avatarUrl.length : 0,
+        responseKeys: result.profile ? Object.keys(result.profile) : []
       });
       console.log('[P0_PROFILE_PATCH]', {
         userId: user?.id,

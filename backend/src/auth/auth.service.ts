@@ -142,10 +142,12 @@ export class AuthService {
         isDiscrepant
       };
 
-      console.log('[P0_AVATAR_AUTH_ME]', {
+      console.log('[P0_AVATAR_AUTH_ME_RETURN]', {
         userId: user.id,
-        hasAvatar: !!extendedData.avatarUrl,
-        avatarLength: extendedData.avatarUrl ? extendedData.avatarUrl.length : 0
+        hasAvatarUrl: extendedData.avatarUrl !== undefined && extendedData.avatarUrl !== null,
+        avatarUrlLength: extendedData.avatarUrl ? extendedData.avatarUrl.length : 0,
+        avatarUrlPrefix: typeof extendedData.avatarUrl === 'string' ? extendedData.avatarUrl.substring(0, 30) : null,
+        returnedKeys: ['id', 'email', 'name', 'avatarUrl', 'dateOfBirth', 'dateOfBirthPrecision', 'sex', 'height', 'weight', 'baseWeight', 'goals', 'activityLevel', 'dietaryRestrictions', 'activeAnalysisId', 'household']
       });
 
       // 5. Retornar contrato canónico esperado pelo frontend

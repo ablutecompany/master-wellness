@@ -164,6 +164,16 @@ export class UserService {
     console.log('[P0_PROFILE_PATCH] FieldsReceived:', JSON.stringify(updates));
     console.log(`[P0_PROFILE_PATCH] dateOfBirthReceived: ${dateOfBirth}, sexReceived: ${sex}, avatarUrlReceived: ${avatarUrl}`);
 
+    if (avatarUrl !== undefined) {
+      console.log('[P0_AVATAR_BACKEND_RECEIVED]', {
+        userId,
+        hasAvatarUrl: avatarUrl !== null,
+        avatarUrlLength: avatarUrl ? avatarUrl.length : 0,
+        avatarUrlPrefix: typeof avatarUrl === 'string' ? avatarUrl.substring(0, 30) : null,
+        payloadKeys: Object.keys(updates)
+      });
+    }
+
     // 1. Preparar dados para o User
     const userData: any = {};
     if (name !== undefined) userData.name = name;
@@ -234,7 +244,31 @@ export class UserService {
          console.warn(`[P0_AVATAR_BACKEND_SAVE] Blocked nullifying avatar without explicit removal for user: ${userId}`);
       } else {
         try { await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT`); } catch (e) {}
-        await this.prisma.$executeRaw`UPDATE public.profiles SET avatar_url = ${avatarUrl}, updated_at = now() WHERE id = ${userId}::uuid`;
+        let writeSuccess = false;
+        try {
+          await this.prisma.$executeRaw`UPDATE public.profiles SET avatar_url = ${avatarUrl}, updated_at = now() WHERE id = ${userId}::uuid`;
+          writeSuccess = true;
+        } catch (dbErr) {
+          console.error('[P0_AVATAR_BACKEND_WRITE_ERROR]', dbErr);
+        }
+        
+        // Immediate readback
+        let readBackAvatarUrl = null;
+        try {
+          const res = await this.prisma.$queryRaw<any[]>`SELECT avatar_url FROM public.profiles WHERE id = ${userId}::uuid`;
+          if (res && res.length > 0) {
+            readBackAvatarUrl = res[0].avatar_url;
+          }
+        } catch (e) {}
+
+        console.log('[P0_AVATAR_BACKEND_WRITTEN]', {
+          userId,
+          dbWriteAttempted: true,
+          dbWriteSuccess: writeSuccess,
+          readBackHasAvatarUrl: readBackAvatarUrl !== null && readBackAvatarUrl !== undefined,
+          readBackAvatarUrlLength: readBackAvatarUrl ? readBackAvatarUrl.length : 0,
+          readBackAvatarUrlPrefix: typeof readBackAvatarUrl === 'string' ? readBackAvatarUrl.substring(0, 30) : null
+        });
         console.log(`[P0_AVATAR_BACKEND_SAVE] avatarUrlSaved for user: ${userId}, length: ${avatarUrl ? avatarUrl.length : 0}`);
       }
     }

@@ -187,6 +187,14 @@ export default function App() {
         profileFound: true,
         returnedFields: Object.keys(normalized)
       });
+      console.log('[P0_AVATAR_AFTER_LOGIN]', {
+        userId: normalized.id,
+        authMeHasAvatarUrl: profile.avatarUrl !== undefined && profile.avatarUrl !== null,
+        authMeAvatarUrlLength: profile.avatarUrl ? profile.avatarUrl.length : 0,
+        storeHasAvatarUrl: normalized.avatarUrl !== undefined && normalized.avatarUrl !== null,
+        storeAvatarUrlLength: normalized.avatarUrl ? normalized.avatarUrl.length : 0,
+        profileScreenRenderedImage: 'tested in UI'
+      });
       setUser(normalized);
       if ((normalized as any)?.household) {
         setHousehold((normalized as any).household);
