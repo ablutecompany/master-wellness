@@ -154,6 +154,7 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   const [exportFormat, setExportFormat] = useState('TXT');
   const [exportRange, setExportRange] = useState('7d');
   const [exportDestination, setExportDestination] = useState('download');
+  const [isExporting, setIsExporting] = useState(false);
   
   // Clear App State
   const [clearConfirmText, setClearConfirmText] = useState('');
@@ -181,6 +182,15 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 
   const handleExport = async () => {
     const allAnalyses = useStore.getState().analyses || [];
+    
+    console.log('[EXPORT_DATA_PRESS]', {
+      format: exportFormat,
+      period: exportRange,
+      destination: exportDestination,
+      analysesCount: allAnalyses.length,
+      platform: Platform.OS
+    });
+
     let analyses = [...allAnalyses];
     const now = new Date();
     
@@ -201,6 +211,7 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
       return;
     }
 
+    setIsExporting(true);
     try {
       const activeProfile = availableProfiles.find(p => p.id === selectedProfileId) || user;
       const fileNameBase = `ablute_export_${new Date().toISOString().split('T')[0]}`;
@@ -292,7 +303,7 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          Alert.alert('Sucesso', 'Ficheiro criado e download iniciado.');
+          Alert.alert('Sucesso', 'Download iniciado.');
         } else {
           const canShare = await Sharing.isAvailableAsync();
           if (canShare) {
@@ -309,7 +320,7 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
              const subject = encodeURIComponent('Exportação de dados ablute_ wellness');
              const body = encodeURIComponent('Incluo a exportação de dados selecionada na app ablute_ wellness.');
              window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
-             Alert.alert('Email', 'O email foi aberto com o resumo. Para anexar o ficheiro, descarregue-o primeiro usando a opção Download.');
+             Alert.alert('Aviso', 'O email foi aberto com resumo. Para anexar ficheiro, descarregue-o primeiro.');
            }
         } else {
            const canShare = await Sharing.isAvailableAsync();
@@ -326,7 +337,7 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
            if (!shared) {
              const text = encodeURIComponent('Exportação de dados ablute_ wellness.');
              window.open(`https://wa.me/?text=${text}`, '_blank');
-             Alert.alert('Instrução', 'O WhatsApp Web não permite anexar ficheiros automaticamente por URL. Descarregue o ficheiro na app e anexe-o manualmente.');
+             Alert.alert('Aviso', 'O WhatsApp pode não anexar ficheiros automaticamente neste navegador. Descarregue o ficheiro e anexe-o manualmente.');
            }
         } else {
            const canShare = await Sharing.isAvailableAsync();
@@ -339,9 +350,11 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
         }
       }
 
+      setIsExporting(false);
       setExportModal(false);
     } catch (e) {
       console.error(e);
+      setIsExporting(false);
       Alert.alert('Erro', 'Ocorreu um erro ao exportar.');
     }
   };
@@ -592,7 +605,7 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             
             <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>FORMATO</Typography>
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 24 }}>
-              {['TXT', 'PDF', 'JSON'].map(fmt => (
+              {['TXT', 'PDF'].map(fmt => (
                 <TouchableOpacity key={fmt} onPress={() => setExportFormat(fmt)} style={[styles.pillBtn, exportFormat === fmt && styles.pillBtnActive]}>
                   <Typography style={{ color: exportFormat === fmt ? '#000' : '#fff', fontWeight: exportFormat === fmt ? '700' : '500' }}>{fmt}</Typography>
                 </TouchableOpacity>
@@ -621,10 +634,12 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
               ))}
             </View>
 
-            <TouchableOpacity style={styles.confirmBtn} onPress={handleExport}>
-              <Typography style={{ color: '#000', fontWeight: '700' }}>Exportar dados</Typography>
+            <TouchableOpacity style={[styles.confirmBtn, isExporting && { opacity: 0.7 }]} onPress={handleExport} disabled={isExporting}>
+              <Typography style={{ color: '#000', fontWeight: '700' }}>
+                {isExporting ? 'A preparar exportação...' : 'Exportar dados'}
+              </Typography>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setExportModal(false)}>
+            <TouchableOpacity style={styles.cancelBtn} onPress={() => setExportModal(false)} disabled={isExporting}>
               <Typography style={{ color: 'rgba(255,255,255,0.5)' }}>Cancelar</Typography>
             </TouchableOpacity>
           </View>
