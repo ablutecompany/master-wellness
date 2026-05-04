@@ -23,6 +23,22 @@ export class HealthController {
   }
 
   /**
+   * Diagnóstico de Build (Obrigatório para Auditoria P0).
+   * Expõe a versão em runtime para garantir que o CI/CD (Render)
+   * atualizou corretamente para o commit correto.
+   */
+  @Get('version')
+  version() {
+    return {
+      service: 'ablute-wellness-backend',
+      commit: process.env.RENDER_GIT_COMMIT || 'local',
+      branch: process.env.RENDER_GIT_BRANCH || 'local',
+      buildTime: process.env.TIMESTAMP || new Date().toISOString(),
+      env: process.env.NODE_ENV || 'development'
+    };
+  }
+
+  /**
    * Readiness Check (M8 - Readiness).
    * Valida dependências críticas de forma assertiva.
    */

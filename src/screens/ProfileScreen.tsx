@@ -177,13 +177,19 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   // ─────────────────────────────────────────────────────────────────────────────
   const calculateAge = (dobStr: string | undefined, precision: string | undefined | null): string => {
     if (!dobStr) return '—';
-    const dob = new Date(dobStr);
-    if (isNaN(dob.getTime())) return '—';
+    const parts = dobStr.split('-');
+    const year = parseInt(parts[0], 10);
+    if (isNaN(year)) return '—';
     
-    let age = new Date().getFullYear() - dob.getFullYear();
-    const m = new Date().getMonth() - (dob.getMonth() || 0);
-    if (m < 0 || (m === 0 && new Date().getDate() < (dob.getDate() || 1))) {
-      age--;
+    let age = new Date().getFullYear() - year;
+    
+    if (precision === 'month' || precision === 'day') {
+      const month = parts[1] ? parseInt(parts[1], 10) - 1 : 0;
+      const day = parts[2] ? parseInt(parts[2], 10) : 1;
+      const today = new Date();
+      if (today.getMonth() < month || (today.getMonth() === month && today.getDate() < day)) {
+        age--;
+      }
     }
     
     if (age < 0) return '—';
@@ -297,12 +303,24 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       }
     }
     
+    console.log('[P0_DOB_HEIGHT_MOBILE]', {
+      platform: Platform.OS,
+      selectedDate: tempDate,
+      payloadDateOfBirth: dob,
+      payloadPrecision: precision
+    });
+
     triggerSave({ dateOfBirth: dob, dateOfBirthPrecision: precision });
     closeModal();
   };
 
   const saveHeight = () => {
-    triggerSave({ height: tempHeight });
+    const finalHeightCm = Number(tempHeight) || 170;
+    console.log('[P0_DOB_HEIGHT_MOBILE]', {
+      platform: Platform.OS,
+      payloadHeightCm: finalHeightCm
+    });
+    triggerSave({ height: finalHeightCm });
     closeModal();
   };
 
@@ -395,59 +413,43 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       let manipResult = await ImageManipulator.manipulateAsync(
         sourceUri,
         [{ resize: { width: 512, height: 512 } }],
-        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
       );
 
-      // 2. Verificar tamanho inicial
-      let sizeInBytes = manipResult.base64 ? (manipResult.base64.length * 3) / 4 : 0;
-      let sizeInMb = sizeInBytes / (1024 * 1024);
+      console.log('[P0_AVATAR_PROCESSING] first pass', { width: manipResult.width });
 
-      console.log('[P0_AVATAR_PROCESSING] first pass', { sizeInMb: sizeInMb.toFixed(2), width: manipResult.width });
+      // We no longer compress aggressively based on base64 size since we upload directly to storage
+      // The 512x512 JPEG with 0.8 quality is guaranteed to be small enough (usually < 200KB)
 
-      // 3. Compressão agressiva se ainda > 1MB
-      if (sizeInMb > 1) {
-         console.warn('[P0_AVATAR_PROCESSING] too large, compressing further (0.3)');
-         manipResult = await ImageManipulator.manipulateAsync(
-            manipResult.uri,
-            [],
-            { compress: 0.3, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-         );
-         sizeInBytes = manipResult.base64 ? (manipResult.base64.length * 3) / 4 : 0;
-         sizeInMb = sizeInBytes / (1024 * 1024);
+      // Upload to Supabase Storage
+      const userId = useStore.getState().user?.id;
+      if (!userId) throw new Error('User ID not found');
+
+      const fileName = `profile_${Date.now()}.jpg`;
+      const filePath = `${userId}/${fileName}`;
+
+      console.log('[P0_AVATAR_STORAGE] Starting upload for', filePath);
+
+      const response = await fetch(manipResult.uri);
+      const blob = await response.blob();
+
+      const { data, error } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, blob, { contentType: 'image/jpeg', upsert: true });
+
+      if (error) {
+        console.error('[P0_AVATAR_STORAGE] Upload failed:', error);
+        throw error;
       }
 
-      // 4. Último nível de compressão agressiva se > 500KB
-      if (sizeInMb > 0.5) {
-         console.warn('[P0_AVATAR_PROCESSING] still > 500KB, aggressive compress (0.1)');
-         manipResult = await ImageManipulator.manipulateAsync(
-            manipResult.uri,
-            [{ resize: { width: 256, height: 256 } }],
-            { compress: 0.1, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-         );
-         sizeInBytes = manipResult.base64 ? (manipResult.base64.length * 3) / 4 : 0;
-         sizeInMb = sizeInBytes / (1024 * 1024);
-      }
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
 
-      // 5. Validar limite final absoluto (0.8MB no máximo, ideal < 0.5MB para RN fetch)
-      if (sizeInMb > 0.8 || !manipResult.base64) {
-         console.error('[P0_AVATAR_PROCESSING] Rejeitado por tamanho final.', { sizeInMb });
-         Alert.alert('Imagem demasiado pesada', `A imagem continua pesada (${sizeInMb.toFixed(1)}MB) após compressão. Escolha outra fotografia ou um formato mais pequeno.`);
-         return;
-      }
+      console.log('[P0_AVATAR_STORAGE] Upload success:', publicUrl);
 
-      console.log('[P0_AVATAR_DEVICE_FLOW]', {
-         platform: Platform.OS === 'web' ? 'web' : 'mobile',
-         source: sourceUri.startsWith('data:') ? 'web-camera' : 'gallery-or-camera',
-         originalUriLength: sourceUri.length,
-         processedWidth: manipResult.width,
-         processedHeight: manipResult.height,
-         processedBase64Length: manipResult.base64?.length,
-         processedEstimatedBytes: sizeInBytes,
-      });
-
-      const dataUrl = `data:image/jpeg;base64,${manipResult.base64}`;
-      setTempAvatar(dataUrl);
-      return dataUrl;
+      setTempAvatar(publicUrl);
+      return publicUrl;
     } catch (err: any) {
       console.error('[P0_AVATAR_PROCESSING] fail', err);
       Alert.alert('Erro ao processar', 'Não foi possível preparar esta fotografia. Pode tratar-se de um formato não suportado ou erro de memória. Tente outra imagem.');

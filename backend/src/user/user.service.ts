@@ -253,7 +253,7 @@ export class UserService {
         }
         
         // Immediate readback
-        let readBackAvatarUrl = null;
+        let readBackAvatarUrl: any = null;
         try {
           const res = await this.prisma.$queryRaw<any[]>`SELECT avatar_url FROM public.profiles WHERE id = ${userId}::uuid`;
           if (res && res.length > 0) {

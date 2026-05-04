@@ -207,12 +207,8 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
       });
 
       if (!result.ok || !result.profile) {
-        console.error('[ProfileSlice] Backend update failed. Reverting optimistic state, but keeping avatar if it was just changed.');
+        console.error('[ProfileSlice] Backend update failed. Reverting optimistic state.');
         const rollbackUser = previousUser ? { ...previousUser } : { id: 'auth_stub', name: 'Utilizador', ...updates } as any;
-        // Se a falha foi payload too large ou network, manter o preview do avatar local para o utilizador poder tentar novamente ou pelo menos não ver o fallback
-        if (updates.avatarUrl !== undefined) {
-           rollbackUser.avatarUrl = updates.avatarUrl;
-        }
         set({ user: rollbackUser as UserProfile });
         return false;
       }
