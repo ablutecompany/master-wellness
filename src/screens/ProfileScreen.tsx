@@ -280,6 +280,13 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
     if (success) {
       console.log('[P0_PROFILE_FORM]', { event: 'save_success', field: Object.keys(updates) });
+      
+      // Explicitly update draft with the fully merged canonical profile to ensure immediate render
+      const updatedUser = useStore.getState().user;
+      if (updatedUser) {
+        setProfileDraft({ ...updatedUser });
+      }
+      
       setIsDirty(false); // Clean state after successful save
     } else {
       console.log('[P0_PROFILE_FORM]', { event: 'save_error', field: Object.keys(updates) });

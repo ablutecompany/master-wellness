@@ -221,35 +221,28 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
         return false;
       }
 
-      // Merge seguro: se o backend devolveu sucesso mas sem campos essenciais, e tínhamos, preservar. 
-      // (Só removemos se o utilizador enviou explicitamente null)
+      // Merge seguro e não-destrutivo:
+      // 1. Base: previousUser
+      // 2. Sobreposto com: updates (payload enviado)
+      // 3. Sobreposto com: normalizedResponse (resposta canónica do backend, ignorando nulos se enviámos valor)
       
-      const safeMerge = { ...normalizedResponse };
+      const safeMerge: any = { ...previousUser, ...updates };
       
-      if (!safeMerge.avatarUrl && previousUser?.avatarUrl && updates.avatarUrl !== null) {
-         safeMerge.avatarUrl = previousUser.avatarUrl;
-      }
-      if ((!safeMerge.name || safeMerge.name === 'Utilizador') && previousUser?.name && previousUser.name !== 'Utilizador' && updates.name !== null) {
-         safeMerge.name = previousUser.name;
-      }
-      if (!safeMerge.dateOfBirth && previousUser?.dateOfBirth && updates.dateOfBirth !== null) {
-         safeMerge.dateOfBirth = previousUser.dateOfBirth;
-      }
-      if (!safeMerge.dateOfBirthPrecision && previousUser?.dateOfBirthPrecision && updates.dateOfBirthPrecision !== null) {
-         safeMerge.dateOfBirthPrecision = previousUser.dateOfBirthPrecision;
-      }
-      if (safeMerge.sex === undefined || safeMerge.sex === null) {
-         if (previousUser?.sex && updates.sex !== null) {
-           safeMerge.sex = previousUser.sex;
-         }
-      }
-      if (safeMerge.height === undefined || safeMerge.height === null) {
-         if (previousUser?.height && updates.height !== null) {
-           safeMerge.height = previousUser.height;
-         }
-      }
-      if (!safeMerge.weight && previousUser?.weight && updates.weight !== null) {
-         safeMerge.weight = previousUser.weight;
+      // Aplicar resposta do backend APENAS se for válida e não anular o que acabámos de enviar
+      for (const key of Object.keys(normalizedResponse)) {
+        const backendValue = (normalizedResponse as any)[key];
+        const updateValue = (updates as any)[key];
+        
+        if (backendValue !== null && backendValue !== undefined) {
+          safeMerge[key] = backendValue;
+        } else if (updateValue !== undefined && updateValue !== null) {
+          // Se o backend devolveu null mas enviámos um update válido, mantemos o update
+          safeMerge[key] = updateValue;
+        } else if (updateValue === null) {
+          // Se enviámos explicitamente null, então aceitamos o null
+          safeMerge[key] = null;
+        }
+        // Se updateValue for undefined e backendValue for null, safeMerge mantém o que estava no previousUser
       }
 
       // 2. Reflete resposta consolidada devolvida
