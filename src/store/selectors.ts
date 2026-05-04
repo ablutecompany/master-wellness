@@ -49,6 +49,9 @@ export const selectIsGuestMode = (state: AppState) => state.isGuestMode;
 // B) Visibility Core Logic
 // ─────────────────────────────────────────────────────────────────────────────
 export const canViewTargetData = (state: AppState, targetMemberId: string, scope: 'results' | 'context') => {
+  // If looking at myself directly
+  if (state.user?.id && targetMemberId === state.user.id) return true;
+
   // If I am the Root owner, I see everything in my household
   if (state.household?.ownerId && state.user?.id && state.household.ownerId === state.user.id) return true;
   

@@ -647,14 +647,21 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       </Typography>
     </View>
   );
-
   // ─────────────────────────────────────────────────────────────────────────────
   // 5. MAIN RENDER
   // ─────────────────────────────────────────────────────────────────────────────
-  if (!hasHydrated || !profileDraft || profileStatus !== 'loaded') {
+  if (profileStatus !== 'loaded' && profileStatus !== 'error') {
     return (
-      <View style={[styles.outerContainer, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator color="#00F2FF" size="large" />
+      <View style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#00F2FF" />
+      </View>
+    );
+  }
+
+  if (!activeProfile) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#00F2FF" />
       </View>
     );
   }

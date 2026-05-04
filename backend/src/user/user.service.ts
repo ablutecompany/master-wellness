@@ -179,6 +179,7 @@ export class UserService {
     if (sex !== undefined) userData.sex = sex;
     if (timezone !== undefined) userData.timezone = timezone;
     if (country !== undefined) userData.country = country;
+    if (height !== undefined) userData.height = height;
 
     // Garantir que a linha existe na tabela profiles antes de fazer o raw SQL UPDATE
     try {
@@ -220,6 +221,9 @@ export class UserService {
     }
     if (userData.country !== undefined) {
       await this.prisma.$executeRaw`UPDATE public.profiles SET country = ${userData.country}, updated_at = now() WHERE id = ${userId}::uuid`;
+    }
+    if (userData.height !== undefined) {
+      await this.prisma.$executeRaw`UPDATE public.profiles SET height = ${userData.height}::numeric, updated_at = now() WHERE id = ${userId}::uuid`;
     }
     
     console.log(`[P0_PROFILE_PATCH] userUpdated via raw SQL: true, fields: ${Object.keys(userData).join(', ')}`);

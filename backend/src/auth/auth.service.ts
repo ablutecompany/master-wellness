@@ -85,8 +85,8 @@ export class AuthService {
         timezone: extendedData.timezone || null,
         country: extendedData.country || null,
         profile: {
-          height: extendedData.height || 170,
-          baseWeight: extendedData.baseWeight || 70,
+          height: extendedData.height ? Number(extendedData.height) : 170,
+          baseWeight: extendedData.baseWeight ? Number(extendedData.baseWeight) : 70,
           mainGoal: extendedData.mainGoal || 'general_wellness',
           secondaryGoals: extendedData.secondaryGoals || [],
           activityLevel: extendedData.activityLevel || 'moderate',
