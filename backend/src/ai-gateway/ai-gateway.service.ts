@@ -142,68 +142,50 @@ export class AiGatewayService {
   private readonly insightsSchemaV2 = {
     type: 'object' as const,
     properties: {
-      overallNarrative: { type: 'string' as const },
-      shortSummary: { type: 'string' as const },
-      nextFocusText: { type: 'string' as const },
+      summary: {
+        type: 'object' as const,
+        properties: {
+          title: { type: 'string' as const },
+          body: { type: 'string' as const },
+          focusDimensionId: { type: 'string' as const },
+          focusReason: { type: 'string' as const },
+          practicalOrientation: { type: 'string' as const }
+        },
+        required: ['title', 'body', 'focusDimensionId', 'focusReason', 'practicalOrientation'],
+        additionalProperties: false
+      },
       dimensions: {
         type: 'array' as const,
         items: {
           type: 'object' as const,
           properties: {
-            id: { type: 'string' as const },
-            title: { type: 'string' as const },
-            refinedSummary: { type: 'string' as const },
-            refinedRecommendations: {
-              type: 'array' as const,
-              items: {
-                type: 'object' as const,
-                properties: {
-                  text: { type: 'string' as const },
-                  reason: { type: 'string' as const },
-                  priority: { type: 'string' as const, enum: ['low', 'medium', 'high'] }
-                },
-                required: ['text', 'reason', 'priority'],
-                additionalProperties: false
-              }
-            },
-            refinedReferences: {
-              type: 'array' as const,
-              items: {
-                type: 'object' as const,
-                properties: {
-                  factor: { type: 'string' as const },
-                  observedValue: { type: 'string' as const },
-                  explanation: { type: 'string' as const },
-                  whyItMatters: { type: 'string' as const },
-                  caution: { type: 'string' as const }
-                },
-                required: ['factor', 'observedValue', 'explanation', 'whyItMatters', 'caution'],
-                additionalProperties: false
-              }
-            }
+            id: { type: 'string' as const, enum: ['energy', 'recovery', 'internal_balance', 'metabolic_rhythm', 'intestinal_state', 'food_adjustments', 'physiological_load', 'vitality'] },
+            label: { type: 'string' as const },
+            type: { type: 'string' as const, enum: ['momentary', 'functional', 'longitudinal'] },
+            score: { type: 'number' as const },
+            state: { type: 'string' as const, enum: ['stable', 'watch', 'priority'] },
+            stateLabel: { type: 'string' as const, enum: ['Estável', 'Atenção', 'Prioritário'] },
+            confidence: { type: 'string' as const, enum: ['low', 'medium', 'high'] },
+            summary: { type: 'string' as const },
+            actions: { type: 'array' as const, items: { type: 'string' as const } },
+            references: { type: 'array' as const, items: { type: 'string' as const } },
+            limits: { type: 'string' as const }
           },
-          required: ['id', 'title', 'refinedSummary', 'refinedRecommendations', 'refinedReferences'],
+          required: ['id', 'label', 'type', 'score', 'state', 'stateLabel', 'confidence', 'summary', 'actions', 'references', 'limits'],
           additionalProperties: false
         }
       },
-      globalRecommendations: {
-        type: 'array' as const,
-        items: {
-          type: 'object' as const,
-          properties: {
-            text: { type: 'string' as const },
-            reason: { type: 'string' as const },
-            linkedDimensionId: { type: 'string' as const },
-            priority: { type: 'string' as const, enum: ['low', 'medium', 'high'] }
-          },
-          required: ['text', 'reason', 'linkedDimensionId', 'priority'],
-          additionalProperties: false
-        }
-      },
-      limitations: { type: 'array' as const, items: { type: 'string' as const } },
-      safetyFlags: { type: 'array' as const, items: { type: 'string' as const } }
+      safety: {
+        type: 'object' as const,
+        properties: {
+          isMedicalDiagnosis: { type: 'boolean' as const },
+          warnings: { type: 'array' as const, items: { type: 'string' as const } }
+        },
+        required: ['isMedicalDiagnosis', 'warnings'],
+        additionalProperties: false
+      }
     },
-    required: ['overallNarrative', 'shortSummary', 'nextFocusText', 'dimensions', 'globalRecommendations', 'limitations', 'safetyFlags'],
+    required: ['summary', 'dimensions', 'safety'],
     additionalProperties: false,
   };
 
@@ -272,17 +254,18 @@ export class AiGatewayService {
 
     const prompt = [
       `A Leitura AI é uma camada interpretativa baseada em resultados reais (ou simulados) da plataforma ablute_ wellness.`,
-      isDemo ? `[ALERTA DE SISTEMA]: Os dados desta leitura são simulados/demo. A resposta deve tratar o cenário como simulação, e incluir a safetyFlag "demo_data".` : ``,
-      `A OpenAI NÃO deve inventar scores, biomarcadores ou diagnósticos clínicos.`,
-      `A sua função é transformar a estrutura calculada do motor local numa narrativa útil, personalizada e em português de Portugal.`,
-      `Regras de tom: wellness, premium, claro, não paternalista, e nunca alarmista.`,
-      `Não recomendar suplementação como primeira linha.`,
-      `Para cada dimensão, explica "porque importa" baseando-te nos "topDrivers" e "references" providenciados.`,
-      `As recomendações devem ser pragmáticas e accionáveis.`,
+      isDemo ? `[ALERTA DE SISTEMA]: Os dados desta leitura são simulados/demo e variam com o cenário. A resposta deve refletir exatamente os dados deste cenário DEMO, gerando scores, resumos e ações específicas à concentração ou carga reportada, e incluir a safetyFlag "demo_data".` : ``,
+      `O motor local já calculou os scores baseados nas fontes. O teu papel é explicar as 8 dimensões canónicas em português de Portugal.`,
+      `Regras de tom: wellness, premium, claro, não paternalista, nunca alarmista, e NÃO clíníco (isMedicalDiagnosis: false).`,
+      `Não aceites texto estático. O conteúdo (Síntese, Scores, Referências e Ações) TEM DE VARIAR dependendo dos resultados da análise enviados.`,
+      `Se uma fonte (urine, feces, physiological, context, miniapps) estiver 'excluded_by_user', a dimensão afetada não pode presumir os dados e deve declarar essa exclusão nas "references" ou "limits".`,
+      `Vitalidade deve ser prudente se não houver histórico suficiente. Se confidence for 'low', explica que é uma leitura preliminar isolada.`,
       `OBRIGATÓRIO PARA CADA DIMENSÃO:`,
-      `- refinedSummary: não uses placeholders nem deixes vazio. Fornece sempre contexto útil.`,
-      `- refinedRecommendations: TEM de ter pelo menos 1 item com ação pragmática. Se a dimensão estiver estável, sugere ações de manutenção e consistência. Não uses frases vazias como "Sem ações específicas".`,
-      `- refinedReferences: TEM de ter pelo menos 1 item explicando os drivers/valores observados. Não uses frases genéricas como "Refs incorporadas no resumo".`,
+      `- summary: explica os dados fornecidos e como afetam o estado da pessoa neste momento específico.`,
+      `- actions: pelo menos 1 item accionável pragmático (ex: manter hidratação, privilegiar fibras). Não inventes suplementos.`,
+      `- references: indica claramente 1 a 3 fatores (drivers) do motor que justificam o score. Ex: "Esta leitura considerou densidade urinária e rácio Na/K." ou "Dados fecais excluídos nas Configurações."`,
+      `- limits: explica as limitações da avaliação (ex: sem histórico, fonte desligada, poucos dados). Se não houver limitações usa "Nenhuma limitação aparente.".`,
+      `Nunca uses a frase "Dados insuficientes" de forma vaga.`,
       ``,
       `Contexto estrutural gerado pelo motor local (JSON):`,
       JSON.stringify(sourcePayload, null, 2),

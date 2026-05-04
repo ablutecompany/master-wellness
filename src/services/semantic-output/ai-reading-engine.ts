@@ -1,7 +1,7 @@
 import { SemanticStatus, SemanticDomainView, SemanticRecommendationView, SemanticInsightView } from './types';
 import { AnalysisMeasurement, AnalysisEvent } from '../../store/types';
 
-// ── HOLISTIC DIMENSION TYPES (R5A) ──────────────────────────────────────────
+// ── HOLISTIC DIMENSION TYPES (R6.1) ──────────────────────────────────────────
 
 export type DimensionDriver = {
   label: string;
@@ -28,7 +28,7 @@ export type DimensionReference = {
 };
 
 export type HolisticDimension = {
-  id: string;
+  id: string; // 'energy' | 'recovery' | 'internal_balance' | 'metabolic_rhythm' | 'intestinal_state' | 'food_adjustments' | 'physiological_load' | 'vitality'
   title: string;
   internalTechnicalIds?: string[];
   color: string;
@@ -49,13 +49,12 @@ export interface AIReading {
     confidence: number;
     mode: 'simulation' | 'real';
   };
-  dimensions: HolisticDimension[]; // Substitui o formato antigo
+  dimensions: HolisticDimension[];
   nextFocus?: {
     dimensionId: string;
     label: string;
     color: string;
   };
-  // Campos de compatibilidade legada se existirem:
   priorityActions?: any[];
   highlightedThemes?: any[];
   watchSignals?: any[];
@@ -83,26 +82,39 @@ export type NutrientPriority = {
   sourceOrigin: "real" | "demo" | "snapshot";
 };
 
+export type AiReadingInputSourcePolicy = {
+  urine: "used" | "missing" | "excluded_by_user";
+  feces: "used" | "missing" | "excluded_by_user";
+  physiological: "used" | "missing" | "excluded_by_user";
+  context: "used" | "missing" | "excluded_by_user";
+  miniapps: "used" | "missing" | "excluded_by_user";
+};
+
 export type AiReadingLLMContextV2 = {
   sourceOrigin: string;
   isDemo: boolean;
   analysisDate: string;
-  activeObjectives: string[];
-  visibleDimensions: HolisticDimension[];
-  internalScores: Record<string, number | null>;
-  topGlobalDrivers: DimensionDriver[];
-  dataQuality: string;
-  missingData: string[];
-  historySummary: string;
+  sourcePolicy: AiReadingInputSourcePolicy;
+  dimensions: Record<string, any>;
+  history: {
+    available: boolean;
+    readingsCount: number;
+    baselineAvailable: boolean;
+    limitations: string[];
+  };
   safetyRules: string[];
   language: 'pt-PT';
   nextFocus?: { dimensionId: string; label: string; color: string; };
-  attentionDimension?: string;
-  auraColor?: string;
-  cached?: boolean;
-  promptVersion?: string;
-  contractVersion?: string;
   nutrientPriorities?: NutrientPriority[];
+  measurementsCount: number;
+};
+
+export type AiConfigSettings = {
+  urinalysis?: boolean;
+  stool?: boolean;
+  physiology?: boolean;
+  context?: boolean;
+  miniapps?: boolean;
 };
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
@@ -123,53 +135,110 @@ function getSleepHours(facts: AnalysisEvent[]): number {
   return parseInt(match[1]) + (parseInt(match[2] || '0') / 60);
 }
 
-// ── NEW MOTOR DE CÁLCULO HOLÍSTICO (R5A) ──────────────────────────────────────
+// Helper para Status: >=80 Estável, 50-79 Atenção, <50 Prioritário
+const getStatus = (score: number | null): HolisticDimension['status'] => {
+  if (score === null) return 'insufficient';
+  if (score >= 80) return 'stable';
+  if (score >= 50) return 'watch';
+  return 'priority';
+};
+
+// ── NEW MOTOR DE CÁLCULO HOLÍSTICO (R6.1) ──────────────────────────────────────
 
 export function computeAIReadingFromData(
   measurements: AnalysisMeasurement[],
   ecosystemFacts: AnalysisEvent[],
-  isDemo: boolean
+  isDemo: boolean,
+  aiConfig: AiConfigSettings = { urinalysis: true, stool: true, physiology: true, context: true, miniapps: true }
 ): AIReading {
-  // --- 1. Extração de Biomarcadores ---
-  const hr = parseFloat(getMeasurement(measurements, 'ecg', 'Frequência cardíaca') || getMeasurement(measurements, 'ecg', 'Ritmo Cardíaco') || '0');
-  const hrvStr = getMeasurement(measurements, 'ppg', 'HRV Estimada');
-  const recFact = ecosystemFacts.find(f => f.type === 'Recuperação');
-  const hrv = parseFloat(hrvStr || (recFact ? String(recFact.value) : '0'));
+
+  const sourcePolicy: AiReadingInputSourcePolicy = {
+    urine: aiConfig.urinalysis === false ? "excluded_by_user" : "missing",
+    feces: aiConfig.stool === false ? "excluded_by_user" : "missing",
+    physiological: aiConfig.physiology === false ? "excluded_by_user" : "missing",
+    context: aiConfig.context === false ? "excluded_by_user" : "missing",
+    miniapps: aiConfig.miniapps === false ? "excluded_by_user" : "missing"
+  };
+
+  // --- 1. Extração Condicional de Biomarcadores ---
   
-  const temp = parseFloat(getMeasurement(measurements, 'temp', 'Temperatura') || '0');
-  const spo2 = parseFloat(getMeasurement(measurements, 'ppg', 'SpO2') || getMeasurement(measurements, 'ppg', 'Saturação de oxigénio') || '0');
-  
-  const gravidade = parseFloat(getMeasurement(measurements, 'urinalysis', 'Densidade Urinária') || getMeasurement(measurements, 'urinalysis', 'Gravidade Específica') || '0');
-  const na = parseFloat(getMeasurement(measurements, 'urinalysis', 'Sódio Urinário') || '0');
-  const k = parseFloat(getMeasurement(measurements, 'urinalysis', 'Potássio Urinário') || '0');
-  const nakRatio = parseFloat(getMeasurement(measurements, 'urinalysis', 'Rácio Na/K') || '0');
-  const creatinina = parseFloat(getMeasurement(measurements, 'urinalysis', 'Creatinina Urinária') || '0');
-  const ph = parseFloat(getMeasurement(measurements, 'urinalysis', 'pH Urinário') || '0');
-  const glicose = getMeasurement(measurements, 'urinalysis', 'Glicose') === 'Positivo' ? 1 : (getMeasurement(measurements, 'urinalysis', 'Glicose') === 'Negativo' ? 0 : -1);
-  const nitritos = getMeasurement(measurements, 'urinalysis', 'Nitritos') === 'Positivo' ? 1 : (getMeasurement(measurements, 'urinalysis', 'Nitritos') === 'Negativo' ? 0 : -1);
-  const uACR = parseFloat(getMeasurement(measurements, 'urinalysis', 'Albumina / uACR') || '0');
-  
-  const bristol = getMeasurement(measurements, 'fecal', 'Bristol');
-  const fecalOptic = getMeasurement(measurements, 'fecal', 'Caracterização Óptica') || '';
-  const sleepH = getSleepHours(ecosystemFacts);
-  
-  const f2iso = parseFloat(getMeasurement(measurements, 'oxidative', 'F2-isoprostanos') || '0');
-  const ngal = parseFloat(getMeasurement(measurements, 'kidney', 'NGAL') || '0');
-  const kim1 = parseFloat(getMeasurement(measurements, 'kidney', 'KIM-1') || '0');
-  const cistatina = parseFloat(getMeasurement(measurements, 'kidney', 'Cistatina C Urinária') || '0');
+  // Fisiológicos
+  let hr = 0, hrv = 0, temp = 0, spo2 = 0;
+  if (aiConfig.physiology !== false) {
+    hr = parseFloat(getMeasurement(measurements, 'ecg', 'Frequência cardíaca') || getMeasurement(measurements, 'ecg', 'Ritmo Cardíaco') || '0');
+    const hrvStr = getMeasurement(measurements, 'ppg', 'HRV Estimada');
+    const recFact = ecosystemFacts.find(f => f.type === 'Recuperação');
+    hrv = parseFloat(hrvStr || (recFact ? String(recFact.value) : '0'));
+    temp = parseFloat(getMeasurement(measurements, 'temp', 'Temperatura') || '0');
+    spo2 = parseFloat(getMeasurement(measurements, 'ppg', 'SpO2') || getMeasurement(measurements, 'ppg', 'Saturação de oxigénio') || '0');
+    if (hr || hrv || temp || spo2) sourcePolicy.physiological = "used";
+  }
+
+  // Urina
+  let gravidade = 0, na = 0, k = 0, nakRatio = 0, creatinina = 0, ph = 0, glicose = -1, nitritos = -1, uACR = 0, f2iso = 0, ngal = 0, kim1 = 0, cistatina = 0;
+  if (aiConfig.urinalysis !== false) {
+    gravidade = parseFloat(getMeasurement(measurements, 'urinalysis', 'Densidade Urinária') || getMeasurement(measurements, 'urinalysis', 'Gravidade Específica') || '0');
+    na = parseFloat(getMeasurement(measurements, 'urinalysis', 'Sódio Urinário') || '0');
+    k = parseFloat(getMeasurement(measurements, 'urinalysis', 'Potássio Urinário') || '0');
+    nakRatio = parseFloat(getMeasurement(measurements, 'urinalysis', 'Rácio Na/K') || '0');
+    creatinina = parseFloat(getMeasurement(measurements, 'urinalysis', 'Creatinina Urinária') || '0');
+    ph = parseFloat(getMeasurement(measurements, 'urinalysis', 'pH Urinário') || '0');
+    glicose = getMeasurement(measurements, 'urinalysis', 'Glicose') === 'Positivo' ? 1 : (getMeasurement(measurements, 'urinalysis', 'Glicose') === 'Negativo' ? 0 : -1);
+    nitritos = getMeasurement(measurements, 'urinalysis', 'Nitritos') === 'Positivo' ? 1 : (getMeasurement(measurements, 'urinalysis', 'Nitritos') === 'Negativo' ? 0 : -1);
+    uACR = parseFloat(getMeasurement(measurements, 'urinalysis', 'Albumina / uACR') || '0');
+    f2iso = parseFloat(getMeasurement(measurements, 'oxidative', 'F2-isoprostanos') || '0');
+    ngal = parseFloat(getMeasurement(measurements, 'kidney', 'NGAL') || '0');
+    kim1 = parseFloat(getMeasurement(measurements, 'kidney', 'KIM-1') || '0');
+    cistatina = parseFloat(getMeasurement(measurements, 'kidney', 'Cistatina C Urinária') || '0');
+    
+    if (gravidade || na || ph || f2iso || cistatina) sourcePolicy.urine = "used";
+  }
+
+  // Fezes
+  let bristol: string | number = '';
+  let fecalOptic = '';
+  if (aiConfig.stool !== false) {
+    bristol = getMeasurement(measurements, 'fecal', 'Bristol');
+    fecalOptic = getMeasurement(measurements, 'fecal', 'Caracterização Óptica') || '';
+    if (bristol || fecalOptic) sourcePolicy.feces = "used";
+  }
+
+  // Contexto
+  let sleepH = 0;
+  if (aiConfig.context !== false) {
+    sleepH = getSleepHours(ecosystemFacts);
+    if (sleepH > 0) sourcePolicy.context = "used";
+  }
 
   // --- 2. Função Base de Weighted Score ---
-  function computeDimensionScore(factors: { val: number | string; weight: number; evaluate: (v: any) => number }[]) {
+  function computeDimensionScore(factors: { val: number | string; weight: number; evaluate: (v: any) => number; label?: string }[], requiredSource?: "used" | "missing" | "excluded_by_user") {
+    if (requiredSource === "excluded_by_user") {
+      return { score: null, confidence: 'insufficient' as const, drivers: [] };
+    }
+    
     let weightSum = 0;
     let scoreSum = 0;
+    const usedDrivers: DimensionDriver[] = [];
+    
     factors.forEach(f => {
       if (f.val !== '0' && f.val !== 0 && f.val !== -1 && f.val !== '') {
         const itemScore = f.evaluate(f.val);
         scoreSum += itemScore * f.weight;
         weightSum += f.weight;
+        if (f.label) {
+           usedDrivers.push({
+             label: f.label,
+             value: f.val,
+             direction: itemScore >= 80 ? 'positive' : 'negative',
+             impact: f.weight >= 20 ? 'high' : 'medium',
+             explanation: `Contabilizado no cálculo.`
+           });
+        }
       }
     });
-    if (weightSum === 0) return { score: null, confidence: 'insufficient' as const };
+    
+    if (weightSum === 0) return { score: null, confidence: 'insufficient' as const, drivers: [] };
+    
     const finalScore = Math.round(scoreSum / weightSum);
     const maxWeight = factors.reduce((acc, f) => acc + f.weight, 0);
     const ratio = weightSum / maxWeight;
@@ -180,305 +249,116 @@ export function computeAIReadingFromData(
     else if (ratio >= 0.2) confidence = 'low';
     else confidence = 'insufficient';
     
-    return { score: finalScore, confidence };
+    return { score: finalScore, confidence, drivers: usedDrivers };
   }
 
-  // Helper para Bristol (1-7) -> score 0-100 (3-4 é bom, extremos são maus)
   const evalBristol = (v: any) => {
     const num = parseInt(v.toString().replace(/\D/g, ''));
     if (num === 3 || num === 4) return 100;
     if (num === 2 || num === 5) return 60;
-    return 20; // 1, 6, 7
+    return 20; 
   };
 
-  // --- 3. Calcular Dimensões ---
+  // --- 3. Calcular as 8 Dimensões Canónicas ---
 
-  // D2. Recuperação & Carga
-  const recScore = computeDimensionScore([
-    { val: f2iso, weight: 25, evaluate: v => score01(v, 2.5, 0.5) }, // Baixo é bom
-    { val: hr, weight: 20, evaluate: v => (v >= 50 && v <= 75 ? 100 : score01(v, 100, 75)) },
-    { val: temp, weight: 15, evaluate: v => (v >= 36.1 && v <= 37.2 ? 100 : score01(v, 38, 37.2)) },
-    { val: ngal, weight: 10, evaluate: v => score01(v, 30, 10) },
-    { val: sleepH, weight: 10, evaluate: v => score01(v, 4, 8) }
+  const recRes = computeDimensionScore([
+    { label: 'F2-isoprostanos', val: f2iso, weight: 25, evaluate: v => score01(v, 2.5, 0.5) },
+    { label: 'Frequência Cardíaca', val: hr, weight: 20, evaluate: v => (v >= 50 && v <= 75 ? 100 : score01(v, 100, 75)) },
+    { label: 'Temperatura', val: temp, weight: 15, evaluate: v => (v >= 36.1 && v <= 37.2 ? 100 : score01(v, 38, 37.2)) },
+    { label: 'Sono (horas)', val: sleepH, weight: 10, evaluate: v => score01(v, 4, 8) }
   ]);
 
-  // D3. Equilíbrio Interno
-  const eqScore = computeDimensionScore([
-    { val: gravidade, weight: 30, evaluate: v => score01(v, 1.030, 1.010) },
-    { val: nakRatio, weight: 20, evaluate: v => score01(v, 3.5, 1.0) },
-    { val: na, weight: 15, evaluate: v => score01(v, 150, 70) },
-    { val: creatinina, weight: 10, evaluate: v => score01(v, 250, 80) },
-    { val: bristol, weight: 10, evaluate: evalBristol },
-    { val: ph, weight: 5, evaluate: v => (v >= 5.5 && v <= 7.5 ? 100 : 50) }
+  const eqRes = computeDimensionScore([
+    { label: 'Densidade Urinária', val: gravidade, weight: 30, evaluate: v => score01(v, 1.030, 1.010) },
+    { label: 'Rácio Na/K', val: nakRatio, weight: 20, evaluate: v => score01(v, 3.5, 1.0) },
+    { label: 'Sódio', val: na, weight: 15, evaluate: v => score01(v, 150, 70) },
+    { label: 'pH', val: ph, weight: 5, evaluate: v => (v >= 5.5 && v <= 7.5 ? 100 : 50) }
+  ], sourcePolicy.urine);
+
+  const metRes = computeDimensionScore([
+    { label: 'Glicose', val: glicose === 1 ? 1 : 0, weight: 20, evaluate: v => v === 1 ? 20 : 100 },
+    { label: 'pH', val: ph, weight: 10, evaluate: v => (v >= 5.5 && v <= 7.5 ? 100 : 50) },
+    { label: 'Sono (horas)', val: sleepH, weight: 10, evaluate: v => score01(v, 4, 8) }
   ]);
 
-  // D4. Ritmo Metabólico
-  const metScore = computeDimensionScore([
-    { val: glicose === 1 ? 1 : 0, weight: 20, evaluate: v => v === 1 ? 20 : 100 },
-    { val: ph, weight: 10, evaluate: v => (v >= 5.5 && v <= 7.5 ? 100 : 50) },
-    { val: nakRatio, weight: 15, evaluate: v => score01(v, 3.5, 1.0) },
-    { val: bristol, weight: 10, evaluate: evalBristol },
-    { val: sleepH, weight: 10, evaluate: v => score01(v, 4, 8) }
+  const digRes = computeDimensionScore([
+    { label: 'Escala de Bristol', val: bristol, weight: 40, evaluate: evalBristol },
+    { label: 'Óptica', val: fecalOptic ? 1 : 0, weight: 20, evaluate: v => v === 1 && !fecalOptic.includes('seca') ? 100 : 50 }
+  ], sourcePolicy.feces);
+
+  const nutRes = computeDimensionScore([
+    { label: 'Rácio Na/K', val: nakRatio, weight: 25, evaluate: v => score01(v, 3.5, 1.0) },
+    { label: 'Densidade Urinária', val: gravidade, weight: 10, evaluate: v => score01(v, 1.030, 1.010) },
+    { label: 'Escala de Bristol', val: bristol, weight: 20, evaluate: evalBristol }
   ]);
 
-  // D5. Conforto Digestivo
-  const digScore = computeDimensionScore([
-    { val: bristol, weight: 40, evaluate: evalBristol },
-    { val: fecalOptic ? 1 : 0, weight: 20, evaluate: v => v === 1 && !fecalOptic.includes('seca') ? 100 : 50 }
+  const vitRes = computeDimensionScore([
+    { label: 'uACR', val: uACR, weight: 25, evaluate: v => score01(v, 30, 5) },
+    { label: 'Cistatina', val: cistatina, weight: 12, evaluate: v => score01(v, 0.15, 0.05) },
+    { label: 'KIM-1', val: kim1, weight: 12, evaluate: v => score01(v, 1.5, 0.5) }
   ]);
 
-  // D6. Ajustes Alimentares
-  const nutScore = computeDimensionScore([
-    { val: nakRatio, weight: 25, evaluate: v => score01(v, 3.5, 1.0) },
-    { val: bristol, weight: 20, evaluate: evalBristol },
-    { val: gravidade, weight: 10, evaluate: v => score01(v, 1.030, 1.010) },
-    { val: glicose === 1 ? 1 : 0, weight: 10, evaluate: v => v === 1 ? 20 : 100 }
+  const physLoadRes = computeDimensionScore([
+    { label: 'Frequência Cardíaca', val: hr, weight: 30, evaluate: v => (v >= 50 && v <= 80 ? 100 : score01(v, 110, 80)) },
+    { label: 'HRV', val: hrv, weight: 30, evaluate: v => (v >= 40 ? 100 : score01(v, 10, 40)) },
+    { label: 'SpO2', val: spo2, weight: 20, evaluate: v => (v >= 95 ? 100 : score01(v, 90, 95)) }
+  ], sourcePolicy.physiological);
+
+  const energyRes = computeDimensionScore([
+    { label: 'FC Otimizada', val: hr ? 1 : 0, weight: 25, evaluate: () => hr >= 50 && hr <= 80 ? 100 : 60 },
+    { label: 'Recuperação Base', val: recRes.score || 0, weight: 25, evaluate: v => v },
+    { label: 'Equilíbrio', val: eqRes.score || 0, weight: 20, evaluate: v => v }
   ]);
 
-  // D8. Juvenialidade
-  const rotScore = computeDimensionScore([
-    { val: uACR, weight: 25, evaluate: v => score01(v, 30, 5) },
-    { val: creatinina, weight: 10, evaluate: v => score01(v, 250, 80) },
-    { val: cistatina, weight: 12, evaluate: v => score01(v, 0.15, 0.05) },
-    { val: ngal, weight: 12, evaluate: v => score01(v, 30, 10) },
-    { val: kim1, weight: 12, evaluate: v => score01(v, 1.5, 0.5) },
-    { val: nitritos === 1 ? 1 : 0, weight: 10, evaluate: v => v === 1 ? 20 : 100 }
-  ]);
+  const genHolistic = (id: string, title: string, color: string, res: {score: number|null, confidence: any, drivers: DimensionDriver[]}, missingOrExcludedSource?: "used" | "missing" | "excluded_by_user", excludedSourceLabel?: string): HolisticDimension => {
+    let finalConfidence = res.confidence;
+    let limitWarning = '';
+    
+    if (missingOrExcludedSource === "excluded_by_user") {
+       finalConfidence = 'insufficient';
+       limitWarning = `Os dados de ${excludedSourceLabel} não foram considerados por estarem desativados nas Configurações.`;
+    }
 
-  // D7. Carga Fisiológica
-  const physLoadScore = computeDimensionScore([
-    { val: hr, weight: 30, evaluate: v => (v >= 50 && v <= 80 ? 100 : score01(v, 110, 80)) },
-    { val: hrv, weight: 30, evaluate: v => (v >= 40 ? 100 : score01(v, 10, 40)) },
-    { val: temp, weight: 20, evaluate: v => (v >= 36.1 && v <= 37.3 ? 100 : score01(v, 38.5, 37.3)) },
-    { val: spo2, weight: 20, evaluate: v => (v >= 95 ? 100 : score01(v, 90, 95)) }
-  ]);
+    const baseReferences: DimensionReference[] = res.drivers.map(d => ({
+        factor: d.label,
+        observedValue: String(d.value),
+        whyItMatters: `Sinal processado para o cálculo de ${title}.`,
+        influenceOnScore: d.direction === 'positive' ? 'Ajudou a subir a avaliação.' : 'Baixou a avaliação geral.'
+    }));
 
-  // D1. Prontidão de Hoje (Agregador)
-  const readyScore = computeDimensionScore([
-    { val: hr ? 1 : 0, weight: 25, evaluate: () => hr >= 50 && hr <= 80 ? 100 : 60 },
-    { val: recScore.score || 0, weight: 25, evaluate: v => v },
-    { val: eqScore.score || 0, weight: 20, evaluate: v => v },
-    { val: digScore.score || 0, weight: 10, evaluate: v => v },
-    { val: metScore.score || 0, weight: 10, evaluate: v => v }
-  ]);
+    if (limitWarning) {
+       baseReferences.push({
+           factor: `Exclusão: ${excludedSourceLabel}`,
+           whyItMatters: 'Preferência do utilizador.',
+           influenceOnScore: limitWarning
+       });
+    }
 
-  // Helper para Status
-  const getStatus = (score: number | null): HolisticDimension['status'] => {
-    if (score === null) return 'insufficient';
-    if (score >= 70) return 'stable';
-    if (score >= 40) return 'watch';
-    return 'priority';
+    return {
+      id, title, color,
+      score: res.score,
+      confidence: finalConfidence,
+      status: getStatus(res.score),
+      summary: res.score === null 
+        ? 'A aguardar mais dados...' 
+        : `Análise preliminar em estado: ${getStatus(res.score)}.`,
+      topDrivers: res.drivers,
+      recommendations: [],
+      references: baseReferences,
+      limitations: limitWarning ? [limitWarning] : []
+    };
   };
-
-  const genHolistic = (id: string, title: string, color: string, scoreRes: {score: number|null, confidence: any}, summaries: {good:string, warn:string, priority?:string}): HolisticDimension => ({
-    id, title, color,
-    score: scoreRes.score,
-    confidence: scoreRes.confidence,
-    status: getStatus(scoreRes.score),
-    summary: scoreRes.score === null 
-      ? 'Dados insuficientes para avaliar.' 
-      : (scoreRes.score >= 70 ? summaries.good : (scoreRes.score < 40 && summaries.priority ? summaries.priority : summaries.warn)),
-    topDrivers: [],
-    recommendations: [],
-    references: [],
-    limitations: isDemo ? ['demo_data_not_for_real_longitudinal_use'] : []
-  });
 
   const dimensions: HolisticDimension[] = [
-    genHolistic('readiness_today', 'Prontidão de hoje', '#38BDF8', readyScore, {
-      good: 'Sinais gerais sugerem um corpo num estado favorável para funcionar bem, com base na recuperação e estabilidade.',
-      warn: 'A leitura sugere necessidade de repouso ou melhor regulação, possivelmente devido a carga fisiológica ou contexto de stress.'
-    }),
-    genHolistic('recovery_load', 'Recuperação & carga', '#6366F1', recScore, {
-      good: 'A resposta fisiológica sugere que o corpo parece estar a recuperar bem face à carga recente.',
-      warn: 'Os dados apontam para sinais de carga ou esforço. Priorizar descanso antes de aumentar a intensidade.'
-    }),
-    genHolistic('internal_balance', 'Equilíbrio interno', '#14B8A6', eqScore, {
-      good: 'O equilíbrio de fluidos e minerais parece estável e funcional nesta sessão.',
-      warn: 'Leitura sugere maior concentração urinária ou desequilíbrio no perfil fluido-mineral.'
-    }),
-    genHolistic('metabolic_rhythm', 'Ritmo metabólico', '#22C55E', metScore, {
-      good: 'Os sinais disponíveis apoiam energia estável e um contexto metabólico regular.',
-      warn: 'Há sinais que justificam pequenos ajustes na rotina alimentar ou hidratação para manter o ritmo.'
-    }),
-    genHolistic('digestive_comfort', 'Conforto digestivo', '#D97706', digScore, {
-      good: 'O trânsito e conforto intestinal parecem equilibrados, favorecendo absorção regular.',
-      warn: 'Os sinais sugerem um desvio do padrão ótimo intestinal, possivelmente indicando necessidade de hidratação e fibra.'
-    }),
-    genHolistic('food_adjustments', 'Ajustes alimentares', '#F59E0B', nutScore, {
-      good: 'Os biomarcadores suportam a atual rotina alimentar. Manter consistência.',
-      warn: 'Os dados apontam para possível benefício em ajustar a ingestão de certos minerais ou líquidos.'
-    }),
-    genHolistic('physiological_load', 'Carga fisiológica', '#EAB308', physLoadScore, {
-      good: 'Os sinais vitais e de perfusão apontam para um estado de repouso ou exigência mínima.',
-      warn: 'Os indicadores sugerem um nível elevado de exigência ou tensão fisiológica no momento.'
-    }),
-    genHolistic('routine_signals', 'Juvenialidade', '#8B5CF6', rotScore, {
-      good: 'Os sinais longitudinais desta leitura sugerem estabilidade geral dos padrões acompanhados. A Juvenialidade é mais informativa quando comparada com leituras anteriores.',
-      warn: 'Alguns sinais merecem acompanhamento ao longo das próximas leituras. A Juvenialidade depende da repetição dos dados para distinguir variação pontual de tendência.',
-      priority: 'Esta leitura sugere que alguns padrões longitudinais merecem atenção. O valor da Juvenialidade está em confirmar se estes sinais se repetem ou regressam ao padrão habitual.'
-    })
+    genHolistic('energy', 'Energia', '#38BDF8', energyRes),
+    genHolistic('recovery', 'Recuperação', '#6366F1', recRes),
+    genHolistic('internal_balance', 'Equilíbrio interno', '#14B8A6', eqRes, sourcePolicy.urine, "Urina"),
+    genHolistic('metabolic_rhythm', 'Ritmo metabólico', '#22C55E', metRes),
+    genHolistic('intestinal_state', 'Estado intestinal', '#D97706', digRes, sourcePolicy.feces, "Fezes"),
+    genHolistic('food_adjustments', 'Ajustes alimentares', '#F59E0B', nutRes),
+    genHolistic('physiological_load', 'Carga fisiológica', '#EAB308', physLoadRes, sourcePolicy.physiological, "Fisiológicos"),
+    genHolistic('vitality', 'Vitalidade', '#8B5CF6', vitRes)
   ];
-
-  // Adicionar Drivers & Recomendações
-  // Exemplo para Internal Balance
-  const eqDim = dimensions.find(d => d.id === 'internal_balance');
-  if (eqDim && eqScore.score !== null) {
-    if (gravidade > 1.025) {
-      eqDim.topDrivers.push({ label: 'Densidade Urinária', value: gravidade, direction: 'negative', impact: 'high', explanation: 'Sugere urina mais concentrada.' });
-      eqDim.recommendations.push({ text: 'Distribuir água ao longo do dia.', reason: 'Urina concentrada.', type: 'hydration', priority: 'high' });
-      eqDim.references.push({ factor: 'Densidade Urinária', observedValue: String(gravidade), whyItMatters: 'Ajuda a avaliar hidratação.', influenceOnScore: 'Reduziu o score.' });
-    } else {
-      eqDim.topDrivers.push({ label: 'Densidade Urinária', value: gravidade, direction: 'positive', impact: 'high', explanation: 'Estável.' });
-    }
-  }
-
-  // ── R5D: NUTRIENT PRIORITIES (MEAL PLANNER FEED) ──
-  const nutrientPriorities: NutrientPriority[] = [];
-  const addNutrient = (n: Partial<NutrientPriority>) => {
-    nutrientPriorities.push({
-      id: Math.random().toString(36).substring(7),
-      nutrient: n.nutrient || '',
-      label: n.label || n.nutrient || '',
-      priority: n.priority || 'medium',
-      confidence: n.confidence || 'medium',
-      reason: n.reason || '',
-      linkedDimensions: n.linkedDimensions || [],
-      linkedDrivers: n.linkedDrivers || [],
-      foodFamilies: n.foodFamilies || [],
-      exampleFoods: n.exampleFoods || [],
-      avoidOrLimit: n.avoidOrLimit || [],
-      timeframe: n.timeframe || 'today',
-      actionType: n.actionType || 'favor',
-      isMedicalDeficiency: false,
-      sourceOrigin: isDemo ? 'demo' : 'real',
-      caution: n.caution
-    });
-  };
-
-  const isLow = (s: {score: number|null}) => s.score !== null && s.score < 60;
-  
-  if (isLow(eqScore)) {
-    if (gravidade > 1.025) {
-      addNutrient({
-        nutrient: "Água/alimentos ricos em água",
-        label: "Hidratação",
-        priority: "high",
-        reason: "Sinais de concentração elevada detectados.",
-        linkedDimensions: ['internal_balance'],
-        linkedDrivers: ['Densidade Urinária'],
-        foodFamilies: ['Hortícolas', 'Fruta rica em água'],
-        exampleFoods: ['Melancia', 'Pepino', 'Courgette', 'Sopas claras']
-      });
-    }
-    if (nakRatio > 2.0 || na > 120) {
-      addNutrient({
-        nutrient: "Potássio alimentar",
-        priority: "high",
-        reason: "Rácio Na/K desequilibrado ou sódio elevado.",
-        linkedDimensions: ['internal_balance'],
-        linkedDrivers: ['Rácio Na/K'],
-        foodFamilies: ['Leguminosas', 'Hortícolas', 'Fruta'],
-        exampleFoods: ['Batata', 'Banana', 'Espinafres', 'Feijão'],
-        actionType: 'balance'
-      });
-      addNutrient({
-        nutrient: "Redução de sódio",
-        priority: "high",
-        reason: "Sinais de ingestão ou retenção de sódio.",
-        linkedDimensions: ['internal_balance'],
-        linkedDrivers: ['Sódio', 'Rácio Na/K'],
-        avoidOrLimit: ['Refeições muito salgadas', 'Ultraprocessados', 'Enchidos'],
-        actionType: 'reduce',
-        timeframe: 'next_24_72h'
-      });
-    }
-  }
-
-  if (isLow(recScore)) {
-    addNutrient({
-      nutrient: "Proteína de boa qualidade",
-      priority: "medium",
-      reason: "Sinais de fadiga ou carga metabólica alta.",
-      linkedDimensions: ['recovery_load'],
-      foodFamilies: ['Carnes brancas', 'Ovos', 'Peixe', 'Tofu'],
-      exampleFoods: ['Peixe grelhado', 'Ovo cozido', 'Frango'],
-    });
-    addNutrient({
-      nutrient: "Magnésio alimentar",
-      priority: "medium",
-      reason: "Apoio à recuperação fisiológica e muscular.",
-      linkedDimensions: ['recovery_load'],
-      foodFamilies: ['Sementes', 'Frutos secos', 'Folhas verdes escuro'],
-      exampleFoods: ['Amêndoas', 'Sementes de abóbora', 'Espinafres'],
-    });
-    addNutrient({
-      nutrient: "Antioxidantes alimentares",
-      priority: "medium",
-      reason: "Possível stress fisiológico elevado.",
-      linkedDimensions: ['recovery_load'],
-      foodFamilies: ['Frutos vermelhos', 'Cítricos', 'Especiarias'],
-      exampleFoods: ['Mirtilos', 'Açafrão', 'Kiwi'],
-    });
-  }
-
-  if (isLow(digScore) || (Number(bristol) >= 1 && Number(bristol) <= 2)) {
-    addNutrient({
-      nutrient: "Fibra",
-      priority: "high",
-      reason: "Sinais de trânsito lento ou secura.",
-      linkedDimensions: ['digestive_comfort'],
-      linkedDrivers: ['Escala de Bristol'],
-      foodFamilies: ['Hortícolas', 'Leguminosas', 'Cereais integrais'],
-      exampleFoods: ['Aveia', 'Feijão', 'Maçã com casca', 'Kiwi'],
-    });
-    addNutrient({
-      nutrient: "Água/alimentos ricos em água",
-      label: "Hidratação",
-      priority: "high",
-      reason: "Sinergia com a fibra para conforto digestivo.",
-      linkedDimensions: ['digestive_comfort'],
-      foodFamilies: ['Sopas', 'Fruta fresca'],
-      exampleFoods: ['Sopa de legumes', 'Laranja'],
-    });
-  }
-
-  if (isLow(metScore)) {
-    addNutrient({
-      nutrient: "Hidratos complexos",
-      priority: "medium",
-      reason: "Regulação da energia prática e ritmo glicémico.",
-      linkedDimensions: ['metabolic_rhythm'],
-      foodFamilies: ['Tubérculos', 'Cereais integrais'],
-      exampleFoods: ['Batata doce', 'Arroz integral', 'Quinoa'],
-      actionType: 'balance'
-    });
-  }
-
-  if (nutrientPriorities.length === 0 && readyScore.score && readyScore.score >= 70) {
-     addNutrient({
-        nutrient: "Regularidade alimentar",
-        priority: "low",
-        reason: "Sinais coerentes de recuperação e equilíbrio. Manter as bases.",
-        linkedDimensions: ['readiness_today'],
-        foodFamilies: ['Alimentos inteiros'],
-        exampleFoods: ['Refeições equilibradas com vegetais, proteína e fibra'],
-        actionType: 'monitor'
-     });
-  }
-
-  // Inject into Food Adjustments dimension directly for summary UI fallback
-  const foodDim = dimensions.find(d => d.id === 'food_adjustments');
-  if (foodDim) {
-      nutrientPriorities.forEach(n => {
-         foodDim.recommendations.push({
-            text: n.actionType === 'reduce' ? `Limitar: ${n.nutrient}` : `Favorecer: ${n.nutrient} (ex: ${n.exampleFoods.join(', ')})`,
-            reason: n.reason,
-            type: 'food',
-            priority: n.priority
-         });
-      });
-  }
 
   // Determinar Próximo Foco
   let nextFocusDimension: HolisticDimension | null = null;
@@ -496,11 +376,19 @@ export function computeAIReadingFromData(
     color: nextFocusDimension.color
   } : undefined;
 
+  // R5D Nutrient Priorities Fallback (simplified for engine build)
+  const nutrientPriorities: NutrientPriority[] = [];
+  if (gravidade > 1.025 && sourcePolicy.urine !== "excluded_by_user") {
+    nutrientPriorities.push({
+      id: "np1", nutrient: "Água", label: "Hidratação", priority: "high", confidence: "high", reason: "Sinais de concentração elevada.",
+      linkedDimensions: ['internal_balance'], linkedDrivers: ['Densidade Urinária'], foodFamilies: ['Sopas', 'Fruta rica em água'], exampleFoods: ['Melancia', 'Pepino'], timeframe: 'today', actionType: 'favor', isMedicalDeficiency: false, sourceOrigin: isDemo ? 'demo' : 'real'
+    });
+  }
 
   return {
     summary: { 
-      title: nextFocusDimension && nextFocusDimension.score! < 60 ? `Atenção: ${nextFocusDimension.title}` : 'Sinais coerentes entre categorias', 
-      text: 'Resumo holístico.', 
+      title: 'Leitura Pronta', 
+      text: 'Resumo pendente OpenAI.', 
       confidence: 0.85, 
       mode: isDemo ? 'simulation' : 'real' 
     },
@@ -511,59 +399,45 @@ export function computeAIReadingFromData(
 }
 
 export function buildAiReadingLLMContextV2(reading: AIReading, isDemo: boolean): AiReadingLLMContextV2 {
-  return {
+  // Config check: Re-compute missing vs excluded based on the generated limitations
+  const sourcePolicy: AiReadingInputSourcePolicy = {
+     urine: reading.dimensions.find(d => d.id === 'internal_balance')?.limitations.some(l => l.includes('desativados')) ? 'excluded_by_user' : 'used',
+     feces: reading.dimensions.find(d => d.id === 'intestinal_state')?.limitations.some(l => l.includes('desativados')) ? 'excluded_by_user' : 'used',
+     physiological: reading.dimensions.find(d => d.id === 'physiological_load')?.limitations.some(l => l.includes('desativados')) ? 'excluded_by_user' : 'used',
+     context: 'used',
+     miniapps: 'used'
+  };
+
+  const aiReadingInput = {
     sourceOrigin: isDemo ? 'demo' : 'real',
     isDemo,
     analysisDate: new Date().toISOString(),
-    activeObjectives: [],
-    visibleDimensions: reading.dimensions,
-    internalScores: reading.dimensions.reduce((acc, d) => ({ ...acc, [d.id]: d.score }), {}),
-    topGlobalDrivers: [],
-    dataQuality: 'medium',
-    missingData: [],
-    historySummary: '',
+    sourcePolicy,
+    dimensions: reading.dimensions.reduce((acc, d) => ({ 
+       ...acc, 
+       [d.id]: {
+         score: d.score,
+         status: d.status,
+         confidence: d.confidence,
+         drivers: d.topDrivers,
+         references: d.references,
+         limitations: d.limitations
+       }
+    }), {}),
+    history: {
+      available: false,
+      readingsCount: 1, // Fallback, would be injected by parent
+      baselineAvailable: false,
+      limitations: ['O utilizador não tem histórico suficiente. As dimensões de Vitalidade e Recuperação devem ser vistas de forma pontual e muito prudente.']
+    },
     safetyRules: ['No clinical diagnosis', 'Use Portuguese', 'No medical supplement claims as first-line'],
-    language: 'pt-PT',
+    language: 'pt-PT' as const,
     nextFocus: reading.nextFocus,
-    attentionDimension: reading.nextFocus?.dimensionId,
-    auraColor: reading.nextFocus?.color,
-    cached: false,
-    promptVersion: '2.0.0',
-    contractVersion: '2.0.0',
-    nutrientPriorities: reading.nutrientPriorities || []
+    nutrientPriorities: reading.nutrientPriorities || [],
+    measurementsCount: reading.dimensions.reduce((acc, d) => acc + d.topDrivers.length, 0)
   };
-}
 
-// ── MEAL PLANNER INTEGRATION ──
-export type MealPlannerNutritionContext = {
-  source: "ablute_ai_reading";
-  readingId?: string;
-  generatedAt: string;
-  nutrientPriorities: NutrientPriority[];
-  preferredFoodFamilies: string[];
-  avoidOrLimit: string[];
-  mealPlanningGoals: string[];
-  confidence: "low" | "medium" | "high";
-  sourceOrigin: "real" | "demo" | "snapshot";
-  excludeFromRealPlanning?: boolean;
-};
+  console.log('[AI_READING_INPUT_DEBUG]', JSON.stringify(aiReadingInput, null, 2));
 
-export function buildMealPlannerNutritionContext(reading: AIReading): MealPlannerNutritionContext {
-  const isDemo = reading.summary.mode === 'simulation';
-  const priorities = reading.nutrientPriorities || [];
-  
-  const preferredFoodFamilies = Array.from(new Set(priorities.flatMap(p => p.foodFamilies)));
-  const avoidOrLimit = Array.from(new Set(priorities.flatMap(p => p.avoidOrLimit || [])));
-
-  return {
-    source: "ablute_ai_reading",
-    generatedAt: new Date().toISOString(),
-    nutrientPriorities: priorities,
-    preferredFoodFamilies,
-    avoidOrLimit,
-    mealPlanningGoals: priorities.map(p => p.reason),
-    confidence: "medium",
-    sourceOrigin: isDemo ? "demo" : "real",
-    excludeFromRealPlanning: isDemo
-  };
+  return aiReadingInput;
 }

@@ -24,12 +24,12 @@ const buildAnalysisValuesHash = (analysis: Analysis | null | undefined) => {
 const ENABLE_OPENAI_READING = true;
 
 const DIMENSION_INFO: Record<string, { title: string, description: string }> = {
-  readiness_today: {
-    title: 'Prontidão de hoje',
+  energy: {
+    title: 'Energia',
     description: 'Avalia se os sinais disponíveis apontam para energia, estabilidade e capacidade prática para o dia. Pode cruzar recuperação, sinais vitais, sono/contexto e equilíbrio geral. Serve para orientar intensidade, rotina e exigência diária.'
   },
-  recovery_load: {
-    title: 'Recuperação & carga',
+  recovery: {
+    title: 'Recuperação',
     description: 'Avalia como o corpo parece estar a responder à carga recente. Pode considerar frequência cardíaca, temperatura, sinais de stress oxidativo, fadiga/contexto e recuperação. Serve para decidir se faz sentido manter, aliviar ou recuperar melhor.'
   },
   internal_balance: {
@@ -40,8 +40,8 @@ const DIMENSION_INFO: Record<string, { title: string, description: string }> = {
     title: 'Ritmo metabólico',
     description: 'Avalia estabilidade energética e regularidade metabólica prática. Pode cruzar peso, impedância, glicose quando existir, rotina alimentar e sinais fisiológicos. Serve para perceber se o corpo parece estar a funcionar de forma estável ao longo do dia.'
   },
-  digestive_comfort: {
-    title: 'Conforto digestivo',
+  intestinal_state: {
+    title: 'Estado intestinal',
     description: 'Avalia sinais associados ao trânsito intestinal e conforto digestivo. Pode considerar Bristol, consistência, forma, secura, fragmentação e sinais visuais não clínicos. Serve para orientar fibra, água, rotina alimentar e observação de padrões.'
   },
   food_adjustments: {
@@ -52,8 +52,8 @@ const DIMENSION_INFO: Record<string, { title: string, description: string }> = {
     title: 'Carga fisiológica',
     description: 'Avalia sinais de tensão ou exigência corporal no momento da leitura. Pode considerar frequência cardíaca, temperatura, saturação, ECG/PPG, impedância, peso/contexto corporal e desvios face ao padrão habitual. Serve para perceber se o corpo está calmo e estável ou se há sinais de maior exigência, fadiga ou stress fisiológico.'
   },
-  routine_signals: {
-    title: 'Juvenialidade',
+  vitality: {
+    title: 'Vitalidade',
     description: 'Acompanha sinais de vitalidade e continuidade que ganham valor quando observados ao longo do tempo. Pode integrar biomarcadores experimentais e histórico longitudinal de análises do perfil, ajudando a perceber tendências, repetição de padrões e estabilidade geral. Não mede rejuvenescimento clínico nem idade biológica.'
   }
 };
@@ -63,14 +63,14 @@ type ReadingSource = 'local' | 'openai' | 'fallback';
 const DimensionGridCard = ({ dimension, isSelected, isFocus, isLowestScore, onPress, onInfoPress }: { dimension: HolisticDimension, isSelected: boolean, isFocus?: boolean, isLowestScore?: boolean, onPress: () => void, onInfoPress: () => void }) => {
   const getDimensionIcon = (id: string) => {
     switch(id) {
-      case 'readiness_today': return Zap;
-      case 'recovery_load': return Moon;
-      case 'internal_balance': return Droplets; // Update internal balance to Droplets like in HomeScreen
+      case 'energy': return Zap;
+      case 'recovery': return Moon;
+      case 'internal_balance': return Scale;
       case 'metabolic_rhythm': return Flame;
-      case 'digestive_comfort': return Leaf;
+      case 'intestinal_state': return Leaf;
       case 'food_adjustments': return Utensils;
       case 'physiological_load': return Activity;
-      case 'routine_signals': return Target;
+      case 'vitality': return Target;
       case 'next_focus': return Focus;
       default: return Info;
     }
@@ -305,9 +305,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
   }, [selectedHistoryId, historyReadings]);
 
   const reading: AIReading = selectedHistoryReading ?? aiReading ?? localReading;
-  const dimensions = (reading.dimensions || []).map(d => 
-    d.title === 'Sinais de rotina' ? { ...d, title: 'Juvenialidade' } : d
-  );
+  const dimensions = reading.dimensions || [];
 
   const lowestScoreDimId = useMemo(() => {
     let lowestId = null;
@@ -323,14 +321,14 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
 
   const getDimensionIcon = (id: string) => {
     switch(id) {
-      case 'readiness_today': return Zap;
-      case 'recovery_load': return Moon;
-      case 'internal_balance': return Droplets;
-      case 'metabolic_rhythm': return Heart;
-      case 'digestive_comfort': return Target;
-      case 'food_adjustments': return FlaskConical;
+      case 'energy': return Zap;
+      case 'recovery': return Moon;
+      case 'internal_balance': return Scale;
+      case 'metabolic_rhythm': return Flame;
+      case 'intestinal_state': return Leaf;
+      case 'food_adjustments': return Utensils;
       case 'physiological_load': return Activity;
-      case 'routine_signals': return ShieldAlert;
+      case 'vitality': return Target;
       case 'next_focus': return Focus;
       default: return Info;
     }
@@ -480,7 +478,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
                         <Typography style={[styles.messageTitle, { fontSize: 14 }]} numberOfLines={2}>{selectedDim.title}</Typography>
                         <TouchableOpacity style={{ padding: 4 }} onPress={() => {
-                          const infoKey = selectedDim.id === 'signal_oriented_nutrition' ? 'food_adjustments' : selectedDim.id;
+                          const infoKey = selectedDim.id;
                           const info = DIMENSION_INFO[infoKey];
                           setInfoModalContent({
                             title: info ? info.title : selectedDim.title,
@@ -491,7 +489,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                         </TouchableOpacity>
                       </View>
                       <View style={[styles.statusMiniBadge, { backgroundColor: `${color}15`, alignSelf: 'flex-start', marginBottom: 4 }]}>
-                        <Typography style={[styles.statusMiniText, { color }]}>{selectedDim.status.toUpperCase()}</Typography>
+                        <Typography style={[styles.statusMiniText, { color }]}>{selectedDim.status === 'insufficient' ? 'INSUFICIENTE' : selectedDim.status === 'stable' ? 'ESTÁVEL' : selectedDim.status === 'watch' ? 'ATENÇÃO' : 'PRIORITÁRIO'}</Typography>
                       </View>
                     </View>
                  </View>
@@ -579,7 +577,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                   setSelectedDimId(prev => prev === d.id ? null : d.id);
                 }}
                 onInfoPress={() => {
-                  const infoKey = d.id === 'signal_oriented_nutrition' ? 'food_adjustments' : d.id;
+                  const infoKey = d.id;
                   const info = DIMENSION_INFO[infoKey];
                   setInfoModalContent({
                     title: info ? info.title : d.title,

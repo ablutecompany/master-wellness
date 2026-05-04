@@ -69,29 +69,59 @@ export function normalizeAIReadingResponse(rawOutput: any, localReading: AIReadi
   // Clone localReading to avoid mutating the original
   const merged: AIReading = JSON.parse(JSON.stringify(localReading));
   
-  if (raw.overallNarrative) {
-    merged.summary.text = raw.overallNarrative;
-  }
-  if (raw.shortSummary) {
-    merged.summary.title = raw.shortSummary;
+  // R6.1 Mapping
+  if (raw.summary && typeof raw.summary === 'object') {
+    if (raw.summary.title) merged.summary.title = raw.summary.title;
+    if (raw.summary.body) merged.summary.text = raw.summary.body;
+  } else {
+    // Legacy mapping
+    if (raw.overallNarrative) merged.summary.text = raw.overallNarrative;
+    if (raw.shortSummary) merged.summary.title = raw.shortSummary;
   }
   
   if (Array.isArray(raw.dimensions)) {
     raw.dimensions.forEach((v2Dim: any) => {
       const localDim = merged.dimensions.find(d => d.id === v2Dim.id);
       if (localDim) {
-        if (v2Dim.refinedSummary) localDim.summary = v2Dim.refinedSummary;
+        // R6.1 Mapping
+        if (v2Dim.summary) localDim.summary = v2Dim.summary;
+        if (v2Dim.score !== undefined) localDim.score = v2Dim.score;
+        if (v2Dim.state) localDim.status = v2Dim.state;
         
-        if (Array.isArray(v2Dim.refinedRecommendations) && v2Dim.refinedRecommendations.length > 0) {
+        if (Array.isArray(v2Dim.actions)) {
+          localDim.recommendations = v2Dim.actions.map((act: string) => ({
+            text: act,
+            reason: '',
+            priority: 'medium',
+            type: 'context'
+          }));
+        }
+
+        if (Array.isArray(v2Dim.references)) {
+          localDim.references = v2Dim.references.map((ref: string) => ({
+            factor: ref,
+            observedValue: '',
+            whyItMatters: '',
+            influenceOnScore: ''
+          }));
+        }
+
+        // Apply R6.1 limitations if defined
+        if (v2Dim.limits) {
+           localDim.limitations = [v2Dim.limits];
+        }
+
+        // Legacy V2 Fallbacks
+        if (v2Dim.refinedSummary) localDim.summary = v2Dim.refinedSummary;
+        if (Array.isArray(v2Dim.refinedRecommendations)) {
            localDim.recommendations = v2Dim.refinedRecommendations.map((r: any) => ({
              text: r.text || '',
              reason: r.reason || '',
              priority: r.priority || 'medium',
-             type: 'context' // Default type since V2 doesn't provide it
+             type: 'context'
            }));
         }
-        
-        if (Array.isArray(v2Dim.refinedReferences) && v2Dim.refinedReferences.length > 0) {
+        if (Array.isArray(v2Dim.refinedReferences)) {
            localDim.references = v2Dim.refinedReferences.map((r: any) => ({
              factor: r.factor || '',
              observedValue: r.observedValue,
@@ -104,14 +134,15 @@ export function normalizeAIReadingResponse(rawOutput: any, localReading: AIReadi
     });
   }
 
-  // Update Próximo Foco summary if nextFocusText is present
+  // Update Próximo Foco summary
   const focusDim = merged.dimensions.find(d => d.id === 'next_focus');
-  if (focusDim && raw.nextFocusText) {
-    focusDim.summary = raw.nextFocusText;
+  if (focusDim) {
+    if (raw.summary?.focusReason) focusDim.summary = raw.summary.focusReason;
+    else if (raw.nextFocusText) focusDim.summary = raw.nextFocusText;
   }
 
   // Apply ensureDimensionTabsContent to all dimensions
-  const nutrientPriorities = raw?.nutrientSuggestions || [];
+  const nutrientPriorities = raw?.nutrientSuggestions || merged.nutrientPriorities || [];
   merged.dimensions.forEach(dim => {
     ensureDimensionTabsContent(dim, nutrientPriorities);
   });
