@@ -153,7 +153,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
-        avatarUrl: user.profile?.avatarUrl || null,
+        avatarUrl: extendedData.avatarUrl || null,
         dateOfBirth: user.dateOfBirth ? (typeof user.dateOfBirth === 'string' ? user.dateOfBirth.split('T')[0] : user.dateOfBirth.toISOString().split('T')[0]) : null,
         dateOfBirthPrecision: user.dateOfBirthPrecision || null,
         sex: user.sex || null,

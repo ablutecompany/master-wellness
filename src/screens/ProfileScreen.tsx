@@ -447,9 +447,11 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
       const dataUrl = `data:image/jpeg;base64,${manipResult.base64}`;
       setTempAvatar(dataUrl);
+      return dataUrl;
     } catch (err: any) {
       console.error('[P0_AVATAR_PROCESSING] fail', err);
       Alert.alert('Erro ao processar', 'Não foi possível preparar esta fotografia. Pode tratar-se de um formato não suportado ou erro de memória. Tente outra imagem.');
+      return null;
     }
   };
 
@@ -487,6 +489,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
   const handleTakeAvatar = async () => {
     if (Platform.OS === 'web') {
+      closeModal();
       setShowWebCameraModal(true);
       return;
     }
@@ -1089,9 +1092,12 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       <WebCameraModal 
         visible={showWebCameraModal} 
         onClose={() => setShowWebCameraModal(false)} 
-        onCapture={(dataUrl) => {
+        onCapture={async (dataUrl) => {
           console.log('[P0_AVATAR_WEB_CAMERA] Frame captured');
-          processAvatarAsset(dataUrl);
+          const finalUrl = await processAvatarAsset(dataUrl);
+          if (finalUrl) {
+            triggerSave({ avatarUrl: finalUrl });
+          }
         }}
       />
     </View>
