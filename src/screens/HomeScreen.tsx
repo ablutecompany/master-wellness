@@ -1960,10 +1960,10 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
          {/* 1. fundo/base escura */}
          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#050A14' }]} />
          
-         {/* 2. vídeo eye.mp4 com opacity 0.5 */}
+         {/* 2. vídeo eye.mp4 com opacity aumentada (0.9) para maior destaque */}
          {Platform.OS === 'web' ? (
            // @ts-ignore
-           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.5, pointerEvents: 'none' }}>
+           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.9, pointerEvents: 'none' }}>
              {/* @ts-ignore */}
              <video 
                src={require('../../assets/eye.mp4')} 
@@ -1978,7 +1978,7 @@ const BioAnalysisOrbitalCore = ({ daysSinceText, glowColor }: { daysSinceText: s
          ) : (
            <Video
               source={require('../../assets/eye.mp4')}
-              style={[StyleSheet.absoluteFillObject, { opacity: 0.5 }]}
+              style={[StyleSheet.absoluteFillObject, { opacity: 0.9 }]}
               resizeMode={ResizeMode.COVER}
               shouldPlay
               isLooping
