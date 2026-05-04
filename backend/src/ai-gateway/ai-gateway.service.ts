@@ -269,14 +269,14 @@ export class AiGatewayService {
       `A resposta deve ser sempre JSON válido, sem markdown, sem texto antes ou depois.`,
       ``,
       `REGRAS OBRIGATÓRIAS:`,
-      `1. SÍNTESE DO MOMENTO: A síntese deve ser específica da leitura. Deve conter: estado geral, foco principal, 1 a 2 drivers reais e orientação prática. Proibido: texto genérico institucional, "Análise de Bem-Estar de [nome]", "exploramos múltiplas dimensões", "cada dimensão fornece uma visão...", "Resumo pendente OpenAI", frases que servem para qualquer pessoa, e dizer que está tudo bem se houver dimensões em Atenção/Prioritário.`,
+      `1. SÍNTESE DO MOMENTO: A síntese deve ser específica da leitura. Deve conter: estado geral, foco principal, 1 a 2 drivers reais e orientação prática. Proibido: texto genérico institucional, "Análise de Bem-Estar de [nome]", "exploramos múltiplas dimensões", "cada dimensão fornece uma visão...", "Resumo pendente OpenAI", frases que servem para qualquer pessoa, e dizer que está tudo bem se houver dimensões em Atenção/Prioritário. Nunca uses a expressão "em um estado" (usa "num estado" - PT-PT puro).`,
       `2. REGRAS POR ESTADO:`,
       `   - Estável: tom tranquilo; reforçar manutenção; não exagerar; não dizer "perfeito".`,
       `   - Atenção: tom prudente; indicar o que merece acompanhamento; sugerir ajuste simples; não alarmar.`,
       `   - Prioritário: indicar prioridade prática; sugerir repetir leitura ou reduzir carga; se persistir, sugerir avaliação profissional; sem diagnóstico.`,
       `   - Insuficiente: explicar que não tem dados suficientes; indicar o que falta; não inventar score nem interpretação forte.`,
       `3. FONTES (sourcePolicy): "used" = pode usar. "missing" = indicar ausência se relevante. "excluded_by_user" = nunca usar dados dessa fonte, reduzir confiança ou explicar limite.`,
-      `4. REFERÊNCIAS: referencesIntro deve ser exatamente "Entre outras, esta avaliação considerou:". references devem ser 1 a 3 linhas compreensíveis (ex: "Densidade urinária: ajudou a avaliar a concentração da urina."). Não repetir "entre outras" em cada referência. Não usar labels crus como fC Otimizada, camelCase, nem jargões como "impacta negativamente".`,
+      `4. REFERÊNCIAS: referencesIntro deve ser exatamente "Entre outras, esta avaliação considerou:". references devem ser 1 a 3 linhas compreensíveis (ex: "Densidade urinária: ajudou a avaliar a concentração da urina."). Não repetir "entre outras" em cada referência. Não usar labels crus como fC Otimizada, camelCase, nem jargões como "impacta negativamente". Proibido usar linguagem demasiado clínica como "desequilíbrios eletrolíticos" (usa termos como "equilíbrio de fluidos" ou "equilíbrio mineral").`,
       `5. AÇÕES: 2 a 4 ações por dimensão, específicas, coerentes com estado, sem diagnóstico, sem suplementação prioritária.`,
       `6. HISTÓRICO/VITALIDADE: Se history.available = false, não inventar tendência e indicar que a leitura é limitada. Vitalidade baixa não é mau; pode ser carga temporária.`,
       `7. DEMO/CONVIDADO: Se isDemo = true, escrever como simulação mas variar conteúdo. Se não houver histórico, confiança mais baixa e explicar que se baseia apenas na sessão.`,
@@ -286,7 +286,7 @@ export class AiGatewayService {
       ``,
       `Contexto estrutural recebido do motor local (JSON) - FONTE DE VERDADE ABSOLUTA:`,
       JSON.stringify(sourcePayload, null, 2),
-    ].join('\\n');
+    ].join('\n');
 
     try {
       this.logger.log(`[R5C6_AI_V2_SERVER] cacheHit=false | sourceSnapshotHash=${hashStr.substring(0,8)} | openaiCalled=true`);
