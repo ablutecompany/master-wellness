@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { StyleSheet, View, TouchableOpacity, ScrollView, Platform, TextInput, SafeAreaView, Switch, Modal, Alert } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, ScrollView, Platform, TextInput, SafeAreaView, Switch, Modal, Alert, Linking } from 'react-native';
 import { Typography, BlurView } from '../components/Base';
 import { theme } from '../theme';
 import { ChevronRight, Globe, Activity, Settings, Shield, Bell, X, Droplet, LayoutGrid, Zap, Brain, Info, Database, Download, Trash2, MapPin, Smartphone, Wifi, Clock, Bug, Terminal, FileJson, AlertTriangle, CheckCircle } from 'lucide-react-native';
@@ -151,8 +151,9 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   };
 
   // Export State
-  const [exportFormat, setExportFormat] = useState('PDF');
+  const [exportFormat, setExportFormat] = useState('TXT');
   const [exportRange, setExportRange] = useState('7d');
+  const [exportDestination, setExportDestination] = useState('download');
   
   // Clear App State
   const [clearConfirmText, setClearConfirmText] = useState('');
@@ -179,17 +180,40 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   };
 
   const handleExport = async () => {
-    // If no history exists, block. (mock check)
-    const analyses = useStore.getState().analyses || [];
+    const allAnalyses = useStore.getState().analyses || [];
+    let analyses = [...allAnalyses];
+    const now = new Date();
+    
+    if (exportRange === '7d') {
+      const limit = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      analyses = analyses.filter((a: any) => new Date(a.createdAt || a.created_at) >= limit);
+    } else if (exportRange === '30d') {
+      const limit = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      analyses = analyses.filter((a: any) => new Date(a.createdAt || a.created_at) >= limit);
+    } else if (exportRange === 'Última análise' || exportRange === 'last') {
+      if (analyses.length > 0) {
+        analyses = [analyses[0]];
+      }
+    }
+
     if (analyses.length === 0) {
-      Alert.alert('Aviso', 'Ainda não existem dados suficientes para exportar. Faça mais análises para criar histórico.');
+      Alert.alert('Aviso', 'Ainda não existem dados suficientes para exportar neste período.');
       return;
     }
 
     try {
-      const fileName = `ablute_export_${Date.now()}`;
+      const activeProfile = availableProfiles.find(p => p.id === selectedProfileId) || user;
+      const fileNameBase = `ablute_export_${new Date().toISOString().split('T')[0]}`;
+      const ext = exportFormat.toLowerCase();
+      const fileName = `${fileNameBase}.${ext}`;
       
+      let content = '';
+      let uri = '';
+      let mimeType = '';
+      let blob: Blob | null = null;
+
       if (exportFormat === 'PDF') {
+        mimeType = 'application/pdf';
         const htmlContent = `
           <html>
             <head>
@@ -204,42 +228,120 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
               <h1>Relatório de Saúde Wellness</h1>
               <div class="meta">
                 <p>Data de exportação: ${new Date().toLocaleString()}</p>
+                <p>Perfil: ${activeProfile?.name || 'Membro'}</p>
                 <p>Total de análises: ${analyses.length}</p>
                 <p>Período selecionado: ${exportRange}</p>
               </div>
               <p>Este documento contém o resumo dos dados de saúde autorizados para exportação.</p>
-              <p><em>(Detalhe das análises em desenvolvimento para a versão final)</em></p>
             </body>
           </html>
         `;
-        const { uri } = await Print.printToFileAsync({ html: htmlContent });
-        const canShare = await Sharing.isAvailableAsync();
-        if (canShare) {
-          await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
-        } else {
-          Alert.alert('Aviso', 'A partilha de ficheiros não está suportada neste dispositivo.');
+        const printRes = await Print.printToFileAsync({ html: htmlContent });
+        uri = printRes.uri;
+        if (Platform.OS === 'web') {
+          const res = await fetch(uri);
+          blob = await res.blob();
         }
       } else {
-        // @ts-ignore
-        const fileUri = FileSystem.cacheDirectory + fileName + (exportFormat === 'TXT' ? '.txt' : '.json');
-        let content = '';
         if (exportFormat === 'TXT') {
-          content = "Relatorio Wellness Ablute\nData: " + new Date().toLocaleString() + "\nAnálises: " + analyses.length;
+          mimeType = 'text/plain';
+          content = `Exportação de Dados Wellness ablute_\nData: ${new Date().toLocaleString()}\nPerfil: ${activeProfile?.name || 'Membro'}\nPeríodo: ${exportRange}\nAnálises: ${analyses.length}\n\n`;
+          analyses.forEach((a: any) => {
+            content += `ID: ${a.id}\nData: ${new Date(a.createdAt || a.created_at).toLocaleString()}\nStatus: ${a.status}\n\n`;
+          });
         } else if (exportFormat === 'JSON') {
-          content = JSON.stringify(analyses, null, 2);
+          mimeType = 'application/json';
+          content = JSON.stringify({
+            metadata: { generatedAt: new Date().toISOString(), profile: activeProfile?.name, range: exportRange, count: analyses.length },
+            analyses
+          }, null, 2);
         }
-        // @ts-ignore
-        await FileSystem.writeAsStringAsync(fileUri, content, { encoding: FileSystem.EncodingType.UTF8 });
         
-        const canShare = await Sharing.isAvailableAsync();
-        if (canShare) {
-          await Sharing.shareAsync(fileUri);
+        if (Platform.OS === 'web') {
+          blob = new Blob([content], { type: mimeType });
+          uri = URL.createObjectURL(blob);
         } else {
-          Alert.alert('Limitação', 'Partilha não suportada neste dispositivo. (Download em desenvolvimento)');
+          // @ts-ignore
+          uri = FileSystem.cacheDirectory + fileName;
+          // @ts-ignore
+          await FileSystem.writeAsStringAsync(uri, content, { encoding: FileSystem.EncodingType.UTF8 });
         }
       }
+
+      // Share Logic
+      const shareWeb = async (text: string) => {
+        if (Platform.OS === 'web' && navigator.canShare && blob) {
+          const file = new File([blob], fileName, { type: mimeType });
+          if (navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({ files: [file], title: 'Exportação Wellness', text });
+              return true;
+            } catch (err) {
+              return false;
+            }
+          }
+        }
+        return false;
+      };
+
+      if (exportDestination === 'download') {
+        if (Platform.OS === 'web') {
+          const a = document.createElement('a');
+          a.href = uri;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          Alert.alert('Sucesso', 'Ficheiro criado e download iniciado.');
+        } else {
+          const canShare = await Sharing.isAvailableAsync();
+          if (canShare) {
+            await Sharing.shareAsync(uri, { UTI: ext === 'pdf' ? '.pdf' : '.txt', mimeType });
+            Alert.alert('Sucesso', 'Partilha iniciada.');
+          } else {
+            Alert.alert('Limitação', 'O seu dispositivo não permite guardar diretamente. Use a opção Partilhar.');
+          }
+        }
+      } else if (exportDestination === 'email') {
+        if (Platform.OS === 'web') {
+           const shared = await shareWeb('Exportação de dados da app ablute_ wellness.');
+           if (!shared) {
+             const subject = encodeURIComponent('Exportação de dados ablute_ wellness');
+             const body = encodeURIComponent('Incluo a exportação de dados selecionada na app ablute_ wellness.');
+             window.open(`mailto:?subject=${subject}&body=${body}`, '_blank');
+             Alert.alert('Email', 'O email foi aberto com o resumo. Para anexar o ficheiro, descarregue-o primeiro usando a opção Download.');
+           }
+        } else {
+           const canShare = await Sharing.isAvailableAsync();
+           if (canShare) {
+             await Sharing.shareAsync(uri, { dialogTitle: 'Enviar por Email', mimeType });
+             Alert.alert('Sucesso', 'Partilha iniciada.');
+           } else {
+             Alert.alert('Erro', 'Partilha não suportada.');
+           }
+        }
+      } else if (exportDestination === 'whatsapp') {
+        if (Platform.OS === 'web') {
+           const shared = await shareWeb('Exportação de dados da app ablute_ wellness.');
+           if (!shared) {
+             const text = encodeURIComponent('Exportação de dados ablute_ wellness.');
+             window.open(`https://wa.me/?text=${text}`, '_blank');
+             Alert.alert('Instrução', 'O WhatsApp Web não permite anexar ficheiros automaticamente por URL. Descarregue o ficheiro na app e anexe-o manualmente.');
+           }
+        } else {
+           const canShare = await Sharing.isAvailableAsync();
+           if (canShare) {
+             await Sharing.shareAsync(uri, { dialogTitle: 'Partilhar no WhatsApp', mimeType });
+             Alert.alert('Sucesso', 'Partilha iniciada.');
+           } else {
+             Alert.alert('Erro', 'Partilha não suportada.');
+           }
+        }
+      }
+
       setExportModal(false);
     } catch (e) {
+      console.error(e);
       Alert.alert('Erro', 'Ocorreu um erro ao exportar.');
     }
   };
@@ -498,16 +600,29 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             </View>
 
             <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>PERÍODO</Typography>
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 32 }}>
-              {['7d', '30d', 'Tudo'].map(rng => (
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 24 }}>
+              {['Última análise', '7d', '30d', 'Tudo'].map(rng => (
                 <TouchableOpacity key={rng} onPress={() => setExportRange(rng)} style={[styles.pillBtn, exportRange === rng && styles.pillBtnActive]}>
                   <Typography style={{ color: exportRange === rng ? '#000' : '#fff', fontWeight: exportRange === rng ? '700' : '500' }}>{rng}</Typography>
                 </TouchableOpacity>
               ))}
             </View>
 
+            <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>DESTINO</Typography>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 32 }}>
+              {[
+                { id: 'whatsapp', label: 'WhatsApp' },
+                { id: 'email', label: 'Email' },
+                { id: 'download', label: 'Descarregar' }
+              ].map(dest => (
+                <TouchableOpacity key={dest.id} onPress={() => setExportDestination(dest.id)} style={[styles.pillBtn, exportDestination === dest.id && styles.pillBtnActive, { marginBottom: 8 }]}>
+                  <Typography style={{ color: exportDestination === dest.id ? '#000' : '#fff', fontWeight: exportDestination === dest.id ? '700' : '500' }}>{dest.label}</Typography>
+                </TouchableOpacity>
+              ))}
+            </View>
+
             <TouchableOpacity style={styles.confirmBtn} onPress={handleExport}>
-              <Typography style={{ color: '#000', fontWeight: '700' }}>Exportar e Partilhar</Typography>
+              <Typography style={{ color: '#000', fontWeight: '700' }}>Exportar dados</Typography>
             </TouchableOpacity>
             <TouchableOpacity style={styles.cancelBtn} onPress={() => setExportModal(false)}>
               <Typography style={{ color: 'rgba(255,255,255,0.5)' }}>Cancelar</Typography>
