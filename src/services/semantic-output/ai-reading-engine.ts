@@ -38,6 +38,7 @@ export type HolisticDimension = {
   summary: string;
   topDrivers: DimensionDriver[];
   recommendations: DimensionRecommendation[];
+  referencesIntro?: string;
   references: DimensionReference[];
   limitations: string[];
 };
@@ -369,6 +370,7 @@ export function computeAIReadingFromData(
       summary: fallbackSummary,
       topDrivers: res.drivers,
       recommendations: [],
+      referencesIntro: 'Entre outras, esta avaliação considerou:',
       references: baseReferences,
       limitations: limitWarning ? [limitWarning] : []
     };

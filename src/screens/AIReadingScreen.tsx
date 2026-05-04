@@ -263,6 +263,8 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
           setReadingSource(response.meta?.engineSource || 'backend_openai_v2');
           setFallbackReason(null);
           setResponseStatus(200);
+          
+          console.log(`[AI_READING_SUMMARY_SOURCE] source=${response.meta?.engineSource || 'backend_openai_v2'} | isDemo=${isDemoMode} | analysisId=${activeAnalysis?.id} | summaryTitle=${normalized.summary.title} | focusDimensionId=${normalized.nextFocus?.dimensionId} | driversUsed=${normalized.dimensions.map(d => d.topDrivers?.map(dr => dr.label).join(',')).filter(Boolean).join(';')}`);
           console.log(`[R5C10_AI_READING_STATE] requestStarted=true | clientReturnedOk=true | provider=${response.provider} | fallbackReasonFinal=null | readingSourceFinal=${response.meta?.engineSource || 'backend_openai_v2'}`);
         } catch (normErr: any) { 
           setReadingSource('local_fallback'); 
@@ -273,6 +275,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
         setReadingSource('local_fallback'); 
         setFallbackReason(response.error?.code || 'RESPONSE_OK_FALSE_WITHOUT_CODE');
         setResponseStatus((response as any).status || 'error');
+        console.log(`[AI_READING_SUMMARY_SOURCE] source=local_fallback | isDemo=${isDemoMode} | analysisId=${activeAnalysis?.id} | summaryTitle=${localReading.summary.title} | fallbackReason=${response.error?.code}`);
         console.log(`[R5C10_AI_READING_STATE] requestStarted=true | clientReturnedOk=false | fallbackReasonFinal=${response.error?.code}`);
       }
       setIsRefining(false);
@@ -280,6 +283,7 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
       if (cancelled) return;
       setReadingSource('local_fallback');
       setFallbackReason(err.code || 'CLIENT_EXCEPTION');
+      console.log(`[AI_READING_SUMMARY_SOURCE] source=local_fallback | isDemo=${isDemoMode} | analysisId=${activeAnalysis?.id} | summaryTitle=${localReading.summary.title} | fallbackReason=${err.code || 'CLIENT_EXCEPTION'}`);
       console.log(`[R5C10_AI_READING_STATE] requestStarted=true | catchError=${err.code || 'CLIENT_EXCEPTION'} | fallbackReasonFinal=${err.code || 'CLIENT_EXCEPTION'}`);
       setIsRefining(false);
     });
@@ -555,12 +559,19 @@ export const AIReadingScreen: React.FC<{ navigation: any }> = ({ navigation }) =
                     )}
                     {activeTab === 'references' && (
                       <View>
-                        {(selectedDim.references || (selectedDim as any).refinedReferences)?.length > 0 ? (selectedDim.references || (selectedDim as any).refinedReferences).map((r: any, i: number) => (
-                          <View key={i} style={{ marginBottom: 10 }}>
-                            <Typography style={{ color: '#E2E8F0', fontSize: 13, fontWeight: '500' }}>{r.factor} {r.observedValue ? `(${r.observedValue})` : ''}</Typography>
-                            <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, lineHeight: 16 }}>{r.whyItMatters || r.explanation}</Typography>
+                        {(selectedDim.references || (selectedDim as any).refinedReferences)?.length > 0 ? (
+                          <View>
+                            <Typography style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, marginBottom: 8, fontStyle: 'italic' }}>
+                              {selectedDim.referencesIntro || 'Entre outras, esta avaliação considerou:'}
+                            </Typography>
+                            {(selectedDim.references || (selectedDim as any).refinedReferences).map((r: any, i: number) => (
+                              <View key={i} style={{ marginBottom: 10 }}>
+                                <Typography style={{ color: '#E2E8F0', fontSize: 13, fontWeight: '500' }}>{r.factor} {r.observedValue ? `(${r.observedValue})` : ''}</Typography>
+                                <Typography style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, lineHeight: 16 }}>{r.whyItMatters || r.influenceOnScore || r.explanation}</Typography>
+                              </View>
+                            ))}
                           </View>
-                        )) : <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>Refs incorporadas no resumo holístico.</Typography>}
+                        ) : <Typography style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>Refs incorporadas no resumo holístico.</Typography>}
                       </View>
                     )}
                  </View>

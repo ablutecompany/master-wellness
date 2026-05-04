@@ -154,6 +154,11 @@ export function normalizeAIReadingResponse(rawOutput: any, localReading: AIReadi
            localDim.limitations = [v2Dim.limits];
         }
 
+        // R6.2 Intro
+        if (v2Dim.referencesIntro) {
+           localDim.referencesIntro = v2Dim.referencesIntro;
+        }
+
         // Legacy V2 Fallbacks
         if (v2Dim.refinedSummary) localDim.summary = v2Dim.refinedSummary;
         if (Array.isArray(v2Dim.refinedRecommendations)) {

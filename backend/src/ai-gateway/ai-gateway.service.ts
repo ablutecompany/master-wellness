@@ -163,15 +163,16 @@ export class AiGatewayService {
             label: { type: 'string' as const },
             type: { type: 'string' as const, enum: ['momentary', 'functional', 'longitudinal'] },
             score: { type: 'number' as const },
-            state: { type: 'string' as const, enum: ['stable', 'watch', 'priority'] },
-            stateLabel: { type: 'string' as const, enum: ['Estável', 'Atenção', 'Prioritário'] },
-            confidence: { type: 'string' as const, enum: ['low', 'medium', 'high'] },
+            state: { type: 'string' as const, enum: ['stable', 'watch', 'priority', 'insufficient'] },
+            stateLabel: { type: 'string' as const, enum: ['Estável', 'Atenção', 'Prioritário', 'Insuficiente'] },
+            confidence: { type: 'string' as const, enum: ['low', 'medium', 'high', 'insufficient'] },
             summary: { type: 'string' as const },
             actions: { type: 'array' as const, items: { type: 'string' as const } },
+            referencesIntro: { type: 'string' as const, enum: ['Entre outras, esta avaliação considerou:'] },
             references: { type: 'array' as const, items: { type: 'string' as const } },
             limits: { type: 'string' as const }
           },
-          required: ['id', 'label', 'type', 'score', 'state', 'stateLabel', 'confidence', 'summary', 'actions', 'references', 'limits'],
+          required: ['id', 'label', 'type', 'score', 'state', 'stateLabel', 'confidence', 'summary', 'actions', 'referencesIntro', 'references', 'limits'],
           additionalProperties: false
         }
       },
@@ -207,8 +208,8 @@ export class AiGatewayService {
        throw new AiGatewayError('UNAUTHORIZED', 'Autenticação obrigatória para utilizar a IA Avançada. (401)');
     }
 
-    // 1. Identificar Source Hash com versionamento R6.1
-    const promptVersion = 'R6.1.1';
+    // 1. Identificar Source Hash com versionamento R6.2
+    const promptVersion = 'R6.2';
     const hashStr = sourcePayload ? Buffer.from(JSON.stringify(sourcePayload)).toString('base64').substring(0, 32) + '_' + promptVersion : 'unknown_' + promptVersion;
     
     // 2. Verificar cache se forceRegenerate=false e não for DEMO
@@ -254,20 +255,27 @@ export class AiGatewayService {
     this.logger.log(`[R5C1_OPENAI_GUARD] engineSource=backend_openai_v2 | cached=false | hasAuth=${hasAuth} | isDemo=${isDemo} | willCallOpenAI=true`);
 
     const prompt = [
-      `A Leitura AI é uma camada interpretativa baseada em resultados reais (ou simulados) da plataforma ablute_ wellness.`,
-      isDemo ? `[ALERTA DE SISTEMA]: Os dados desta leitura são simulados/demo e variam com o cenário. A resposta deve refletir exatamente os dados deste cenário DEMO, gerando scores, resumos e ações específicas à concentração ou carga reportada, e incluir a safetyFlag "demo_data".` : ``,
-      `O motor local já calculou os scores baseados nas fontes. O teu papel é explicar as 8 dimensões canónicas em português de Portugal.`,
-      `Regras de tom: wellness, premium, claro, não paternalista, nunca alarmista, e NÃO clíníco (isMedicalDiagnosis: false).`,
-      `PROIBIDO usar introduções genéricas na Síntese (ex: "Análise de Bem-Estar de [nome]" ou "Nesta leitura exploramos..."). A Síntese DEVE focar-se imediatamente nos resultados: mencione 1 a 2 dimensões relevantes, cite o foco recomendado, inclua os drivers processados, e defina uma prioridade prática. Exemplo bom: "Hoje a leitura aponta para boa estabilidade geral, mas com atenção ao equilíbrio interno devido a sinais de concentração elevada."`,
-      `O conteúdo (Síntese, Scores, Referências e Ações) TEM DE VARIAR dependendo dos resultados da análise enviados.`,
-      `Se uma fonte (urine, feces, physiological, context, miniapps) estiver 'excluded_by_user', a dimensão afetada não pode presumir os dados e deve declarar essa exclusão nas "references" ou "limits".`,
-      `Vitalidade deve ser prudente se não houver histórico suficiente. Se confidence for 'low', explica que é uma leitura preliminar isolada.`,
-      `OBRIGATÓRIO PARA CADA DIMENSÃO:`,
-      `- summary: explica os dados fornecidos e como afetam o estado da pessoa neste momento específico.`,
-      `- actions: pelo menos 1 item accionável pragmático. Não inventes suplementos.`,
-      `- references: indica claramente 1 a 3 fatores (drivers) do motor que justificam o score em linguagem humana (não usar camelCase ou frases de robô como "impacta negativamente na avaliação"). Não repetir a expressão "Entre outras" em cada item.`,
-      `- limits: explica as limitações da avaliação (ex: sem histórico, fonte desligada, poucos dados).`,
-      `Nunca uses a frase "Dados insuficientes" de forma vaga.`,
+      `És a camada de redação interpretativa da Leitura AI da app ablute_ wellness.`,
+      `A tua função é transformar um objeto estruturado de inferência wellness numa leitura clara, útil, prudente e personalizada em português de Portugal.`,
+      `Não és médico. Não fazes diagnóstico. Não inferes doença. Não recomendas medicação. Não recomendas suplementação como primeira linha.`,
+      `Não inventas dados. Não alteras scores, estados, ids, labels ou confidence recebidos.`,
+      `Não apresentas como usado um dado marcado como missing ou excluded_by_user. Não contradizes o estado da dimensão.`,
+      `A resposta deve ser sempre JSON válido, sem markdown, sem texto antes ou depois.`,
+      ``,
+      `O input que recebes (abaixo) deve ser respeitado como a fonte de verdade. Se algo não estiver no input, não inventar.`,
+      ``,
+      `REGRAS OBRIGATÓRIAS (FALHAR IMPLICA RISCO DE VIDA):`,
+      `1. ZERO conclusões clínicas ou diagnósticos de doenças.`,
+      `2. Linguagem estritamente PT-PT (Português de Portugal).`,
+      `3. SÍNTESE DO MOMENTO: A síntese deve ser específica da leitura. Deve conter o estado geral, foco principal, 1 a 2 drivers reais e orientação prática. Proibido texto institucional, frases vazias como 'Análise de Bem-Estar de [nome]', 'exploramos múltiplas dimensões', 'Resumo pendente OpenAI', ou dizer que está tudo bem se houver dimensões em Atenção/Prioritário. Se houver fontes desativadas ou poucos dados, indica confiança limitada.`,
+      `4. AÇÕES: 2 a 4 ações por dimensão, pragmáticas, sem suplementação prioritária. Estável: manter. Atenção: observar/ajustar. Prioritário: prioridade prática, repetir leitura, possível avaliação.`,
+      `5. REFERÊNCIAS: ReferencesIntro DEVE ser obrigatoriamente "Entre outras, esta avaliação considerou:". As 'references' (lista de strings) NÃO PODEM repetir 'Entre outras'. Usa labels crus traduzidos para linguagem humana (ex: 'Frequência cardíaca' em vez de fC). Explica em linguagem simples o que pesou, evitando frases maquetais como 'impacta negativamente'.`,
+      `6. FONTES E LIMITES: O sourcePolicy pode conter used, missing, excluded_by_user. Se excluded_by_user, nunca usa dados dessa fonte, reduz confiança ou explica limite em 'limits'.`,
+      `7. HISTÓRICO E VITALIDADE: Se history.available=false, não inventes tendência, diz que leitura longitudinal é limitada. Vitalidade baixa não é mau por definição; pode ser carga temporária.`,
+      `8. MODO DEMO: Se isDemo=true, escreve como simulação mas varia o conteúdo. MODO CONVIDADO: Se for visitante sem histórico, indica confiança mais baixa por ser baseado apenas nesta sessão.`,
+      ``,
+      `DIMENSÕES CANÓNICAS (usa exatamente as recebidas):`,
+      `energy: Prontidão geral para o dia. recovery: Relação esforço e capacidade de recuperação. internal_balance: Hidratação, minerais, equilíbrio urinário/metabólico. metabolic_rhythm: Glicose, energia metabólica. intestinal_state: Bristol, regularidade intestinal. food_adjustments: Sugestões nutricionais (não assume deficiência médica). physiological_load: Sinais vitais, tensão corporal. vitality: Tendências de longo prazo (necessita prudência).`,
       ``,
       `Contexto estrutural gerado pelo motor local (JSON):`,
       JSON.stringify(sourcePayload, null, 2),
