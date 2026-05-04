@@ -450,17 +450,18 @@ export function buildAiReadingLLMContextV2(reading: AIReading, isDemo: boolean):
     isDemo,
     analysisDate: new Date().toISOString(),
     sourcePolicy,
-    dimensions: reading.dimensions.reduce((acc, d) => ({ 
-       ...acc, 
-       [d.id]: {
-         score: d.score,
-         status: d.status,
-         confidence: d.confidence,
-         drivers: d.topDrivers,
-         references: d.references,
-         limitations: d.limitations
-       }
-    }), {}),
+    dimensions: reading.dimensions.map(d => ({
+      id: d.id,
+      label: d.title,
+      type: d.id === 'energy' || d.id === 'recovery' || d.id === 'intestinal_state' || d.id === 'food_adjustments' || d.id === 'physiological_load' ? 'momentary' : (d.id === 'vitality' ? 'longitudinal' : 'functional'),
+      score: d.score,
+      state: d.status,
+      stateLabel: d.status === 'stable' ? 'Estável' : (d.status === 'priority' ? 'Prioritário' : (d.status === 'watch' ? 'Atenção' : 'Insuficiente')),
+      confidence: d.confidence,
+      drivers: d.topDrivers,
+      references: d.references,
+      limitations: d.limitations
+    })),
     history: {
       available: false,
       readingsCount: 1, // Fallback, would be injected by parent
