@@ -14,7 +14,13 @@ function cleanForbiddenPlaceholders(text: string): string {
     "Continuar como está",
     "Refs incorporadas no resumo holístico.",
     "Resumo holístico.",
-    "Dados estáveis."
+    "Dados estáveis.",
+    "Ainda não há dados suficientes para gerar ajustes alimentares personalizados.",
+    "Ainda não há dados suficientes",
+    "Invista tempo em atividades",
+    "Considere uma dieta equilibrada",
+    "Considere uma dieta",
+    "Invista tempo em"
   ];
   let clean = text;
   forbidden.forEach((f) => {
@@ -257,6 +263,31 @@ export function normalizeAIReadingResponse(
           shortSummary: "",
           ...resolveDimProps(raw.focusDimensionId),
         };
+      }
+    }
+  }
+
+  // ALINHAMENTO ABSOLUTO DO FOCO (R6.2)
+  const localFocusId = localReading.nextFocus?.dimensionId;
+  const llmReturnedFocus = merged.summary.focusDimensionId;
+  
+  if (localFocusId) {
+    merged.summary.focusDimensionId = localFocusId;
+    if (merged.nextFocus) {
+      merged.nextFocus.dimensionId = localFocusId;
+      Object.assign(merged.nextFocus, resolveDimProps(localFocusId));
+    }
+    
+    if (llmReturnedFocus && llmReturnedFocus !== localFocusId) {
+      // LLM retornou foco errado, substituir síntese por fallback coerente local
+      const correctDim = merged.dimensions.find((d) => d.id === localFocusId);
+      if (correctDim) {
+        const driversStr = correctDim.topDrivers?.map(d => d.label).join(", ") || "avaliação";
+        merged.summary.title = `Foco recomendado: ${correctDim.title}`;
+        merged.summary.text = `Hoje a leitura aponta para a necessidade de atenção especial a ${correctDim.title.toLowerCase()}. A interpretação foi influenciada sobretudo pelos sinais de ${driversStr}.`;
+        
+        // Limpar/substituir chaves do R6.2 caso o raw schema as tenha trazido
+        if ((raw.summary as any)?.body) merged.summary.text = `Hoje a leitura aponta para a necessidade de atenção especial a ${correctDim.title.toLowerCase()}. A interpretação foi influenciada sobretudo pelos sinais de ${driversStr}.`;
       }
     }
   }

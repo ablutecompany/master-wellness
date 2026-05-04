@@ -647,7 +647,7 @@ export function computeAIReadingFromData(
            if (factor === "Sódio urinário" && Number(valRaw) > 100) {
              influenceMsg = "surgiu elevado e teve peso na recomendação de moderar refeições muito salgadas.";
            } else {
-             influenceMsg = `o valor de ${displayValue} pesou negativamente nesta dimensão.`;
+             influenceMsg = `o valor de ${displayValue} pesou negativamente nesta leitura.`;
            }
          } else {
            if (factor === "Densidade urinária") influenceMsg = "ajudou a avaliar a concentração da urina.";
@@ -764,25 +764,54 @@ export function computeAIReadingFromData(
 
   // Determinar Próximo Foco
   let nextFocusDimension: HolisticDimension | null = null;
-  let lowestScore = 101;
-  const hasMomentaryIssue = dimensions.some(dim => dim.score !== null && ['energy', 'recovery', 'physiological_load', 'intestinal_state', 'food_adjustments'].includes(dim.id) && (dim.status === 'priority' || dim.status === 'watch'));
+  const hasMomentaryIssue = dimensions.some(dim => dim.score !== null && ['energy', 'recovery', 'physiological_load', 'intestinal_state', 'food_adjustments', 'internal_balance'].includes(dim.id) && (dim.status === 'priority' || dim.status === 'watch'));
 
-  for (const d of dimensions) {
-    if (d.score !== null && d.confidence !== "insufficient") {
-      let isCandidate = true;
-      if (d.id === "vitality") {
-        // Vitalidade não rouba foco em simulações ou se não houver histórico robusto
-        if (isDemo || d.confidence === "low" || hasMomentaryIssue) {
-          isCandidate = false;
-        } else {
-          if (d.score > 40) isCandidate = false;
-        }
-      }
+  let candidates = dimensions.filter(d => d.score !== null && d.confidence !== "insufficient");
 
-      if (isCandidate && d.score < lowestScore) {
+  // Bloqueio Longitudinal da Vitalidade
+  const vit = candidates.find(d => d.id === 'vitality');
+  if (vit) {
+    if (isDemo || vit.confidence === "low" || hasMomentaryIssue) {
+      candidates = candidates.filter(d => d.id !== 'vitality');
+    } else if (vit.score !== null && vit.score > 40) {
+      candidates = candidates.filter(d => d.id !== 'vitality');
+    }
+  }
+
+  if (candidates.length > 0) {
+    // Encontrar o menor score
+    let lowestScore = 101;
+    for (const d of candidates) {
+      if (d.score !== null && d.score < lowestScore) {
         lowestScore = d.score;
-        nextFocusDimension = d;
       }
+    }
+    
+    // Todos com o menor score (ou próximo se quisermos)
+    const lowestCandidates = candidates.filter(d => d.score === lowestScore);
+    
+    if (lowestCandidates.length === 1) {
+      nextFocusDimension = lowestCandidates[0];
+    } else {
+      // Prioridade de desempate
+      const priorityOrder = [
+        "food_adjustments",
+        "energy",
+        "recovery",
+        "internal_balance",
+        "intestinal_state",
+        "physiological_load",
+        "metabolic_rhythm",
+        "vitality"
+      ];
+      
+      lowestCandidates.sort((a, b) => {
+        const indexA = priorityOrder.indexOf(a.id);
+        const indexB = priorityOrder.indexOf(b.id);
+        return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
+      });
+      
+      nextFocusDimension = lowestCandidates[0];
     }
   }
 
