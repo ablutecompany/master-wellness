@@ -25,6 +25,102 @@ import { getAllSelectableProfiles } from '../utils/household';
 
 const { width } = Dimensions.get('window');
 
+const WebCameraModal: React.FC<{ visible: boolean; onClose: () => void; onCapture: (dataUrl: string) => void }> = ({ visible, onClose, onCapture }) => {
+  const videoRef = React.useRef<any>(null);
+  const streamRef = React.useRef<any>(null);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    if (visible && Platform.OS === 'web') {
+      startCamera();
+    } else {
+      stopCamera();
+    }
+    return () => stopCamera();
+  }, [visible]);
+
+  const startCamera = async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setErrorMsg('A câmara não está disponível neste navegador. Escolha uma imagem do dispositivo.');
+        return;
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', aspectRatio: 1 } });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+    } catch (err: any) {
+      console.warn('[P0_AVATAR_WEB_CAMERA] Erro ao iniciar', err);
+      setErrorMsg('A permissão para usar a câmara foi recusada ou ocorreu um erro.');
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track: any) => track.stop());
+      streamRef.current = null;
+    }
+  };
+
+  const captureFrame = () => {
+    if (!videoRef.current) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      // Calculate crop for 1:1 aspect ratio
+      const size = Math.min(canvas.width, canvas.height);
+      const startX = (canvas.width - size) / 2;
+      const startY = (canvas.height - size) / 2;
+      ctx.drawImage(videoRef.current, startX, startY, size, size, 0, 0, size, size);
+      
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      onCapture(dataUrl);
+      onClose();
+    }
+  };
+
+  if (!visible || Platform.OS !== 'web') return null;
+
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' }}>
+        <Typography variant="h3" style={{ color: '#fff', marginBottom: 20 }}>Capturar Foto</Typography>
+        
+        {errorMsg ? (
+          <View style={{ padding: 20, alignItems: 'center' }}>
+            <Typography style={{ color: '#FF3B30', textAlign: 'center', marginBottom: 20 }}>{errorMsg}</Typography>
+            <TouchableOpacity style={styles.actionBtn} onPress={onClose}>
+              <Typography style={styles.actionBtnText}>Fechar</Typography>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={{ alignItems: 'center' }}>
+            {/* The video element is a native DOM element, so we cast it safely for React Native Web */}
+            <video
+              ref={videoRef}
+              style={{ width: 300, height: 300, objectFit: 'cover', borderRadius: 150, backgroundColor: '#333' }}
+              playsInline
+              muted
+            />
+            <View style={{ flexDirection: 'row', gap: 20, marginTop: 40 }}>
+              <TouchableOpacity style={[styles.actionBtn, { borderColor: 'rgba(255,255,255,0.2)' }]} onPress={onClose}>
+                <Typography style={[styles.actionBtnText, { color: 'rgba(255,255,255,0.6)' }]}>Cancelar</Typography>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionBtn} onPress={captureFrame}>
+                <Typography style={styles.actionBtnText}>Capturar</Typography>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
+    </Modal>
+  );
+};
+
 export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const user = useStore(Selectors.selectUser);
   const isGuestMode = useStore(state => state.isGuestMode);
@@ -45,6 +141,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showTokensModal, setShowTokensModal] = useState(false);
+  const [showWebCameraModal, setShowWebCameraModal] = useState(false);
   const credits = useStore(state => state.credits);
 
   // Inicializar / Sincronizar o draft a partir da store
@@ -319,9 +416,9 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
          sizeInMb = sizeInBytes / (1024 * 1024);
       }
 
-      // 4. Último nível de compressão se > 1MB
-      if (sizeInMb > 1) {
-         console.warn('[P0_AVATAR_PROCESSING] still too large, aggressive compress (0.1)');
+      // 4. Último nível de compressão agressiva se > 500KB
+      if (sizeInMb > 0.5) {
+         console.warn('[P0_AVATAR_PROCESSING] still > 500KB, aggressive compress (0.1)');
          manipResult = await ImageManipulator.manipulateAsync(
             manipResult.uri,
             [{ resize: { width: 256, height: 256 } }],
@@ -331,19 +428,21 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
          sizeInMb = sizeInBytes / (1024 * 1024);
       }
 
-      // 5. Validar limite final absoluto
-      if (sizeInMb > 1.2 || !manipResult.base64) {
+      // 5. Validar limite final absoluto (0.8MB no máximo, ideal < 0.5MB para RN fetch)
+      if (sizeInMb > 0.8 || !manipResult.base64) {
          console.error('[P0_AVATAR_PROCESSING] Rejeitado por tamanho final.', { sizeInMb });
-         Alert.alert('Imagem demasiado pesada', `A imagem continua demasiado pesada (${sizeInMb.toFixed(1)}MB) mesmo após compressão. Escolha outra fotografia ou um formato mais pequeno.`);
+         Alert.alert('Imagem demasiado pesada', `A imagem continua pesada (${sizeInMb.toFixed(1)}MB) após compressão. Escolha outra fotografia ou um formato mais pequeno.`);
          return;
       }
 
-      console.log('[P0_AVATAR_PROCESSING] success', {
-         resizeApplied: true,
-         outputWidth: manipResult.width,
-         outputHeight: manipResult.height,
-         outputBase64Length: manipResult.base64?.length,
-         outputEstimatedBytes: sizeInBytes
+      console.log('[P0_AVATAR_DEVICE_FLOW]', {
+         platform: Platform.OS === 'web' ? 'web' : 'mobile',
+         source: sourceUri.startsWith('data:') ? 'web-camera' : 'gallery-or-camera',
+         originalUriLength: sourceUri.length,
+         processedWidth: manipResult.width,
+         processedHeight: manipResult.height,
+         processedBase64Length: manipResult.base64?.length,
+         processedEstimatedBytes: sizeInBytes,
       });
 
       const dataUrl = `data:image/jpeg;base64,${manipResult.base64}`;
@@ -388,8 +487,8 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
 
   const handleTakeAvatar = async () => {
     if (Platform.OS === 'web') {
-      // On some web environments, camera API isn't fully supported via launchCameraAsync
-      Alert.alert('Câmara não suportada', 'O acesso direto à câmara pode não ser suportado neste browser. Utilize a opção "Escolher da Galeria" e, se o browser permitir, poderá tirar foto a partir daí.');
+      setShowWebCameraModal(true);
+      return;
     }
     
     try {
@@ -643,7 +742,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       ) : null}
 
       <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.4)', marginTop: 8 }}>
-        Opções nativas para avatar. A integração definitiva com Supabase Storage estará ativa brevemente.
+        Opções nativas para avatar. A integração com Storage estará ativa brevemente.
       </Typography>
     </View>
   );
@@ -986,6 +1085,15 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         </TouchableOpacity>
       </Modal>
 
+      {/* Modals Secundários */}
+      <WebCameraModal 
+        visible={showWebCameraModal} 
+        onClose={() => setShowWebCameraModal(false)} 
+        onCapture={(dataUrl) => {
+          console.log('[P0_AVATAR_WEB_CAMERA] Frame captured');
+          processAvatarAsset(dataUrl);
+        }}
+      />
     </View>
   );
 };
