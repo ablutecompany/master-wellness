@@ -159,7 +159,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
         existingDraftKeys: profileDraft ? Object.keys(profileDraft) : []
       });
     }
-  }, [user]);
+  }, [user, isDirty]);
 
 
   // Helper para atualizar o draft localmente (marca como dirty)
@@ -482,7 +482,11 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        await processAvatarAsset(result.assets[0].uri, result.assets[0].fileName);
+        const publicUrl = await processAvatarAsset(result.assets[0].uri, result.assets[0].fileName);
+        if (publicUrl) {
+          triggerSave({ avatarUrl: publicUrl });
+          closeModal();
+        }
       }
     } catch (e) {
       console.error('[P0_AVATAR_PICKER] Error picking image:', e);
@@ -518,7 +522,11 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
-        await processAvatarAsset(result.assets[0].uri, result.assets[0].fileName);
+        const publicUrl = await processAvatarAsset(result.assets[0].uri, result.assets[0].fileName);
+        if (publicUrl) {
+          triggerSave({ avatarUrl: publicUrl });
+          closeModal();
+        }
       }
     } catch (e) {
       console.error('[P0_AVATAR_PICKER] Error taking image:', e);
@@ -871,7 +879,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
                   <View style={[styles.iconBox, { backgroundColor: 'rgba(0, 242, 255, 0.1)' }]}>
                     <Ruler size={14} color="#00F2FF" />
                   </View>
-                  <Typography style={styles.bioValue}>{profileDraft.height || 175}</Typography>
+                  <Typography style={styles.bioValue}>{profileDraft.height || '—'}</Typography>
                   <Typography variant="caption" style={styles.bioLabel}>cm</Typography>
                 </TouchableOpacity>
 
