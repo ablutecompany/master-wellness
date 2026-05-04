@@ -226,9 +226,13 @@ export class UserService {
 
     // Como avatarUrl, date_of_birth_precision e weight não estão no schema de User nem de UserProfile originais, e eram adicionados à tabela profiles (UserProfile), precisamos de usar raw sql apenas para estes campos, OU ignorar se os tipos falharem.
     if (avatarUrl !== undefined) {
-      try { await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT`); } catch (e) {}
-      await this.prisma.$executeRaw`UPDATE public.profiles SET avatar_url = ${avatarUrl}, updated_at = now() WHERE id = ${userId}::uuid`;
-      console.log(`[P0_PROFILE_PATCH] avatarUrlSaved: ${avatarUrl}`);
+      if (avatarUrl === null && !(updates as any)._explicitAvatarRemoval) {
+         console.warn(`[P0_AVATAR_BACKEND_SAVE] Blocked nullifying avatar without explicit removal for user: ${userId}`);
+      } else {
+        try { await this.prisma.$executeRawUnsafe(`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT`); } catch (e) {}
+        await this.prisma.$executeRaw`UPDATE public.profiles SET avatar_url = ${avatarUrl}, updated_at = now() WHERE id = ${userId}::uuid`;
+        console.log(`[P0_AVATAR_BACKEND_SAVE] avatarUrlSaved for user: ${userId}, length: ${avatarUrl ? avatarUrl.length : 0}`);
+      }
     }
 
     if (dateOfBirthPrecision !== undefined) {

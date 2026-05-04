@@ -188,7 +188,19 @@ export default function App() {
         returnedFields: Object.keys(normalized)
       });
       setUser(normalized);
-      if ((normalized as any)?.household) setHousehold((normalized as any).household);
+      if ((normalized as any)?.household) {
+        setHousehold((normalized as any).household);
+        // Safe hydration: repair orphaned activeMemberId
+        const state = useStore.getState();
+        if (state.activeMemberId && state.activeMemberId !== normalized.id) {
+          const members = (normalized as any).household.members || [];
+          const isActiveMemberValid = members.some((m: any) => m.id === state.activeMemberId && !m.archived);
+          if (!isActiveMemberValid) {
+            console.warn('[P0_RESULTS_ACCESS] activeMemberId is orphaned/archived, resetting to user.id');
+            useStore.getState().setActiveMember(normalized.id);
+          }
+        }
+      }
       await trySyncAnalyses();
       setProfileStatus('loaded');
       isSyncingRef.current = false;

@@ -32,6 +32,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const activeMemberId = useStore(Selectors.selectActiveMemberId);
   const setActiveMember = useStore(state => state.setActiveMember);
   const hasHydrated = useStore(state => state.hasHydrated);
+  const profileStatus = useStore(state => state.profileStatus);
 
   const availableProfiles = useMemo(() => {
     return getAllSelectableProfiles(user, household?.members);
@@ -231,7 +232,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   };
 
   const removeAvatar = () => {
-    triggerSave({ avatarUrl: null });
+    triggerSave({ avatarUrl: null, _explicitAvatarRemoval: true });
     closeModal();
   };
 
@@ -585,7 +586,7 @@ export const ProfileScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   // ─────────────────────────────────────────────────────────────────────────────
   // 5. MAIN RENDER
   // ─────────────────────────────────────────────────────────────────────────────
-  if (!hasHydrated || !profileDraft) {
+  if (!hasHydrated || !profileDraft || profileStatus !== 'loaded') {
     return (
       <View style={[styles.outerContainer, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator color="#00F2FF" size="large" />

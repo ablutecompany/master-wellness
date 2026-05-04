@@ -52,6 +52,12 @@ export const normalizeProfile = (rawProfile: any): UserProfile | null => {
   if (!normalized.avatarUrl && rawProfile.avatar_url) {
     normalized.avatarUrl = rawProfile.avatar_url; // just in case legacy snake case appears
   }
+  
+  console.log('[P0_AVATAR_ACCOUNT_SWITCH] normalizeProfile', {
+    userId: normalized.id,
+    hasAvatar: !!normalized.avatarUrl,
+    avatarLength: normalized.avatarUrl?.length || 0
+  });
 
   if (typeof normalized.name !== 'string') {
     normalized.name = normalized.email ? normalized.email.split('@')[0] : 'Utilizador';
@@ -134,6 +140,18 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
   updateAuthenticatedProfile: async (updates) => {
     let { sessionToken, user } = get();
     
+    console.log('[P0_AVATAR_SAVE] trigger updateAuthenticatedProfile', {
+      userId: user?.id,
+      hasAvatarUpdate: updates.avatarUrl !== undefined,
+      avatarUrlLengthSent: updates.avatarUrl ? updates.avatarUrl.length : 0,
+      isExplicitRemoval: updates.avatarUrl === null
+    });
+
+    if (updates.avatarUrl === null && !(updates as any)._explicitAvatarRemoval) {
+      console.warn('[P0_AVATAR_SAVE] Blocked implicit avatar removal');
+      delete updates.avatarUrl;
+    }
+
     // Dynamic token fetch if missing in global state
     if (!sessionToken) {
       const { data } = await supabase.auth.getSession();
@@ -159,6 +177,10 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
     try {
       const result = await ProfileService.updateProfile(sessionToken, updates);
       
+      console.log('[P0_AVATAR_SAVE] updateProfile response', {
+        ok: result.ok,
+        hasProfile: !!result.profile
+      });
       console.log('[P0_PROFILE_PATCH]', {
         userId: user?.id,
         fieldsReceived: updates,
@@ -215,14 +237,24 @@ export const createProfileSlice: StateCreator<AppState, [], [], ProfileSlice> = 
   },
   setCredits: (credits) => set({ credits }),
   setSessionToken: (token) => set({ sessionToken: token }),
-  clearSensitiveState: () => set({
-    measurements: [],
-    analyses: [],
-    activeAnalysisId: null,
-    appContributionEvents: [],
-    guestProfile: { id: 'guest', name: 'Convidada' },
-    exportedContexts: [],
-  }),
+  clearSensitiveState: () => {
+    console.log('[P0_AVATAR_ACCOUNT_SWITCH] clearSensitiveState triggered (Logout)');
+    set({
+      measurements: [],
+      analyses: [],
+      activeAnalysisId: null,
+      appContributionEvents: [],
+      guestProfile: { id: 'guest', name: 'Convidada' },
+      exportedContexts: [],
+      user: null,
+      authAccount: null,
+      profileStatus: 'idle',
+      household: null,
+      activeMemberId: null,
+      sessionToken: null,
+      isGuestMode: false
+    });
+  },
   setExportedContext: (context) => set((state) => {
     const existingIdx = state.exportedContexts.findIndex(c => c.id === context.id);
     if (existingIdx !== -1) {

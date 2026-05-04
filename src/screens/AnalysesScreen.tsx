@@ -101,8 +101,32 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
   const hasResultsAccess = useStore(Selectors.selectHasResultsAccess);
   const isDemoMode = useStore(state => state.isDemoMode);
   const dataFreshness = useStore(useShallow(Selectors.selectDataFreshness));
+  
+  const analyses = useStore(useShallow(Selectors.selectAnalyses));
+  const demoAnalysis = useStore(Selectors.selectDemoAnalysis);
+  const activeAnalysis = isDemoMode && demoAnalysis ? demoAnalysis : analyses[0];
 
   const [showNoHistoryModal, setShowNoHistoryModal] = useState(false);
+
+  React.useEffect(() => {
+    console.log('[P0_RESULTS_ACCESS]', {
+      userId: user?.id,
+      activeMemberId: useStore.getState().activeMemberId,
+      activeMemberName: user?.name,
+      isPrimary: useStore.getState().activeMemberId === user?.id || !useStore.getState().activeMemberId,
+      isDemo: isDemoMode,
+      shareFactualRecords: true,
+      canAccessResults: hasResultsAccess,
+      reason: 'P0.5 permissive default'
+    });
+
+    console.log('[P0_RESULTS_ACTIVE_ANALYSIS]', {
+      hasActiveAnalysis: !!activeAnalysis,
+      analysisId: activeAnalysis?.id,
+      section: activeTab,
+      memberId: useStore.getState().activeMemberId
+    });
+  }, [user, activeAnalysis, activeTab, isDemoMode, hasResultsAccess]);
 
   // 1. Mapeamento e Normalização de Dados
   const allResults = useMemo(() => {
@@ -341,7 +365,7 @@ export const AnalysesScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
             <StateSurface 
               type="no_data"
               title="Sem Registos"
-              description={`Ainda não existem dados sincronizados para a categoria ${activeTab}.`}
+              description={`Ainda não existe análise disponível para esta secção.`}
               color="rgba(255,255,255,0.2)"
             />
           ) : (

@@ -63,10 +63,10 @@ export const canViewTargetData = (state: AppState, targetMemberId: string, scope
   const perm = targetMember.permissions?.[scope];
   const targetIds = targetMember.permissions?.[`${scope}TargetIds`] || [];
 
-  if (perm === 'shared_household') return true;
-  if (perm === 'shared_selective' && myMemberEntry && targetIds.includes(myMemberEntry.id)) return true;
+  if (perm === 'private') return false;
+  if (perm === 'shared_selective' && myMemberEntry && !targetIds.includes(myMemberEntry.id)) return false;
   
-  return false;
+  return true; // default permissivo nesta fase P0.5
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

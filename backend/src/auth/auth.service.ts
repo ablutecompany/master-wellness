@@ -142,6 +142,12 @@ export class AuthService {
         isDiscrepant
       };
 
+      console.log('[P0_AVATAR_AUTH_ME]', {
+        userId: user.id,
+        hasAvatar: !!extendedData.avatarUrl,
+        avatarLength: extendedData.avatarUrl ? extendedData.avatarUrl.length : 0
+      });
+
       // 5. Retornar contrato canónico esperado pelo frontend
       return {
         id: user.id,
