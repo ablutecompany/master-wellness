@@ -87,11 +87,44 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
     frequencyCount: 1,
     frequencyInterval: 1,
     frequencyUnit: 'day',
+    defineTimes: false,
+    preferredTimes: [],
     includedGroups: { urine: true, feces: true, physiological: true, context: true },
     notificationsEnabled: false
   };
 
   const [currentSchedule, setCurrentSchedule] = useState<any>(defaultSchedule);
+  const [frequencyModal, setFrequencyModal] = useState(false);
+
+  const getScheduleSummary = () => {
+    const s = schedules[selectedProfileId] || defaultSchedule;
+    if (s.mode === 'manual') return 'Manual';
+    
+    const unitMap: any = { day: 'dia', week: 'semana', month: 'mês' };
+    const unitLabel = s.frequencyUnit || 'day';
+    const finalUnit = s.frequencyInterval > 1 ? (unitLabel === 'month' ? 'meses' : (unitLabel === 'week' ? 'semanas' : 'dias')) : unitMap[unitLabel];
+    
+    const base = `Automático · ${s.frequencyCount} vez${s.frequencyCount > 1 ? 'es' : ''} a cada ${s.frequencyInterval} ${finalUnit}`;
+    
+    if (s.defineTimes && s.preferredTimes && s.preferredTimes.length > 0) {
+      return `${base}\n${s.preferredTimes.join(' · ')}`;
+    }
+    return base;
+  };
+
+  const updateCurrentScheduleFreq = (key: string, val: any) => {
+    let next = { ...currentSchedule, [key]: val };
+    if (key === 'frequencyCount' || key === 'defineTimes') {
+       if (!next.preferredTimes) next.preferredTimes = [];
+       const diff = next.frequencyCount - next.preferredTimes.length;
+       if (diff > 0) {
+         for (let i = 0; i < diff; i++) next.preferredTimes.push('08:00');
+       } else if (diff < 0) {
+         next.preferredTimes = next.preferredTimes.slice(0, next.frequencyCount);
+       }
+    }
+    setCurrentSchedule(next);
+  };
 
   useEffect(() => {
     const saved = schedules[selectedProfileId];
@@ -245,8 +278,14 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
 
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
             
+            {/* ROTINAS DE ANÁLISE */}
+            <Typography variant="caption" style={styles.sectionLabel}>ROTINAS DE ANÁLISE</Typography>
+            <View style={styles.cardGroup}>
+              <ListItem icon={<Clock size={20} color="#00F2FF" />} title="Rotinas de análise" subtitle={getScheduleSummary()} onPress={() => setAnalysisModeModal(true)} noBorder />
+            </View>
+
             {/* LOCALIZAÇÃO E REGIÃO */}
-            <Typography variant="caption" style={styles.sectionLabel}>LOCALIZAÇÃO E REGIÃO</Typography>
+            <Typography variant="caption" style={[styles.sectionLabel, { marginTop: 24 }]}>LOCALIZAÇÃO E REGIÃO</Typography>
             <View style={styles.cardGroup}>
               <ToggleItem 
                 title="Permitir localização do dispositivo" 
@@ -266,12 +305,6 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
               <ListItem icon={<Shield size={20} color="#00F2FF" />} title="Controlo de dados" subtitle="Visão geral de acessos" onPress={() => setDataControlModal(true)} />
               <ListItem icon={<Database size={20} color="#00F2FF" />} title="Fontes autorizadas" subtitle="Quais sensores/logs alimentam a app" onPress={() => setSourcesModal(true)} />
               <ListItem icon={<Brain size={20} color="#FFD700" />} title="Utilização em Leitura AI" subtitle="Quais dados são enviados para a IA" onPress={() => setAiUsageModal(true)} noBorder />
-            </View>
-
-            {/* ROTINAS DE ANÁLISE */}
-            <Typography variant="caption" style={[styles.sectionLabel, { marginTop: 24 }]}>ROTINAS DE ANÁLISE</Typography>
-            <View style={styles.cardGroup}>
-              <ListItem icon={<Clock size={20} color="#00F2FF" />} title="Modo de análise" subtitle="Cadências e agendamento por perfil" onPress={() => setAnalysisModeModal(true)} noBorder />
             </View>
 
             {/* EXPORTAÇÃO */}
@@ -354,22 +387,25 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
               </TouchableOpacity>
             </View>
 
+            {currentSchedule.mode === 'manual' && (
+              <Typography style={{ color: 'rgba(255,255,255,0.7)', marginBottom: 24 }}>
+                As análises são iniciadas manualmente pelo utilizador.
+              </Typography>
+            )}
+
             {currentSchedule.mode === 'automatic' && (
               <View style={{ marginBottom: 24 }}>
-                <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>FREQUÊNCIA</Typography>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  {['day', 'week', 'month'].map(unit => {
-                    const labels: any = { day: 'Dias', week: 'Semanas', month: 'Meses' };
-                    return (
-                      <TouchableOpacity key={unit} onPress={() => setCurrentSchedule({ ...currentSchedule, frequencyUnit: unit })} style={[styles.pillBtn, currentSchedule.frequencyUnit === unit && styles.pillBtnActive]}>
-                        <Typography style={{ color: currentSchedule.frequencyUnit === unit ? '#000' : '#fff' }}>{labels[unit]}</Typography>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
-                  <Typography style={{ color: 'rgba(255,255,255,0.7)' }}>{currentSchedule.frequencyCount} vez(es) a cada {currentSchedule.frequencyInterval} {currentSchedule.frequencyUnit}</Typography>
-                </View>
+                <TouchableOpacity style={[styles.pillBtn, { backgroundColor: 'rgba(0, 242, 255, 0.1)', borderColor: 'rgba(0, 242, 255, 0.3)', marginBottom: 12 }]} onPress={() => setFrequencyModal(true)}>
+                  <Typography style={{ color: '#00F2FF', fontWeight: '600', textAlign: 'center' }}>Configurar cadência</Typography>
+                </TouchableOpacity>
+                <Typography style={{ color: 'rgba(255,255,255,0.7)', textAlign: 'center' }}>
+                  {currentSchedule.frequencyCount} vez(es) a cada {currentSchedule.frequencyInterval} {currentSchedule.frequencyUnit === 'month' ? (currentSchedule.frequencyInterval > 1 ? 'meses' : 'mês') : (currentSchedule.frequencyUnit === 'week' ? (currentSchedule.frequencyInterval > 1 ? 'semanas' : 'semana') : (currentSchedule.frequencyInterval > 1 ? 'dias' : 'dia'))}
+                </Typography>
+                {currentSchedule.defineTimes && currentSchedule.preferredTimes && currentSchedule.preferredTimes.length > 0 && (
+                  <Typography style={{ color: 'rgba(255,255,255,0.5)', marginTop: 4, textAlign: 'center' }}>
+                    {currentSchedule.preferredTimes.join(' · ')}
+                  </Typography>
+                )}
               </View>
             )}
 
@@ -520,6 +556,82 @@ export const SettingsScreen: React.FC<{ navigation: any }> = ({ navigation }) =>
         </View>
       </Modal>
 
+      {/* FREQUENCY MODAL */}
+      <Modal visible={frequencyModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Typography variant="h3" style={{ color: '#fff', fontWeight: '700', marginBottom: 24 }}>Frequência automática</Typography>
+            
+            <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>NÚMERO DE VEZES</Typography>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24 }}>
+              {[1, 2, 3, 4, 5, 6].map(n => (
+                <TouchableOpacity key={n} onPress={() => updateCurrentScheduleFreq('frequencyCount', n)} style={[styles.pillBtn, currentSchedule.frequencyCount === n && styles.pillBtnActive, { marginRight: 8 }]}>
+                  <Typography style={{ color: currentSchedule.frequencyCount === n ? '#000' : '#fff' }}>{n}</Typography>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.5)', marginBottom: 8 }}>A CADA...</Typography>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+              {[1, 2, 3, 4, 5, 6, 7, 15, 30].map(n => (
+                <TouchableOpacity key={n} onPress={() => updateCurrentScheduleFreq('frequencyInterval', n)} style={[styles.pillBtn, currentSchedule.frequencyInterval === n && styles.pillBtnActive, { marginRight: 8 }]}>
+                  <Typography style={{ color: currentSchedule.frequencyInterval === n ? '#000' : '#fff' }}>{n}</Typography>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 24 }}>
+              {['day', 'week', 'month'].map(unit => {
+                const labels: any = { day: 'Dia(s)', week: 'Semana(s)', month: 'Mês(es)' };
+                return (
+                  <TouchableOpacity key={unit} onPress={() => updateCurrentScheduleFreq('frequencyUnit', unit)} style={[styles.pillBtn, currentSchedule.frequencyUnit === unit && styles.pillBtnActive, { marginRight: 8 }]}>
+                    <Typography style={{ color: currentSchedule.frequencyUnit === unit ? '#000' : '#fff' }}>{labels[unit]}</Typography>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <ToggleItem 
+              title="Definir horários" 
+              value={currentSchedule.defineTimes} 
+              onValueChange={(val: boolean) => updateCurrentScheduleFreq('defineTimes', val)} 
+              noBorder
+            />
+
+            {currentSchedule.defineTimes && (
+              <View style={{ marginTop: 12, marginBottom: 24, padding: 16, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12 }}>
+                {!currentSchedule.notificationsEnabled && (
+                  <Typography variant="caption" style={{ color: 'rgba(255,255,255,0.5)', marginBottom: 12 }}>
+                    Estes horários serão usados para lembretes quando as notificações forem ativadas.
+                  </Typography>
+                )}
+                {Array.from({ length: currentSchedule.frequencyCount || 1 }).map((_, i) => (
+                  <View key={i} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: i < (currentSchedule.frequencyCount || 1) - 1 ? 12 : 0 }}>
+                    <Typography style={{ color: 'rgba(255,255,255,0.8)' }}>Horário {i + 1}</Typography>
+                    <TextInput 
+                      style={styles.timeInput}
+                      value={currentSchedule.preferredTimes?.[i] || ''}
+                      placeholder="00:00"
+                      placeholderTextColor="rgba(255,255,255,0.3)"
+                      onChangeText={(val) => {
+                        const newTimes = [...(currentSchedule.preferredTimes || [])];
+                        newTimes[i] = val;
+                        setCurrentSchedule({ ...currentSchedule, preferredTimes: newTimes });
+                      }}
+                      maxLength={5}
+                      keyboardType="numbers-and-punctuation"
+                    />
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <TouchableOpacity style={styles.confirmBtn} onPress={() => setFrequencyModal(false)}>
+              <Typography style={{ fontWeight: '600', color: '#000' }}>Confirmar</Typography>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 };
@@ -550,5 +662,6 @@ const styles = StyleSheet.create({
   pillBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   pillBtnActive: { backgroundColor: '#fff', borderColor: '#fff' },
   radioRow: { flexDirection: 'row', alignItems: 'center', padding: 16, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 12, borderWidth: 1, borderColor: 'transparent' },
-  radioCircle: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)', marginRight: 12 }
+  radioCircle: { width: 16, height: 16, borderRadius: 8, borderWidth: 2, borderColor: 'rgba(255,255,255,0.3)', marginRight: 12 },
+  timeInput: { backgroundColor: 'rgba(0,0,0,0.5)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, color: '#fff', fontSize: 14, textAlign: 'center', width: 80 }
 });
